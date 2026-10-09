@@ -1,891 +1,583 @@
 #!/usr/bin/env python3
 """
 generate-architecture-diagram.py
-Generates the clean, human-engineered Enterprise Architecture & Deployment Diagram (5-Tier)
-for the Nexus Logistics Management System graduation thesis.
+Generates the Enterprise System Architecture & Deployment Blueprint (5-Tier)
+in Genuine Architectural Schematic Layout with Extra-Large, Hyper-Readable Typography.
 
-Outputs to:
-  docs/graduation-thesis/figma-page-1-system-and-data/diagrams/02-architecture-deployment-4-tier.svg
-
-Standardized Dimensions:
-  Width: 3600px, Height: 3000px
-Style:
-  Monochrome Technical Blueprint (Trắng - Đen - Xám chuẩn kỹ thuật)
-  Clean, grounded academic tone without AI buzzwords or redundant top-right badges.
-  Figma Compatibility: 100% inline vector shapes (<polygon>, <path>, <line>), ZERO SVG <marker> tags.
+Design Specifications:
+- EXTRA-LARGE, HYPER-READABLE TYPOGRAPHY ("Chữ to, rõ ràng, dễ nhìn mọi cự ly"):
+  * Tiêu đề sơ đồ: 30px (font-weight: 900).
+  * Tiêu đề tầng: 15.5px (font-weight: 800, tracking 1.5px).
+  * Tên Gateway & RabbitMQ: 20px - 20.5px (font-weight: 900).
+  * Tiêu đề thẻ dịch vụ & CSDL: 16.5px - 18.5px (font-weight: 800/900).
+  * Tên microservice & Port: 14px - 14.5px (font-weight: 800 mono).
+  * Nội dung gạch đầu dòng & giải thích: 13px - 13.5px (font-weight: 500/600, màu #1E293B sắc nét).
+  * Nhãn kết nối & Thẻ route: 13px - 14px (font-weight: 800).
+  * Ghi chú chân trang: 13.5px (font-weight: 700).
+- KHÔNG GIAN THOÁNG ĐÃNG (Spacious Architecture):
+  * Canvas mở rộng: W=1320, H=1780.
+  * Khoảng cách giữa các tầng: 95px - 110px.
+  * Thẻ dịch vụ mở rộng lên 350px x 220px, line-height 23px - 25px.
+  * Khối trụ CSDL 3D mở rộng lên 350px x 220px.
+- SÁNG SỦA & CHUẨN IN ẤN (Print-Ready Aesthetics):
+  * Nền trắng tinh khiết (#FFFFFF), Gateway BFF nền sáng (#F0F9FF) viền xanh công nghệ (#0284C7).
+  * 100% Native Inline Vector SVG (zero <marker> tags for Figma compatibility).
+  * 100% Valid XML syntax.
 """
 
-import xml.etree.ElementTree as ET
-import html
 import os
+import html
+import re
+import xml.etree.ElementTree as ET
 
-OUTPUT_FILE = "docs/graduation-thesis/figma-page-1-system-and-data/diagrams/02-architecture-deployment-4-tier.svg"
+OUTPUT_FILES = [
+    "docs/graduation-thesis/figma-page-1-system-and-data/diagrams/02-architecture-deployment-4-tier.svg",
+    "docs/graduation-thesis/diagrams/architecture/01-architecture-deployment-4-tier.svg"
+]
 
-def escape(text):
-    return html.escape(str(text))
+def xml_esc(s):
+    if s is None:
+        return ""
+    clean = str(s).replace("&amp;", "&")
+    return html.escape(clean, quote=True)
 
-def build_architecture_svg():
-    width = 3600
-    height = 3000
+# =============================================================================
+# BESPOKE NATIVE SVG ICONS (100% INLINE VECTORS)
+# =============================================================================
+
+def icon_nexus_crest():
+    return '''<g class="icon-crest">
+      <polygon points="24,2 46,14 46,36 24,48 2,36 2,14" fill="#F8FAFC" stroke="#0F172A" stroke-width="2.6"/>
+      <polygon points="24,6 42,16 42,34 24,44 6,34 6,16" fill="#EFF6FF" stroke="#0284C7" stroke-width="1.5"/>
+      <path d="M 15 33 L 15 17 L 33 33 L 33 17" fill="none" stroke="#0F172A" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/>
+      <polyline points="20,13 24,9 28,13" fill="none" stroke="#0284C7" stroke-width="2.6" stroke-linecap="round"/>
+    </g>'''
+
+def icon_monitor():
+    return '''<g>
+      <rect x="2" y="2" width="24" height="16" rx="3" fill="#EFF6FF" stroke="#0284C7" stroke-width="1.8"/>
+      <line x1="2" y1="14" x2="26" y2="14" stroke="#0284C7" stroke-width="1.1"/>
+      <line x1="14" y1="18" x2="14" y2="23" stroke="#0F172A" stroke-width="2"/>
+      <line x1="9" y1="23" x2="19" y2="23" stroke="#0F172A" stroke-width="2" stroke-linecap="round"/>
+      <circle cx="6" cy="6" r="1.3" fill="#0284C7"/>
+    </g>'''
+
+def icon_hub():
+    return '''<g>
+      <polygon points="14,2 26,9 26,22 14,29 2,22 2,9" fill="#F0FDF4" stroke="#059669" stroke-width="1.8"/>
+      <line x1="14" y1="2" x2="14" y2="15" stroke="#059669" stroke-width="1.3"/>
+      <line x1="14" y1="15" x2="2" y2="22" stroke="#059669" stroke-width="1.3"/>
+      <line x1="14" y1="15" x2="26" y2="22" stroke="#059669" stroke-width="1.3"/>
+      <circle cx="14" cy="15" r="2.6" fill="#059669"/>
+    </g>'''
+
+def icon_store():
+    return '''<g>
+      <path d="M 2 9 L 7 2 L 22 2 L 27 9 Z" fill="#EFF6FF" stroke="#0284C7" stroke-width="1.8"/>
+      <rect x="3" y="9" width="23" height="17" rx="2" fill="#FFFFFF" stroke="#0F172A" stroke-width="1.8"/>
+      <rect x="7" y="14" width="7" height="12" fill="#BAE6FD" stroke="#0284C7" stroke-width="1.1"/>
+      <rect x="16" y="14" width="7" height="7" fill="#E2E8F0" stroke="#64748B" stroke-width="1.1"/>
+    </g>'''
+
+def icon_mobile():
+    return '''<g>
+      <rect x="5" y="2" width="18" height="26" rx="3.5" fill="#FAF5FF" stroke="#7C3AED" stroke-width="1.8"/>
+      <rect x="8" y="6" width="12" height="16" rx="1" fill="#FFFFFF" stroke="#D8B4FE" stroke-width="0.9"/>
+      <circle cx="14" cy="25" r="1.4" fill="#7C3AED"/>
+      <line x1="11" y1="4" x2="17" y2="4" stroke="#7C3AED" stroke-width="1.1" stroke-linecap="round"/>
+    </g>'''
+
+def icon_tracking():
+    return '''<g>
+      <circle cx="12" cy="12" r="9" fill="#F0FDF4" stroke="#059669" stroke-width="1.8"/>
+      <line x1="19" y1="19" x2="25" y2="25" stroke="#0F172A" stroke-width="2.4" stroke-linecap="round"/>
+      <path d="M 8 12 L 11 15 L 17 9" fill="none" stroke="#059669" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+    </g>'''
+
+def icon_gateway():
+    return '''<g>
+      <path d="M 16 3 L 29 8 L 29 19 C 29 26.5 16 32 16 32 C 16 32 3 26.5 3 19 L 3 8 Z" fill="#EFF6FF" stroke="#0284C7" stroke-width="2.2"/>
+      <rect x="12" y="13" width="8" height="7.5" rx="1" fill="#FFFFFF" stroke="#0F172A" stroke-width="1.3"/>
+      <path d="M 13.5 13 L 13.5 10 A 2.5 2.5 0 0 1 18.5 10 L 18.5 13" fill="none" stroke="#0F172A" stroke-width="1.3"/>
+    </g>'''
+
+def icon_rabbitmq():
+    return '''<g>
+      <rect x="2" y="2" width="28" height="28" rx="5" fill="#FFF7ED" stroke="#EA580C" stroke-width="2"/>
+      <ellipse cx="16" cy="18" rx="7.5" ry="6" fill="#FDBA74" stroke="#EA580C" stroke-width="1.4"/>
+      <ellipse cx="11.5" cy="9.5" rx="2.4" ry="5" fill="#FDBA74" stroke="#EA580C" stroke-width="1.2"/>
+      <ellipse cx="20.5" cy="9.5" rx="2.4" ry="5" fill="#FDBA74" stroke="#EA580C" stroke-width="1.2"/>
+    </g>'''
+
+# =============================================================================
+# 3D CYLINDER DRAWING HELPER (EXTRA-LARGE TYPOGRAPHY, SPACIOUS DATABASE SHAPE)
+# =============================================================================
+
+def draw_3d_cylinder(x, y, w, h, title, subtitle, bullets, badge=None, stroke_color="#0284C7", fill_top="#EFF6FF", fill_body="#FFFFFF"):
+    """
+    Renders an airy, bright 3D cylinder database shape with comfortable text padding and extra-large typography.
+    """
+    ry = 18
+    rx = w / 2
+    cx = x + rx
+    cy_top = y + ry
+    cy_bottom = y + h - ry
+
+    lines = []
+    lines.append(f'  <g class="node-shadow">')
+    # Cylinder body
+    lines.append(f'    <path d="M {x} {cy_top} L {x} {cy_bottom} A {rx} {ry} 0 0 0 {x + w} {cy_bottom} L {x + w} {cy_top} Z" fill="{fill_body}" stroke="{stroke_color}" stroke-width="1.9"/>')
+    # Bottom rim arc
+    lines.append(f'    <path d="M {x} {cy_bottom} A {rx} {ry} 0 0 0 {x + w} {cy_bottom}" fill="none" stroke="{stroke_color}" stroke-width="1.9"/>')
+    # Top lid ellipse
+    lines.append(f'    <ellipse cx="{cx}" cy="{cy_top}" rx="{rx}" ry="{ry}" fill="{fill_top}" stroke="{stroke_color}" stroke-width="1.9"/>')
+    
+    # Text content inside cylinder body (Large, bold, crisp)
+    lines.append(f'    <text x="{cx}" y="{cy_top + 34}" font-size="18.5" font-weight="900" fill="#0F172A" text-anchor="middle">{xml_esc(title)}</text>')
+    lines.append(f'    <text x="{cx}" y="{cy_top + 55}" class="mono" font-size="13.5" font-weight="800" fill="{stroke_color}" text-anchor="middle">{xml_esc(subtitle)}</text>')
+    
+    # Bullet points (Comfortable spacing & high-contrast dark text)
+    by = cy_top + 84
+    for b in bullets:
+        lines.append(f'    <text x="{x + 22}" y="{by}" font-size="13" font-weight="500" fill="#1E293B">• {xml_esc(b)}</text>')
+        by += 24
+
+    # Optional bottom badge plate
+    if badge:
+        lines.append(f'    <rect x="{x + 20}" y="{y + h - 38}" width="{w - 40}" height="26" rx="5" fill="{fill_top}" stroke="{stroke_color}" stroke-width="1.2"/>')
+        lines.append(f'    <text x="{cx}" y="{y + h - 20}" class="mono" font-size="12.5" font-weight="800" fill="{stroke_color}" text-anchor="middle">{xml_esc(badge)}</text>')
+
+    lines.append('  </g>')
+    return "\n".join(lines)
+
+# =============================================================================
+# MAIN BUILDER (DECOUPLED, EXTRA-LARGE TYPOGRAPHY SCHEMATIC ARCHITECTURE DIAGRAM)
+# =============================================================================
+
+def build_architecture_diagram():
+    W = 1320
+    H = 1780
     lines = []
 
-    lines.append(f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {width} {height}" width="100%" height="100%" style="background:#FFFFFF;">')
+    lines.append(f'''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {W} {H}" width="{W}" height="{H}">
+  <defs>
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&amp;family=JetBrains+Mono:wght@500;600;700;800&amp;display=swap');
+      * {{ box-sizing: border-box; }}
+      text {{ font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }}
+      .mono {{ font-family: 'JetBrains Mono', ui-monospace, Menlo, Consolas, monospace; }}
+      .node-shadow {{ filter: drop-shadow(0 4px 12px rgba(15, 23, 42, 0.08)); }}
+      .hub-shadow {{ filter: drop-shadow(0 6px 18px rgba(15, 23, 42, 0.12)); }}
+    </style>
+  </defs>
 
-    # Double Blueprint Frame
-    lines.append(f'''
-  <!-- Double Technical Blueprint Frame -->
-  <rect width="100%" height="100%" fill="#FFFFFF"/>
-  <rect x="20" y="20" width="{width - 40}" height="{height - 40}" fill="none" stroke="#000000" stroke-width="2.6"/>
-  <rect x="32" y="32" width="{width - 64}" height="{height - 64}" fill="none" stroke="#000000" stroke-width="1.2"/>
+  <!-- PURE CRISP WHITE CANVAS (ZERO DOCUMENT FRAMES, ZERO PAPER BORDERS) -->
+  <rect width="{W}" height="{H}" fill="#FFFFFF"/>
 
-  <style>
-    text {{ font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }}
-    
-    .hdr-title {{ font-size: 30px; font-weight: 800; fill: #000000; letter-spacing: -0.5px; }}
-    .hdr-sub {{ font-size: 16.5px; font-weight: 500; fill: #374151; }}
-    
-    .tier-header {{ font-size: 17px; font-weight: 800; fill: #000000; letter-spacing: 0.8px; text-transform: uppercase; }}
-    .cluster-title {{ font-size: 16px; font-weight: 800; fill: #000000; letter-spacing: 0.5px; text-transform: uppercase; }}
-    
-    .card-title {{ font-size: 16.5px; font-weight: 700; fill: #000000; }}
-    .card-meta {{ font-size: 13.5px; font-weight: 600; fill: #4B5563; font-family: ui-monospace, Menlo, monospace; }}
-    .card-bullet {{ font-size: 13.5px; font-weight: 500; fill: #374151; }}
-    .card-bullet-bold {{ font-size: 13.5px; font-weight: 700; fill: #111827; }}
-    
-    .flow-label {{ font-size: 13.5px; font-weight: 700; fill: #000000; letter-spacing: 0.6px; text-transform: uppercase; }}
-    .chip-text {{ font-size: 14px; font-weight: 700; fill: #000000; font-family: ui-monospace, Menlo, monospace; }}
-  </style>
-''')
-
-    # Dimensions setup
-    margin_x = 70
-    content_w = width - margin_x * 2  # 3460px
-    inner_pad = 35
-    c_w = 785
-    c_gap = (content_w - inner_pad * 2 - c_w * 4) // 3  # (3390 - 3140) // 3 = 83px
-
-    # Column center points for vertical bus connectors
-    p1 = margin_x + inner_pad + c_w // 2
-    p2 = margin_x + inner_pad + c_w + c_gap + c_w // 2
-    p3 = margin_x + inner_pad + (c_w + c_gap) * 2 + c_w // 2
-    p4 = margin_x + inner_pad + (c_w + c_gap) * 3 + c_w // 2
+  <!-- =========================================================================
+       DIAGRAM TITLE HEADER (CLEAN ARCHITECTURAL TITLE, NO HEAVY BOX)
+       ========================================================================= -->
+  <g id="Diagram_Header" transform="translate(660, 52)">
+    <g transform="translate(-480, -28)">{icon_nexus_crest()}</g>
+    <text x="0" y="0" font-size="30" font-weight="900" fill="#0F172A" text-anchor="middle" letter-spacing="-0.02em">SƠ ĐỒ KIẾN TRÚC TỔNG THỂ &amp; DỊCH VỤ PHÂN TÁN</text>
+    <text x="0" y="32" font-size="15" font-weight="500" fill="#475569" text-anchor="middle">Nexus Express System • Event-Driven Microservices Architecture, API Gateway BFF &amp; Polyglot Persistence</text>
+  </g>''')
 
     # =========================================================================
-    # HEADER (y: 45 to 145, h: 100) - CLEAN & GROUNDED
+    # TIER 1: CLIENT APPLICATIONS (OPEN FLOATING NODES, NO ENCLOSING BOX)
+    # y: 130 to 255, Width = 210 each, Gap = 24
     # =========================================================================
-    lines.append(f'''
-  <!-- HEADER BAR -->
-  <g id="HeaderBar" transform="translate({margin_x}, 45)">
-    <rect width="{content_w}" height="100" rx="8" fill="#F9FAFB" stroke="#000000" stroke-width="2"/>
-    
-    <text x="32" y="44" class="hdr-title">HÌNH 1.2: SƠ ĐỒ KIẾN TRÚC TỔNG THỂ HỆ THỐNG LOGISTICS &amp; VẬN TẢI (NEXUS LMS)</text>
-    <text x="32" y="74" class="hdr-sub">Mô hình kiến trúc phân tán 5 tầng: Giao diện người dùng, Cổng API Gateway, 13 Microservices nghiệp vụ, Trục thông điệp RabbitMQ và Hệ thống cơ sở dữ liệu độc lập</text>
-  </g>
-''')
-
-    # =========================================================================
-    # TẦNG 1: MULTI-CHANNEL CLIENT APPS (y: 200 to 440, h: 240)
-    # =========================================================================
-    lines.append(f'''
-  <!-- TIER 1: CLIENT APPS -->
-  <g id="Tier_1_Clients" transform="translate({margin_x}, 200)">
-    <rect width="{content_w}" height="240" rx="8" fill="#FFFFFF" stroke="#000000" stroke-width="1.8"/>
-    <rect width="{content_w}" height="42" rx="8" fill="#F3F4F6" stroke="#000000" stroke-width="1.4"/>
-    <rect x="20" y="12" width="6" height="18" rx="1.5" fill="#000000"/>
-    <text x="36" y="28" class="tier-header">TẦNG 1: GIAO DIỆN NGƯỜI DÙNG (CLIENT APPLICATIONS)</text>
-    
-    <!-- 4 Client Cards (w=785, h=165) -->
-    <!-- Card 1: Merchant Web -->
-    <g transform="translate({inner_pad}, 58)">
-      <rect width="{c_w}" height="165" rx="6" fill="#FFFFFF" stroke="#000000" stroke-width="1.4"/>
-      <line x1="0" y1="38" x2="{c_w}" y2="38" stroke="#000000" stroke-width="1"/>
-      <text x="22" y="26" class="card-title">Merchant Web Portal (:5174)</text>
-      
-      <text x="22" y="66" class="card-bullet"><tspan class="card-bullet-bold">• Người dùng:</tspan> Chủ cửa hàng, đối tác gửi hàng thương mại điện tử</text>
-      <text x="22" y="96" class="card-bullet"><tspan class="card-bullet-bold">• Chức năng đơn hàng:</tspan> Tạo đơn lẻ hoặc import file Excel, đặt lịch hẹn bưu tá đến gom hàng</text>
-      <text x="22" y="126" class="card-bullet"><tspan class="card-bullet-bold">• Quản lý tài chính:</tspan> Theo dõi tiền thu hộ COD theo từng đơn, quản lý số dư ví và yêu cầu rút tiền</text>
-    </g>
-
-    <!-- Card 2: Operations Web -->
-    <g transform="translate({inner_pad + c_w + c_gap}, 58)">
-      <rect width="{c_w}" height="165" rx="6" fill="#FFFFFF" stroke="#000000" stroke-width="1.4"/>
-      <line x1="0" y1="38" x2="{c_w}" y2="38" stroke="#000000" stroke-width="1"/>
-      <text x="22" y="26" class="card-title">Operations Platform (:5173)</text>
-      
-      <text x="22" y="66" class="card-bullet"><tspan class="card-bullet-bold">• Người dùng:</tspan> Quản lý bưu cục (Station Ops), nhân viên điều hành vận tải</text>
-      <text x="22" y="96" class="card-bullet"><tspan class="card-bullet-bold">• Vận hành kho:</tspan> Giám sát tồn kho bưu cục, tạo bảng kê xuất/nhập, đóng mở bao trung chuyển</text>
-      <text x="22" y="126" class="card-bullet"><tspan class="card-bullet-bold">• Điều phối &amp; Khiếu nại:</tspan> Phân tuyến bưu tá theo khu vực, tiếp nhận và xử lý sự cố hàng hư hỏng</text>
-    </g>
-
-    <!-- Card 3: Courier Mobile App -->
-    <g transform="translate({inner_pad + (c_w + c_gap)*2}, 58)">
-      <rect width="{c_w}" height="165" rx="6" fill="#FFFFFF" stroke="#000000" stroke-width="1.4"/>
-      <line x1="0" y1="38" x2="{c_w}" y2="38" stroke="#000000" stroke-width="1"/>
-      <text x="22" y="26" class="card-title">Courier Mobile App (:8082)</text>
-      
-      <text x="22" y="66" class="card-bullet"><tspan class="card-bullet-bold">• Người dùng:</tspan> Bưu tá thu gom và bưu tá giao hàng chặng cuối</text>
-      <text x="22" y="96" class="card-bullet"><tspan class="card-bullet-bold">• Tác nghiệp hiện trường:</tspan> Nhận danh sách đơn trong ca, quét mã vạch bưu kiện, chụp ảnh ký nhận POD</text>
-      <text x="22" y="126" class="card-bullet"><tspan class="card-bullet-bold">• Thu tiền COD:</tspan> Sinh mã VietQR để người nhận chuyển khoản hoặc ghi nhận tiền mặt nộp về bưu cục</text>
-    </g>
-
-    <!-- Card 4: Guest Public Tracking -->
-    <g transform="translate({inner_pad + (c_w + c_gap)*3}, 58)">
-      <rect width="{c_w}" height="165" rx="6" fill="#FFFFFF" stroke="#000000" stroke-width="1.4"/>
-      <line x1="0" y1="38" x2="{c_w}" y2="38" stroke="#000000" stroke-width="1"/>
-      <text x="22" y="26" class="card-title">Guest Tracking Portal (:5177)</text>
-      
-      <text x="22" y="66" class="card-bullet"><tspan class="card-bullet-bold">• Người dùng:</tspan> Người nhận hàng hoặc khách vãng lai tra cứu đơn hàng</text>
-      <text x="22" y="96" class="card-bullet"><tspan class="card-bullet-bold">• Tra cứu nhanh:</tspan> Nhập mã vận đơn để xem trạng thái hiện tại và lịch sử di chuyển qua các trạm</text>
-      <text x="22" y="126" class="card-bullet"><tspan class="card-bullet-bold">• Bảo mật dữ liệu:</tspan> Thông tin số điện thoại và địa chỉ nhà riêng người nhận được che mờ tự động</text>
-    </g>
-  </g>
-''')
-
-    # =========================================================================
-    # CONNECTOR BUS: TIER 1 -> TIER 2 (y: 440 to 560, gap = 120)
-    # =========================================================================
-    lines.append(f'''
-  <!-- CONNECTOR BUS: TIER 1 -> TIER 2 -->
-  <g id="Bus_1_to_2">
-    <!-- 4 Vertical Trunk Lines with Solid Vector Arrowheads -->
-    <line x1="{p1}" y1="440" x2="{p1}" y2="560" stroke="#000000" stroke-width="2"/>
-    <polygon points="{p1 - 9},546 {p1},560 {p1 + 9},546" fill="#000000"/>
-
-    <line x1="{p2}" y1="440" x2="{p2}" y2="560" stroke="#000000" stroke-width="2"/>
-    <polygon points="{p2 - 9},546 {p2},560 {p2 + 9},546" fill="#000000"/>
-
-    <line x1="{p3}" y1="440" x2="{p3}" y2="560" stroke="#000000" stroke-width="2"/>
-    <polygon points="{p3 - 9},546 {p3},560 {p3 + 9},546" fill="#000000"/>
-
-    <line x1="{p4}" y1="440" x2="{p4}" y2="560" stroke="#000000" stroke-width="2"/>
-    <polygon points="{p4 - 9},546 {p4},560 {p4 + 9},546" fill="#000000"/>
-    
-    <!-- Central Bus Highway Line -->
-    <line x1="{p1 - 40}" y1="500" x2="{p4 + 40}" y2="500" stroke="#000000" stroke-width="1.8" stroke-dasharray="10,6"/>
-    <polygon points="{p1 - 50},500 {p1 - 38},494 {p1 - 38},506" fill="#000000"/>
-    <polygon points="{p4 + 50},500 {p4 + 38},494 {p4 + 38},506" fill="#000000"/>
-    
-    <!-- Center Protocol Badge -->
-    <rect x="{width//2 - 300}" y="482" width="600" height="36" rx="5" fill="#FFFFFF" stroke="#000000" stroke-width="1.5"/>
-    <text x="{width//2}" y="505" class="flow-label" text-anchor="middle">Giao thức: HTTPS / TLS 1.3 • RESTful API • WebSocket Realtime</text>
-  </g>
-''')
-
-    # =========================================================================
-    # TẦNG 2: EDGE INGRESS, API GATEWAY & SECURITY (y: 560 to 760, h: 200)
-    # =========================================================================
-    lines.append(f'''
-  <!-- TIER 2: API GATEWAY & SECURITY -->
-  <g id="Tier_2_Gateway" transform="translate({margin_x}, 560)">
-    <rect width="{content_w}" height="200" rx="8" fill="#FFFFFF" stroke="#000000" stroke-width="1.8"/>
-    <rect width="{content_w}" height="42" rx="8" fill="#F3F4F6" stroke="#000000" stroke-width="1.4"/>
-    <rect x="20" y="12" width="6" height="18" rx="1.5" fill="#000000"/>
-    <text x="36" y="28" class="tier-header">TẦNG 2: CỔNG API GATEWAY &amp; XỬ LÝ BẢO MẬT (:3000)</text>
-    
-    <!-- 4 Functional Gateway Blocks (w: 785, h: 126) -->
-    <!-- Block 1 -->
-    <g transform="translate({inner_pad}, 58)">
-      <rect width="{c_w}" height="126" rx="6" fill="#FFFFFF" stroke="#000000" stroke-width="1.4"/>
-      <text x="22" y="30" class="card-title">Định tuyến &amp; Cân bằng tải (Reverse Proxy)</text>
-      <text x="22" y="64" class="card-bullet">• Tiếp nhận request từ các client và phân phối đến đúng 13 microservices nội bộ</text>
-      <text x="22" y="94" class="card-bullet">• Định tuyến tập trung dựa trên tiền tố URL /api/v1/*, kiểm tra trạng thái dịch vụ (health check)</text>
-    </g>
-
-    <!-- Block 2 -->
-    <g transform="translate({inner_pad + c_w + c_gap}, 58)">
-      <rect width="{c_w}" height="126" rx="6" fill="#FFFFFF" stroke="#000000" stroke-width="1.4"/>
-      <text x="22" y="30" class="card-title">Xác thực &amp; Phân quyền (JWT &amp; RBAC Guard)</text>
-      <text x="22" y="64" class="card-bullet">• Kiểm tra tính hợp lệ của chữ ký Access Token (JWT), thời hạn hiệu lực của phiên làm việc</text>
-      <text x="22" y="94" class="card-bullet">• Bóc tách vai trò (ADMIN, OPS, COURIER, MERCHANT) và chuyển tiếp định danh qua Header nội bộ</text>
-    </g>
-
-    <!-- Block 3 -->
-    <g transform="translate({inner_pad + (c_w + c_gap)*2}, 58)">
-      <rect width="{c_w}" height="126" rx="6" fill="#FFFFFF" stroke="#000000" stroke-width="1.4"/>
-      <text x="22" y="30" class="card-title">Bộ lọc Che mờ Dữ liệu Cá nhân (PII Masking)</text>
-      <text x="22" y="64" class="card-bullet">• Tự động che mờ số điện thoại (vd: 098***) và địa chỉ nhà riêng đối với các API tra cứu công khai</text>
-      <text x="22" y="94" class="card-bullet">• Bảo vệ quyền riêng tư người nhận, ngăn chặn việc thu thập dữ liệu khách hàng trái phép</text>
-    </g>
-
-    <!-- Block 4 -->
-    <g transform="translate({inner_pad + (c_w + c_gap)*3}, 58)">
-      <rect width="{c_w}" height="126" rx="6" fill="#FFFFFF" stroke="#000000" stroke-width="1.4"/>
-      <text x="22" y="30" class="card-title">Kiểm soát Tần suất &amp; Phòng vệ (Rate Limiting)</text>
-      <text x="22" y="64" class="card-bullet">• Giới hạn số lượng request theo địa chỉ IP nhằm chống tấn công vét cạn (brute-force) mã vận đơn</text>
-      <text x="22" y="94" class="card-bullet">• Cấu hình danh sách tên miền được phép (CORS) và thiết lập các tiêu chuẩn bảo mật HTTP Headers</text>
-    </g>
-  </g>
-''')
-
-    # =========================================================================
-    # CONNECTOR BUS: TIER 2 -> TIER 3 (y: 760 to 880, gap = 120)
-    # =========================================================================
-    lines.append(f'''
-  <!-- CONNECTOR BUS: TIER 2 -> TIER 3 -->
-  <g id="Bus_2_to_3">
-    <!-- 4 Vertical Trunk Lines with Solid Vector Arrowheads -->
-    <line x1="{p1}" y1="760" x2="{p1}" y2="880" stroke="#000000" stroke-width="2"/>
-    <polygon points="{p1 - 9},866 {p1},880 {p1 + 9},866" fill="#000000"/>
-
-    <line x1="{p2}" y1="760" x2="{p2}" y2="880" stroke="#000000" stroke-width="2"/>
-    <polygon points="{p2 - 9},866 {p2},880 {p2 + 9},866" fill="#000000"/>
-
-    <line x1="{p3}" y1="760" x2="{p3}" y2="880" stroke="#000000" stroke-width="2"/>
-    <polygon points="{p3 - 9},866 {p3},880 {p3 + 9},866" fill="#000000"/>
-
-    <line x1="{p4}" y1="760" x2="{p4}" y2="880" stroke="#000000" stroke-width="2"/>
-    <polygon points="{p4 - 9},866 {p4},880 {p4 + 9},866" fill="#000000"/>
-    
-    <!-- Central Bus Line -->
-    <line x1="{p1 - 40}" y1="820" x2="{p4 + 40}" y2="820" stroke="#000000" stroke-width="1.8" stroke-dasharray="10,6"/>
-    <polygon points="{p1 - 50},820 {p1 - 38},814 {p1 - 38},826" fill="#000000"/>
-    <polygon points="{p4 + 50},820 {p4 + 38},814 {p4 + 38},826" fill="#000000"/>
-
-    <!-- Center Transport Badge -->
-    <rect x="{width//2 - 320}" y="802" width="640" height="36" rx="5" fill="#FFFFFF" stroke="#000000" stroke-width="1.5"/>
-    <text x="{width//2}" y="825" class="flow-label" text-anchor="middle">Mạng nội bộ (Private VPC): JSON RPC • Chuyển tiếp X-User-Id &amp; X-Role</text>
-  </g>
-''')
-
-    # =========================================================================
-    # TẦNG 3: 13 MICROSERVICES BUSINESS DOMAIN MESH (y: 880 to 1870, h: 990)
-    # CLEAN CARDS: NO REDUNDANT TOP-RIGHT BLACK BADGES
-    # =========================================================================
-    lines.append(f'''
-  <!-- TIER 3: MICROSERVICES MESH -->
-  <g id="Tier_3_Microservices" transform="translate({margin_x}, 880)">
-    <rect width="{content_w}" height="990" rx="8" fill="#FFFFFF" stroke="#000000" stroke-width="1.8"/>
-    <rect width="{content_w}" height="44" rx="8" fill="#F3F4F6" stroke="#000000" stroke-width="1.4"/>
-    <rect x="20" y="13" width="6" height="18" rx="1.5" fill="#000000"/>
-    <text x="36" y="29" class="tier-header">TẦNG 3: CÁC DỊCH VỤ NGHIỆP VỤ (13 MICROSERVICES)</text>
-    
-    <!-- ================= HORIZONTAL CROSS-DOMAIN FLOWS (CLEAN LABELS) ================= -->
-    <!-- Flow 1: Cluster 1 -> Cluster 2 -->
-    <g id="InterCluster_1_to_2">
-      <line x1="{inner_pad + c_w}" y1="495" x2="{inner_pad + c_w + c_gap}" y2="495" stroke="#000000" stroke-width="1.8" stroke-dasharray="6,4"/>
-      <polygon points="{inner_pad + c_w + c_gap - 10},489 {inner_pad + c_w + c_gap},495 {inner_pad + c_w + c_gap - 10},501" fill="#000000"/>
-      <text x="{inner_pad + c_w + c_gap//2}" y="485" font-size="11.5" font-weight="700" fill="#374151" text-anchor="middle">Bàn giao kiện</text>
-    </g>
-
-    <!-- Flow 2: Cluster 3 <-> Cluster 2 -->
-    <g id="InterCluster_3_to_2">
-      <line x1="{inner_pad + (c_w + c_gap)*2}" y1="235" x2="{inner_pad + (c_w + c_gap) + c_w}" y2="235" stroke="#000000" stroke-width="1.8" stroke-dasharray="6,4"/>
-      <polygon points="{inner_pad + (c_w + c_gap) + c_w + 10},229 {inner_pad + (c_w + c_gap) + c_w},235 {inner_pad + (c_w + c_gap) + c_w + 10},241" fill="#000000"/>
-      <text x="{inner_pad + (c_w + c_gap) + c_w + c_gap//2}" y="225" font-size="11.5" font-weight="700" fill="#374151" text-anchor="middle">Đồng bộ FSM</text>
-    </g>
-
-    <!-- Flow 3: Cluster 2 -> Cluster 4 -->
-    <g id="InterCluster_2_to_4">
-      <line x1="{inner_pad + (c_w + c_gap)*2 + c_w}" y1="160" x2="{inner_pad + (c_w + c_gap)*3}" y2="160" stroke="#000000" stroke-width="1.8" stroke-dasharray="6,4"/>
-      <polygon points="{inner_pad + (c_w + c_gap)*3 - 10},154 {inner_pad + (c_w + c_gap)*3},160 {inner_pad + (c_w + c_gap)*3 - 10},166" fill="#000000"/>
-      <text x="{inner_pad + (c_w + c_gap)*2 + c_w + c_gap//2}" y="150" font-size="11.5" font-weight="700" fill="#374151" text-anchor="middle">Đối soát COD</text>
-    </g>
-
-    <!-- 4 DOMAIN CLUSTERS (w: 785 each, gap: 83, height: 910) -->
-    
-    <!-- ================= CLUSTER 1: FIRST & MIDDLE-MILE ================= -->
-    <g transform="translate({inner_pad}, 60)">
-      <rect width="{c_w}" height="910" rx="7" fill="#FAFAFA" stroke="#000000" stroke-width="1.5"/>
-      <rect width="{c_w}" height="38" rx="7" fill="#E5E7EB" stroke="#000000" stroke-width="1.2"/>
-      <text x="22" y="25" class="cluster-title">CỤM 1: THU GOM &amp; TRUNG CHUYỂN (KHO &amp; ĐƯỜNG TRỤC)</text>
-
-      <!-- Svc 1: pickup-service -->
-      <g transform="translate(20, 55)">
-        <rect width="{c_w - 40}" height="255" rx="6" fill="#FFFFFF" stroke="#000000" stroke-width="1.3"/>
-        <line x1="0" y1="38" x2="{c_w - 40}" y2="38" stroke="#000000" stroke-width="1"/>
-        <text x="20" y="26" class="card-title">1. pickup-service (:3003)</text>
-        
-        <text x="20" y="68" class="card-bullet"><tspan class="card-bullet-bold">• Tiếp nhận yêu cầu gom hàng:</tspan> Nhận lệnh hẹn từ shop, lập danh sách kiện hàng cần thu</text>
-        <text x="20" y="96" class="card-bullet"><tspan class="card-bullet-bold">• Xếp lịch lấy hàng:</tspan> Phân bổ ca làm việc và điều phối bưu tá đến tận nơi lấy hàng</text>
-        <text x="20" y="124" class="card-bullet"><tspan class="card-bullet-bold">• Cập nhật trạng thái:</tspan> Bưu tá quét mã xác nhận lấy hàng thành công, phát sự kiện gom hàng</text>
-        <text x="20" y="152" class="card-bullet"><tspan class="card-bullet-bold">• Xử lý ngoại lệ:</tspan> Ghi nhận lý do khi shop chưa chuẩn bị kịp hoặc hủy lịch hẹn lấy</text>
-        
-        <rect x="20" y="195" width="{c_w - 80}" height="34" rx="4" fill="#F3F4F6" stroke="#000000" stroke-width="1"/>
-        <text x="32" y="217" class="card-meta">Cơ sở dữ liệu: pickup_db (PostgreSQL) | Gửi sự kiện Outbox</text>
-      </g>
-
-      <!-- Svc 2: manifest-service -->
-      <g transform="translate(20, 340)">
-        <rect width="{c_w - 40}" height="255" rx="6" fill="#FFFFFF" stroke="#000000" stroke-width="1.3"/>
-        <line x1="0" y1="38" x2="{c_w - 40}" y2="38" stroke="#000000" stroke-width="1"/>
-        <text x="20" y="26" class="card-title">2. manifest-service (:3005)</text>
-        
-        <text x="20" y="68" class="card-bullet"><tspan class="card-bullet-bold">• Đóng bao niêm phong (SealBag):</tspan> Gom các kiện hàng cùng tuyến vào bao hàng lớn</text>
-        <text x="20" y="96" class="card-bullet"><tspan class="card-bullet-bold">• Bảng kê trung chuyển (Manifest):</tspan> Tạo bảng kê danh mục bưu kiện vận chuyển giữa các kho</text>
-        <text x="20" y="124" class="card-bullet"><tspan class="card-bullet-bold">• Bàn giao xe tải:</tspan> Lập biên bản bàn giao cho tài xế xe tải đường trục, ghi nhận mã niêm chì</text>
-        <text x="20" y="152" class="card-bullet"><tspan class="card-bullet-bold">• Mở bao tại kho đích:</tspan> Kiểm soát mở bao và đối chiếu số lượng thực tế với bảng kê</text>
-        
-        <rect x="20" y="195" width="{c_w - 80}" height="34" rx="4" fill="#F3F4F6" stroke="#000000" stroke-width="1"/>
-        <text x="32" y="217" class="card-meta">Cơ sở dữ liệu: manifest_db (PostgreSQL) | Gửi sự kiện Outbox</text>
-      </g>
-
-      <!-- Svc 3: scan-service -->
-      <g transform="translate(20, 625)">
-        <rect width="{c_w - 40}" height="265" rx="6" fill="#FFFFFF" stroke="#000000" stroke-width="1.3"/>
-        <line x1="0" y1="38" x2="{c_w - 40}" y2="38" stroke="#000000" stroke-width="1"/>
-        <text x="20" y="26" class="card-title">3. scan-service (:3006)</text>
-        
-        <text x="20" y="68" class="card-bullet"><tspan class="card-bullet-bold">• Quét mã vạch:</tspan> Ghi nhận các mốc nhập kho (Inbound), xuất kho (Outbound) và chuyển tiếp</text>
-        <text x="20" y="96" class="card-bullet"><tspan class="card-bullet-bold">• Sổ cái tồn kho bưu cục:</tspan> Cập nhật tức thời vị trí và danh sách kiện hàng đang nằm tại kho</text>
-        <text x="20" y="124" class="card-bullet"><tspan class="card-bullet-bold">• Phát hiện bất thường:</tspan> Cảnh báo sai lệch khi quét (kiện hàng thừa hoặc thiếu so với bảng kê)</text>
-        <text x="20" y="152" class="card-bullet"><tspan class="card-bullet-bold">• Biên bản bất thường (BBBT):</tspan> Lập hồ sơ ghi nhận kiện hàng bị móp méo, rách vỡ hoặc thất lạc</text>
-        
-        <rect x="20" y="205" width="{c_w - 80}" height="34" rx="4" fill="#F3F4F6" stroke="#000000" stroke-width="1"/>
-        <text x="32" y="227" class="card-meta">Cơ sở dữ liệu: scan_db (PostgreSQL) | Gửi sự kiện Outbox</text>
-      </g>
-    </g>
-
-    <!-- ================= CLUSTER 2: DISPATCH & LAST-MILE ================= -->
-    <g transform="translate({inner_pad + c_w + c_gap}, 60)">
-      <rect width="{c_w}" height="910" rx="7" fill="#FAFAFA" stroke="#000000" stroke-width="1.5"/>
-      <rect width="{c_w}" height="38" rx="7" fill="#E5E7EB" stroke="#000000" stroke-width="1.2"/>
-      <text x="22" y="25" class="cluster-title">CỤM 2: ĐIỀU PHỐI &amp; GIAO HÀNG (PHÂN TUYẾN &amp; CHẶNG CUỐI)</text>
-
-      <!-- Svc 4: dispatch-service -->
-      <g transform="translate(20, 55)">
-        <rect width="{c_w - 40}" height="405" rx="6" fill="#FFFFFF" stroke="#000000" stroke-width="1.3"/>
-        <line x1="0" y1="38" x2="{c_w - 40}" y2="38" stroke="#000000" stroke-width="1"/>
-        <text x="20" y="26" class="card-title">4. dispatch-service (:3004)</text>
-        
-        <text x="20" y="68" class="card-bullet"><tspan class="card-bullet-bold">• Phân công tác vụ tự động:</tspan> Tự động gán nhiệm vụ gom hàng và giao hàng cho bưu tá</text>
-        <text x="20" y="100" class="card-bullet"><tspan class="card-bullet-bold">• Phân tuyến theo địa giới:</tspan> Gom các đơn hàng theo ranh giới phường/xã bưu tá phụ trách</text>
-        <text x="20" y="132" class="card-bullet"><tspan class="card-bullet-bold">• Cân bằng khối lượng công việc:</tspan> Phân bổ số lượng đơn hợp lý giữa các bưu tá trong ca</text>
-        <text x="20" y="164" class="card-bullet"><tspan class="card-bullet-bold">• Can thiệp điều hành:</tspan> Cho phép trưởng bưu cục gán lại việc khi bưu tá quá tải hoặc nghỉ ca</text>
-        <text x="20" y="196" class="card-bullet"><tspan class="card-bullet-bold">• Lịch sử phân công:</tspan> Lưu vết toàn bộ thay đổi người thực hiện phục vụ đối soát kiểm tra</text>
-        <text x="20" y="228" class="card-bullet"><tspan class="card-bullet-bold">• Giám sát hạn chót (SLA):</tspan> Cảnh báo tác vụ sắp trễ thời gian cam kết giao hàng với khách</text>
-        <text x="20" y="260" class="card-bullet"><tspan class="card-bullet-bold">• Đánh giá hiệu suất:</tspan> Thống kê tỷ lệ nhận/từ chối cuốc và tốc độ xử lý tác vụ của bưu tá</text>
-        <text x="20" y="292" class="card-bullet"><tspan class="card-bullet-bold">• Dự báo nhu cầu:</tspan> Hỗ trợ phân bổ số lượng nhân sự bưu tá phù hợp theo từng khung giờ</text>
-        
-        <rect x="20" y="338" width="{c_w - 80}" height="36" rx="4" fill="#F3F4F6" stroke="#000000" stroke-width="1"/>
-        <text x="32" y="361" class="card-meta">Cơ sở dữ liệu: dispatch_db (PostgreSQL) | Gửi sự kiện Outbox</text>
-      </g>
-
-      <!-- Svc 5: delivery-service -->
-      <g transform="translate(20, 495)">
-        <rect width="{c_w - 40}" height="395" rx="6" fill="#FFFFFF" stroke="#000000" stroke-width="1.3"/>
-        <line x1="0" y1="38" x2="{c_w - 40}" y2="38" stroke="#000000" stroke-width="1"/>
-        <text x="20" y="26" class="card-title">5. delivery-service (:3007)</text>
-        
-        <text x="20" y="68" class="card-bullet"><tspan class="card-bullet-bold">• Quản lý chuyến giao hàng:</tspan> Lập danh sách đơn phát (DeliveryRun) và lộ trình các điểm dừng</text>
-        <text x="20" y="100" class="card-bullet"><tspan class="card-bullet-bold">• Xác nhận giao hàng (POD):</tspan> Lưu trữ ảnh chụp kiện hàng thực tế và chữ ký điện tử của người nhận</text>
-        <text x="20" y="132" class="card-bullet"><tspan class="card-bullet-bold">• Xử lý giao thất bại:</tspan> Ghi nhận lý do giao không thành công (khách hẹn lại, sai địa chỉ, không nghe máy)</text>
-        <text x="20" y="164" class="card-bullet"><tspan class="card-bullet-bold">• Lên lịch giao lại:</tspan> Tự động lập lịch phát lại (tối đa 3 lần) trước khi kích hoạt quy trình chuyển hoàn</text>
-        <text x="20" y="196" class="card-bullet"><tspan class="card-bullet-bold">• Kích hoạt đối soát COD:</tspan> Phát sự kiện giao hàng thành công để hệ thống ghi nhận tiền thu hộ</text>
-        <text x="20" y="228" class="card-bullet"><tspan class="card-bullet-bold">• Tích hợp tọa độ GPS:</tspan> Lưu tọa độ bưu tá tại thời điểm xác nhận giao hàng để kiểm tra vị trí</text>
-        <text x="20" y="260" class="card-bullet"><tspan class="card-bullet-bold">• Lưu trữ chứng từ:</tspan> Bảo đảm an toàn dữ liệu chữ ký và ảnh chụp phục vụ tra cứu khiếu nại</text>
-        
-        <rect x="20" y="328" width="{c_w - 80}" height="36" rx="4" fill="#F3F4F6" stroke="#000000" stroke-width="1"/>
-        <text x="32" y="351" class="card-meta">Cơ sở dữ liệu: delivery_db (PostgreSQL) | Gửi sự kiện Outbox</text>
-      </g>
-    </g>
-
-    <!-- ================= CLUSTER 3: CORE SHIPMENT & IDENTITY ================= -->
-    <g transform="translate({inner_pad + (c_w + c_gap)*2}, 60)">
-      <rect width="{c_w}" height="910" rx="7" fill="#FAFAFA" stroke="#000000" stroke-width="1.5"/>
-      <rect width="{c_w}" height="38" rx="7" fill="#E5E7EB" stroke="#000000" stroke-width="1.2"/>
-      <text x="22" y="25" class="cluster-title">CỤM 3: VẬN ĐƠN GỐC &amp; ĐỊNH DANH (DỮ LIỆU CỐT LÕI)</text>
-
-      <!-- Svc 6: shipment-service -->
-      <g transform="translate(20, 55)">
-        <rect width="{c_w - 40}" height="360" rx="6" fill="#FFFFFF" stroke="#000000" stroke-width="1.6"/>
-        <line x1="0" y1="38" x2="{c_w - 40}" y2="38" stroke="#000000" stroke-width="1.2"/>
-        <text x="20" y="26" class="card-title">6. shipment-service (:3002) - Quản lý Vận đơn Gốc</text>
-        
-        <text x="20" y="68" class="card-bullet"><tspan class="card-bullet-bold">• Quản lý vòng đời đơn hàng:</tspan> Vận hành máy trạng thái (FSM) gồm 19 trạng thái đơn hàng</text>
-        <text x="20" y="98" class="card-bullet"><tspan class="card-bullet-bold">• Khóa bảo vệ đơn hàng:</tspan> Cờ isLocked = true khi đơn đang đổi địa chỉ hoặc có tranh chấp khiếu nại</text>
-        <text x="20" y="128" class="card-bullet"><tspan class="card-bullet-bold">• Dữ liệu đơn hàng chi tiết:</tspan> Thông tin người gửi, người nhận, quy cách kiện hàng và gói dịch vụ</text>
-        <text x="20" y="158" class="card-bullet"><tspan class="card-bullet-bold">• Hồ sơ sự cố &amp; Khiếu nại:</tspan> Lưu vết biên bản hư hại, thất lạc và phân công nhân sự giải trình</text>
-        <text x="20" y="188" class="card-bullet"><tspan class="card-bullet-bold">• Quyết định bồi thường:</tspan> Xác định trách nhiệm bưu tá/kho và phê duyệt chi phí đền bù thỏa đáng</text>
-        <text x="20" y="218" class="card-bullet"><tspan class="card-bullet-bold">• Phát hành sự kiện gốc:</tspan> Tạo đơn mới, hủy đơn, đổi địa chỉ nhận hàng xuyên suốt hệ thống</text>
-        <text x="20" y="248" class="card-bullet"><tspan class="card-bullet-bold">• Kiểm soát thay đổi:</tspan> Đảm bảo tính nhất quán của dữ liệu vận đơn giữa tất cả các phân hệ</text>
-        
-        <rect x="20" y="295" width="{c_w - 80}" height="36" rx="4" fill="#F3F4F6" stroke="#000000" stroke-width="1"/>
-        <text x="32" y="318" class="card-meta">Cơ sở dữ liệu: shipment_db (PostgreSQL) | Gửi sự kiện Outbox</text>
-      </g>
-
-      <!-- Svc 7: auth-service -->
-      <g transform="translate(20, 440)">
-        <rect width="{c_w - 40}" height="205" rx="6" fill="#FFFFFF" stroke="#000000" stroke-width="1.3"/>
-        <line x1="0" y1="38" x2="{c_w - 40}" y2="38" stroke="#000000" stroke-width="1"/>
-        <text x="20" y="26" class="card-title">7. auth-service (:3010)</text>
-        
-        <text x="20" y="68" class="card-bullet"><tspan class="card-bullet-bold">• Quản lý tài khoản:</tspan> Lưu trữ tài khoản người dùng toàn hệ thống, mã hóa mật khẩu chuẩn Argon2id</text>
-        <text x="20" y="98" class="card-bullet"><tspan class="card-bullet-bold">• Quản lý phiên đăng nhập:</tspan> Cấp phát JWT Access Token và kiểm soát thu hồi Refresh Token</text>
-        <text x="20" y="128" class="card-bullet"><tspan class="card-bullet-bold">• Phân quyền vai trò:</tspan> Quản lý bảng quyền RBAC trên Web và cấp quyền linh hoạt cho ứng dụng di động</text>
-        
-        <rect x="20" y="152" width="{c_w - 80}" height="34" rx="4" fill="#F3F4F6" stroke="#000000" stroke-width="1"/>
-        <text x="32" y="174" class="card-meta">Cơ sở dữ liệu: auth_db (PostgreSQL) | Gửi sự kiện Outbox</text>
-      </g>
-
-      <!-- Svc 8: masterdata-service -->
-      <g transform="translate(20, 670)">
-        <rect width="{c_w - 40}" height="220" rx="6" fill="#FFFFFF" stroke="#000000" stroke-width="1.3"/>
-        <line x1="0" y1="38" x2="{c_w - 40}" y2="38" stroke="#000000" stroke-width="1"/>
-        <text x="20" y="26" class="card-title">8. masterdata-service (:3001)</text>
-        
-        <text x="20" y="68" class="card-bullet"><tspan class="card-bullet-bold">• Mạng lưới bưu cục:</tspan> Quản lý danh mục bưu cục (Hub), tọa độ vị trí GPS và phạm vi phụ trách</text>
-        <text x="20" y="98" class="card-bullet"><tspan class="card-bullet-bold">• Danh mục hành chính:</tspan> Cấu hình 63 tỉnh/thành phố, phân chia tuyến bưu tá theo phường/xã</text>
-        <text x="20" y="128" class="card-bullet"><tspan class="card-bullet-bold">• Tiêu chuẩn thời gian giao:</tspan> Thiết lập thời gian cam kết (SLA) và phụ phí theo từng khu vực địa lý</text>
-        
-        <rect x="20" y="165" width="{c_w - 80}" height="34" rx="4" fill="#F3F4F6" stroke="#000000" stroke-width="1"/>
-        <text x="32" y="187" class="card-meta">Cơ sở dữ liệu: masterdata_db (PostgreSQL) | Gửi sự kiện Outbox</text>
-      </g>
-    </g>
-
-    <!-- ================= CLUSTER 4: FINANCE, PRICING & ANALYTICS ================= -->
-    <g transform="translate({inner_pad + (c_w + c_gap)*3}, 60)">
-      <rect width="{c_w}" height="910" rx="7" fill="#FAFAFA" stroke="#000000" stroke-width="1.5"/>
-      <rect width="{c_w}" height="38" rx="7" fill="#E5E7EB" stroke="#000000" stroke-width="1.2"/>
-      <text x="22" y="25" class="cluster-title">CỤM 4: TÀI CHÍNH, GIÁ CƯỚC &amp; BÁO CÁO</text>
-
-      <!-- Svc 9: payment-service -->
-      <g transform="translate(20, 55)">
-        <rect width="{c_w - 40}" height="210" rx="6" fill="#FFFFFF" stroke="#000000" stroke-width="1.3"/>
-        <line x1="0" y1="38" x2="{c_w - 40}" y2="38" stroke="#000000" stroke-width="1"/>
-        <text x="20" y="26" class="card-title">9. payment-service (:3011)</text>
-        
-        <text x="20" y="68" class="card-bullet"><tspan class="card-bullet-bold">• Tiền thu hộ COD:</tspan> Ghi nhận số tiền cần thu, sinh mã thanh toán VietQR động theo đơn</text>
-        <text x="20" y="98" class="card-bullet"><tspan class="card-bullet-bold">• Nộp tiền mặt bưu tá:</tspan> Quản lý phiên nộp tiền về bưu cục vào cuối ca làm việc</text>
-        <text x="20" y="128" class="card-bullet"><tspan class="card-bullet-bold">• Đối soát ví shop:</tspan> Cộng tiền COD vào ví cửa hàng và xử lý yêu cầu rút tiền về tài khoản ngân hàng</text>
-        
-        <rect x="20" y="155" width="{c_w - 80}" height="34" rx="4" fill="#F3F4F6" stroke="#000000" stroke-width="1"/>
-        <text x="32" y="177" class="card-meta">Cơ sở dữ liệu: payment_db (PostgreSQL) | Gửi sự kiện Outbox</text>
-      </g>
-
-      <!-- Svc 10: pricing-service -->
-      <g transform="translate(20, 285)">
-        <rect width="{c_w - 40}" height="180" rx="6" fill="#FFFFFF" stroke="#000000" stroke-width="1.3"/>
-        <line x1="0" y1="38" x2="{c_w - 40}" y2="38" stroke="#000000" stroke-width="1"/>
-        <text x="20" y="26" class="card-title">10. pricing-service (:3012)</text>
-        
-        <text x="20" y="68" class="card-bullet"><tspan class="card-bullet-bold">• Quy chuẩn cước phí:</tspan> So sánh trọng lượng thực tế và trọng lượng thể tích quy đổi (D x R x C / 5000)</text>
-        <text x="20" y="98" class="card-bullet"><tspan class="card-bullet-bold">• Bảng giá bậc thang:</tspan> Tính cước theo quãng đường liên tỉnh/nội tỉnh và gói dịch vụ hỏa tốc/tiết kiệm</text>
-        <text x="20" y="128" class="card-bullet"><tspan class="card-bullet-bold">• Báo giá tạm tính:</tspan> Cung cấp API tính cước nhanh để shop xem trước chi phí trước khi tạo đơn</text>
-      </g>
-
-      <!-- Svc 11: reporting-service -->
-      <g transform="translate(20, 485)">
-        <rect width="{c_w - 40}" height="190" rx="6" fill="#FFFFFF" stroke="#000000" stroke-width="1.3"/>
-        <line x1="0" y1="38" x2="{c_w - 40}" y2="38" stroke="#000000" stroke-width="1"/>
-        <text x="20" y="26" class="card-title">11. reporting-service (:3009)</text>
-        
-        <text x="20" y="68" class="card-bullet"><tspan class="card-bullet-bold">• Tổng hợp vận hành:</tspan> Thống kê số lượng đơn tạo, đang giao, giao thành công hoặc hủy theo ngày</text>
-        <text x="20" y="98" class="card-bullet"><tspan class="card-bullet-bold">• Đánh giá hiệu suất:</tspan> Theo dõi chỉ số giao đúng hạn (SLA), tỷ lệ hoàn hàng và năng suất bưu tá</text>
-        
-        <rect x="20" y="135" width="{c_w - 80}" height="34" rx="4" fill="#F3F4F6" stroke="#000000" stroke-width="1"/>
-        <text x="32" y="157" class="card-meta">Cơ sở dữ liệu: reporting_db (PostgreSQL) | Báo cáo phân tích</text>
-      </g>
-
-      <!-- Svc 12 & 13: tracking-service & ai-assistant-service -->
-      <g transform="translate(20, 695)">
-        <rect width="{c_w - 40}" height="195" rx="6" fill="#FFFFFF" stroke="#000000" stroke-width="1.3"/>
-        <line x1="0" y1="38" x2="{c_w - 40}" y2="38" stroke="#000000" stroke-width="1"/>
-        <text x="20" y="26" class="card-title">12. tracking (:3008) &amp; 13. ai-assistant (:3013)</text>
-        
-        <text x="20" y="68" class="card-bullet"><tspan class="card-bullet-bold">• tracking-service:</tspan> Lưu trữ và phản hồi dòng thời gian các mốc di chuyển của bưu kiện</text>
-        <text x="20" y="98" class="card-bullet"><tspan class="card-bullet-bold">• ai-assistant-service:</tspan> Trợ lý AI hỗ trợ giải đáp chính sách cước và hướng dẫn tra cứu đơn</text>
-        <text x="20" y="140" class="card-meta">Chi tiết mô hình trợ lý AI được trình bày riêng tại Figma Page 2</text>
-      </g>
-    </g>
-  </g>
-''')
-
-    # =========================================================================
-    # CONNECTOR: TIER 3 -> TIERS 4 & 5 (y: 1870 to 2000, gap = 130)
-    # =========================================================================
-    infra_gap = 70
-    infra_w = (content_w - infra_gap) // 2  # (3460 - 70) // 2 = 1695px
-    p_left = margin_x + infra_w // 2
-    p_right = margin_x + infra_w + infra_gap + infra_w // 2
-
-    lines.append(f'''
-  <!-- CONNECTOR BUS: TIER 3 -> TIERS 4 & 5 -->
-  <g id="Bus_3_to_4_and_5">
-    <!-- ================= Left Branch to RabbitMQ ================= -->
-    <line x1="{p_left - 180}" y1="1870" x2="{p_left - 180}" y2="2000" stroke="#000000" stroke-width="2"/>
-    <polygon points="{p_left - 189},1986 {p_left - 180},2000 {p_left - 171},1986" fill="#000000"/>
-
-    <line x1="{p_left + 180}" y1="1870" x2="{p_left + 180}" y2="2000" stroke="#000000" stroke-width="2"/>
-    <polygon points="{p_left + 171},1884 {p_left + 180},1870 {p_left + 189},1884" fill="#000000"/>
-
-    <!-- Center Badge Left -->
-    <rect x="{p_left - 320}" y="1917" width="640" height="36" rx="5" fill="#FFFFFF" stroke="#000000" stroke-width="1.5"/>
-    <text x="{p_left}" y="1940" class="flow-label" text-anchor="middle">Trục sự kiện: Worker gửi thông điệp &amp; Consumer nhận xử lý</text>
-
-    <!-- ================= Right Branch to Databases & Redis ================= -->
-    <line x1="{p_right - 180}" y1="1870" x2="{p_right - 180}" y2="2000" stroke="#000000" stroke-width="2"/>
-    <polygon points="{p_right - 189},1986 {p_right - 180},2000 {p_right - 171},1986" fill="#000000"/>
-
-    <line x1="{p_right + 180}" y1="1870" x2="{p_right + 180}" y2="2000" stroke="#000000" stroke-width="2"/>
-    <polygon points="{p_right + 171},1884 {p_right + 180},1870 {p_right + 189},1884" fill="#000000"/>
-
-    <!-- Center Badge Right -->
-    <rect x="{p_right - 320}" y="1917" width="640" height="36" rx="5" fill="#FFFFFF" stroke="#000000" stroke-width="1.5"/>
-    <text x="{p_right}" y="1940" class="flow-label" text-anchor="middle">Truy vấn dữ liệu: Kết nối PostgreSQL &amp; Bộ đệm Redis</text>
-  </g>
-''')
-
-    # =========================================================================
-    # TẦNG 4 & TẦNG 5: DUAL INFRASTRUCTURE TIER (y: 2000 to 2890, h: 890)
-    # CLEAN, TECHNICAL, NO BUZZWORDS
-    # =========================================================================
-    sub_col_w = (infra_w - 48 - 24) // 2  # (1695 - 72) // 2 = 811px
-
-    lines.append(f'''
-  <!-- TIER 4: EVENT-DRIVEN MESSAGE BROKER (LEFT HALF, w: {infra_w}) -->
-  <g id="Tier_4_RabbitMQ" transform="translate({margin_x}, 2000)">
-    <rect width="{infra_w}" height="890" rx="8" fill="#FFFFFF" stroke="#000000" stroke-width="1.8"/>
-    <rect width="{infra_w}" height="44" rx="8" fill="#F3F4F6" stroke="#000000" stroke-width="1.4"/>
-    <rect x="20" y="13" width="6" height="18" rx="1.5" fill="#000000"/>
-    <text x="36" y="29" class="tier-header">TẦNG 4: TRỤC THÔNG ĐIỆP &amp; SỰ KIỆN (RABBITMQ AMQP)</text>
-    
-    <!-- Exchange Architecture Box -->
-    <g transform="translate(24, 60)">
-      <rect width="{infra_w - 48}" height="135" rx="6" fill="#FFFFFF" stroke="#000000" stroke-width="1.4"/>
-      <text x="24" y="30" class="card-title">Cấu trúc Sàn giao dịch Thông điệp (RabbitMQ Exchange Topology)</text>
-      <text x="24" y="62" class="card-bullet"><tspan class="card-bullet-bold">• Topic Exchange trung tâm (nexus.logistics.topic):</tspan> Phân phối thông điệp bất đồng bộ theo Routing Key (vd: shipment.event.created)</text>
-      <text x="24" y="88" class="card-bullet"><tspan class="card-bullet-bold">• Xử lý thông điệp lỗi (Dead Letter Exchange - nexus.dlx):</tspan> Lưu trữ các thông điệp xử lý thất bại vào hàng đợi riêng để thử lại sau</text>
-      
-      <!-- Mini Flow Vector Badges inside Exchange -->
-      <g transform="translate(24, 100)">
-        <rect x="0" y="0" width="160" height="24" rx="3" fill="#000000"/>
-        <text x="80" y="16" font-size="11" font-weight="700" fill="#FFFFFF" text-anchor="middle">DỊCH VỤ PHÁT SỰ KIỆN</text>
-        
-        <line x1="165" y1="12" x2="205" y2="12" stroke="#000000" stroke-width="1.6"/>
-        <polygon points="201,8 209,12 201,16" fill="#000000"/>
-
-        <rect x="215" y="0" width="220" height="24" rx="3" fill="#FFFFFF" stroke="#000000" stroke-width="1.2"/>
-        <text x="325" y="16" font-size="11.5" font-weight="700" fill="#000000" text-anchor="middle">nexus.logistics.topic</text>
-        
-        <line x1="440" y1="12" x2="480" y2="12" stroke="#000000" stroke-width="1.6"/>
-        <polygon points="476,8 484,12 476,16" fill="#000000"/>
-
-        <rect x="490" y="0" width="230" height="24" rx="3" fill="#F3F4F6" stroke="#000000" stroke-width="1.2"/>
-        <text x="605" y="16" font-size="11.5" font-weight="700" fill="#000000" text-anchor="middle">Khớp Routing Key (*.#)</text>
-
-        <line x1="725" y1="12" x2="765" y2="12" stroke="#000000" stroke-width="1.6"/>
-        <polygon points="761,8 769,12 761,16" fill="#000000"/>
-
-        <rect x="775" y="0" width="240" height="24" rx="3" fill="#000000"/>
-        <text x="895" y="16" font-size="11" font-weight="700" fill="#FFFFFF" text-anchor="middle">HÀNG ĐỢI DỊCH VỤ NHẬN</text>
-      </g>
-    </g>
-
-    <!-- Outbox Pattern & Reliability Box (Left Sub-column, w: 811, h: 650) -->
-    <g transform="translate(24, 215)">
-      <rect width="{sub_col_w}" height="650" rx="6" fill="#FAFAFA" stroke="#000000" stroke-width="1.4"/>
-      <text x="24" y="32" class="card-title">Cơ chế Gửi tin cậy (Transactional Outbox Pattern)</text>
-      
-      <!-- Visual 4-Step Outbox Pipeline -->
-      <g transform="translate(20, 52)">
-        <rect x="0" y="0" width="165" height="32" rx="4" fill="#FFFFFF" stroke="#000000" stroke-width="1.2"/>
-        <text x="82" y="21" font-size="12" font-weight="700" fill="#000000" text-anchor="middle">1. Giao dịch cục bộ</text>
-
-        <line x1="170" y1="16" x2="198" y2="16" stroke="#000000" stroke-width="1.8"/>
-        <polygon points="194,12 202,16 194,20" fill="#000000"/>
-
-        <rect x="206" y="0" width="165" height="32" rx="4" fill="#FFFFFF" stroke="#000000" stroke-width="1.2"/>
-        <text x="288" y="21" font-size="12" font-weight="700" fill="#000000" text-anchor="middle">2. Bảng OutboxEvent</text>
-
-        <line x1="375" y1="16" x2="403" y2="16" stroke="#000000" stroke-width="1.8"/>
-        <polygon points="399,12 407,16 399,20" fill="#000000"/>
-
-        <rect x="411" y="0" width="165" height="32" rx="4" fill="#FFFFFF" stroke="#000000" stroke-width="1.2"/>
-        <text x="493" y="21" font-size="12" font-weight="700" fill="#000000" text-anchor="middle">3. Worker quét sự kiện</text>
-
-        <line x1="580" y1="16" x2="608" y2="16" stroke="#000000" stroke-width="1.8"/>
-        <polygon points="604,12 612,16 604,20" fill="#000000"/>
-
-        <rect x="616" y="0" width="150" height="32" rx="4" fill="#000000"/>
-        <text x="691" y="21" font-size="12" font-weight="700" fill="#FFFFFF" text-anchor="middle">4. RabbitMQ Broker</text>
-      </g>
-
-      <text x="24" y="125" class="card-bullet-bold">• 1. Đảm bảo toàn vẹn dữ liệu (Tránh Dual-Write):</text>
-      <text x="40" y="153" class="card-bullet">Dữ liệu nghiệp vụ và bản ghi sự kiện được lưu trong cùng một giao dịch (ACID)</text>
-      <text x="40" y="179" class="card-bullet">của PostgreSQL. Nếu lưu dữ liệu lỗi, sự kiện sẽ không bao giờ được gửi đi.</text>
-
-      <text x="24" y="228" class="card-bullet-bold">• 2. Tiến trình Worker gửi tin nhắn chạy nền:</text>
-      <text x="40" y="256" class="card-bullet">Worker chạy ngầm định kỳ quét các bản ghi sự kiện có trạng thái PENDING,</text>
-      <text x="40" y="282" class="card-bullet">gửi vào RabbitMQ an toàn và cập nhật trạng thái bản ghi sang PUBLISHED.</text>
-
-      <text x="24" y="331" class="card-bullet-bold">• 3. Kiểm soát xử lý trùng lặp (Idempotent Consumer):</text>
-      <text x="40" y="359" class="card-bullet">Dịch vụ nhận sự kiện luôn kiểm tra mã idempotencyKey để tránh việc</text>
-      <text x="40" y="385" class="card-bullet">cộng tiền thu hộ COD hoặc cập nhật trạng thái đơn hàng hai lần.</text>
-
-      <text x="24" y="434" class="card-bullet-bold">• 4. Đảm bảo giao nhận tin cậy:</text>
-      <text x="40" y="462" class="card-bullet">Kết hợp cơ chế xác nhận (ack/nack) từ RabbitMQ để đảm bảo thông điệp</text>
-      <text x="40" y="488" class="card-bullet">được chuyển giao thành công tới dịch vụ nhận trước khi xóa khỏi hàng đợi.</text>
-
-      <rect x="24" y="550" width="{sub_col_w - 48}" height="76" rx="5" fill="#FFFFFF" stroke="#000000" stroke-width="1.2"/>
-      <text x="40" y="574" font-size="13" font-weight="700" fill="#000000">MÔ HÌNH TRANSACTIONAL OUTBOX:</text>
-      <text x="40" y="596" font-size="12.5" fill="#4B5563">Đảm bảo tính nhất quán dữ liệu giữa database và message broker mà không làm nghẽn</text>
-      <text x="40" y="614" font-size="12.5" fill="#4B5563">tiến trình xử lý chính, phù hợp với kiến trúc microservices phân tán.</text>
-    </g>
-
-    <!-- Distributed Saga Choreography Box (Right Sub-column, w: 811, h: 650) -->
-    <g transform="translate({24 + sub_col_w + 24}, 215)">
-      <rect width="{sub_col_w}" height="650" rx="6" fill="#FAFAFA" stroke="#000000" stroke-width="1.4"/>
-      <text x="24" y="32" class="card-title">Các luồng phối hợp sự kiện liên dịch vụ (Saga Pipelines)</text>
-      
-      <!-- Pipeline 1: First-Mile -->
-      <g transform="translate(20, 55)">
-        <text x="0" y="16" class="card-bullet-bold">• 1. Luồng Thu gom Hàng tận nơi (First-Mile):</text>
-        <g transform="translate(0, 26)">
-          <rect x="0" y="0" width="220" height="34" rx="4" fill="#FFFFFF" stroke="#000000" stroke-width="1.2"/>
-          <text x="110" y="22" class="card-meta" text-anchor="middle">SHIPMENT.CREATED</text>
-
-          <line x1="228" y1="17" x2="262" y2="17" stroke="#000000" stroke-width="1.8"/>
-          <polygon points="258,12 268,17 258,22" fill="#000000"/>
-
-          <rect x="274" y="0" width="225" height="34" rx="4" fill="#FFFFFF" stroke="#000000" stroke-width="1.2"/>
-          <text x="386" y="22" class="card-meta" text-anchor="middle">PICKUP.ASSIGNED</text>
-
-          <line x1="507" y1="17" x2="541" y2="17" stroke="#000000" stroke-width="1.8"/>
-          <polygon points="537,12 547,17 537,22" fill="#000000"/>
-
-          <rect x="553" y="0" width="215" height="34" rx="4" fill="#000000"/>
-          <text x="660" y="22" font-size="12.5" font-weight="700" fill="#FFFFFF" font-family="ui-monospace, Menlo, monospace" text-anchor="middle">PICKUP.COLLECTED</text>
-        </g>
-      </g>
-
-      <!-- Pipeline 2: Middle-Mile -->
-      <g transform="translate(20, 155)">
-        <text x="0" y="16" class="card-bullet-bold">• 2. Luồng Trung chuyển Đường trục (Middle-Mile):</text>
-        <g transform="translate(0, 26)">
-          <rect x="0" y="0" width="220" height="34" rx="4" fill="#FFFFFF" stroke="#000000" stroke-width="1.2"/>
-          <text x="110" y="22" class="card-meta" text-anchor="middle">MANIFEST.SEALED</text>
-
-          <line x1="228" y1="17" x2="262" y2="17" stroke="#000000" stroke-width="1.8"/>
-          <polygon points="258,12 268,17 258,22" fill="#000000"/>
-
-          <rect x="274" y="0" width="225" height="34" rx="4" fill="#FFFFFF" stroke="#000000" stroke-width="1.2"/>
-          <text x="386" y="22" class="card-meta" text-anchor="middle">DISPATCH.TRANSIT</text>
-
-          <line x1="507" y1="17" x2="541" y2="17" stroke="#000000" stroke-width="1.8"/>
-          <polygon points="537,12 547,17 537,22" fill="#000000"/>
-
-          <rect x="553" y="0" width="215" height="34" rx="4" fill="#000000"/>
-          <text x="660" y="22" font-size="12.5" font-weight="700" fill="#FFFFFF" font-family="ui-monospace, Menlo, monospace" text-anchor="middle">SCAN.HUB_ARRIVED</text>
-        </g>
-      </g>
-
-      <!-- Pipeline 3: Last-Mile -->
-      <g transform="translate(20, 255)">
-        <text x="0" y="16" class="card-bullet-bold">• 3. Luồng Giao hàng &amp; Đối soát tiền COD (Last-Mile):</text>
-        <g transform="translate(0, 26)">
-          <rect x="0" y="0" width="220" height="34" rx="4" fill="#FFFFFF" stroke="#000000" stroke-width="1.2"/>
-          <text x="110" y="22" class="card-meta" text-anchor="middle">DELIVERY.DELIVERED</text>
-
-          <line x1="228" y1="17" x2="262" y2="17" stroke="#000000" stroke-width="1.8"/>
-          <polygon points="258,12 268,17 258,22" fill="#000000"/>
-
-          <rect x="274" y="0" width="225" height="34" rx="4" fill="#FFFFFF" stroke="#000000" stroke-width="1.2"/>
-          <text x="386" y="22" class="card-meta" text-anchor="middle">PAYMENT.COLLECTED</text>
-
-          <line x1="507" y1="17" x2="541" y2="17" stroke="#000000" stroke-width="1.8"/>
-          <polygon points="537,12 547,17 537,22" fill="#000000"/>
-
-          <rect x="553" y="0" width="215" height="34" rx="4" fill="#000000"/>
-          <text x="660" y="22" font-size="12.5" font-weight="700" fill="#FFFFFF" font-family="ui-monospace, Menlo, monospace" text-anchor="middle">WALLET.CREDITED</text>
-        </g>
-      </g>
-
-      <!-- Pipeline 4: Claim -->
-      <g transform="translate(20, 355)">
-        <text x="0" y="16" class="card-bullet-bold">• 4. Luồng Xử lý Sự cố &amp; Bồi thường (Claim &amp; Incident):</text>
-        <g transform="translate(0, 26)">
-          <rect x="0" y="0" width="220" height="34" rx="4" fill="#FFFFFF" stroke="#000000" stroke-width="1.2"/>
-          <text x="110" y="22" class="card-meta" text-anchor="middle">DAMAGE.REPORTED</text>
-
-          <line x1="228" y1="17" x2="262" y2="17" stroke="#000000" stroke-width="1.8"/>
-          <polygon points="258,12 268,17 258,22" fill="#000000"/>
-
-          <rect x="274" y="0" width="225" height="34" rx="4" fill="#FFFFFF" stroke="#000000" stroke-width="1.2"/>
-          <text x="386" y="22" class="card-meta" text-anchor="middle">INVESTIGATION.LOCK</text>
-
-          <line x1="507" y1="17" x2="541" y2="17" stroke="#000000" stroke-width="1.8"/>
-          <polygon points="537,12 547,17 537,22" fill="#000000"/>
-
-          <rect x="553" y="0" width="215" height="34" rx="4" fill="#000000"/>
-          <text x="660" y="22" font-size="12.5" font-weight="700" fill="#FFFFFF" font-family="ui-monospace, Menlo, monospace" text-anchor="middle">CLAIM.APPROVED</text>
-        </g>
-      </g>
-
-      <!-- Pipeline 5: Return -->
-      <g transform="translate(20, 455)">
-        <text x="0" y="16" class="card-bullet-bold">• 5. Luồng Trả hàng &amp; Chuyển hoàn (Return-to-Origin):</text>
-        <g transform="translate(0, 26)">
-          <rect x="0" y="0" width="220" height="34" rx="4" fill="#FFFFFF" stroke="#000000" stroke-width="1.2"/>
-          <text x="110" y="22" class="card-meta" text-anchor="middle">DELIVERY.FAILED_3RD</text>
-
-          <line x1="228" y1="17" x2="262" y2="17" stroke="#000000" stroke-width="1.8"/>
-          <polygon points="258,12 268,17 258,22" fill="#000000"/>
-
-          <rect x="274" y="0" width="225" height="34" rx="4" fill="#FFFFFF" stroke="#000000" stroke-width="1.2"/>
-          <text x="386" y="22" class="card-meta" text-anchor="middle">RETURN.INITIATED</text>
-
-          <line x1="507" y1="17" x2="541" y2="17" stroke="#000000" stroke-width="1.8"/>
-          <polygon points="537,12 547,17 537,22" fill="#000000"/>
-
-          <rect x="553" y="0" width="215" height="34" rx="4" fill="#000000"/>
-          <text x="660" y="22" font-size="12.5" font-weight="700" fill="#FFFFFF" font-family="ui-monospace, Menlo, monospace" text-anchor="middle">SHIPMENT.RETURNING</text>
-        </g>
-      </g>
-
-      <rect x="20" y="550" width="{sub_col_w - 40}" height="76" rx="5" fill="#FFFFFF" stroke="#000000" stroke-width="1.2"/>
-      <text x="36" y="574" font-size="13" font-weight="700" fill="#000000">ĐIỀU PHỐI SỰ KIỆN PHÂN TÁN (SAGA):</text>
-      <text x="36" y="596" font-size="12.5" fill="#4B5563">Các microservice phối hợp thông qua sự kiện bất đồng bộ, mỗi dịch vụ tự quản lý</text>
-      <text x="36" y="614" font-size="12.5" fill="#4B5563">giao dịch cục bộ, đảm bảo tính tự chủ và mở rộng của hệ thống.</text>
-    </g>
-  </g>
-
-  <!-- TIER 5: PERSISTENCE & CACHE INFRASTRUCTURE (RIGHT HALF, w: {infra_w}) -->
-  <g id="Tier_5_Persistence" transform="translate({margin_x + infra_w + infra_gap}, 2000)">
-    <rect width="{infra_w}" height="890" rx="8" fill="#FFFFFF" stroke="#000000" stroke-width="1.8"/>
-    <rect width="{infra_w}" height="44" rx="8" fill="#F3F4F6" stroke="#000000" stroke-width="1.4"/>
-    <rect x="20" y="13" width="6" height="18" rx="1.5" fill="#000000"/>
-    <text x="36" y="29" class="tier-header">TẦNG 5: CƠ SỞ DỮ LIỆU ĐỘC LẬP &amp; BỘ NHỚ ĐỆM (POSTGRESQL &amp; REDIS)</text>
-    
-    <!-- 11 Databases Grid Box (w: 1647, h: 480) -->
-    <g transform="translate(24, 60)">
-      <rect width="{infra_w - 48}" height="480" rx="6" fill="#FAFAFA" stroke="#000000" stroke-width="1.4"/>
-      <text x="24" y="32" class="card-title">11 Cơ sở Dữ liệu PostgreSQL độc lập (Mô hình Database-per-Service)</text>
-      <text x="24" y="60" class="card-bullet">• Mỗi microservice sở hữu cơ sở dữ liệu riêng biệt, không dùng khóa ngoại (FK) liên cơ sở dữ liệu</text>
-      <text x="24" y="86" class="card-bullet">• Liên kết dữ liệu logic thông qua các mã định danh nghiệp vụ: shipmentCode, hubCode, courierId, merchantId</text>
-
-      <!-- 11 Database Cards (3 Rows, Clean without top-right labels) -->
-      <!-- Row 1 (4 DBs, w: 388 each) -->
-      <g transform="translate(20, 110)">
-        <rect width="388" height="100" rx="5" fill="#FFFFFF" stroke="#000000" stroke-width="1.3"/>
-        <text x="18" y="28" class="chip-text">1. auth_db (:3010)</text>
-        <text x="18" y="58" class="card-bullet">• UserAccount, AuthSession, Roles</text>
-        <text x="18" y="82" class="card-meta">Tài khoản, phiên làm việc &amp; phân quyền</text>
-
-        <rect x="408" y="0" width="388" height="100" rx="5" fill="#FFFFFF" stroke="#000000" stroke-width="1.3"/>
-        <text x="426" y="28" class="chip-text">2. masterdata_db (:3001)</text>
-        <text x="426" y="58" class="card-bullet">• Hubs, GPS Zones, SLA Configs</text>
-        <text x="426" y="82" class="card-meta">Mạng lưới bưu cục &amp; tuyến xã/phường</text>
-
-        <rect x="816" y="0" width="388" height="100" rx="5" fill="#FFFFFF" stroke="#000000" stroke-width="1.3"/>
-        <text x="834" y="28" class="chip-text">3. shipment_db (:3002)</text>
-        <text x="834" y="58" class="card-bullet">• Shipments, ChangeRequests, Claims</text>
-        <text x="834" y="82" class="card-meta">Quản lý vòng đời vận đơn &amp; khiếu nại</text>
-
-        <rect x="1224" y="0" width="388" height="100" rx="5" fill="#FFFFFF" stroke="#000000" stroke-width="1.3"/>
-        <text x="1242" y="28" class="chip-text">4. pickup_db (:3003)</text>
-        <text x="1242" y="58" class="card-bullet">• PickupRequests, PickupItems</text>
-        <text x="1242" y="82" class="card-meta">Tiếp nhận và quản lý lệnh gom hàng</text>
-      </g>
-
-      <!-- Row 2 (4 DBs, w: 388 each) -->
-      <g transform="translate(20, 225)">
-        <rect width="388" height="100" rx="5" fill="#FFFFFF" stroke="#000000" stroke-width="1.3"/>
-        <text x="18" y="28" class="chip-text">5. dispatch_db (:3004)</text>
-        <text x="18" y="58" class="card-bullet">• Tasks, TaskAssignments, OpsLogs</text>
-        <text x="18" y="82" class="card-meta">Phân công và điều phối bưu tá</text>
-
-        <rect x="408" y="0" width="388" height="100" rx="5" fill="#FFFFFF" stroke="#000000" stroke-width="1.3"/>
-        <text x="426" y="28" class="chip-text">6. manifest_db (:3005)</text>
-        <text x="426" y="58" class="card-bullet">• Manifests, SealBags, Linehaul</text>
-        <text x="426" y="82" class="card-meta">Bảng kê &amp; đóng bao trung chuyển</text>
-
-        <rect x="816" y="0" width="388" height="100" rx="5" fill="#FFFFFF" stroke="#000000" stroke-width="1.3"/>
-        <text x="834" y="28" class="chip-text">7. scan_db (:3006)</text>
-        <text x="834" y="58" class="card-bullet">• ScanAudits, InventoryLedgers</text>
-        <text x="834" y="82" class="card-meta">Lịch sử quét mã &amp; tồn kho bưu cục</text>
-
-        <rect x="1224" y="0" width="388" height="100" rx="5" fill="#FFFFFF" stroke="#000000" stroke-width="1.3"/>
-        <text x="1242" y="28" class="chip-text">8. delivery_db (:3007)</text>
-        <text x="1242" y="58" class="card-bullet">• DeliveryRuns, Stops, POD Proofs</text>
-        <text x="1242" y="82" class="card-meta">Chuyến phát chặng cuối &amp; chứng từ POD</text>
-      </g>
-
-      <!-- Row 3 (3 DBs, w: 524 each) -->
-      <g transform="translate(20, 340)">
-        <rect width="524" height="100" rx="5" fill="#FFFFFF" stroke="#000000" stroke-width="1.3"/>
-        <text x="18" y="28" class="chip-text">9. payment_db (:3011)</text>
-        <text x="18" y="58" class="card-bullet">• PaymentRecords, CodSessions, Wallets</text>
-        <text x="18" y="82" class="card-meta">Dòng tiền COD, mã VietQR &amp; đối soát ví shop</text>
-
-        <rect x="544" y="0" width="524" height="100" rx="5" fill="#FFFFFF" stroke="#000000" stroke-width="1.3"/>
-        <text x="562" y="28" class="chip-text">10. tracking_db (:3008)</text>
-        <text x="562" y="58" class="card-bullet">• TrackingCheckpoints, PublicCache</text>
-        <text x="562" y="82" class="card-meta">Lịch sử hành trình kiện hàng thời gian thực</text>
-
-        <rect x="1088" y="0" width="524" height="100" rx="5" fill="#FFFFFF" stroke="#000000" stroke-width="1.3"/>
-        <text x="1106" y="28" class="chip-text">11. reporting_db (:3009)</text>
-        <text x="1106" y="58" class="card-bullet">• DailySnapshots, CourierKPIs, SLA Stats</text>
-        <text x="1106" y="82" class="card-meta">Số liệu thống kê vận hành &amp; báo cáo hiệu suất</text>
-      </g>
-    </g>
-
-    <!-- Redis Distributed Cache Cluster Box (w: 1647, h: 305) -->
-    <g transform="translate(24, 560)">
-      <rect width="{infra_w - 48}" height="305" rx="6" fill="#FFFFFF" stroke="#000000" stroke-width="1.4"/>
-      <text x="24" y="32" class="card-title">Cụm Bộ Nhớ Đệm Phân Tán (Redis Cache :6379)</text>
-      
-      <g transform="translate(20, 52)">
-        <rect width="{(infra_w - 48 - 40 - 40) // 3}" height="225" rx="5" fill="#FAFAFA" stroke="#000000" stroke-width="1.2"/>
-        <text x="20" y="30" class="chip-text">1. PublicTrackingCache</text>
-        <text x="20" y="66" class="card-bullet">• Lưu tạm hành trình phục vụ tra cứu đơn</text>
-        <text x="20" y="96" class="card-bullet">• Thời gian hết hạn TTL = 300 giây (5 phút)</text>
-        <text x="20" y="126" class="card-bullet">• Giảm tải hơn 90% truy vấn đọc trực tiếp</text>
-        <text x="20" y="152" class="card-bullet">vào cơ sở dữ liệu tracking_db chính</text>
-        <text x="20" y="195" class="card-meta">Key: tracking:shipment:NX-XXXXXX</text>
-      </g>
-
-      <g transform="translate({20 + (infra_w - 48 - 40 - 40) // 3 + 20}, 52)">
-        <rect width="{(infra_w - 48 - 40 - 40) // 3}" height="225" rx="5" fill="#FAFAFA" stroke="#000000" stroke-width="1.2"/>
-        <text x="20" y="30" class="chip-text">2. SessionRevocationCache</text>
-        <text x="20" y="66" class="card-bullet">• Quản lý danh sách phiên đăng nhập</text>
-        <text x="20" y="96" class="card-bullet">• Lưu danh sách token đã bị thu hồi</text>
-        <text x="20" y="126" class="card-bullet">• Ngắt quyền truy cập ngay lập tức khi</text>
-        <text x="20" y="152" class="card-bullet">người dùng thực hiện đăng xuất</text>
-        <text x="20" y="195" class="card-meta">Key: session:revoked:TOKEN_JTI</text>
-      </g>
-
-      <g transform="translate({20 + ((infra_w - 48 - 40 - 40) // 3 + 20)*2}, 52)">
-        <rect width="{(infra_w - 48 - 40 - 40) // 3}" height="225" rx="5" fill="#FAFAFA" stroke="#000000" stroke-width="1.2"/>
-        <text x="20" y="30" class="chip-text">3. RateLimitCounter</text>
-        <text x="20" y="66" class="card-bullet">• Đếm số lượng request theo địa chỉ IP</text>
-        <text x="20" y="96" class="card-bullet">• Kiểm soát tần suất theo cửa sổ trượt</text>
-        <text x="20" y="126" class="card-bullet">• Ngăn chặn hành vi gửi request tự động</text>
-        <text x="20" y="152" class="card-bullet">và bảo vệ tài nguyên các dịch vụ</text>
-        <text x="20" y="195" class="card-meta">Key: ratelimit:ip:CLIENT_IP</text>
-      </g>
-    </g>
-  </g>
-''')
-
-    # =========================================================================
-    # FOOTER BAR (y: 2920 to 2978, h: 58)
-    # =========================================================================
-    lines.append(f'''
-  <!-- FOOTER BAR -->
-  <g id="FooterBar" transform="translate({margin_x}, 2920)">
-    <rect width="{content_w}" height="58" rx="8" fill="#F9FAFB" stroke="#000000" stroke-width="1.8"/>
-    <circle cx="28" cy="29" r="6" fill="#000000"/>
-    <text x="48" y="34" font-size="14.5" font-weight="700" fill="#000000">GHI CHÚ KỸ THUẬT:</text>
-    <text x="205" y="34" font-size="14" fill="#1F2937">Sơ đồ biểu diễn kiến trúc triển khai phân tán, các thành phần nghiệp vụ và hệ thống lưu trữ thực tế trong mã nguồn dự án Nexus LMS</text>
-    <text x="{content_w - 28}" y="34" font-size="14" font-weight="600" fill="#4B5563" text-anchor="end">Khóa luận Tốt nghiệp Kỹ thuật Phần mềm • Section 1.2</text>
-  </g>
-</svg>
-''')
-
-    full_svg = "\n".join(lines)
-    target_files = [
-        OUTPUT_FILE,
-        "docs/graduation-thesis/diagrams/architecture/01-architecture-deployment-4-tier.svg"
+    lines.append('''  <!-- Tier 1: Client Applications (Lớp ứng dụng người dùng - Open Floating Nodes) -->
+  <g id="Tier_1_Clients">
+    <text x="660" y="132" font-size="15.5" font-weight="800" fill="#475569" letter-spacing="1.5px" text-anchor="middle">LỚP ỨNG DỤNG NGƯỜI DÙNG (CLIENT APPLICATIONS LAYER)</text>''')
+
+    # 5 Standalone Client Cards (w: 210, h: 95, gap: 24)
+    # x start = 110, y = 160
+    clients = [
+        {"x": 110, "name": "Admin Web", "sub": "Quản trị hệ thống", "tech": "React 18", "port": ":5173", "icon": icon_monitor(), "color": "#0284C7", "border": "#0284C7"},
+        {"x": 344, "name": "Ops Web", "sub": "Vận hành kho/hub", "tech": "React 18", "port": ":5173", "icon": icon_hub(), "color": "#059669", "border": "#059669"},
+        {"x": 578, "name": "Merchant Web", "sub": "Tạo đơn, pickup", "tech": "React 18", "port": ":5174", "icon": icon_store(), "color": "#0284C7", "border": "#0284C7"},
+        {"x": 812, "name": "Courier Mobile", "sub": "Task, scan, POD", "tech": "React Native", "port": ":8082", "icon": icon_mobile(), "color": "#7C3AED", "border": "#7C3AED"},
+        {"x": 1046, "name": "Public Tracking", "sub": "Tra cứu vận đơn", "tech": "React 18", "port": ":5177", "icon": icon_tracking(), "color": "#059669", "border": "#059669"},
     ]
 
-    for out_path in target_files:
-        os.makedirs(os.path.dirname(out_path), exist_ok=True)
-        with open(out_path, "w", encoding="utf-8") as f:
-            f.write(full_svg)
-        print(f"Generated and validated: {out_path} ({len(full_svg)} bytes)")
+    for c in clients:
+        lines.append(f'''    <!-- Client Node: {c['name']} -->
+    <g transform="translate({c['x']}, 160)" class="node-shadow">
+      <rect x="0" y="0" width="210" height="95" rx="10" fill="#FFFFFF" stroke="{c['border']}" stroke-width="1.8"/>
+      <g transform="translate(14, 15)">{c['icon']}</g>
+      <text x="50" y="28" font-size="16.5" font-weight="800" fill="#0F172A">{c['name']}</text>
+      <text x="50" y="49" font-size="13.5" font-weight="500" fill="#334155">{c['sub']}</text>
+      <rect x="14" y="64" width="62" height="21" rx="4" fill="#F1F5F9" stroke="{c['color']}" stroke-width="1.1"/>
+      <text x="45" y="79" class="mono" font-size="12" font-weight="800" fill="{c['color']}" text-anchor="middle">{c['port']}</text>
+      <text x="86" y="79" class="mono" font-size="12" font-weight="600" fill="#475569">• {c['tech']}</text>
+    </g>''')
+    lines.append('  </g>')
 
-    # Validate XML
-    ET.fromstring(full_svg)
+    # Aggregation bus lines from 5 clients into central trunk
+    lines.append('''  <!-- Client Aggregation Bus Line -->
+  <path d="M 215 255 L 215 280 L 1151 280 L 1151 255" fill="none" stroke="#64748B" stroke-width="1.8" stroke-dasharray="6,4"/>
+  <line x1="449" y1="255" x2="449" y2="280" stroke="#64748B" stroke-width="1.8" stroke-dasharray="6,4"/>
+  <line x1="683" y1="255" x2="683" y2="280" stroke="#64748B" stroke-width="1.8" stroke-dasharray="6,4"/>
+  <line x1="917" y1="255" x2="917" y2="280" stroke="#64748B" stroke-width="1.8" stroke-dasharray="6,4"/>''')
+
+    # =========================================================================
+    # INGRESS CONNECTOR: CLIENTS ➔ GATEWAY (y: 280 to 365, h: 85)
+    # =========================================================================
+    lines.append('''  <!-- Ingress Flow: Clients to Gateway BFF -->
+  <g id="Connector_Clients_Gateway">
+    <line x1="660" y1="280" x2="660" y2="365" stroke="#0F172A" stroke-width="2.8"/>
+    <polygon points="653,351 660,366 667,351" fill="#0F172A"/>
+    <rect x="560" y="306" width="200" height="34" rx="6" fill="#FFFFFF" stroke="#0F172A" stroke-width="1.6"/>
+    <text x="660" y="328" class="mono" font-size="13.5" font-weight="800" fill="#0F172A" text-anchor="middle">HTTP / REST Ingress</text>
+  </g>''')
+
+    # =========================================================================
+    # GATEWAY BFF HUB (STANDALONE FLOATING NODE, WIDTH: 780, x: 270, y: 365, h: 110)
+    # Luminous, Print-Ready Tech Blue Styling with Extra-Large Typography
+    # =========================================================================
+    gw_x = 270
+    gw_y = 365
+    gw_w = 780
+    gw_h = 110
+
+    lines.append(f'''  <!-- Gateway BFF Hub (Central Ingress Node - Bright Print-Ready) -->
+  <g id="Gateway_BFF_Hub" transform="translate({gw_x}, {gw_y})" class="hub-shadow">
+    <rect x="0" y="0" width="{gw_w}" height="{gw_h}" rx="12" fill="#F0F9FF" stroke="#0284C7" stroke-width="2.4"/>
+    <g transform="translate(20, 18)">{icon_gateway()}</g>
+    <text x="62" y="36" font-size="20.5" font-weight="900" fill="#0F172A">Gateway BFF (:3000 / HTTPS :443)</text>
+    <text x="62" y="60" font-size="14.5" font-weight="500" fill="#334155">Điểm vào duy nhất cho web/mobile • Reverse Proxy • JWT RBAC &amp; Sliding Rate Limiter</text>
+    
+    <!-- Route Chips Strip -->
+    <g transform="translate(62, 72)">
+      <text x="0" y="18" class="mono" font-size="13" font-weight="800" fill="#475569">ROUTES:</text>
+      <rect x="76" y="0" width="86" height="26" rx="5" fill="#FFFFFF" stroke="#0284C7" stroke-width="1.3"/>
+      <text x="119" y="18" class="mono" font-size="13" font-weight="800" fill="#0284C7" text-anchor="middle">/admin</text>
+      <rect x="172" y="0" width="76" height="26" rx="5" fill="#FFFFFF" stroke="#059669" stroke-width="1.3"/>
+      <text x="210" y="18" class="mono" font-size="13" font-weight="800" fill="#059669" text-anchor="middle">/ops</text>
+      <rect x="258" y="0" width="112" height="26" rx="5" fill="#FFFFFF" stroke="#0284C7" stroke-width="1.3"/>
+      <text x="314" y="18" class="mono" font-size="13" font-weight="800" fill="#0284C7" text-anchor="middle">/merchant</text>
+      <rect x="380" y="0" width="96" height="26" rx="5" fill="#FFFFFF" stroke="#7C3AED" stroke-width="1.3"/>
+      <text x="428" y="18" class="mono" font-size="13" font-weight="800" fill="#7C3AED" text-anchor="middle">/courier</text>
+      <rect x="486" y="0" width="96" height="26" rx="5" fill="#FFFFFF" stroke="#D97706" stroke-width="1.3"/>
+      <text x="534" y="18" class="mono" font-size="13" font-weight="800" fill="#D97706" text-anchor="middle">/finance</text>
+      <rect x="592" y="0" width="76" height="26" rx="5" fill="#FFFFFF" stroke="#7C3AED" stroke-width="1.3"/>
+      <text x="630" y="18" class="mono" font-size="13" font-weight="800" fill="#7C3AED" text-anchor="middle">/ai</text>
+    </g>
+  </g>''')
+
+    # =========================================================================
+    # INTERNAL NETWORK CONNECTOR: GATEWAY ➔ MICROSERVICES (y: 475 to 570, h: 95)
+    # =========================================================================
+    lines.append('''  <!-- Internal HTTP Dispatch Connector -->
+  <g id="Connector_Gateway_Services">
+    <line x1="660" y1="475" x2="660" y2="570" stroke="#0F172A" stroke-width="2.8"/>
+    <polygon points="653,556 660,571 667,556" fill="#0F172A"/>
+    <rect x="545" y="504" width="230" height="34" rx="6" fill="#FFFFFF" stroke="#0F172A" stroke-width="1.6"/>
+    <text x="660" y="526" font-size="13.5" font-weight="800" fill="#0F172A" text-anchor="middle">HTTP nội bộ (Proxy Router)</text>
+  </g>''')
+
+    # =========================================================================
+    # TIER 2: DOMAIN MICROSERVICES MESH (y: 570, h: 530, w: 1150, x: 85)
+    # 6 Decoupled Floating Domain Nodes (2 rows of 3 columns, w: 350, h: 220)
+    # Row gap: 20px, Column gap: 25px, Extra-Large 13px-14.5px Typography
+    # =========================================================================
+    t2_x = 85
+    t2_y = 570
+    t2_w = 1150
+    t2_h = 530
+
+    lines.append(f'''  <!-- Tier 2: Domain Microservices Mesh (Internal Docker Network Cluster) -->
+  <g id="Tier_2_Microservices_Zone">
+    <!-- Faint Docker Network Cluster Boundary -->
+    <rect x="{t2_x}" y="{t2_y}" width="{t2_w}" height="{t2_h}" rx="14" fill="#F8FAFC" fill-opacity="0.35" stroke="#CBD5E1" stroke-width="1.3" stroke-dasharray="6,4"/>
+    <text x="{t2_x + 28}" y="{t2_y + 32}" font-size="15" font-weight="800" fill="#475569" letter-spacing="1px">LỚP MICROSERVICES NGHIỆP VỤ (INTERNAL DOCKER NETWORK)</text>''')
+
+    # 6 Decoupled Domain Cards:
+    # Row 1: y = 620, h = 220
+    # Row 2: y = 860, h = 220  (Gap between rows = 20px)
+    # Col 1: x = 115, Col 2: x = 490, Col 3: x = 865, w = 350 (Gap between cols = 25px)
+
+    # Card 1: Core Domain (x: 115, y: 620)
+    lines.append('''    <!-- Card 1: Nhóm lõi hệ thống -->
+    <g transform="translate(115, 620)" class="node-shadow">
+      <rect x="0" y="0" width="350" height="220" rx="9" fill="#FFFFFF" stroke="#0284C7" stroke-width="1.8"/>
+      <rect x="0" y="0" width="350" height="40" rx="9" fill="#EFF6FF" stroke="#0284C7" stroke-width="1.8"/>
+      <text x="18" y="27" font-size="16.5" font-weight="800" fill="#0369A1">Nhóm lõi hệ thống (Core Domain)</text>
+      
+      <g transform="translate(18, 56)">
+        <text x="0" y="16" class="mono" font-size="14.5" font-weight="800" fill="#0F172A">auth-service (:3010)</text>
+        <text x="0" y="36" font-size="13" font-weight="500" fill="#334155">• User, session, Argon2id, JWT RBAC</text>
+
+        <text x="0" y="66" class="mono" font-size="14.5" font-weight="800" fill="#0F172A">masterdata-service (:3011)</text>
+        <text x="0" y="86" font-size="13" font-weight="500" fill="#334155">• Hub 4 cấp, zone, SLA matrix</text>
+
+        <text x="0" y="116" class="mono" font-size="14.5" font-weight="800" fill="#0F172A">pricing-service (:3012)</text>
+        <text x="0" y="136" font-size="13" font-weight="600" fill="#059669">• Bảng cước tức thời (RAM compute &lt; 2ms)</text>
+      </g>
+    </g>''')
+
+    # Card 2: Shipment Domain Core (x: 490, y: 620)
+    lines.append('''    <!-- Card 2: Shipment Domain (Source of Truth) -->
+    <g transform="translate(490, 620)" class="node-shadow">
+      <rect x="0" y="0" width="350" height="220" rx="9" fill="#FFFFFF" stroke="#DC2626" stroke-width="2"/>
+      <rect x="0" y="0" width="350" height="40" rx="9" fill="#FEF2F2" stroke="#DC2626" stroke-width="2"/>
+      <text x="18" y="27" font-size="16.5" font-weight="900" fill="#B91C1C">Shipment domain (Source of Truth)</text>
+      
+      <g transform="translate(18, 56)">
+        <text x="0" y="16" class="mono" font-size="14.5" font-weight="900" fill="#0F172A">shipment-service (:3001)</text>
+        <text x="0" y="37" font-size="13" font-weight="600" fill="#1E293B">• Sở hữu vòng đời 19 trạng thái FSM</text>
+        <text x="0" y="58" font-size="13" font-weight="500" fill="#334155">• Lưu snapshot pricing khi tạo đơn</text>
+        <text x="0" y="82" class="mono" font-size="13" font-weight="800" fill="#DC2626">&#128274; Distributed Lock: isLocked = true</text>
+        <text x="0" y="103" font-size="13" font-weight="600" fill="#334155">Bảo vệ đối soát COD &amp; Biên bản BBBT</text>
+        <text x="0" y="126" class="mono" font-size="13" font-weight="800" fill="#059669">&#10003; Transactional Outbox Table Pattern</text>
+      </g>
+    </g>''')
+
+    # Card 3: Custody & Linehaul (x: 865, y: 620)
+    lines.append('''    <!-- Card 3: Nhóm vận hành & linehaul -->
+    <g transform="translate(865, 620)" class="node-shadow">
+      <rect x="0" y="0" width="350" height="220" rx="9" fill="#FFFFFF" stroke="#059669" stroke-width="1.8"/>
+      <rect x="0" y="0" width="350" height="40" rx="9" fill="#F0FDF4" stroke="#059669" stroke-width="1.8"/>
+      <text x="18" y="27" font-size="16.5" font-weight="800" fill="#047857">Nhóm vận hành &amp; Linehaul</text>
+      
+      <g transform="translate(18, 56)">
+        <text x="0" y="16" class="mono" font-size="14.5" font-weight="800" fill="#0F172A">pickup-service (:3003)</text>
+        <text x="0" y="36" font-size="13" font-weight="500" fill="#334155">• Yêu cầu thu gom kiện hàng merchant</text>
+
+        <text x="0" y="66" class="mono" font-size="14.5" font-weight="800" fill="#0F172A">manifest-service (:3005)</text>
+        <text x="0" y="86" font-size="13" font-weight="500" fill="#334155">• Đóng bao niêm phong &amp; chuyến xe hub</text>
+
+        <text x="0" y="116" class="mono" font-size="14.5" font-weight="800" fill="#0F172A">scan-service (:3006)</text>
+        <text x="0" y="136" font-size="13" font-weight="700" fill="#DC2626">• Quét In/Outbound, lập BBBT sự cố 24h</text>
+      </g>
+    </g>''')
+
+    # Card 4: Scan & Delivery (x: 115, y: 860)
+    lines.append('''    <!-- Card 4: Chặng cuối & POD -->
+    <g transform="translate(115, 860)" class="node-shadow">
+      <rect x="0" y="0" width="350" height="220" rx="9" fill="#FFFFFF" stroke="#0284C7" stroke-width="1.8"/>
+      <rect x="0" y="0" width="350" height="40" rx="9" fill="#EFF6FF" stroke="#0284C7" stroke-width="1.8"/>
+      <text x="18" y="27" font-size="16.5" font-weight="800" fill="#0369A1">Chặng cuối &amp; POD (Fulfillment)</text>
+      
+      <g transform="translate(18, 56)">
+        <text x="0" y="16" class="mono" font-size="14.5" font-weight="800" fill="#0F172A">dispatch-service (:3004)</text>
+        <text x="0" y="36" font-size="13" font-weight="500" fill="#334155">• Phân ca giao &amp; cân bằng tải shipper</text>
+
+        <text x="0" y="66" class="mono" font-size="14.5" font-weight="800" fill="#0F172A">delivery-service (:3007)</text>
+        <text x="0" y="86" font-size="13" font-weight="500" fill="#334155">• Chữ ký số, ảnh POD, mã OTP phát hàng</text>
+
+        <rect x="0" y="104" width="318" height="42" rx="5" fill="#F8FAFC" stroke="#BFDBFE" stroke-width="1.1"/>
+        <text x="12" y="122" font-size="13" font-weight="800" fill="#0369A1">CƠ CHẾ HOÀN RTO:</text>
+        <text x="12" y="138" font-size="12.5" font-weight="600" fill="#334155">3 lần giao hỏng (failed x3) ➔ Hoàn hàng</text>
+      </g>
+    </g>''')
+
+    # Card 5: COD & Payment (x: 490, y: 860)
+    lines.append('''    <!-- Card 5: COD & Thanh toán -->
+    <g transform="translate(490, 860)" class="node-shadow">
+      <rect x="0" y="0" width="350" height="220" rx="9" fill="#FFFFFF" stroke="#D97706" stroke-width="1.8"/>
+      <rect x="0" y="0" width="350" height="40" rx="9" fill="#FFFBEB" stroke="#D97706" stroke-width="1.8"/>
+      <text x="18" y="27" font-size="16.5" font-weight="800" fill="#92400E">COD &amp; Thanh toán (Payment)</text>
+      
+      <g transform="translate(18, 56)">
+        <text x="0" y="16" class="mono" font-size="14.5" font-weight="900" fill="#0F172A">payment-service (:3011)</text>
+        <text x="0" y="37" font-size="13" font-weight="700" fill="#92400E">• Double-Entry Ledger (Sổ cái kép Nợ/Có)</text>
+        <text x="0" y="58" font-size="13" font-weight="500" fill="#334155">• Đối soát COD kỳ thanh toán &amp; bồi thường</text>
+        <text x="0" y="80" font-size="13" font-weight="700" fill="#B45309">&#128179; Dynamic VietQR: Nộp tiền Shipper</text>
+        <text x="0" y="101" font-size="13" font-weight="500" fill="#334155">• Webhook IPN ngân hàng xác thực tức thì</text>
+        <text x="0" y="124" class="mono" font-size="13" font-weight="800" fill="#059669">&#10003; Merchant Wallet Balance Sync</text>
+      </g>
+    </g>''')
+
+    # Card 6: Read model & AI (x: 865, y: 860)
+    lines.append('''    <!-- Card 6: Read Model & AI RAG -->
+    <g transform="translate(865, 860)" class="node-shadow">
+      <rect x="0" y="0" width="350" height="220" rx="9" fill="#FFFFFF" stroke="#7C3AED" stroke-width="1.8"/>
+      <rect x="0" y="0" width="350" height="40" rx="9" fill="#FAF5FF" stroke="#7C3AED" stroke-width="1.8"/>
+      <text x="18" y="27" font-size="16.5" font-weight="800" fill="#6D28D9">Read Model &amp; Phân hệ AI RAG</text>
+      
+      <g transform="translate(18, 56)">
+        <text x="0" y="16" class="mono" font-size="14.5" font-weight="800" fill="#0F172A">tracking-service (:3008)</text>
+        <text x="0" y="36" font-size="13" font-weight="500" fill="#334155">• Lịch sử hành trình AWB • Read cache &lt; 15ms</text>
+
+        <text x="0" y="66" class="mono" font-size="14.5" font-weight="800" fill="#0F172A">reporting-service (:3009)</text>
+        <text x="0" y="86" font-size="13" font-weight="500" fill="#334155">• Kho OLAP tổng hợp KPI hub, SLA, doanh số</text>
+
+        <text x="0" y="116" class="mono" font-size="14.5" font-weight="800" fill="#7C3AED">chatbot-service (:3013)</text>
+        <text x="0" y="136" font-size="13" font-weight="700" fill="#7C3AED">• Hybrid RAG 768-D + Google Gemini 2.5 API</text>
+      </g>
+    </g>''')
+    lines.append('  </g>')
+
+    # =========================================================================
+    # EVENT BUS CONNECTOR: SERVICES ➔ RABBITMQ (y: 1100 to 1195, h: 95)
+    # =========================================================================
+    lines.append('''  <!-- Event Bus Connector -->
+  <g id="Connector_Services_RabbitMQ">
+    <line x1="660" y1="1100" x2="660" y2="1195" stroke="#EA580C" stroke-width="2.8" stroke-dasharray="6,4"/>
+    <polygon points="653,1181 660,1196 667,1181" fill="#EA580C"/>
+    <rect x="540" y="1133" width="240" height="34" rx="6" fill="#FFFFFF" stroke="#EA580C" stroke-width="1.6"/>
+    <text x="660" y="1155" font-size="13" font-weight="800" fill="#EA580C" text-anchor="middle">publish / consume events</text>
+  </g>''')
+
+    # =========================================================================
+    # RABBITMQ EVENT BUS (STANDALONE FLOATING NODE, WIDTH: 780, x: 270, y: 1195, h: 100)
+    # =========================================================================
+    rb_x = 270
+    rb_y = 1195
+    rb_w = 780
+    rb_h = 100
+
+    lines.append(f'''  <!-- RabbitMQ Event Bus Node -->
+  <g id="RabbitMQ_Event_Bus" transform="translate({rb_x}, {rb_y})" class="hub-shadow">
+    <rect x="0" y="0" width="{rb_w}" height="{rb_h}" rx="12" fill="#FFF7ED" stroke="#EA580C" stroke-width="2.4"/>
+    <g transform="translate(20, 20)">{icon_rabbitmq()}</g>
+    <text x="62" y="35" font-size="20" font-weight="900" fill="#C2410C">RabbitMQ - domain.events (AMQP :5672)</text>
+    <text x="62" y="59" font-size="14.5" font-weight="500" fill="#9A3412">Đồng bộ bất đồng bộ qua Topic Exchange: nexus.logistics.topic</text>
+    <text x="62" y="82" class="mono" font-size="12.5" font-weight="700" fill="#EA580C">Routing keys: shipment.*, pickup.*, manifest.*, delivery.*, cod.* • DLQ Quarantine</text>
+  </g>''')
+
+    # Up-arrow from RabbitMQ back up to Read Model / Projection (exits right side cleanly)
+    lines.append('''  <!-- Projection Update Arrow (Event-driven CQRS Projection) -->
+  <g id="Arrow_RabbitMQ_Projection">
+    <path d="M 1050 1235 L 1095 1235 L 1095 1100 L 1040 1100 L 1040 1080" fill="none" stroke="#7C3AED" stroke-width="2.6" stroke-dasharray="6,4"/>
+    <polygon points="1033,1093 1040,1078 1047,1093" fill="#7C3AED"/>
+    <rect x="1038" y="1138" width="114" height="28" rx="5" fill="#FFFFFF" stroke="#7C3AED" stroke-width="1.4"/>
+    <text x="1095" y="1157" class="mono" font-size="12.5" font-weight="800" fill="#7C3AED" text-anchor="middle">CQRS Sync</text>
+  </g>''')
+
+    # Direct database link from Core/Shipment down to PostgreSQL (Routed cleanly at x=220)
+    lines.append('''  <!-- Direct Own Database Arrow -->
+  <g id="Arrow_Services_PostgreSQL">
+    <path d="M 220 1080 L 220 1410" fill="none" stroke="#0284C7" stroke-width="2.8"/>
+    <polygon points="213,1396 220,1412 227,1396" fill="#0284C7"/>
+    <rect x="156" y="1228" width="128" height="30" rx="5" fill="#FFFFFF" stroke="#0284C7" stroke-width="1.4"/>
+    <text x="220" y="1248" font-size="13" font-weight="800" fill="#0284C7" text-anchor="middle">own database</text>
+  </g>''')
+
+    # =========================================================================
+    # TIER 3: POLYGLOT PERSISTENCE LAYER (OPEN FLOATING CYLINDERS, NO ENCLOSING BOX)
+    # y: 1375 to 1630, Gap between RabbitMQ and Cylinders = 115px
+    # =========================================================================
+    lines.append('''  <!-- Tier 3: Polyglot Persistence Layer (Lớp dữ liệu và hạ tầng - Open Floating Cylinders) -->
+  <g id="Tier_3_Persistence">
+    <text x="660" y="1375" font-size="15.5" font-weight="800" fill="#475569" letter-spacing="1.5px" text-anchor="middle">LỚP DỮ LIỆU VÀ HẠ TẦNG PHÂN TÁN (POLYGLOT PERSISTENCE LAYER)</text>''')
+
+    # 3 Database Cylinders (Floating freely with generous spacing):
+    # Cylinder 1: PostgreSQL 16 (x: 115, y: 1410, w: 350, h: 220)
+    cyl1 = draw_3d_cylinder(
+        x=115, y=1410, w=350, h=220,
+        title="PostgreSQL 16",
+        subtitle="Database-per-service (11 DBs)",
+        bullets=[
+            "11 CSDL phân tán hoàn toàn độc lập",
+            "Mỗi service sở hữu riêng schema & user",
+            "Kết nối qua Prisma ORM (TCP:5432)"
+        ],
+        badge="✓ 100% Zero Cross-DB Joins",
+        stroke_color="#0284C7",
+        fill_top="#EFF6FF",
+        fill_body="#FFFFFF"
+    )
+    lines.append(cyl1)
+
+    # Cylinder 2: MinIO S3 (x: 490, y: 1410, w: 350, h: 220)
+    cyl2 = draw_3d_cylinder(
+        x=490, y=1410, w=350, h=220,
+        title="MinIO / S3 Storage",
+        subtitle="Object Storage (Port :9000)",
+        bullets=[
+            "Lưu ảnh chữ ký & ảnh giao hàng POD",
+            "Ảnh hư hỏng & biên bản bất thường BBBT",
+            "Xuất file Excel báo cáo đối soát COD"
+        ],
+        badge="Presigned URL: Hết hạn 15 phút",
+        stroke_color="#D97706",
+        fill_top="#FFFBEB",
+        fill_body="#FFFFFF"
+    )
+    lines.append(cyl2)
+
+    # Cylinder 3: Redis 7 (x: 865, y: 1410, w: 350, h: 220)
+    cyl3 = draw_3d_cylinder(
+        x=865, y=1410, w=350, h=220,
+        title="Redis 7 + Docker",
+        subtitle="In-Memory Cache (Port :6379)",
+        bullets=[
+            "Tracking cache (TTL 300s < 15ms)",
+            "Token blacklist thu hồi phiên tức thì",
+            "Sliding window rate limiting theo IP"
+        ],
+        badge="Pub/Sub Realtime GPS & WSS",
+        stroke_color="#DC2626",
+        fill_top="#FEF2F2",
+        fill_body="#FFFFFF"
+    )
+    lines.append(cyl3)
+    lines.append('  </g>')
+
+    # =========================================================================
+    # SIDE BYPASS HIGHWAYS (CLEANLY ROUTED OUTSIDE ALL BOUNDARIES)
+    # =========================================================================
+    # Left Bypass: Gateway to MinIO S3 (/media upload)
+    # Routed outside down x = 45 to y = 1660, across to x = 665, up into MinIO bottom
+    lines.append('''  <!-- Side Bypass Conduits -->
+  <!-- Left Bypass: Gateway to MinIO S3 (/media upload) -->
+  <path d="M 270 420 L 45 420 L 45 1660 L 665 1660 L 665 1630" fill="none" stroke="#D97706" stroke-width="2.4" stroke-dasharray="6,4"/>
+  <polygon points="658,1644 665,1628 672,1644" fill="#D97706"/>
+  <g transform="translate(24, 860) rotate(-90)">
+    <rect x="-70" y="-15" width="140" height="30" rx="5" fill="#FFFFFF" stroke="#D97706" stroke-width="1.5"/>
+    <text x="0" y="6" class="mono" font-size="13" font-weight="800" fill="#D97706" text-anchor="middle">/media</text>
+  </g>
+
+  <!-- Right Bypass: Gateway to Redis (chat/realtime) -->
+  <path d="M 1050 420 L 1275 420 L 1275 1520 L 1215 1520" fill="none" stroke="#DC2626" stroke-width="2.4" stroke-dasharray="6,4"/>
+  <polygon points="1229,1513 1213,1520 1229,1527" fill="#DC2626"/>
+  <g transform="translate(1296, 860) rotate(90)">
+    <rect x="-95" y="-15" width="190" height="30" rx="5" fill="#FFFFFF" stroke="#DC2626" stroke-width="1.5"/>
+    <text x="0" y="6" class="mono" font-size="13" font-weight="800" fill="#DC2626" text-anchor="middle">chat / realtime</text>
+  </g>''')
+
+    # =========================================================================
+    # TECHNICAL NOTE PLATE AT BOTTOM (y: 1690, h: 52, w: 1150, x: 85)
+    # =========================================================================
+    lines.append('''  <!-- Architectural Footnote -->
+  <g id="Technical_Note" transform="translate(85, 1690)">
+    <rect x="0" y="0" width="1150" height="52" rx="10" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="1.4"/>
+    <circle cx="26" cy="26" r="6" fill="#0284C7"/>
+    <text x="46" y="31" font-size="13.5" font-weight="700" fill="#0F172A">Ghi chú kiến trúc: <tspan font-weight="500" fill="#334155">shipment-service sở hữu trạng thái đơn SOT; nhóm vận hành kiểm soát linehaul; tracking/reporting là CQRS read model; CSDL cách ly 100%.</tspan></text>
+  </g>
+
+</svg>''')
+
+    svg_content = "\n".join(lines)
+
+    # Sanitize any raw unescaped '&' and '<' characters
+    svg_content = re.sub(r'&(?!(?:amp|lt|gt|quot|apos|#\d+|#x[a-fA-F0-9]+);)', '&amp;', svg_content)
+
+    return svg_content
+
+def main():
+    svg_content = build_architecture_diagram()
+
+    # XML Validation
+    try:
+        ET.fromstring(svg_content)
+        print("XML Syntax Validation: PASSED (Well-formed XML)")
+    except ET.ParseError as e:
+        print(f"XML Validation FAILED: {e}")
+        return 1
+
+    # Write to target files
+    for file_path in OUTPUT_FILES:
+        os.makedirs(os.path.dirname(file_path), exist_ok=True)
+        with open(file_path, "w", encoding="utf-8") as f:
+            f.write(svg_content)
+        print(f"Successfully generated {file_path} ({len(svg_content.encode('utf-8'))} bytes)")
+
+    return 0
 
 if __name__ == "__main__":
-    build_architecture_svg()
+    import sys
+    sys.exit(main())
