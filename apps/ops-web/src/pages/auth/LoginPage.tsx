@@ -41,10 +41,6 @@ export function LoginPage(): React.JSX.Element {
     }
   };
 
-  if (status === 'restoring') {
-    return <div className="ops-route-loading">Đang khôi phục phiên đăng nhập...</div>;
-  }
-
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
       if (e.key === 'Escape' && authError) {
@@ -58,6 +54,10 @@ export function LoginPage(): React.JSX.Element {
       window.removeEventListener('keydown', handleKeyDown);
     };
   }, [authError, clearAuthError]);
+
+  if (status === 'restoring') {
+    return <div className="ops-route-loading">Đang khôi phục phiên đăng nhập...</div>;
+  }
 
   return (
     <div className="login-shell">
