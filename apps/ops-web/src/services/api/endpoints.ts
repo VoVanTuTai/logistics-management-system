@@ -106,4 +106,12 @@ export const opsEndpoints = {
     settleDeduction: (id: string) => `/ops/shipment/claims/${encodeURIComponent(id)}/settle-deduction`,
     hubStatistics: '/ops/shipment/claims/statistics/hub-summary',
   },
+  cskh: {
+    list: '/ops/shipment/cskh/tickets',
+    detail: (id: string) => `/ops/shipment/cskh/tickets/${encodeURIComponent(id)}`,
+    create: '/ops/shipment/cskh/tickets',
+    updateStatus: (id: string) => `/ops/shipment/cskh/tickets/${encodeURIComponent(id)}/status`,
+    addNote: (id: string) => `/ops/shipment/cskh/tickets/${encodeURIComponent(id)}/notes`,
+    escalateClaim: (id: string) => `/ops/shipment/cskh/tickets/${encodeURIComponent(id)}/escalate-to-claim`,
+  },
 } as const;

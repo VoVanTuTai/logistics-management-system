@@ -55,6 +55,7 @@ import {
   ArrowDownLeft,
   Image as ImageIcon,
   Lock,
+  Bell,
 } from 'lucide-react';
 import qrcode from 'qrcode-generator';
 
@@ -63,6 +64,7 @@ import { FloatingAiChatWidget } from './components/FloatingAiChatWidget';
 import { OrdersPage } from './pages/OrdersPage';
 import { TermsOfServicePage } from './pages/terms/TermsOfServicePage';
 import { useAuthStore } from './store/useAuthStore';
+import { resolveCourierForOrder, formatCourierPhone } from './utils/courierResolver';
 import {
   trackingApi,
   type UnifiedTrackingResponse,
@@ -168,9 +170,30 @@ function getStatusBadgeDetails(status?: string | null) {
 }
 
 function Layout() {
-  const { phone, user, logout } = useAuthStore();
+  const { phone, user, token, logout } = useAuthStore();
   const navigate = useNavigate();
   const location = useLocation();
+
+  const [receivedNotifs, setReceivedNotifs] = useState<ShipmentResponse[]>([]);
+  const [showNotifsDropdown, setShowNotifsDropdown] = useState(false);
+
+  useEffect(() => {
+    if (!token || !phone) {
+      setReceivedNotifs([]);
+      return;
+    }
+    const loadNotifs = async () => {
+      try {
+        const res = await shipmentApi.getReceivedShipments(token, { limit: 10, phone: phone || user?.phone });
+        setReceivedNotifs(res || []);
+      } catch {
+        setReceivedNotifs([]);
+      }
+    };
+    loadNotifs();
+    const interval = setInterval(loadNotifs, 15000);
+    return () => clearInterval(interval);
+  }, [token, phone, user?.phone]);
 
   const handleAuthClick = () => {
     if (phone) {
@@ -190,6 +213,21 @@ function Layout() {
         <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3">
           <BrandMark />
           <div className="flex items-center gap-2">
+            {phone && (
+              <button
+                type="button"
+                onClick={() => setShowNotifsDropdown((v) => !v)}
+                className="relative inline-flex h-9 w-9 items-center justify-center rounded-xl border border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100 transition-colors"
+                aria-label="Thông báo đơn nhận"
+              >
+                <Bell className="h-4 w-4" strokeWidth={2} />
+                {receivedNotifs.length > 0 && (
+                  <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-rose-600 text-[10px] font-black text-white shadow">
+                    {receivedNotifs.length > 9 ? '9+' : receivedNotifs.length}
+                  </span>
+                )}
+              </button>
+            )}
             <button
               className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100 transition-colors"
               onClick={handleAuthClick}
@@ -208,7 +246,25 @@ function Layout() {
       >
         <div>
           <div className="hidden px-5 pb-4 pt-6 md:block border-b border-slate-100">
-            <BrandMark />
+            <div className="flex items-center justify-between">
+              <BrandMark />
+              {phone && (
+                <button
+                  type="button"
+                  onClick={() => setShowNotifsDropdown((v) => !v)}
+                  className="relative inline-flex h-8 w-8 items-center justify-center rounded-xl border border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100 transition-colors"
+                  aria-label="Thông báo đơn nhận"
+                  title="Thông báo đơn gửi đến bạn"
+                >
+                  <Bell className="h-4 w-4" strokeWidth={2} />
+                  {receivedNotifs.length > 0 && (
+                    <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-rose-600 text-[9px] font-black text-white shadow">
+                      {receivedNotifs.length > 9 ? '9+' : receivedNotifs.length}
+                    </span>
+                  )}
+                </button>
+              )}
+            </div>
             <p className="mt-2.5 text-[11px] leading-relaxed text-slate-500 font-medium">
               Cổng tra cứu vận đơn & điều phối logistics toàn quốc Nexus.
             </p>
@@ -259,6 +315,80 @@ function Layout() {
           </button>
         </div>
       </aside>
+
+      {/* FLOATING NOTIFICATION POPOVER */}
+      {showNotifsDropdown && (
+        <div className="fixed top-16 right-4 md:left-64 md:top-6 z-50 w-80 sm:w-96 rounded-2xl bg-white border border-slate-200 shadow-2xl p-4 space-y-3 animate-in fade-in zoom-in-95 duration-150">
+          <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
+            <div className="flex items-center gap-2">
+              <Bell className="h-4 w-4 text-blue-600" />
+              <span className="text-xs font-black uppercase text-slate-800">
+                Thông báo đơn gửi đến bạn
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setShowNotifsDropdown(false)}
+              className="p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+
+          <div className="max-h-80 overflow-y-auto space-y-2 text-xs">
+            {receivedNotifs.length === 0 ? (
+              <p className="text-slate-500 py-6 text-center text-xs">
+                Chưa có đơn hàng nào gửi đến số điện thoại {phone}.
+              </p>
+            ) : (
+              receivedNotifs.map((s) => {
+                const meta = (s.metadata as Record<string, any>) || {};
+                const courier = resolveCourierForOrder({
+                  courierId: meta.courierId,
+                  courierName: meta.courierName,
+                  courierPhone: meta.courierPhone,
+                  receiverHubCode: meta.receiver?.hubCode || meta.receiverHubCode,
+                });
+                return (
+                  <div
+                    key={s.id || s.code}
+                    onClick={() => {
+                      setShowNotifsDropdown(false);
+                      navigate('/orders');
+                    }}
+                    className="p-2.5 rounded-xl border border-slate-100 bg-slate-50 hover:bg-blue-50/60 hover:border-blue-200 cursor-pointer transition space-y-1"
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="font-mono font-bold text-blue-700">#{s.code}</span>
+                      <span className="text-[10px] font-bold text-slate-400">
+                        {new Date(s.createdAt).toLocaleDateString('vi-VN')}
+                      </span>
+                    </div>
+                    <p className="text-slate-700 font-medium">
+                      Người gửi: <strong>{meta.sender?.name || 'Shop / Khách gửi'}</strong>
+                    </p>
+                    <div className="flex items-center gap-1.5 text-[11px] text-emerald-700 font-semibold pt-0.5">
+                      <Truck className="h-3 w-3" />
+                      <span>Bưu tá: {courier.name} • {courier.phone}</span>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+
+          <button
+            type="button"
+            onClick={() => {
+              setShowNotifsDropdown(false);
+              navigate('/orders');
+            }}
+            className="w-full py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs text-center transition"
+          >
+            Xem tất cả đơn nhận
+          </button>
+        </div>
+      )}
 
       {/* Main View Area */}
       <main
@@ -480,7 +610,7 @@ function TrackingPage() {
         <div className="relative z-10 p-6 md:p-8 space-y-5 max-w-4xl">
           <div className="inline-flex items-center gap-2 rounded-full bg-white/20 border border-white/30 px-3.5 py-1 text-xs font-bold text-white backdrop-blur-md">
             <span className="flex h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
-            🟢 Cổng Tra Cứu Vận Đơn Công Khai & Quản Lý Khách Hàng
+            <span>Cổng Tra Cứu Vận Đơn Công Khai & Quản Lý Khách Hàng</span>
           </div>
 
           <div className="space-y-1.5">
@@ -1594,7 +1724,7 @@ function CreateOrderPage() {
             </div>
             <div className="space-y-0.5">
               <div className="font-bold text-xs text-slate-900 flex items-center gap-1.5">
-                🚚 Lấy hàng tại nhà (PICKUP)
+                Lấy hàng tại địa chỉ gửi (Pickup)
                 {pickupMethod === 'PICKUP' && (
                   <span className="inline-block w-2 h-2 rounded-full bg-blue-600 animate-pulse" />
                 )}
@@ -1623,7 +1753,7 @@ function CreateOrderPage() {
             </div>
             <div className="space-y-0.5">
               <div className="font-bold text-xs text-slate-900 flex items-center gap-1.5">
-                🏢 Gửi hàng tại bưu cục (DROP_OFF)
+                Gửi hàng tại bưu cục (Drop-off)
                 {pickupMethod === 'DROP_OFF' && (
                   <span className="inline-block w-2 h-2 rounded-full bg-blue-600 animate-pulse" />
                 )}
@@ -1715,7 +1845,7 @@ function CreateOrderPage() {
               {pickupMethod === 'DROP_OFF' ? (
                 <div className="md:col-span-2">
                   <label className="block text-[11px] font-bold text-blue-700 uppercase">
-                    🏢 Chọn bưu cục Nexus tiếp nhận gửi hàng *
+                    Chọn bưu cục Nexus tiếp nhận gửi hàng *
                   </label>
                   <select
                     className="mt-1 w-full rounded-xl border border-blue-200 bg-blue-50/50 px-3 py-2 text-xs font-bold text-blue-900 outline-none focus:bg-white focus:border-blue-600"

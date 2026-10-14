@@ -13,6 +13,7 @@ const nexusHeroBannerImg = require('../../../../assets/nexus-hero-banner.jpg');
 
 interface HomeHeaderProps {
   userName: string;
+  notificationCount?: number;
   onPressNotification?: () => void;
   onPressSearch?: () => void;
   onPressCreateOrder?: () => void;
@@ -20,6 +21,7 @@ interface HomeHeaderProps {
 
 export function HomeHeader({
   userName,
+  notificationCount = 0,
   onPressNotification,
   onPressSearch,
   onPressCreateOrder,
@@ -62,9 +64,13 @@ export function HomeHeader({
               onPress={onPressNotification}
             >
               <Ionicons name="notifications-outline" size={22} color={colors.surface} />
-              <View style={styles.badgeDot}>
-                <Text style={styles.badgeText}>9+</Text>
-              </View>
+              {notificationCount > 0 ? (
+                <View style={styles.badgeDot}>
+                  <Text style={styles.badgeText}>
+                    {notificationCount > 9 ? '9+' : String(notificationCount)}
+                  </Text>
+                </View>
+              ) : null}
             </TouchableOpacity>
           </View>
         </View>

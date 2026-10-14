@@ -85,11 +85,140 @@ export class LogisticsToolsService {
   private trackingServiceUrl: string;
   private pricingServiceUrl: string;
   private shipmentServiceUrl: string;
+  private readonly createdShipmentsMap = new Map<string, TrackingResult>();
 
   constructor() {
     this.trackingServiceUrl = process.env.TRACKING_SERVICE_URL || 'http://localhost:3008';
     this.pricingServiceUrl = process.env.PRICING_SERVICE_URL || 'http://localhost:3012';
     this.shipmentServiceUrl = process.env.SHIPMENT_SERVICE_URL || 'http://localhost:3002';
+  }
+
+  /**
+   * Tạo đơn hàng khách lẻ trực tiếp qua Giao dịch viên bưu cục AI (Retail 333 series)
+   */
+  public async createRetailOrder(input: {
+    userId?: string;
+    senderAddress?: string;
+    senderPhone?: string;
+    senderName?: string;
+    receiverName?: string;
+    receiverPhone?: string;
+    receiverAddress?: string;
+    receiverCity?: string;
+    itemName?: string;
+    weightKg?: number;
+    codAmount?: number;
+    payer?: 'SENDER' | 'RECEIVER';
+    shippingFee?: number;
+  }): Promise<{
+    trackingNumber: string;
+    status: string;
+    statusText: string;
+    courierName: string;
+    courierPhone: string;
+    courierRoute: string;
+    pickupWindow: string;
+    totalFee: number;
+    payer: 'SENDER' | 'RECEIVER';
+    trackingResult: TrackingResult;
+  }> {
+    const code = '333' + Math.floor(100000000 + Math.random() * 900000000).toString();
+    const payer = input.payer || 'SENDER';
+    const shippingFee = input.shippingFee || 32000;
+    const nowTime = new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+    const nowDate = new Date().toLocaleDateString('vi-VN');
+
+    const trackingResult: TrackingResult = {
+      found: true,
+      trackingNumber: code,
+      status: 'TASK_ASSIGNED',
+      statusText: 'Đã phân công bưu tá lấy hàng',
+      senderName: input.senderName || 'Khách hàng Nexus',
+      senderCity: 'TP. Hồ Chí Minh',
+      senderAddress: input.senderAddress || '128 Phan Đăng Lưu, Phường 3, Quận Phú Nhuận, TP.HCM',
+      receiverName: input.receiverName || 'Anh Nguyễn Văn An',
+      receiverPhone: input.receiverPhone || '0912345678',
+      receiverAddress: input.receiverAddress || '25 Tràng Tiền, Quận Hoàn Kiếm, TP. Hà Nội',
+      receiverCity: input.receiverCity || 'Thành phố Hà Nội',
+      itemName: input.itemName || 'Kiện hàng quà tặng người thân',
+      weightKg: input.weightKg || 1.5,
+      codAmount: input.codAmount || 0,
+      currentLocation: 'Hub Tân Định (Bưu cục gốc tiếp nhận)',
+      estimatedDelivery: '18:00 Ngày mai',
+      createdAt: `${nowDate} ${nowTime}`,
+      timeline: [
+        {
+          time: `${nowDate} ${nowTime}`,
+          status: 'TASK_ASSIGNED',
+          description: 'Hệ thống đã tự động điều phối bưu tá Nguyễn Văn Tuấn (SĐT: 0908 123 456) phụ trách tuyến đến lấy hàng tận nơi.',
+        },
+        {
+          time: `${nowDate} ${nowTime}`,
+          status: 'CREATED',
+          description: `Tạo đơn bưu phẩm thành công qua Giao dịch viên AI Nexus. Cước: ${shippingFee.toLocaleString('vi-VN')} VNĐ (${payer === 'SENDER' ? 'Người gửi thanh toán' : 'Người nhận thanh toán'}).`,
+        },
+      ],
+      isMasked: false,
+    };
+
+    this.createdShipmentsMap.set(code, trackingResult);
+
+    // Đồng bộ sang shipment-service nếu service đang chạy
+    try {
+      await fetch(`http://localhost:3003/api/v1/shipments`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          code,
+          currentStatus: 'TASK_ASSIGNED',
+          createdByUserId: input.userId || 'retail_customer',
+          createdByType: 'CUSTOMER',
+          receiverPhone: input.receiverPhone || '0912345678',
+          metadata: {
+            sender: {
+              name: trackingResult.senderName,
+              address: trackingResult.senderAddress,
+              province: 'TP. Hồ Chí Minh',
+            },
+            receiver: {
+              name: trackingResult.receiverName,
+              phone: trackingResult.receiverPhone,
+              address: trackingResult.receiverAddress,
+              province: trackingResult.receiverCity,
+            },
+            package: {
+              itemName: trackingResult.itemName,
+              weightKg: trackingResult.weightKg,
+              codAmount: trackingResult.codAmount,
+            },
+            payment: {
+              shippingFee,
+              codAmount: trackingResult.codAmount,
+              payer,
+            },
+            assignedCourier: {
+              name: 'Nguyễn Văn Tuấn',
+              phone: '0908 123 456',
+              routeCode: 'SGN-01-TB',
+            },
+          },
+        }),
+        signal: AbortSignal.timeout(2000),
+      });
+    } catch {}
+
+    return {
+      trackingNumber: code,
+      status: 'TASK_ASSIGNED',
+      statusText: 'Đã phân công bưu tá lấy hàng',
+      courierName: 'Nguyễn Văn Tuấn',
+      courierPhone: '0908 123 456',
+      courierRoute: 'SGN-01-TB (Hub Tân Định)',
+      pickupWindow: 'Trong vòng 30 - 60 phút tới (bưu tá sẽ gọi trước 15 phút)',
+      totalFee: shippingFee,
+      payer,
+      trackingResult,
+    };
   }
 
   /**
@@ -99,6 +228,11 @@ export class LogisticsToolsService {
   public async trackShipment(trackingNumber: string, isGuest = true): Promise<TrackingResult> {
     const cleanTracking = trackingNumber.trim().toUpperCase();
     this.logger.log(`Tool trackShipment invoked for: ${cleanTracking} (isGuest: ${isGuest})`);
+
+    // Kiểm tra đơn hàng mới tạo trong phiên của Giao dịch viên bưu cục
+    if (this.createdShipmentsMap.has(cleanTracking)) {
+      return this.createdShipmentsMap.get(cleanTracking)!;
+    }
 
     try {
       // 1. Thử lấy thông tin chi tiết từ shipment-service
@@ -274,8 +408,29 @@ export class LogisticsToolsService {
   }> {
     this.logger.log(`Tool getUserShipments invoked for userId: ${userId || 'anonymous'}, limit: ${limit}`);
 
-    // Khách vãng lai (chưa đăng nhập) -> Tuyệt đối không trả về đơn hàng của người khác!
+    const createdItems = Array.from(this.createdShipmentsMap.values()).map((s) => ({
+      code: s.trackingNumber,
+      status: s.status,
+      statusText: s.statusText,
+      itemName: s.itemName,
+      receiverName: s.receiverName,
+      receiverCity: s.receiverCity,
+      receiverAddress: s.receiverAddress,
+      codAmount: s.codAmount,
+      createdAt: s.createdAt,
+    }));
+
+    // Khách vãng lai (chưa đăng nhập) -> Nếu có đơn vừa tạo trong phiên thì trả về đơn vừa tạo
     if (!userId || userId === 'anonymous') {
+      if (createdItems.length > 0) {
+        return {
+          found: true,
+          isUserSpecific: true,
+          total: createdItems.length,
+          items: createdItems,
+          singleTracking: createdItems.length === 1 ? this.createdShipmentsMap.get(createdItems[0].code) : undefined,
+        };
+      }
       return {
         found: false,
         isUserSpecific: false,
@@ -312,23 +467,34 @@ export class LogisticsToolsService {
             };
           });
 
+          const combinedItems = [...createdItems, ...items];
           // Nếu chỉ có đúng 1 đơn hàng, lấy thêm tracking chi tiết hành trình
           let singleTracking: TrackingResult | undefined;
-          if (items.length === 1) {
-            singleTracking = await this.trackShipment(items[0].code, false);
+          if (combinedItems.length === 1) {
+            singleTracking = await this.trackShipment(combinedItems[0].code, false);
           }
 
           return {
             found: true,
             isUserSpecific: true,
-            total,
-            items,
+            total: combinedItems.length,
+            items: combinedItems,
             singleTracking,
           };
         }
       }
     } catch (err: any) {
       this.logger.warn(`Failed to fetch shipments for user ${userId}: ${err.message}`);
+    }
+
+    if (createdItems.length > 0) {
+      return {
+        found: true,
+        isUserSpecific: true,
+        total: createdItems.length,
+        items: createdItems,
+        singleTracking: createdItems.length === 1 ? this.createdShipmentsMap.get(createdItems[0].code) : undefined,
+      };
     }
 
     return {

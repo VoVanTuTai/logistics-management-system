@@ -12,6 +12,7 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 
 import { AppModal } from '../../components/common/AppModal';
+import { CustomerComplaintsModal } from '../../components/CustomerComplaintsModal';
 import type { MainTabParamList, RootStackParamList } from '../../navigation/types';
 import { authStore, useAuthSession } from '../../store/authStore';
 import { colors, shadows, spacing } from '../../theme';
@@ -23,6 +24,7 @@ type Props = CompositeScreenProps<
 
 const PROFILE_MENUS = [
   { id: 'account', title: 'Thông tin tài khoản', icon: 'person-outline' },
+  { id: 'complaints', title: 'Khiếu nại & Bồi thường của tôi', icon: 'shield-checkmark-outline' },
   { id: 'addresses', title: 'Địa chỉ của tôi', icon: 'location-outline' },
   { id: 'orders', title: 'Đơn hàng của tôi', icon: 'cube-outline' },
   { id: 'notifs', title: 'Thông báo & Khuyến mãi', icon: 'notifications-outline' },
@@ -34,6 +36,7 @@ export function ProfileScreen({ navigation }: Props): React.JSX.Element {
   const session = useAuthSession();
   const user = session?.user;
   const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const [showComplaintsModal, setShowComplaintsModal] = useState(false);
 
   const handleLogout = () => {
     setShowLogoutModal(true);
@@ -92,6 +95,7 @@ export function ProfileScreen({ navigation }: Props): React.JSX.Element {
               style={styles.menuRow}
               onPress={() => {
                 if (menu.id === 'account') navigation.navigate('AccountDetail');
+                else if (menu.id === 'complaints') setShowComplaintsModal(true);
                 else if (menu.id === 'addresses') navigation.navigate('AddressManagement');
                 else if (menu.id === 'orders') navigation.navigate('OrdersTab');
               }}
@@ -111,6 +115,12 @@ export function ProfileScreen({ navigation }: Props): React.JSX.Element {
           <Text style={styles.logoutBtnText}>Đăng xuất tài khoản</Text>
         </TouchableOpacity>
       </ScrollView>
+
+      {/* COMPLAINTS MODAL */}
+      <CustomerComplaintsModal
+        visible={showComplaintsModal}
+        onClose={() => setShowComplaintsModal(false)}
+      />
 
       {/* LOGOUT CONFIRM MODAL */}
       <AppModal

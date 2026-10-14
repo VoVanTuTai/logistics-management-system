@@ -41,6 +41,11 @@ export interface ShipmentCardDto {
   createdAt?: string;
 }
 
+export interface ActionChipDto {
+  label: string;
+  query: string;
+}
+
 export interface ChatResponseDto {
   conversationId: string;
   question: string;
@@ -49,4 +54,5 @@ export interface ChatResponseDto {
   toolsUsed: string[];
   latencyMs: number;
   shipmentCards?: ShipmentCardDto[];
+  actionChips?: ActionChipDto[];
 }

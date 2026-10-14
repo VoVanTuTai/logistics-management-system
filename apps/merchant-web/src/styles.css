@@ -6248,6 +6248,152 @@ tbody tr:hover {
   border-color: #fca5a5;
 }
 
+/* ==========================================================================
+   Merchant Claims & Compensation Module Styles
+   ========================================================================== */
+.claims-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
 
+.claims-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+}
 
+.claims-kpi-card {
+  background: #ffffff;
+  border: 1px solid var(--line, #dbe2f0);
+  border-radius: 14px;
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  box-shadow: var(--shadow-xs);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
 
+.claims-kpi-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-sm);
+}
+
+.claims-kpi-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.claims-kpi-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-soft, #5b6b86);
+}
+
+.claims-kpi-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.claims-kpi-value {
+  font-size: 24px;
+  font-weight: 800;
+  color: var(--text, #102548);
+}
+
+.claims-kpi-subtext {
+  font-size: 12px;
+  color: var(--text-faint, #7c8aa2);
+}
+
+.claims-main-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 20px;
+}
+
+@media (min-width: 1100px) {
+  .claims-main-grid--split {
+    grid-template-columns: 1.2fr 0.8fr;
+  }
+}
+
+.claims-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.claims-search-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  min-width: 260px;
+}
+
+.claims-filter-select {
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--line, #dbe2f0);
+  background: #ffffff;
+  font-size: 13px;
+  color: var(--text, #102548);
+}
+
+.claims-matrix-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin: 16px 0;
+}
+
+.claims-matrix-cell {
+  background: #f8fafc;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.claims-matrix-cell--active {
+  background: #eff6ff;
+  border-color: #3b82f6;
+}
+
+.claims-matrix-cell-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: #1e293b;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.claims-matrix-cell-desc {
+  font-size: 11px;
+  color: #64748b;
+  line-height: 1.4;
+}
+
+.claims-verdict-banner {
+  background: #ecfdf5;
+  border: 1.5px solid #a7f3d0;
+  border-radius: 12px;
+  padding: 16px;
+  margin-top: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}

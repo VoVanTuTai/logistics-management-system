@@ -480,7 +480,7 @@ export function AddressSelectorModal({
                   onPress={() => setShowMapPickerModal(true)}
                 >
                   <Ionicons name="location" size={18} color={colors.primary} />
-                  <Text style={styles.gpsMapPickerBtnText}>📍 Định vị vị trí GPS / Chọn trên bản đồ</Text>
+                  <Text style={styles.gpsMapPickerBtnText}>Định vị vị trí GPS / Chọn trên bản đồ</Text>
                   <Ionicons name="chevron-forward" size={16} color={colors.primary} />
                 </TouchableOpacity>
 

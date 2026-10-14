@@ -291,7 +291,7 @@ export function AccountDetailScreen({ navigation }: Props): React.JSX.Element {
       <AppModal
         visible={successModalVisible}
         variant="info"
-        title="🎉 Đổi mật khẩu thành công!"
+        title="Đổi mật khẩu thành công"
         message="Mật khẩu mới đã được cập nhật chính thức vào cơ sở dữ liệu hệ thống Nexus Express. Bạn sẽ được tự động đăng xuất để đăng nhập lại với mật khẩu mới."
         confirmText="Đăng nhập lại ngay"
         onConfirm={handleSuccessLogout}
