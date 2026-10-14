@@ -52,7 +52,7 @@ function buildQrSvg(value: string): string {
   }
 }
 
-function buildLabelHtml(payload: ShippingLabelPrintPayload): string {
+function buildSingleSheetMarkup(payload: ShippingLabelPrintPayload): string {
   const codeText = escapeHtml(payload.shipmentCode);
   const sender = newlineToBreaks(payload.senderAddress);
   const receiver = newlineToBreaks(payload.receiverAddress);
@@ -60,293 +60,7 @@ function buildLabelHtml(payload: ShippingLabelPrintPayload): string {
   const deliveryInstruction = newlineToBreaks(payload.deliveryInstruction);
   const qr = buildQrSvg(payload.qrValue || payload.shipmentCode);
 
-  return `<!doctype html>
-<html lang="vi">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Shipping Label ${codeText}</title>
-    <style>
-      @page { size: 100mm 150mm; margin: 0; }
-      * { box-sizing: border-box; }
-      html, body { width: 100%; height: 100%; margin: 0; padding: 0; background: #fff; }
-      body { font-family: "Segoe UI", Arial, Helvetica, sans-serif; color: #000; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-      .sheet {
-        width: 100mm;
-        height: 150mm;
-        min-height: 150mm;
-        margin: 0 auto;
-        padding: 3mm;
-        border: 0.2mm solid #111;
-        display: grid;
-        grid-template-rows: auto auto auto auto auto auto auto 1fr;
-        gap: 1.6mm;
-        page-break-inside: avoid;
-        overflow: hidden;
-      }
-      .block { border: 0.2mm solid #222; padding: 1.4mm; }
-      .dash { border-style: dashed; }
-      .header { display: grid; grid-template-columns: minmax(0, 38fr) minmax(0, 62fr); gap: 1.2mm; }
-      .brand { display: grid; gap: 0.8mm; }
-      .brand-title { font-size: 4.3mm; font-weight: 800; letter-spacing: 0.2px; text-transform: uppercase; }
-      .service { font-size: 5.1mm; font-weight: 800; letter-spacing: 0.3px; }
-      .barcode-wrap { display: grid; gap: 0.8mm; }
-      .barcode {
-        height: 16mm;
-        border: 0.2mm solid #111;
-        background:
-          repeating-linear-gradient(
-            90deg,
-            #111 0mm,
-            #111 0.45mm,
-            #fff 0.45mm,
-            #fff 0.85mm,
-            #111 0.85mm,
-            #111 1.05mm,
-            #fff 1.05mm,
-            #fff 1.45mm
-          );
-      }
-      .ship-code { font-size: 3.2mm; font-weight: 700; line-height: 1.2; }
-      .two-col { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 1.2mm; }
-      .label { font-size: 2.6mm; font-weight: 700; text-transform: uppercase; margin-bottom: 0.6mm; }
-      .name { font-size: 3mm; font-weight: 700; line-height: 1.2; margin-bottom: 0.3mm; }
-      .text { font-size: 2.5mm; line-height: 1.24; word-break: break-word; }
-      .route { display: grid; grid-template-columns: minmax(0, 72fr) minmax(0, 28fr); gap: 1.2mm; }
-      .route-main, .route-sub {
-        border: 0.24mm solid #111;
-        text-align: center;
-        font-weight: 800;
-        line-height: 1;
-        padding: 2.1mm 1mm;
-        min-width: 0;
-        overflow: hidden;
-        white-space: nowrap;
-        text-overflow: clip;
-      }
-      .route-main { font-size: 6.8mm; letter-spacing: 0.25px; text-transform: uppercase; }
-      .route-sub { font-size: 5mm; text-transform: uppercase; }
-      .item-qr { display: grid; grid-template-columns: minmax(0, 74fr) minmax(0, 26fr); gap: 1.2mm; }
-      .qr-box { border: 0.2mm solid #111; padding: 1mm; display: grid; justify-items: center; gap: 0.8mm; }
-      .qr-svg {
-        width: 24mm;
-        height: 24mm;
-        display: block;
-        border: 0.15mm solid #111;
-        background: #fff;
-      }
-      .qr-fallback {
-        width: 24mm;
-        height: 24mm;
-        border: 0.15mm solid #111;
-        display: grid;
-        place-items: center;
-        font-size: 3.2mm;
-        font-weight: 700;
-      }
-      .big-row { display: grid; grid-template-columns: minmax(0, 66fr) minmax(0, 34fr); gap: 1.2mm; }
-      .route-tag {
-        border: 0.2mm solid #111;
-        font-size: 9.6mm;
-        font-weight: 900;
-        letter-spacing: 0.2px;
-        text-align: center;
-        padding: 1.8mm 1mm;
-        min-width: 0;
-        overflow: hidden;
-        white-space: nowrap;
-        text-overflow: clip;
-      }
-      .meta { border: 0.2mm solid #111; padding: 1.3mm; }
-      .cod-sign { display: grid; grid-template-columns: minmax(0, 70fr) minmax(0, 30fr); gap: 1.2mm; }
-      .cod-value { font-size: 6.2mm; font-weight: 900; line-height: 1; margin: 0.6mm 0 1mm; }
-      .signature {
-        border: 0.2mm solid #111;
-        min-height: 26mm;
-        display: grid;
-        grid-template-rows: auto 1fr auto;
-        padding: 1.3mm;
-      }
-      .sign-hint { font-size: 2.2mm; line-height: 1.2; color: #222; }
-      .footer { font-size: 2.3mm; border-top: 0.2mm dashed #333; padding-top: 1.1mm; line-height: 1.25; }
-      .header > *,
-      .two-col > *,
-      .route-courier-box > *,
-      .route > *,
-      .item-qr > *,
-      .big-row > *,
-      .cod-sign > * {
-        min-width: 0;
-      }
-      .sheet {
-        padding: 2.2mm;
-        grid-template-rows: 20mm 26mm 14mm 9mm 25mm 12mm 24mm minmax(0, 1fr);
-        gap: 0.8mm;
-      }
-      .block,
-      .header,
-      .two-col > *,
-      .route-courier-box > *,
-      .route > *,
-      .item-qr > *,
-      .big-row > *,
-      .cod-sign > * {
-        min-height: 0;
-        overflow: hidden;
-      }
-      .block { padding: 1.1mm; }
-      .header { align-items: stretch; }
-      .brand { align-content: center; gap: 0.6mm; }
-      .brand-title { font-size: 3.8mm; line-height: 1; }
-      .service { font-size: 4.3mm; line-height: 1.05; }
-      .barcode-wrap { gap: 0.5mm; }
-      .barcode { height: 12.5mm; }
-      .ship-code { font-size: 2.9mm; line-height: 1.1; }
-      .two-col,
-      .route-courier-box,
-      .route,
-      .item-qr,
-      .big-row,
-      .cod-sign {
-        height: 100%;
-      }
-      .route-courier-box { gap: 1mm; }
-      .route-courier-card {
-        background: #f8fafc;
-        border: 0.25mm solid #1e293b;
-        padding: 0.9mm 1.1mm;
-        display: grid;
-        grid-template-rows: auto auto auto;
-        gap: 0.2mm;
-        min-height: 0;
-      }
-      .route-courier-title {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        font-size: 2.1mm;
-        font-weight: 800;
-        letter-spacing: 0.2px;
-        color: #334155;
-      }
-      .route-courier-badge {
-        font-size: 1.8mm;
-        font-weight: 900;
-        background: #0f172a;
-        color: #ffffff;
-        padding: 0.2mm 0.8mm;
-        border-radius: 0.3mm;
-      }
-      .route-courier-badge--deliv {
-        background: #0369a1;
-      }
-      .route-courier-val {
-        font-size: 2.9mm;
-        font-weight: 900;
-        color: #0f172a;
-        line-height: 1.15;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-      }
-      .route-courier-shipper {
-        font-size: 2.2mm;
-        color: #475569;
-        line-height: 1.1;
-      }
-      .route-courier-shipper strong {
-        color: #0369a1;
-        font-weight: 800;
-        font-size: 2.4mm;
-      }
-      .label { font-size: 2.35mm; line-height: 1; margin-bottom: 0.45mm; }
-      .name { font-size: 2.75mm; line-height: 1.08; margin-bottom: 0.25mm; }
-      .text {
-        font-size: 2.25mm;
-        line-height: 1.16;
-        overflow-wrap: anywhere;
-      }
-      .two-col .block {
-        display: grid;
-        grid-template-rows: auto auto auto minmax(0, 1fr);
-      }
-      .two-col .block .text:last-child,
-      .item-qr .block .text:last-child,
-      .cod-sign .block .text:last-child {
-        display: -webkit-box;
-        -webkit-box-orient: vertical;
-        overflow: hidden;
-      }
-      .two-col .block .text:last-child { -webkit-line-clamp: 6; }
-      .item-qr .block .text:last-child { -webkit-line-clamp: 4; }
-      .cod-sign .block .text:last-child { -webkit-line-clamp: 5; }
-      .route-main,
-      .route-sub {
-        display: grid;
-        place-items: center;
-        padding: 0.8mm 1mm;
-      }
-      .route-main { font-size: 6mm; }
-      .route-sub { font-size: 4.2mm; }
-      .item-qr { grid-template-columns: minmax(0, 70fr) 25mm; }
-      .item-qr .block {
-        display: grid;
-        align-content: start;
-      }
-      .qr-box {
-        padding: 0.8mm;
-        align-content: center;
-        gap: 0.5mm;
-      }
-      .qr-svg,
-      .qr-fallback {
-        width: 20.5mm;
-        height: 20.5mm;
-      }
-      .route-tag {
-        display: grid;
-        place-items: center;
-        font-size: 7.4mm;
-        line-height: 1;
-        padding: 0.8mm 1mm;
-      }
-      .meta {
-        display: grid;
-        align-content: center;
-        padding: 1mm;
-      }
-      .cod-sign .block {
-        display: grid;
-        grid-template-rows: auto auto auto minmax(0, 1fr);
-        padding: 1.1mm;
-      }
-      .cod-value {
-        font-size: 5.2mm;
-        line-height: 1;
-        margin: 0.25mm 0 0.7mm;
-      }
-      .signature {
-        min-height: 0;
-        height: 100%;
-        padding: 1.1mm;
-      }
-      .sign-hint { font-size: 2mm; }
-      .footer {
-        min-height: 0;
-        overflow: hidden;
-        font-size: 2.05mm;
-        line-height: 1.15;
-        padding-top: 0.7mm;
-      }
-      @media print {
-        html, body { width: 100mm; height: 150mm; }
-        body { margin: 0; }
-        .sheet { margin: 0; }
-      }
-    </style>
-  </head>
-  <body>
-    <article class="sheet">
+  return `    <article class="sheet">
       <section class="header block">
         <div class="brand">
           <div class="brand-title">${escapeHtml(payload.brandName)}</div>
@@ -434,18 +148,337 @@ function buildLabelHtml(payload: ShippingLabelPrintPayload): string {
       <footer class="footer">
         ${escapeHtml(payload.hotlineText)}
       </footer>
-    </article>
+    </article>`;
+}
+
+function buildMultiLabelHtml(payloads: ShippingLabelPrintPayload[]): string {
+  const title =
+    payloads.length === 1
+      ? `Van_Don_${escapeHtml(payloads[0].shipmentCode)}`
+      : `Danh_Sach_Van_Don_${payloads.length}_Don`;
+  const sheets = payloads.map((p) => buildSingleSheetMarkup(p)).join('\n');
+
+  return `<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>${title}</title>
+    <style>
+      @page { size: 100mm 150mm; margin: 0; }
+      * { box-sizing: border-box; }
+      html, body { width: 100%; min-height: 100%; margin: 0; padding: 0; background: #e2e8f0; }
+      body { font-family: "Segoe UI", Arial, Helvetica, sans-serif; color: #000; -webkit-print-color-adjust: exact; print-color-adjust: exact; padding: 12px 0; }
+      .sheet {
+        width: 100mm;
+        height: 150mm;
+        min-height: 150mm;
+        max-height: 150mm;
+        margin: 12px auto;
+        padding: 2.2mm;
+        background: #fff;
+        border: 0.2mm solid #111;
+        display: grid;
+        grid-template-rows: 20mm 26mm 14mm 9mm 25mm 12mm 24mm minmax(0, 1fr);
+        gap: 0.8mm;
+        page-break-inside: avoid;
+        break-inside: avoid;
+        page-break-after: always;
+        break-after: page;
+        overflow: hidden;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+      }
+      .sheet:last-of-type {
+        page-break-after: auto;
+        break-after: auto;
+      }
+      .block { border: 0.2mm solid #222; padding: 1.1mm; }
+      .dash { border-style: dashed; }
+      .header { display: grid; grid-template-columns: minmax(0, 38fr) minmax(0, 62fr); gap: 1.2mm; align-items: stretch; }
+      .brand { display: grid; gap: 0.6mm; align-content: center; }
+      .brand-title { font-size: 3.8mm; font-weight: 800; letter-spacing: 0.2px; text-transform: uppercase; line-height: 1; }
+      .service { font-size: 4.3mm; font-weight: 800; letter-spacing: 0.3px; line-height: 1.05; }
+      .barcode-wrap { display: grid; gap: 0.5mm; }
+      .barcode {
+        height: 12.5mm;
+        border: 0.2mm solid #111;
+        background:
+          repeating-linear-gradient(
+            90deg,
+            #111 0mm,
+            #111 0.45mm,
+            #fff 0.45mm,
+            #fff 0.85mm,
+            #111 0.85mm,
+            #111 1.05mm,
+            #fff 1.05mm,
+            #fff 1.45mm
+          );
+      }
+      .ship-code { font-size: 2.9mm; font-weight: 700; line-height: 1.1; }
+      .two-col { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 1.2mm; height: 100%; }
+      .label { font-size: 2.35mm; font-weight: 700; text-transform: uppercase; line-height: 1; margin-bottom: 0.45mm; }
+      .name { font-size: 2.75mm; font-weight: 700; line-height: 1.08; margin-bottom: 0.25mm; }
+      .text { font-size: 2.25mm; line-height: 1.16; word-break: break-word; overflow-wrap: anywhere; }
+      .route { display: grid; grid-template-columns: minmax(0, 72fr) minmax(0, 28fr); gap: 1.2mm; height: 100%; }
+      .route-main, .route-sub {
+        border: 0.24mm solid #111;
+        text-align: center;
+        font-weight: 800;
+        display: grid;
+        place-items: center;
+        padding: 0.8mm 1mm;
+        min-width: 0;
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: clip;
+      }
+      .route-main { font-size: 6mm; letter-spacing: 0.25px; text-transform: uppercase; }
+      .route-sub { font-size: 4.2mm; text-transform: uppercase; }
+      .item-qr { display: grid; grid-template-columns: minmax(0, 70fr) 25mm; gap: 1.2mm; height: 100%; }
+      .qr-box { border: 0.2mm solid #111; padding: 0.8mm; display: grid; justify-items: center; align-content: center; gap: 0.5mm; }
+      .qr-svg {
+        width: 20.5mm;
+        height: 20.5mm;
+        display: block;
+        border: 0.15mm solid #111;
+        background: #fff;
+      }
+      .qr-fallback {
+        width: 20.5mm;
+        height: 20.5mm;
+        border: 0.15mm solid #111;
+        display: grid;
+        place-items: center;
+        font-size: 3.2mm;
+        font-weight: 700;
+      }
+      .big-row { display: grid; grid-template-columns: minmax(0, 66fr) minmax(0, 34fr); gap: 1.2mm; height: 100%; }
+      .route-tag {
+        border: 0.2mm solid #111;
+        font-size: 7.4mm;
+        font-weight: 900;
+        letter-spacing: 0.2px;
+        text-align: center;
+        display: grid;
+        place-items: center;
+        padding: 0.8mm 1mm;
+        min-width: 0;
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: clip;
+      }
+      .meta { border: 0.2mm solid #111; padding: 1mm; display: grid; align-content: center; }
+      .cod-sign { display: grid; grid-template-columns: minmax(0, 70fr) minmax(0, 30fr); gap: 1.2mm; height: 100%; }
+      .cod-value { font-size: 5.2mm; font-weight: 900; line-height: 1; margin: 0.25mm 0 0.7mm; }
+      .signature {
+        border: 0.2mm solid #111;
+        min-height: 0;
+        height: 100%;
+        display: grid;
+        grid-template-rows: auto 1fr auto;
+        padding: 1.1mm;
+      }
+      .sign-hint { font-size: 2mm; line-height: 1.2; color: #222; }
+      .footer {
+        font-size: 2.05mm;
+        border-top: 0.2mm dashed #333;
+        padding-top: 0.7mm;
+        line-height: 1.15;
+        min-height: 0;
+        overflow: hidden;
+      }
+      .header > *,
+      .two-col > *,
+      .route-courier-box > *,
+      .route > *,
+      .item-qr > *,
+      .big-row > *,
+      .cod-sign > * {
+        min-width: 0;
+        min-height: 0;
+        overflow: hidden;
+      }
+      .route-courier-box { gap: 1mm; }
+      .route-courier-card {
+        background: #f8fafc;
+        border: 0.25mm solid #1e293b;
+        padding: 0.9mm 1.1mm;
+        display: grid;
+        grid-template-rows: auto auto auto;
+        gap: 0.2mm;
+        min-height: 0;
+      }
+      .route-courier-title {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 2.1mm;
+        font-weight: 800;
+        letter-spacing: 0.2px;
+        color: #334155;
+      }
+      .route-courier-badge {
+        font-size: 1.8mm;
+        font-weight: 900;
+        background: #0f172a;
+        color: #ffffff;
+        padding: 0.2mm 0.8mm;
+        border-radius: 0.3mm;
+      }
+      .route-courier-badge--deliv {
+        background: #0369a1;
+      }
+      .route-courier-val {
+        font-size: 2.9mm;
+        font-weight: 900;
+        color: #0f172a;
+        line-height: 1.15;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .route-courier-shipper {
+        font-size: 2.2mm;
+        color: #475569;
+        line-height: 1.1;
+      }
+      .route-courier-shipper strong {
+        color: #0369a1;
+        font-weight: 800;
+        font-size: 2.4mm;
+      }
+      .two-col .block {
+        display: grid;
+        grid-template-rows: auto auto auto minmax(0, 1fr);
+      }
+      .two-col .block .text:last-child,
+      .item-qr .block .text:last-child,
+      .cod-sign .block .text:last-child {
+        display: -webkit-box;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+      }
+      .two-col .block .text:last-child { -webkit-line-clamp: 6; }
+      .item-qr .block .text:last-child { -webkit-line-clamp: 4; }
+      .cod-sign .block .text:last-child { -webkit-line-clamp: 5; }
+      .item-qr .block {
+        display: grid;
+        align-content: start;
+      }
+      .screen-toolbar {
+        position: sticky;
+        top: 0;
+        z-index: 9999;
+        background: #0f172a;
+        color: #ffffff;
+        padding: 10px 14px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        margin: -12px auto 12px auto;
+        max-width: 100mm;
+        border-radius: 6px;
+      }
+      .toolbar-info strong {
+        display: block;
+        font-size: 13px;
+        font-weight: 700;
+        color: #f8fafc;
+      }
+      .toolbar-info span {
+        display: block;
+        font-size: 11px;
+        color: #94a3b8;
+        margin-top: 2px;
+      }
+      .toolbar-actions {
+        display: flex;
+        gap: 6px;
+        flex-shrink: 0;
+      }
+      .btn-print {
+        background: #2563eb;
+        color: #ffffff;
+        border: none;
+        padding: 6px 12px;
+        border-radius: 4px;
+        font-weight: 700;
+        font-size: 12px;
+        cursor: pointer;
+      }
+      .btn-print:hover {
+        background: #1d4ed8;
+      }
+      .btn-close {
+        background: #334155;
+        color: #cbd5e1;
+        border: none;
+        padding: 6px 10px;
+        border-radius: 4px;
+        font-size: 12px;
+        cursor: pointer;
+      }
+      .btn-close:hover {
+        background: #475569;
+        color: #ffffff;
+      }
+      @media print {
+        .no-print {
+          display: none !important;
+        }
+        @page { size: 100mm 150mm; margin: 0; }
+        html, body { width: 100mm; height: auto; min-height: 0; margin: 0; padding: 0; background: #fff; }
+        body { padding: 0; }
+        .sheet {
+          margin: 0;
+          box-shadow: none;
+          page-break-inside: avoid;
+          break-inside: avoid;
+          page-break-after: always;
+          break-after: page;
+        }
+        .sheet:last-of-type {
+          page-break-after: auto;
+          break-after: auto;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header class="no-print screen-toolbar">
+      <div class="toolbar-info">
+        <strong>Xuất / In Vận Đơn (${payloads.length} đơn)</strong>
+        <span>Để lưu file PDF: chọn máy in <b>"Save as PDF"</b> hoặc <b>"Lưu dưới dạng PDF"</b></span>
+      </div>
+      <div class="toolbar-actions">
+        <button type="button" class="btn-print" onclick="window.print()">In / Lưu PDF</button>
+        <button type="button" class="btn-close" onclick="window.close()">Đóng</button>
+      </div>
+    </header>
+${sheets}
   </body>
 </html>`;
 }
 
-export function openShippingLabelPrint(payload: ShippingLabelPrintPayload): boolean {
-  const popup = window.open('', '_blank', 'width=440,height=900');
+function buildLabelHtml(payload: ShippingLabelPrintPayload): string {
+  return buildMultiLabelHtml([payload]);
+}
+
+export function openMultiShippingLabelPrint(payloads: ShippingLabelPrintPayload[]): boolean {
+  if (!payloads || payloads.length === 0) {
+    return false;
+  }
+
+  const popup = window.open('', '_blank', 'width=480,height=900,scrollbars=yes,resizable=yes');
   if (!popup) {
     return false;
   }
 
-  const html = buildLabelHtml(payload);
+  const html = buildMultiLabelHtml(payloads);
   try {
     popup.document.open();
     popup.document.write(html);
@@ -453,7 +486,7 @@ export function openShippingLabelPrint(payload: ShippingLabelPrintPayload): bool
     popup.focus();
     setTimeout(() => {
       popup.print();
-    }, 220);
+    }, 280);
   } catch {
     const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
     const url = URL.createObjectURL(blob);
@@ -466,6 +499,10 @@ export function openShippingLabelPrint(payload: ShippingLabelPrintPayload): bool
   }
 
   return true;
+}
+
+export function openShippingLabelPrint(payload: ShippingLabelPrintPayload): boolean {
+  return openMultiShippingLabelPrint([payload]);
 }
 
 export interface RouteCourierResolution {

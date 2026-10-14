@@ -19,3 +19,9 @@ tmp/
 .tmp/service-logs/
 _local_backup/
 brain/
+
+# Private Agent Skills & Customizations
+.agents/
+
+# Graduation Thesis & Diagrams
+docs/graduation-thesis/

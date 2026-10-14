@@ -561,10 +561,9 @@ HÃY ĐƯA RA CÂU TRẢ LỜI ĐẦY ĐỦ VÀ CHÍNH XÁC:`;
     if (this.geminiApiKey) {
       const candidateModels = Array.from(
         new Set([
-          'gemini-3-flash-preview',
-          'gemini-flash-latest',
           'gemini-flash-lite-latest',
           'gemini-3.1-flash-lite-preview',
+          'gemini-3-flash-preview',
           this.geminiModel,
         ].filter(Boolean))
       );
@@ -593,7 +592,7 @@ HÃY ĐƯA RA CÂU TRẢ LỜI ĐẦY ĐỦ VÀ CHÍNH XÁC:`;
               ],
               generationConfig,
             }),
-            signal: AbortSignal.timeout(15000),
+            signal: AbortSignal.timeout(7000),
           });
 
           if (resp.ok) {

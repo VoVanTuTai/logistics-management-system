@@ -40,7 +40,12 @@ import type {
   ViewId,
 } from './types';
 import { DEFAULT_CREATE_FORM, DEFAULT_PROFILE } from './types';
-import { openShippingLabelPrint, resolveRouteAndCourier } from './printing/shippingLabelPrint';
+import {
+  openMultiShippingLabelPrint,
+  openShippingLabelPrint,
+  resolveRouteAndCourier,
+  type ShippingLabelPrintPayload,
+} from './printing/shippingLabelPrint';
 
 const STORAGE_KEY_SESSION = 'merchant-web.session.v1';
 const STORAGE_KEY_DRAFTS = 'merchant-web.shipment-drafts.v1';
@@ -2958,7 +2963,7 @@ function MerchantApp(): React.JSX.Element {
     setDraftName('');
   }
 
-  function printShipment(row: ShipmentRow): void {
+  function buildShippingLabelPayload(row: ShipmentRow): ShippingLabelPrintPayload {
     const readText = (value: unknown, fallback = ''): string => {
       if (typeof value !== 'string') {
         return fallback;
@@ -3045,7 +3050,7 @@ function MerchantApp(): React.JSX.Element {
       readText(receiverMeta?.courierId) ||
       resolvedDelivery.courierId;
 
-    const opened = openShippingLabelPrint({
+    return {
       brandName: 'NEXUS LOGISTICS',
       serviceName: row.serviceType || 'STANDARD',
       shipmentCode: row.shipment.code,
@@ -3070,10 +3075,28 @@ function MerchantApp(): React.JSX.Element {
       pickupCourierId,
       deliveryRouteName,
       deliveryCourierId,
-    });
+    };
+  }
 
+  function printShipment(row: ShipmentRow): void {
+    const payload = buildShippingLabelPayload(row);
+    const opened = openShippingLabelPrint(payload);
     if (!opened) {
       setPrintMessage('Trình duyệt đang chặn popup in. Hãy cho phép popup rồi thử lại.');
+    }
+  }
+
+  function printMultipleShipments(rows: ShipmentRow[]): void {
+    if (rows.length === 0) {
+      setPrintMessage('Không tìm thấy vận đơn nào phù hợp để in.');
+      return;
+    }
+    const payloads = rows.map((r) => buildShippingLabelPayload(r));
+    const opened = openMultiShippingLabelPrint(payloads);
+    if (!opened) {
+      setPrintMessage('Trình duyệt đang chặn popup in. Hãy cho phép popup rồi thử lại.');
+    } else {
+      setPrintMessage(`Đã mở popup in cho ${rows.length} vận đơn.`);
     }
   }
 
@@ -3088,6 +3111,32 @@ function MerchantApp(): React.JSX.Element {
     link.download = `shipments-${Date.now()}.csv`;
     link.click();
     URL.revokeObjectURL(url);
+  }
+
+  function exportPdf(): void {
+    const targetRows =
+      printBulkPreviewRows.length > 0
+        ? printBulkPreviewRows
+        : printPreviewRow
+        ? [printPreviewRow]
+        : shipmentRows.length > 0
+        ? [shipmentRows[0]]
+        : [];
+
+    if (targetRows.length === 0) {
+      setPrintMessage('Chưa có vận đơn nào để xuất PDF.');
+      return;
+    }
+
+    const payloads = targetRows.map(buildShippingLabelPayload);
+    const opened = openMultiShippingLabelPrint(payloads);
+    if (!opened) {
+      setPrintMessage('Trình duyệt đang chặn popup in. Hãy cho phép popup để xuất PDF.');
+    } else {
+      setPrintMessage(
+        `Đã mở tài liệu xuất PDF cho ${targetRows.length} vận đơn. Chọn "Save as PDF" / "Lưu dưới dạng PDF" tại mục máy in để lưu file.`,
+      );
+    }
   }
 
   if (booting) {
@@ -5409,10 +5458,34 @@ function MerchantApp(): React.JSX.Element {
 
               <div className="print-action-stack">
                 <button className="btn btn-primary print-primary-btn" onClick={() => { const row = shipmentRows.find((r) => r.shipment.code === normalizeCode(printSingleCode)); if (!row) { setPrintMessage('Không tìm thấy shipment trong danh sách hiện tại.'); return; } printShipment(row); setPrintMessage(`Đã mở popup in cho ${row.shipment.code}`); }}>In 1 vận đơn</button>
-                <button className="btn btn-secondary print-secondary-btn" onClick={() => { const codes = printBulkCodes.split(/[\s,;\n]+/).map((c) => normalizeCode(c)).filter(Boolean); codes.forEach((c) => { const row = shipmentRows.find((r) => r.shipment.code === c); if (row) printShipment(row); }); setPrintMessage(`Đã mở popup in cho ${codes.length} code.`); }}>In nhiều vận đơn</button>
+                <button
+                  className="btn btn-secondary print-secondary-btn"
+                  onClick={() => {
+                    const codes = printBulkCodes
+                      .split(/[\s,;\n]+/)
+                      .map((c) => normalizeCode(c))
+                      .filter(Boolean);
+                    if (codes.length === 0) {
+                      setPrintMessage('Vui lòng nhập ít nhất 1 mã vận đơn để in.');
+                      return;
+                    }
+                    if (printBulkPreviewRows.length === 0) {
+                      setPrintMessage('Không tìm thấy vận đơn nào phù hợp với danh sách mã đã nhập.');
+                      return;
+                    }
+                    printMultipleShipments(printBulkPreviewRows);
+                    if (printBulkPreviewRows.length < codes.length) {
+                      setPrintMessage(`Đã mở popup in cho ${printBulkPreviewRows.length}/${codes.length} mã tìm thấy.`);
+                    } else {
+                      setPrintMessage(`Đã mở popup in cho toàn bộ ${printBulkPreviewRows.length} vận đơn.`);
+                    }
+                  }}
+                >
+                  In nhiều vận đơn
+                </button>
                 <div className="print-utility-row">
                   <button className="btn btn-ghost" onClick={downloadCsv}>Tải danh sách đơn</button>
-                  <button className="btn btn-ghost" onClick={() => window.print()}>Xuất PDF</button>
+                  <button className="btn btn-ghost" onClick={exportPdf}>Xuất PDF</button>
                 </div>
               </div>
 

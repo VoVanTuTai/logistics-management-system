@@ -11,6 +11,7 @@ Thư mục `docs/` được quy hoạch thành các phân nhóm module rõ ràng
 ```
 docs/
 ├── README.md                           # 📖 File này: Mục lục tổng quan toàn bộ tài liệu
+├── CHUC-NANG-THEO-TUNG-ACTOR.md        # 👥 Đặc tả toàn bộ chức năng theo từng Actor & Bảng phân loại
 ├── PROJECT-OVERVIEW.md                 # 🏗️ [GỐC] Bức tranh kỹ thuật chi tiết 15 microservices & 6 client apps
 ├── AI-REPORT-HANDOFF.md                # ✍️ [GỐC] Cẩm nang viết báo cáo khóa luận không sai lệch kiến trúc
 ├── demo-script.md                      # 🎬 Kịch bản thực hành demo hệ thống khi bảo vệ
@@ -71,6 +72,7 @@ docs/
 
 | Bạn đang tìm kiếm điều gì? | Hãy xem tài liệu này |
 | :--- | :--- |
+| **Danh sách toàn bộ chức năng theo từng Actor** | [`docs/CHUC-NANG-THEO-TUNG-ACTOR.md`](CHUC-NANG-THEO-TUNG-ACTOR.md) |
 | **Báo cáo tổng quan đồ án tốt nghiệp trình Thầy Cô** | [**`README.md (Trang chủ Repository)`**](../README.md) |
 | **Bản vẽ chi tiết 15 microservices & 6 client apps** | [`docs/PROJECT-OVERVIEW.md`](PROJECT-OVERVIEW.md) |
 | **Cẩm nang viết báo cáo khóa luận không sai lệch kiến trúc** | [`docs/AI-REPORT-HANDOFF.md`](AI-REPORT-HANDOFF.md) |
