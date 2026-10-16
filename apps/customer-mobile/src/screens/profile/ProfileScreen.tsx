@@ -23,6 +23,7 @@ type Props = CompositeScreenProps<
 
 const PROFILE_MENUS = [
   { id: 'account', title: 'Thông tin tài khoản', icon: 'person-outline' },
+  { id: 'bank_account', title: 'Tài khoản ngân hàng nhận tiền', icon: 'card-outline' },
   { id: 'addresses', title: 'Địa chỉ của tôi', icon: 'location-outline' },
   { id: 'orders', title: 'Đơn hàng của tôi', icon: 'cube-outline' },
   { id: 'notifs', title: 'Thông báo & Khuyến mãi', icon: 'notifications-outline' },
@@ -92,6 +93,7 @@ export function ProfileScreen({ navigation }: Props): React.JSX.Element {
               style={styles.menuRow}
               onPress={() => {
                 if (menu.id === 'account') navigation.navigate('AccountDetail');
+                else if (menu.id === 'bank_account') navigation.navigate('BankAccount');
                 else if (menu.id === 'addresses') navigation.navigate('AddressManagement');
                 else if (menu.id === 'orders') navigation.navigate('OrdersTab');
               }}
