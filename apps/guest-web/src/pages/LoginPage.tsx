@@ -1,11 +1,27 @@
-import React, { useState } from 'react';
-import { Shield, ArrowRight, CheckCircle2, UserPlus, LogIn, AlertCircle } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Shield, ArrowRight, CheckCircle2, UserPlus, LogIn, AlertCircle, Package, Sparkles } from 'lucide-react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuthStore } from '../store/useAuthStore';
 import { authApi } from '../services/api/auth.api';
 
+interface SavedDraftQuote {
+  originProvince: string;
+  destProvince: string;
+  weightKg: number;
+  lengthCm: number;
+  widthCm: number;
+  heightCm: number;
+  serviceType: string;
+  estimatedFee: number;
+  timestamp?: number;
+}
+
 export default function LoginPage() {
-  const [tab, setTab] = useState<'login' | 'register'>('login');
+  const [searchParams] = useSearchParams();
+  const redirectTarget = searchParams.get('redirect') || '/create';
+  const initialTab = searchParams.get('tab') === 'register' ? 'register' : 'login';
+
+  const [tab, setTab] = useState<'login' | 'register'>(initialTab);
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
@@ -13,9 +29,20 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [savedQuote, setSavedQuote] = useState<SavedDraftQuote | null>(null);
 
   const login = useAuthStore((state) => state.login);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem('nexus_draft_quote');
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        setSavedQuote(parsed);
+      }
+    } catch {}
+  }, []);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -54,7 +81,7 @@ export default function LoginPage() {
 
       setSuccessMessage('Đăng nhập thành công! Đang chuyển hướng...');
       setTimeout(() => {
-        navigate('/create');
+        navigate(redirectTarget);
       }, 500);
     } catch (err: any) {
       setErrorMessage(
@@ -119,7 +146,7 @@ export default function LoginPage() {
 
       setSuccessMessage('Đăng ký tài khoản thành công! Đang chuyển hướng...');
       setTimeout(() => {
-        navigate('/create');
+        navigate(redirectTarget);
       }, 600);
     } catch (err: any) {
       setErrorMessage(
@@ -144,6 +171,37 @@ export default function LoginPage() {
             Đăng nhập hoặc đăng ký tài khoản để tạo đơn, quản lý lịch sử gửi hàng đồng bộ trên hệ thống Nexus Logistics.
           </p>
         </div>
+
+        {/* THẺ BÁO GIÁ ĐƯỢC GIỮ CHỖ TỪ TRƯỚC */}
+        {savedQuote && (
+          <div className="rounded-2xl border border-blue-200 bg-gradient-to-br from-blue-50/90 to-indigo-50/60 p-4 space-y-2 text-xs text-blue-900 shadow-sm">
+            <div className="flex items-center justify-between">
+              <span className="flex items-center gap-1.5 font-extrabold text-blue-700 uppercase text-[10px] tracking-wide">
+                <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                Đang lưu báo giá ước tính của bạn
+              </span>
+              <span className="text-[10px] font-bold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded-md">
+                Tự động khôi phục
+              </span>
+            </div>
+            <div className="flex items-center justify-between font-bold text-slate-800">
+              <span className="flex items-center gap-1.5">
+                <Package className="w-3.5 h-3.5 text-blue-600" />
+                {savedQuote.originProvince} → {savedQuote.destProvince}
+              </span>
+              <span className="font-mono text-blue-700 text-sm font-extrabold">
+                {savedQuote.estimatedFee ? `${savedQuote.estimatedFee.toLocaleString('vi-VN')} đ` : ''}
+              </span>
+            </div>
+            <p className="text-[11px] text-slate-500 font-medium">
+              Kiện hàng: <b>{savedQuote.weightKg} kg</b> • Kích thước: <b>{savedQuote.lengthCm}×{savedQuote.widthCm}×{savedQuote.heightCm} cm</b>
+            </p>
+            <p className="text-[10px] text-blue-700 pt-1.5 border-t border-blue-200/60 font-medium flex items-center gap-1">
+              <CheckCircle2 className="w-3 h-3 text-emerald-600 shrink-0" />
+              Sau khi hoàn tất {tab === 'login' ? 'đăng nhập' : 'đăng ký'}, hệ thống sẽ chuyển thẳng vào đơn hàng với dữ liệu này!
+            </p>
+          </div>
+        )}
 
         {/* Tab switcher */}
         <div className="grid grid-cols-2 p-1 bg-slate-100 rounded-xl border border-slate-200 text-xs font-bold">

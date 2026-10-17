@@ -56,6 +56,7 @@ import {
   Image as ImageIcon,
   Lock,
   Bell,
+  UserPlus,
 } from 'lucide-react';
 import qrcode from 'qrcode-generator';
 
@@ -71,6 +72,7 @@ import {
   type TimelineEventResponse,
 } from './services/api/tracking.api';
 import { pricingApi, type PricingQuoteResponse } from './services/api/pricing.api';
+import { authApi } from './services/api/auth.api';
 import { computeFallbackQuote } from './utils/pricingCalculator';
 import { shipmentApi, type ShipmentResponse } from './services/api/shipment.api';
 import { masterdataApi, type HubRecord } from './services/api/masterdata.api';
@@ -200,7 +202,11 @@ function Layout() {
       logout();
       navigate('/');
     } else {
-      navigate('/login');
+      const redirectParam =
+        location.pathname !== '/login'
+          ? `?redirect=${encodeURIComponent(location.pathname + location.search)}`
+          : '';
+      navigate(`/login${redirectParam}`);
     }
   };
 
@@ -469,9 +475,24 @@ function TrackingPage() {
   const [calcOrigin, setCalcOrigin] = useState('Thành phố Hồ Chí Minh');
   const [calcDest, setCalcDest] = useState('Thành phố Hà Nội');
   const [calcWeight, setCalcWeight] = useState(1);
+  const [calcLength, setCalcLength] = useState(20);
+  const [calcWidth, setCalcWidth] = useState(15);
+  const [calcHeight, setCalcHeight] = useState(10);
   const [calcService, setCalcService] = useState<'EXPRESS' | 'STANDARD' | 'CARGO'>('STANDARD');
   const [isCalculating, setIsCalculating] = useState(false);
   const [quoteResult, setQuoteResult] = useState<PricingQuoteResponse | null>(null);
+
+  // Chuẩn quốc tế IATA: Khối lượng quy đổi thể tích V = (Dài x Rộng x Cao) / 6000
+  const calcVolumetricWeight = useMemo(() => {
+    if (calcLength > 0 && calcWidth > 0 && calcHeight > 0) {
+      return Number(((calcLength * calcWidth * calcHeight) / 6000).toFixed(2));
+    }
+    return 0;
+  }, [calcLength, calcWidth, calcHeight]);
+
+  const calcChargeableWeight = useMemo(() => {
+    return Math.max(calcWeight, calcVolumetricWeight);
+  }, [calcWeight, calcVolumetricWeight]);
 
   // Hubs Directory
   const [hubs, setHubs] = useState<HubRecord[]>([]);
@@ -570,17 +591,61 @@ function TrackingPage() {
         serviceType: calcService,
         sender: { province: calcOrigin },
         receiver: { province: calcDest },
-        package: { weightKg: calcWeight },
+        package: {
+          weightKg: calcWeight,
+          dimensionsCm: {
+            length: calcLength,
+            width: calcWidth,
+            height: calcHeight,
+          },
+        },
       });
       setQuoteResult(res);
+
+      try {
+        localStorage.setItem(
+          'nexus_draft_quote',
+          JSON.stringify({
+            originProvince: calcOrigin,
+            destProvince: calcDest,
+            weightKg: calcWeight,
+            lengthCm: calcLength,
+            widthCm: calcWidth,
+            heightCm: calcHeight,
+            serviceType: calcService === 'CARGO' ? 'STANDARD' : calcService,
+            estimatedFee: res.totalFee,
+            timestamp: Date.now(),
+          }),
+        );
+      } catch {}
     } catch {
       const fallback = computeFallbackQuote({
         serviceType: calcService,
         senderProvince: calcOrigin,
         receiverProvince: calcDest,
         weightKg: calcWeight,
+        lengthCm: calcLength,
+        widthCm: calcWidth,
+        heightCm: calcHeight,
       });
       setQuoteResult(fallback);
+
+      try {
+        localStorage.setItem(
+          'nexus_draft_quote',
+          JSON.stringify({
+            originProvince: calcOrigin,
+            destProvince: calcDest,
+            weightKg: calcWeight,
+            lengthCm: calcLength,
+            widthCm: calcWidth,
+            heightCm: calcHeight,
+            serviceType: calcService === 'CARGO' ? 'STANDARD' : calcService,
+            estimatedFee: fallback.totalFee,
+            timestamp: Date.now(),
+          }),
+        );
+      } catch {}
     } finally {
       setIsCalculating(false);
     }
@@ -1111,23 +1176,104 @@ function TrackingPage() {
               </div>
             </div>
 
+            {/* Khối lượng thực tế */}
             <div>
-              <label className="block text-[11px] font-extrabold text-slate-700 uppercase">Khối lượng (kg)</label>
-              <div className="flex gap-2 mt-1">
-                {[0.5, 1, 2, 5].map((w) => (
-                  <button
-                    key={w}
-                    type="button"
-                    onClick={() => setCalcWeight(w)}
-                    className={`flex-1 py-1.5 text-xs font-bold rounded-lg border transition ${
-                      calcWeight === w
-                        ? 'bg-blue-600 text-white border-blue-600'
-                        : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-blue-50'
-                    }`}
-                  >
-                    {w} kg
-                  </button>
-                ))}
+              <div className="flex items-center justify-between mb-1">
+                <label className="block text-[11px] font-extrabold text-slate-700 uppercase">Khối lượng thực tế (kg)</label>
+                <span className="text-[10px] text-slate-400 font-medium">Nhập số hoặc chọn nhanh</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="relative flex-1">
+                  <input
+                    type="number"
+                    step="0.1"
+                    min="0.1"
+                    value={calcWeight || ''}
+                    onChange={(e) => setCalcWeight(Math.max(0.1, parseFloat(e.target.value) || 0.1))}
+                    placeholder="VD: 1.0"
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-bold text-slate-900 outline-none focus:border-blue-600 focus:bg-white"
+                  />
+                  <span className="absolute right-3 top-2 text-xs text-slate-400 font-semibold">kg</span>
+                </div>
+                <div className="flex gap-1 shrink-0">
+                  {[0.5, 1, 2, 5].map((w) => (
+                    <button
+                      key={w}
+                      type="button"
+                      onClick={() => setCalcWeight(w)}
+                      className={`px-2.5 py-2 text-xs font-bold rounded-lg border transition ${
+                        calcWeight === w
+                          ? 'bg-blue-600 text-white border-blue-600'
+                          : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-blue-50'
+                      }`}
+                    >
+                      {w}k
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Kích thước Dài x Rộng x Cao & Chuẩn IATA */}
+            <div className="space-y-1.5">
+              <label className="block text-[11px] font-extrabold text-slate-700 uppercase">
+                Kích thước kiện hàng (Dài × Rộng × Cao cm)
+              </label>
+              <div className="grid grid-cols-3 gap-2">
+                <div className="relative">
+                  <input
+                    type="number"
+                    min="1"
+                    value={calcLength || ''}
+                    onChange={(e) => setCalcLength(Math.max(0, parseFloat(e.target.value) || 0))}
+                    placeholder="Dài"
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-2.5 py-2 text-xs font-bold text-slate-900 outline-none focus:border-blue-600 focus:bg-white text-center"
+                  />
+                  <span className="absolute right-2 top-2 text-[10px] text-slate-400">cm</span>
+                </div>
+                <div className="relative">
+                  <input
+                    type="number"
+                    min="1"
+                    value={calcWidth || ''}
+                    onChange={(e) => setCalcWidth(Math.max(0, parseFloat(e.target.value) || 0))}
+                    placeholder="Rộng"
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-2.5 py-2 text-xs font-bold text-slate-900 outline-none focus:border-blue-600 focus:bg-white text-center"
+                  />
+                  <span className="absolute right-2 top-2 text-[10px] text-slate-400">cm</span>
+                </div>
+                <div className="relative">
+                  <input
+                    type="number"
+                    min="1"
+                    value={calcHeight || ''}
+                    onChange={(e) => setCalcHeight(Math.max(0, parseFloat(e.target.value) || 0))}
+                    placeholder="Cao"
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-2.5 py-2 text-xs font-bold text-slate-900 outline-none focus:border-blue-600 focus:bg-white text-center"
+                  />
+                  <span className="absolute right-2 top-2 text-[10px] text-slate-400">cm</span>
+                </div>
+              </div>
+
+              {/* Box so sánh IATA V/6000 trực quan */}
+              <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200/80 text-[11px] space-y-1">
+                <div className="flex justify-between items-center text-slate-600">
+                  <span>Quy đổi thể tích IATA: <code>(D×R×C)/6000</code></span>
+                  <span className="font-mono font-bold text-slate-900">{calcVolumetricWeight} kg</span>
+                </div>
+                <div className="flex justify-between items-center text-slate-700 font-bold">
+                  <span>Trọng lượng tính cước (Chargeable Weight):</span>
+                  <span className="font-mono text-blue-700">{calcChargeableWeight} kg</span>
+                </div>
+                {calcVolumetricWeight > calcWeight ? (
+                  <p className="text-[10px] text-amber-700 font-medium">
+                    ⚠️ Hàng cồng kềnh: Tính cước theo thể tích quy đổi ({calcVolumetricWeight} kg &gt; {calcWeight} kg).
+                  </p>
+                ) : (
+                  <p className="text-[10px] text-emerald-700 font-medium">
+                    ✓ Kiện hàng gọn: Tính cước theo cân nặng thực tế ({calcWeight} kg).
+                  </p>
+                )}
               </div>
             </div>
 
@@ -1160,16 +1306,67 @@ function TrackingPage() {
                   <p className="text-[10px] uppercase font-bold text-slate-500">Cước phí ước tính</p>
                   <p className="text-2xl font-extrabold text-blue-600">{quoteResult.totalFee.toLocaleString('vi-VN')} VNĐ</p>
                 </div>
-                <span className="text-[11px] text-emerald-800 font-extrabold bg-emerald-100 px-3 py-1 rounded-lg border border-emerald-200">
-                  {calcService === 'EXPRESS' ? 'Giao 2-6 giờ' : 'Giao 24-48 giờ'}
-                </span>
+                <div className="text-right">
+                  <span className="text-[11px] text-emerald-800 font-extrabold bg-emerald-100 px-3 py-1 rounded-lg border border-emerald-200 inline-block">
+                    {calcService === 'EXPRESS' ? 'Giao 2-6 giờ' : 'Giao 24-48 giờ'}
+                  </span>
+                  <p className="text-[10px] text-slate-500 mt-1 font-mono">
+                    Tính theo: <strong className="text-slate-800">{quoteResult.chargeableWeightKg} kg</strong>
+                  </p>
+                </div>
               </div>
-              <button
-                onClick={() => navigate('/create')}
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2.5 text-xs font-bold uppercase tracking-wider rounded-xl shadow-sm transition flex items-center justify-center gap-1.5"
-              >
-                Tạo Đơn Hàng Ngay <ArrowRight className="h-3.5 w-3.5" />
-              </button>
+              <div className="space-y-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const draft = {
+                      originProvince: calcOrigin,
+                      destProvince: calcDest,
+                      weightKg: calcWeight,
+                      lengthCm: calcLength,
+                      widthCm: calcWidth,
+                      heightCm: calcHeight,
+                      serviceType: calcService === 'CARGO' ? 'STANDARD' : calcService,
+                      estimatedFee: quoteResult.totalFee,
+                      timestamp: Date.now(),
+                    };
+                    try {
+                      localStorage.setItem('nexus_draft_quote', JSON.stringify(draft));
+                    } catch {}
+                    navigate('/create', { state: draft });
+                  }}
+                  className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 text-xs font-bold uppercase tracking-wider rounded-xl shadow-md shadow-blue-600/20 transition flex items-center justify-center gap-1.5"
+                >
+                  Tạo Đơn Hàng Ngay Với Thông Tin Này <ArrowRight className="h-3.5 w-3.5" />
+                </button>
+
+                {!phone && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const draft = {
+                        originProvince: calcOrigin,
+                        destProvince: calcDest,
+                        weightKg: calcWeight,
+                        lengthCm: calcLength,
+                        widthCm: calcWidth,
+                        heightCm: calcHeight,
+                        serviceType: calcService === 'CARGO' ? 'STANDARD' : calcService,
+                        estimatedFee: quoteResult.totalFee,
+                        timestamp: Date.now(),
+                      };
+                      try {
+                        localStorage.setItem('nexus_draft_quote', JSON.stringify(draft));
+                      } catch {}
+                      navigate('/login?tab=register&redirect=/create');
+                    }}
+                    className="w-full bg-white hover:bg-blue-50 text-blue-700 border border-blue-200 py-2.5 text-xs font-bold rounded-xl transition flex items-center justify-center gap-1.5 shadow-sm"
+                  >
+                    <UserPlus className="h-3.5 w-3.5 text-blue-600" />
+                    Lưu Báo Giá & Đăng Ký Tài Khoản Trước
+                  </button>
+                )}
+              </div>
             </div>
           )}
         </div>
@@ -1400,45 +1597,119 @@ function NetworkDirectoryPage() {
 function CreateOrderPage() {
   const { phone, user, token } = useAuthStore();
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // Khôi phục báo giá / bản nháp từ location.state hoặc localStorage nếu khách vừa từ trang đăng ký / tải lại trang
+  const initialPrefill = useMemo(() => {
+    if (location.state && (location.state as any).originProvince) {
+      return location.state as any;
+    }
+    try {
+      const rawDraftOrder = localStorage.getItem('nexus_draft_order');
+      if (rawDraftOrder) {
+        return JSON.parse(rawDraftOrder);
+      }
+      const rawDraftQuote = localStorage.getItem('nexus_draft_quote');
+      if (rawDraftQuote) {
+        return JSON.parse(rawDraftQuote);
+      }
+    } catch {}
+    return null;
+  }, [location.state]);
+
+  const [prefill, setPrefill] = useState(initialPrefill);
 
   // Mode: Lấy hàng tại nhà vs Gửi hàng tại bưu cục
-  const [pickupMethod, setPickupMethod] = useState<'PICKUP' | 'DROP_OFF'>('PICKUP');
+  const [pickupMethod, setPickupMethod] = useState<'PICKUP' | 'DROP_OFF'>(
+    initialPrefill?.pickupMethod || 'PICKUP',
+  );
 
   // Masterdata Hubs & Administrative Units
   const [allHubs, setAllHubs] = useState<HubRecord[]>([]);
   const [adminUnits, setAdminUnits] = useState<AdminUnitProvince[]>(VIETNAM_ADMINISTRATIVE_DATA);
 
   // Sender details
-  const [senderName, setSenderName] = useState(user?.displayName || 'Chủ hàng');
-  const [senderAddress, setSenderAddress] = useState('');
-  const [senderProvince, setSenderProvince] = useState('Thành phố Hồ Chí Minh');
-  const [senderWard, setSenderWard] = useState('Phường Bến Nghé');
-  const [senderDistrict, setSenderDistrict] = useState('Quận 1');
-  const [senderHubCode, setSenderHubCode] = useState('HUB-HCM-001');
+  const [senderName, setSenderName] = useState(
+    initialPrefill?.senderName || user?.displayName || 'Chủ hàng',
+  );
+  const [senderPhoneInput, setSenderPhoneInput] = useState(
+    initialPrefill?.senderPhone || phone || '',
+  );
+  const [senderAddress, setSenderAddress] = useState(initialPrefill?.senderAddress || '');
+  const [senderProvince, setSenderProvince] = useState(
+    initialPrefill?.originProvince || initialPrefill?.senderProvince || 'Thành phố Hồ Chí Minh',
+  );
+  const [senderWard, setSenderWard] = useState(initialPrefill?.senderWard || 'Phường Bến Nghé');
+  const [senderDistrict, setSenderDistrict] = useState(initialPrefill?.senderDistrict || 'Quận 1');
+  const [senderHubCode, setSenderHubCode] = useState(initialPrefill?.senderHubCode || 'HUB-HCM-001');
 
   // Receiver details
-  const [receiverName, setReceiverName] = useState('');
-  const [receiverPhone, setReceiverPhone] = useState('');
-  const [receiverAddress, setReceiverAddress] = useState('');
-  const [receiverProvince, setReceiverProvince] = useState('Thành phố Hà Nội');
-  const [receiverWard, setReceiverWard] = useState('Phường Tràng Tiền');
-  const [receiverDistrict, setReceiverDistrict] = useState('Quận Hoàn Kiếm');
-  const [receiverHubCode, setReceiverHubCode] = useState('HUB-HN-001');
+  const [receiverName, setReceiverName] = useState(initialPrefill?.receiverName || '');
+  const [receiverPhone, setReceiverPhone] = useState(initialPrefill?.receiverPhone || '');
+  const [receiverAddress, setReceiverAddress] = useState(initialPrefill?.receiverAddress || '');
+  const [receiverProvince, setReceiverProvince] = useState(
+    initialPrefill?.destProvince || initialPrefill?.receiverProvince || 'Thành phố Hà Nội',
+  );
+  const [receiverWard, setReceiverWard] = useState(initialPrefill?.receiverWard || 'Phường Tràng Tiền');
+  const [receiverDistrict, setReceiverDistrict] = useState(initialPrefill?.receiverDistrict || 'Quận Hoàn Kiếm');
+  const [receiverHubCode, setReceiverHubCode] = useState(initialPrefill?.receiverHubCode || 'HUB-HN-001');
 
   // Cargo & Service details
-  const [cargoName, setCargoName] = useState('Kiện hàng mẫu');
-  const [cargoWeight, setCargoWeight] = useState(1);
-  const [serviceType, setServiceType] = useState<'STANDARD' | 'EXPRESS'>('STANDARD');
-  const [codAmount, setCodAmount] = useState(0);
-  const [notes, setNotes] = useState('');
+  const [cargoName, setCargoName] = useState(initialPrefill?.cargoName || 'Kiện hàng mẫu');
+  const [cargoWeight, setCargoWeight] = useState(
+    initialPrefill?.weightKg !== undefined
+      ? initialPrefill.weightKg
+      : (initialPrefill?.cargoWeight !== undefined ? initialPrefill.cargoWeight : 1),
+  );
+  const [cargoLength, setCargoLength] = useState(
+    initialPrefill?.lengthCm !== undefined
+      ? initialPrefill.lengthCm
+      : (initialPrefill?.cargoLength !== undefined ? initialPrefill.cargoLength : 20),
+  );
+  const [cargoWidth, setCargoWidth] = useState(
+    initialPrefill?.widthCm !== undefined
+      ? initialPrefill.widthCm
+      : (initialPrefill?.cargoWidth !== undefined ? initialPrefill.cargoWidth : 15),
+  );
+  const [cargoHeight, setCargoHeight] = useState(
+    initialPrefill?.heightCm !== undefined
+      ? initialPrefill.heightCm
+      : (initialPrefill?.cargoHeight !== undefined ? initialPrefill.cargoHeight : 10),
+  );
+  const [serviceType, setServiceType] = useState<'STANDARD' | 'EXPRESS'>(
+    initialPrefill?.serviceType || 'STANDARD',
+  );
+  const [codAmount, setCodAmount] = useState(initialPrefill?.codAmount || 0);
+  const [notes, setNotes] = useState(initialPrefill?.notes || '');
+
+  // Chuẩn quốc tế IATA: Thể tích quy đổi = (D x R x C) / 6000
+  const cargoVolumetricWeight = useMemo(() => {
+    if (cargoLength > 0 && cargoWidth > 0 && cargoHeight > 0) {
+      return Number(((cargoLength * cargoWidth * cargoHeight) / 6000).toFixed(2));
+    }
+    return 0;
+  }, [cargoLength, cargoWidth, cargoHeight]);
+
+  const cargoChargeableWeight = useMemo(() => {
+    return Math.max(cargoWeight, cargoVolumetricWeight);
+  }, [cargoWeight, cargoVolumetricWeight]);
 
   // Live fee state
-  const [liveFee, setLiveFee] = useState(22000);
+  const [liveFee, setLiveFee] = useState(prefill?.estimatedFee || 22000);
   const [isCalculatingFee, setIsCalculatingFee] = useState(false);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
+
+  // Quick Auth Modal for Guest Users
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [authTab, setAuthTab] = useState<'login' | 'register'>('login');
+  const [authPhone, setAuthPhone] = useState(phone || '');
+  const [authPassword, setAuthPassword] = useState('');
+  const [authFullName, setAuthFullName] = useState(user?.displayName || '');
+  const [authLoading, setAuthLoading] = useState(false);
+  const [authError, setAuthError] = useState<string | null>(null);
 
   // Load hubs and administrative units on mount
   useEffect(() => {
@@ -1504,7 +1775,7 @@ function CreateOrderPage() {
     }
   }, [receiverProvince, receiverWards, receiverMatchingHubs]);
 
-  // Real-time Pricing Engine calculation with debounce
+  // Real-time Pricing Engine calculation with debounce (includes weight + dimensions)
   useEffect(() => {
     let active = true;
     setIsCalculatingFee(true);
@@ -1515,7 +1786,14 @@ function CreateOrderPage() {
           serviceType,
           sender: { province: senderProvince, hubCode: senderHubCode },
           receiver: { province: receiverProvince, hubCode: receiverHubCode },
-          package: { weightKg: cargoWeight },
+          package: {
+            weightKg: cargoWeight,
+            dimensionsCm: {
+              length: cargoLength,
+              width: cargoWidth,
+              height: cargoHeight,
+            },
+          },
           codAmount: codAmount,
         })
         .then((res) => {
@@ -1529,6 +1807,9 @@ function CreateOrderPage() {
             senderProvince,
             receiverProvince,
             weightKg: cargoWeight,
+            lengthCm: cargoLength,
+            widthCm: cargoWidth,
+            heightCm: cargoHeight,
             codAmount,
           });
           if (active) setLiveFee(fallback.totalFee);
@@ -1542,50 +1823,97 @@ function CreateOrderPage() {
       active = false;
       clearTimeout(timer);
     };
-  }, [senderProvince, senderHubCode, receiverProvince, receiverHubCode, cargoWeight, serviceType, codAmount]);
+  }, [
+    senderProvince,
+    senderHubCode,
+    receiverProvince,
+    receiverHubCode,
+    cargoWeight,
+    cargoLength,
+    cargoWidth,
+    cargoHeight,
+    serviceType,
+    codAmount,
+  ]);
 
-  if (!phone) {
-    return (
-      <div className="mx-auto flex min-h-[70vh] max-w-lg items-center justify-center px-4">
-        <div className="w-full bg-white p-8 text-center rounded-3xl border border-slate-200 shadow-md space-y-5">
-          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-50 text-blue-600 border border-blue-100">
-            <PlusCircle className="h-7 w-7" strokeWidth={1.75} />
-          </div>
-          <div className="space-y-1">
-            <h1 className="text-2xl font-bold text-slate-900">Tạo Vận Đơn Mới</h1>
-            <p className="text-xs text-slate-500 leading-relaxed max-w-xs mx-auto font-medium">
-              Vui lòng đăng nhập hoặc đăng ký tài khoản để tạo và đồng bộ vận đơn trên cơ sở dữ liệu Nexus.
-            </p>
-          </div>
-          <button
-            onClick={() => navigate('/login')}
-            className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 hover:bg-blue-700 px-6 py-3.5 text-xs font-bold uppercase tracking-wider text-white shadow-md transition"
-          >
-            Đăng Nhập / Đăng Ký Ngay
-            <ChevronRight className="h-4 w-4" strokeWidth={2} />
-          </button>
-        </div>
-      </div>
-    );
-  }
+  // Auto-save form inputs to localStorage so guest users don't lose progress on reload/auth
+  useEffect(() => {
+    const draftData = {
+      pickupMethod,
+      senderName,
+      senderPhone: senderPhoneInput,
+      senderAddress,
+      originProvince: senderProvince,
+      senderProvince,
+      senderDistrict,
+      senderWard,
+      senderHubCode,
+      receiverName,
+      receiverPhone,
+      receiverAddress,
+      destProvince: receiverProvince,
+      receiverProvince,
+      receiverDistrict,
+      receiverWard,
+      receiverHubCode,
+      cargoName,
+      cargoWeight,
+      weightKg: cargoWeight,
+      cargoLength,
+      lengthCm: cargoLength,
+      cargoWidth,
+      widthCm: cargoWidth,
+      cargoHeight,
+      heightCm: cargoHeight,
+      serviceType,
+      codAmount,
+      notes,
+      estimatedFee: liveFee,
+      updatedAt: Date.now(),
+    };
+    try {
+      localStorage.setItem('nexus_draft_order', JSON.stringify(draftData));
+    } catch {}
+  }, [
+    pickupMethod,
+    senderName,
+    senderPhoneInput,
+    senderAddress,
+    senderProvince,
+    senderDistrict,
+    senderWard,
+    senderHubCode,
+    receiverName,
+    receiverPhone,
+    receiverAddress,
+    receiverProvince,
+    receiverDistrict,
+    receiverWard,
+    receiverHubCode,
+    cargoName,
+    cargoWeight,
+    cargoLength,
+    cargoWidth,
+    cargoHeight,
+    serviceType,
+    codAmount,
+    notes,
+    liveFee,
+  ]);
 
-  const handleCreateOrder = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!token) {
-      navigate('/login');
-      return;
-    }
+  const handleClearDraft = () => {
+    try {
+      localStorage.removeItem('nexus_draft_quote');
+      localStorage.removeItem('nexus_draft_order');
+    } catch {}
+    setPrefill(null);
+    setReceiverName('');
+    setReceiverPhone('');
+    setReceiverAddress('');
+    setNotes('');
+  };
 
-    if (!receiverName.trim() || !receiverPhone.trim() || !receiverAddress.trim()) {
-      setErrorMsg('Vui lòng điền đầy đủ thông tin người nhận (Tên, SĐT, Địa chỉ chi tiết).');
-      return;
-    }
-
-    if (pickupMethod === 'PICKUP' && !senderAddress.trim()) {
-      setErrorMsg('Vui lòng nhập địa chỉ lấy hàng tại nhà chi tiết (số nhà, tên đường).');
-      return;
-    }
-
+  const doCreateOrder = async (authToken: string, senderPhoneToUse: string) => {
     setIsSubmitting(true);
     setErrorMsg(null);
     setSuccessMsg(null);
@@ -1601,10 +1929,10 @@ function CreateOrderPage() {
 
       const fullReceiverAddress = `${receiverAddress.trim()}, ${receiverWard}, ${receiverProvince}`;
 
-      const res = await shipmentApi.createShipment(token, {
+      const res = await shipmentApi.createShipment(authToken, {
         sender: {
           name: senderName.trim(),
-          phone: phone,
+          phone: senderPhoneToUse,
           addressDetail:
             pickupMethod === 'DROP_OFF'
               ? (selectedDropOffHub?.addressDetail || selectedDropOffHub?.name || 'Gửi tại quầy bưu cục')
@@ -1628,6 +1956,11 @@ function CreateOrderPage() {
         package: {
           itemName: cargoName.trim(),
           weightKg: cargoWeight,
+          dimensionsCm: {
+            length: cargoLength,
+            width: cargoWidth,
+            height: cargoHeight,
+          },
           codAmount: codAmount,
         },
         pickupType: pickupMethod,
@@ -1650,6 +1983,13 @@ function CreateOrderPage() {
         },
       });
 
+      // Clear draft quote and order upon successful creation
+      try {
+        localStorage.removeItem('nexus_draft_quote');
+        localStorage.removeItem('nexus_draft_order');
+      } catch {}
+      setPrefill(null);
+
       setSuccessMsg(`Tạo vận đơn #${res.code} thành công! Đang chuyển đến danh sách đơn hàng...`);
       setTimeout(() => {
         navigate('/orders');
@@ -1660,15 +2000,97 @@ function CreateOrderPage() {
         err?.status === 401
       ) {
         useAuthStore.getState().logout();
-        setErrorMsg('Phiên đăng nhập đã hết hạn. Đang chuyển hướng về trang Đăng nhập...');
-        setTimeout(() => {
-          navigate('/login');
-        }, 1200);
+        setErrorMsg('Phiên đăng nhập đã hết hạn. Vui lòng xác thực lại tài khoản.');
+        setIsAuthModalOpen(true);
       } else {
         setErrorMsg(err?.message || 'Tạo vận đơn thất bại. Vui lòng thử lại.');
       }
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleCreateOrder = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!receiverName.trim() || !receiverPhone.trim() || !receiverAddress.trim()) {
+      setErrorMsg('Vui lòng điền đầy đủ thông tin người nhận (Tên, SĐT, Địa chỉ chi tiết).');
+      return;
+    }
+
+    if (pickupMethod === 'PICKUP' && !senderAddress.trim()) {
+      setErrorMsg('Vui lòng nhập địa chỉ lấy hàng tại nhà chi tiết (số nhà, tên đường).');
+      return;
+    }
+
+    const effectivePhone = (phone || senderPhoneInput).trim();
+    if (!effectivePhone) {
+      setErrorMsg('Vui lòng nhập số điện thoại người gửi.');
+      return;
+    }
+
+    // Nếu khách vãng lai chưa có token xác thực: Mở modal xác thực nhanh ngay tại chỗ
+    if (!token) {
+      setAuthPhone(effectivePhone);
+      setAuthFullName(senderName.trim() || 'Khách hàng');
+      setAuthError(null);
+      setIsAuthModalOpen(true);
+      return;
+    }
+
+    await doCreateOrder(token, effectivePhone);
+  };
+
+  const handleQuickAuthSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!authPhone.trim()) {
+      setAuthError('Vui lòng nhập số điện thoại.');
+      return;
+    }
+    if (!authPassword.trim()) {
+      setAuthError('Vui lòng nhập mật khẩu.');
+      return;
+    }
+
+    setAuthLoading(true);
+    setAuthError(null);
+
+    try {
+      if (authTab === 'register') {
+        await authApi.register({
+          username: authPhone.trim(),
+          password: authPassword.trim(),
+          displayName: authFullName.trim() || authPhone.trim(),
+          phone: authPhone.trim(),
+        });
+      }
+
+      const res = await authApi.login({
+        username: authPhone.trim(),
+        password: authPassword.trim(),
+        roleGroup: 'CUSTOMER_APP',
+      });
+
+      const authToken = res.tokens?.accessToken || res.accessToken;
+      if (!authToken) {
+        throw new Error('Không nhận được token xác thực từ máy chủ.');
+      }
+
+      useAuthStore.getState().login(authPhone.trim(), authToken, {
+        id: res.user.id,
+        username: res.user.username,
+        displayName: res.user.displayName || authFullName.trim() || authPhone.trim(),
+        phone: res.user.phone || authPhone.trim(),
+        roles: res.user.roles || ['CUSTOMER'],
+      });
+
+      setIsAuthModalOpen(false);
+      // Tự động tạo đơn hàng ngay lập tức không làm mất dữ liệu!
+      await doCreateOrder(authToken, authPhone.trim());
+    } catch (err: any) {
+      setAuthError(err?.message || 'Xác thực tài khoản thất bại. Vui lòng kiểm tra lại mật khẩu.');
+    } finally {
+      setAuthLoading(false);
     }
   };
 
@@ -1684,11 +2106,47 @@ function CreateOrderPage() {
             Hỗ trợ tùy chọn lấy hàng tận nhà (Auto Dispatch bưu tá) hoặc gửi trực tiếp tại bưu cục.
           </p>
         </div>
-        <div className="rounded-xl border border-blue-200 bg-blue-50/60 px-3.5 py-2 flex items-center gap-3">
-          <span className="text-[11px] font-semibold text-slate-600">Tài khoản:</span>
-          <span className="font-mono font-bold text-blue-700 text-sm">{phone}</span>
-        </div>
+        {phone ? (
+          <div className="rounded-xl border border-emerald-200 bg-emerald-50/70 px-3.5 py-2 flex items-center gap-2.5">
+            <ShieldCheck className="w-4 h-4 text-emerald-600" />
+            <div className="text-left">
+              <span className="block text-[10px] uppercase font-bold text-slate-500">Người gửi đã xác thực:</span>
+              <span className="font-mono font-bold text-emerald-800 text-xs">{phone}</span>
+            </div>
+          </div>
+        ) : (
+          <div className="rounded-xl border border-blue-200 bg-blue-50/70 px-3.5 py-2 flex items-center gap-2.5">
+            <User className="w-4 h-4 text-blue-600" />
+            <div className="text-left">
+              <span className="block text-[10px] uppercase font-bold text-blue-800">Chế độ Khách Vãng Lai</span>
+              <span className="text-[11px] font-medium text-slate-600">Điền đơn và xác thực nhanh khi tạo</span>
+            </div>
+          </div>
+        )}
       </div>
+
+      {prefill && (
+        <div className="p-3.5 rounded-2xl bg-blue-50 border border-blue-200 text-blue-900 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-sm">
+          <div className="flex items-center gap-2">
+            <CheckCircle2 className="w-4 h-4 text-blue-600 shrink-0" />
+            <span>
+              Đã tự động khôi phục thông tin từ <b>Báo giá ước tính</b> (
+              {(prefill.originProvince || prefill.senderProvince)} → {(prefill.destProvince || prefill.receiverProvince)}, {prefill.weightKg || prefill.cargoWeight}kg
+              {prefill.lengthCm || prefill.cargoLength ? `, ${prefill.lengthCm || prefill.cargoLength}×${prefill.widthCm || prefill.cargoWidth}×${prefill.heightCm || prefill.cargoHeight}cm` : ''}).
+            </span>
+          </div>
+          <div className="flex items-center gap-3 shrink-0 self-end sm:self-auto">
+            <span className="font-mono font-extrabold text-blue-700">{formatVnd(prefill.estimatedFee || liveFee)}</span>
+            <button
+              type="button"
+              onClick={handleClearDraft}
+              className="text-[11px] font-semibold text-slate-500 hover:text-red-600 underline transition"
+            >
+              Xóa dữ liệu nháp
+            </button>
+          </div>
+        </div>
+      )}
 
       {errorMsg && (
         <div className="p-4 rounded-2xl bg-red-50 border border-red-200 text-red-700 text-xs font-semibold flex items-center gap-2">
@@ -1805,13 +2263,35 @@ function CreateOrderPage() {
                 />
               </div>
               <div>
-                <label className="block text-[11px] font-bold text-slate-600 uppercase">Số điện thoại gửi</label>
-                <input
-                  type="tel"
-                  className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-100 px-3 py-2 text-xs font-semibold text-slate-700 cursor-not-allowed"
-                  value={phone}
-                  disabled
-                />
+                <div className="flex items-center justify-between">
+                  <label className="block text-[11px] font-bold text-slate-600 uppercase">Số điện thoại gửi *</label>
+                  {phone ? (
+                    <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded">
+                      Đã xác thực
+                    </span>
+                  ) : (
+                    <span className="text-[10px] font-bold text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded">
+                      Liên hệ bưu tá
+                    </span>
+                  )}
+                </div>
+                {phone ? (
+                  <input
+                    type="tel"
+                    className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-100 px-3 py-2 text-xs font-semibold text-slate-700 cursor-not-allowed"
+                    value={phone}
+                    disabled
+                  />
+                ) : (
+                  <input
+                    type="tel"
+                    required
+                    className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-900 outline-none focus:bg-white focus:border-blue-600"
+                    placeholder="09xx xxx xxx"
+                    value={senderPhoneInput}
+                    onChange={(e) => setSenderPhoneInput(e.target.value)}
+                  />
+                )}
               </div>
 
               {/* TỈNH / THÀNH PHỐ GỬI */}
@@ -2021,14 +2501,15 @@ function CreateOrderPage() {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-[11px] font-bold text-slate-600 uppercase">Khối lượng (kg)</label>
+                  <label className="block text-[11px] font-bold text-slate-600 uppercase">Khối lượng (kg) *</label>
                   <input
                     type="number"
                     step="0.1"
                     min="0.1"
+                    required
                     className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-900 outline-none focus:bg-white focus:border-blue-600"
                     value={cargoWeight}
-                    onChange={(e) => setCargoWeight(parseFloat(e.target.value) || 1)}
+                    onChange={(e) => setCargoWeight(parseFloat(e.target.value) || 0.1)}
                   />
                 </div>
                 <div>
@@ -2038,9 +2519,72 @@ function CreateOrderPage() {
                     value={serviceType}
                     onChange={(e) => setServiceType(e.target.value as any)}
                   >
-                    <option value="STANDARD">Tiêu Chuẩn</option>
-                    <option value="EXPRESS">Hỏa Tốc</option>
+                    <option value="STANDARD">Tiêu Chuẩn (24 - 48h)</option>
+                    <option value="EXPRESS">Hỏa Tốc (2 - 6h)</option>
                   </select>
+                </div>
+              </div>
+
+              {/* KÍCH THƯỚC DÀI X RỘNG X CAO (CM) & CÔNG THỨC IATA */}
+              <div className="space-y-1.5">
+                <label className="block text-[11px] font-bold text-slate-600 uppercase">
+                  Kích thước kiện hàng (Dài × Rộng × Cao cm)
+                </label>
+                <div className="grid grid-cols-3 gap-2">
+                  <div className="relative">
+                    <input
+                      type="number"
+                      min="1"
+                      placeholder="Dài"
+                      className="w-full rounded-xl border border-slate-200 bg-slate-50 px-2.5 py-2 text-xs font-semibold text-slate-900 outline-none focus:bg-white focus:border-blue-600 text-center"
+                      value={cargoLength || ''}
+                      onChange={(e) => setCargoLength(Math.max(0, parseFloat(e.target.value) || 0))}
+                    />
+                    <span className="absolute right-2 top-2 text-[10px] text-slate-400">cm</span>
+                  </div>
+                  <div className="relative">
+                    <input
+                      type="number"
+                      min="1"
+                      placeholder="Rộng"
+                      className="w-full rounded-xl border border-slate-200 bg-slate-50 px-2.5 py-2 text-xs font-semibold text-slate-900 outline-none focus:bg-white focus:border-blue-600 text-center"
+                      value={cargoWidth || ''}
+                      onChange={(e) => setCargoWidth(Math.max(0, parseFloat(e.target.value) || 0))}
+                    />
+                    <span className="absolute right-2 top-2 text-[10px] text-slate-400">cm</span>
+                  </div>
+                  <div className="relative">
+                    <input
+                      type="number"
+                      min="1"
+                      placeholder="Cao"
+                      className="w-full rounded-xl border border-slate-200 bg-slate-50 px-2.5 py-2 text-xs font-semibold text-slate-900 outline-none focus:bg-white focus:border-blue-600 text-center"
+                      value={cargoHeight || ''}
+                      onChange={(e) => setCargoHeight(Math.max(0, parseFloat(e.target.value) || 0))}
+                    />
+                    <span className="absolute right-2 top-2 text-[10px] text-slate-400">cm</span>
+                  </div>
+                </div>
+
+                {/* THÔNG BÁO QUY ĐỔI THỂ TÍCH IATA */}
+                <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200/80 text-[11px] space-y-1">
+                  <div className="flex justify-between items-center text-slate-600">
+                    <span>Quy đổi thể tích IATA: <code>(D×R×C)/6000</code></span>
+                    <span className="font-mono font-bold text-slate-900">{cargoVolumetricWeight} kg</span>
+                  </div>
+                  <div className="flex justify-between items-center text-slate-700 font-bold">
+                    <span>Trọng lượng tính cước (Chargeable):</span>
+                    <span className="font-mono text-blue-700">{cargoChargeableWeight} kg</span>
+                  </div>
+                  {cargoVolumetricWeight > cargoWeight ? (
+                    <p className="text-[10px] text-amber-700 font-medium">
+                      ⚠️ Kiện hàng cồng kềnh, tính cước theo thể tích quy đổi ({cargoVolumetricWeight} kg &gt; {cargoWeight} kg).
+                    </p>
+                  ) : (
+                    <p className="text-[10px] text-emerald-700 font-medium">
+                      ✓ Kiện hàng gọn, tính cước theo cân nặng thực tế ({cargoWeight} kg).
+                    </p>
+                  )}
                 </div>
               </div>
 
@@ -2106,8 +2650,148 @@ function CreateOrderPage() {
               </>
             )}
           </button>
+
+          {!phone && (
+            <p className="text-[11px] text-slate-500 text-center leading-relaxed">
+              💡 Khách vãng lai có thể điền đơn ngay. Khi bấm <b>Xác Nhận</b>, hệ thống sẽ xác thực số điện thoại người gửi để bưu tá liên hệ lấy hàng và đảm bảo quyền lợi đối soát COD.
+            </p>
+          )}
         </div>
       </form>
+
+      {/* QUICK SENDER AUTH MODAL FOR GUESTS */}
+      {isAuthModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-3xl border border-slate-200 shadow-2xl max-w-md w-full p-6 space-y-5 animate-in fade-in zoom-in-95 duration-200">
+            <div className="flex items-start justify-between">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-2xl bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-600">
+                  <ShieldCheck className="h-5 w-5" />
+                </div>
+                <div>
+                  <h3 className="font-extrabold text-base text-slate-900">Xác Thực Người Gửi Bưu Kiện</h3>
+                  <p className="text-[11px] text-slate-500">Bảo mật vận đơn & Điều phối lấy hàng</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsAuthModalOpen(false)}
+                className="p-1.5 rounded-xl hover:bg-slate-100 text-slate-400 hover:text-slate-700 transition"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <div className="bg-blue-50/70 rounded-2xl p-3 border border-blue-100 text-[11px] text-blue-900 leading-relaxed">
+              Theo <b>Luật Bưu chính</b> và bảo đảm tài chính thu hộ COD, mọi đơn hàng phải gắn với số điện thoại xác thực của người gửi để shipper hẹn giờ lấy hàng và tra soát hành trình.
+            </div>
+
+            {/* TAB SELECTOR: Đăng nhập vs Đăng ký */}
+            <div className="flex rounded-xl bg-slate-100 p-1">
+              <button
+                type="button"
+                onClick={() => {
+                  setAuthTab('login');
+                  setAuthError(null);
+                }}
+                className={`flex-1 py-1.5 rounded-lg text-xs font-bold transition ${
+                  authTab === 'login' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                Đăng Nhập Nhanh
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setAuthTab('register');
+                  setAuthError(null);
+                }}
+                className={`flex-1 py-1.5 rounded-lg text-xs font-bold transition ${
+                  authTab === 'register' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                Tạo Tài Khoản Mới
+              </button>
+            </div>
+
+            {authError && (
+              <div className="p-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs font-semibold flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 shrink-0" />
+                <span>{authError}</span>
+              </div>
+            )}
+
+            <form onSubmit={handleQuickAuthSubmit} className="space-y-3.5">
+              <div>
+                <label className="block text-[11px] font-bold text-slate-700 uppercase">Số điện thoại người gửi</label>
+                <input
+                  type="tel"
+                  required
+                  value={authPhone}
+                  onChange={(e) => setAuthPhone(e.target.value)}
+                  placeholder="09xx xxx xxx"
+                  className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-xs font-bold text-slate-900 outline-none focus:bg-white focus:border-blue-600"
+                />
+              </div>
+
+              {authTab === 'register' && (
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-700 uppercase">Họ và tên người gửi</label>
+                  <input
+                    type="text"
+                    required
+                    value={authFullName}
+                    onChange={(e) => setAuthFullName(e.target.value)}
+                    placeholder="Nguyễn Văn A"
+                    className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-xs font-bold text-slate-900 outline-none focus:bg-white focus:border-blue-600"
+                  />
+                </div>
+              )}
+
+              <div>
+                <label className="block text-[11px] font-bold text-slate-700 uppercase">
+                  {authTab === 'login' ? 'Mật khẩu' : 'Tạo mật khẩu cho tài khoản'}
+                </label>
+                <input
+                  type="password"
+                  required
+                  value={authPassword}
+                  onChange={(e) => setAuthPassword(e.target.value)}
+                  placeholder="••••••••"
+                  className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-xs font-bold text-slate-900 outline-none focus:bg-white focus:border-blue-600"
+                />
+              </div>
+
+              <div className="pt-2 flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setIsAuthModalOpen(false)}
+                  className="flex-1 rounded-xl border border-slate-200 hover:bg-slate-50 py-2.5 text-xs font-bold text-slate-600 transition"
+                >
+                  Quay Lại Sửa Đơn
+                </button>
+                <button
+                  type="submit"
+                  disabled={authLoading}
+                  className="flex-1 rounded-xl bg-blue-600 hover:bg-blue-700 text-white py-2.5 text-xs font-bold uppercase tracking-wider shadow-md transition disabled:opacity-50 flex items-center justify-center gap-1.5"
+                >
+                  {authLoading ? (
+                    <>
+                      <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                      Đang xử lý...
+                    </>
+                  ) : (
+                    <>
+                      <Check className="w-3.5 h-3.5" />
+                      {authTab === 'login' ? 'Xác Thực & Tạo Đơn' : 'Đăng Ký & Tạo Đơn'}
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
