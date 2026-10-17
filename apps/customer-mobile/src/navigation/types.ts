@@ -27,4 +27,5 @@ export type RootStackParamList = {
   PriceCalculator: undefined;
   AddressManagement: undefined;
   AccountDetail: undefined;
+  BankAccount: undefined;
 };
