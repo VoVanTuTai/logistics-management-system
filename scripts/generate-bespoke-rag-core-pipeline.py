@@ -251,7 +251,7 @@ def generate_svg():
     # 3 Sample Chunk Cards
     lines.append('    <rect x="1255" y="275" width="310" height="65" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="1.2" rx="5"/>')
     lines.append('    <text x="1268" y="295" class="mono" font-size="11px" font-weight="800" fill="#0284C7">#chunk-01: Cước Thể tích IATA</text>')
-    lines.append('    <text x="1268" y="315" class="body-txt">Quy đổi = (Dài x Rộng x Cao) / 5000</text>')
+    lines.append('    <text x="1268" y="315" class="body-txt">Quy đổi = (Dài x Rộng x Cao) / 6000</text>')
     lines.append('    <text x="1268" y="331" class="mono" font-size="10px" fill="#64748B">Source: 01-pricing-and-iata-weight.md</text>')
 
     lines.append('    <rect x="1255" y="350" width="310" height="65" fill="#F0FDF4" stroke="#059669" stroke-width="1.5" rx="5"/>')

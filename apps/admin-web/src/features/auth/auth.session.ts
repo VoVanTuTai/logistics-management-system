@@ -7,7 +7,7 @@ import { hasAdminRole } from './auth.roles';
 
 const AUTH_STORAGE_KEY = 'admin-web.auth-session';
 const ACCESS_TOKEN_REFRESH_WINDOW_MS = 60_000;
-const CLIENT_SESSION_TTL_MS = 10 * 60 * 60 * 1000;
+const CLIENT_SESSION_TTL_MS = 24 * 60 * 60 * 1000;
 
 let refreshSessionPromise: Promise<AuthSessionDto> | null = null;
 
@@ -30,7 +30,7 @@ export async function hydrateAuthSession(): Promise<void> {
     }
 
     if (isClientSessionExpired()) {
-      throw new Error('Phiên đăng nhập đã quá 10 giờ. Vui lòng đăng nhập lại.');
+      throw new Error('Phiên đăng nhập đã quá 24 giờ. Vui lòng đăng nhập lại.');
     }
 
     if (isTokenExpired(storedSession.tokens.refreshTokenExpiresAt)) {

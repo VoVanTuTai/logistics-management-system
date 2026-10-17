@@ -22,7 +22,7 @@ export abstract class AuthSessionRepository {
     input: RotateAuthSessionTokensInput,
   ): Promise<AuthSession>;
 
-  abstract touch(id: string): Promise<AuthSession>;
+  abstract touch(id: string, extendExpiresAt?: Date): Promise<AuthSession>;
 
   abstract revoke(id: string, reason: string | null): Promise<AuthSession>;
 }

@@ -273,13 +273,15 @@ export class LogisticsToolsService {
 
         const status = currentTracking?.currentStatusCode || shipData?.currentStatus || 'IN_TRANSIT';
         const statusText =
+          formatShipmentStatusVi(status) ||
           currentTracking?.currentStatus ||
           payload?.display?.current_status_label_vi ||
           status;
         const currentLocation =
           currentTracking?.currentLocationText ||
           payload.location?.current ||
-          'Đang cập nhật';
+          shipData?.currentLocation ||
+          'Bưu cục tiếp nhận';
 
         let timeline: { time: string; status: string; description: string }[] = [];
         if (payload.timeline && Array.isArray(payload.timeline) && payload.timeline.length > 0) {
@@ -300,8 +302,8 @@ export class LogisticsToolsService {
               time: shipData?.createdAt
                 ? new Date(shipData.createdAt).toLocaleString('vi-VN')
                 : 'Gần đây',
-              status: 'CREATED',
-              description: 'Đã tạo đơn hàng thành công trên hệ thống',
+              status: status,
+              description: statusText,
             },
           ];
         }
@@ -316,21 +318,23 @@ export class LogisticsToolsService {
           ? maskAddress(sender.address || sender.addressDetail)
           : (sender.address || sender.addressDetail);
 
+        const realItemName = pkg.itemName || pkg.itemType || meta.package?.itemName || meta.package?.itemType || 'Kiện hàng bưu gửi';
+
         return {
           found: true,
           trackingNumber: cleanTracking,
           status,
           statusText,
           senderName,
-          senderCity: sender.province,
+          senderCity: sender.province || sender.city,
           senderAddress,
           receiverName,
           receiverPhone,
-          receiverCity: receiver.province,
+          receiverCity: receiver.province || receiver.city,
           receiverAddress,
-          itemName: isGuest ? 'Bưu phẩm tiêu chuẩn' : (pkg.itemName || pkg.itemType || 'Hàng hóa bưu gửi'),
-          weightKg: payload.weightKg || pkg.weightKg || 0.5,
-          codAmount: payload.codAmount ?? meta.codAmount ?? pkg.codAmount,
+          itemName: realItemName,
+          weightKg: payload.weightKg || pkg.weightKg || meta.package?.weightKg || 0.5,
+          codAmount: payload.codAmount ?? meta.codAmount ?? pkg.codAmount ?? shipData?.codAmount ?? 0,
           currentLocation,
           estimatedDelivery: '18:00 Ngày mai',
           createdAt: shipData?.createdAt
@@ -441,47 +445,80 @@ export class LogisticsToolsService {
     }
 
     try {
-      // Query danh sách đơn gửi của chính khách hàng qua endpoint /shipments/sent
-      const queryUrl = `${this.shipmentServiceUrl}/shipments/sent?limit=${limit}&userId=${encodeURIComponent(userId)}`;
-      const res = await fetch(queryUrl, { signal: AbortSignal.timeout(3000) });
-      if (res.ok) {
-        const data = await res.json();
-        const rawItems = Array.isArray(data) ? data : (data?.items || []);
-        const total = data?.pageInfo?.total ?? rawItems.length;
+      // 1. Query đa nguồn: Đơn gửi qua /shipments/sent và Đơn nhận qua /shipments/received
+      const fetchPromises: Promise<any>[] = [
+        fetch(`${this.shipmentServiceUrl}/shipments/sent?limit=${limit}&userId=${encodeURIComponent(userId)}`, {
+          signal: AbortSignal.timeout(3000),
+        }).then((r) => (r.ok ? r.json() : null)).catch(() => null),
+        fetch(`${this.shipmentServiceUrl}/shipments/received?limit=${limit}&phone=${encodeURIComponent(userId)}`, {
+          signal: AbortSignal.timeout(3000),
+        }).then((r) => (r.ok ? r.json() : null)).catch(() => null),
+        fetch(`${this.shipmentServiceUrl}/shipments?createdByUserId=${encodeURIComponent(userId)}&limit=${limit}`, {
+          signal: AbortSignal.timeout(3000),
+        }).then((r) => (r.ok ? r.json() : null)).catch(() => null),
+      ];
 
-        if (rawItems.length > 0) {
-          const items = rawItems.map((s: any) => {
-            const meta = s.metadata || {};
-            const pkg = meta.package || {};
-            const receiver = meta.receiver || {};
-            return {
-              code: s.code,
-              status: s.currentStatus || 'IN_TRANSIT',
-              statusText: formatShipmentStatusVi(s.currentStatus),
-              itemName: pkg.itemName || s.itemName || 'Kiện hàng',
-              receiverName: receiver.name || s.receiverName || '',
-              receiverCity: receiver.province || receiver.city || '',
-              receiverAddress: [receiver.ward, receiver.district, receiver.province].filter(Boolean).join(', ') || receiver.address || '',
-              codAmount: pkg.codAmount ?? s.codAmount ?? 0,
-              createdAt: s.createdAt ? new Date(s.createdAt).toLocaleString('vi-VN') : '',
-            };
-          });
+      // Nếu userId là số điện thoại hoặc chứa số, query thêm cả receiverPhone
+      if (/\d{8,11}/.test(userId)) {
+        fetchPromises.push(
+          fetch(`${this.shipmentServiceUrl}/shipments?receiverPhone=${encodeURIComponent(userId)}&limit=${limit}`, {
+            signal: AbortSignal.timeout(3000),
+          }).then((r) => (r.ok ? r.json() : null)).catch(() => null)
+        );
+      }
 
-          const combinedItems = [...createdItems, ...items];
-          // Nếu chỉ có đúng 1 đơn hàng, lấy thêm tracking chi tiết hành trình
-          let singleTracking: TrackingResult | undefined;
-          if (combinedItems.length === 1) {
-            singleTracking = await this.trackShipment(combinedItems[0].code, false);
+      const results = await Promise.all(fetchPromises);
+      const rawMap = new Map<string, any>();
+
+      for (const res of results) {
+        if (!res) continue;
+        const list = Array.isArray(res) ? res : (res?.items || []);
+        for (const item of list) {
+          if (item && item.code && !rawMap.has(item.code)) {
+            rawMap.set(item.code, item);
           }
+        }
+      }
+
+      if (rawMap.size > 0) {
+        // Sắp xếp đơn mới nhất lên trước
+        const sortedRaw = Array.from(rawMap.values()).sort(
+          (a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()
+        ).slice(0, limit);
+
+        const items = sortedRaw.map((s: any) => {
+          const meta = s.metadata || {};
+          const pkg = meta.package || {};
+          const receiver = meta.receiver || {};
+          const sender = meta.sender || {};
+          const realItemName = pkg.itemName || pkg.itemType || meta.package?.itemName || s.itemName || 'Kiện hàng bưu gửi';
 
           return {
-            found: true,
-            isUserSpecific: true,
-            total: combinedItems.length,
-            items: combinedItems,
-            singleTracking,
+            code: s.code,
+            status: s.currentStatus || 'IN_TRANSIT',
+            statusText: formatShipmentStatusVi(s.currentStatus),
+            itemName: realItemName,
+            senderName: sender.name || s.senderName || '',
+            receiverName: receiver.name || s.receiverName || '',
+            receiverCity: receiver.province || receiver.city || receiver.region || '',
+            receiverAddress: [receiver.ward, receiver.district, receiver.province].filter(Boolean).join(', ') || receiver.address || '',
+            codAmount: pkg.codAmount ?? meta.codAmount ?? s.codAmount ?? 0,
+            createdAt: s.createdAt ? new Date(s.createdAt).toLocaleString('vi-VN') : '',
           };
+        });
+
+        let singleTracking: TrackingResult | undefined;
+        if (items.length === 1) {
+          singleTracking = await this.trackShipment(items[0].code, false);
         }
+
+        return {
+          found: true,
+          isUserSpecific: true,
+          total: items.length,
+          items,
+          singleTracking,
+        };
       }
     } catch (err: any) {
       this.logger.warn(`Failed to fetch shipments for user ${userId}: ${err.message}`);
@@ -502,7 +539,7 @@ export class LogisticsToolsService {
       isUserSpecific: true,
       total: 0,
       items: [],
-      notFoundMessage: `Tài khoản ${userId} hiện chưa phát sinh đơn gửi nào trên hệ thống Nexus Logistics.`,
+      notFoundMessage: `Tài khoản ${userId} hiện chưa phát sinh đơn gửi/nhận nào trên hệ thống Nexus Logistics. Quý khách vui lòng cung cấp mã vận đơn cụ thể để tra cứu nhanh.`,
     };
   }
 

@@ -11,9 +11,10 @@ import type {
   CodDailySettlementRecordDto,
   CodSettlementBatchDto,
 } from '../../../../features/payments/payment.types';
+import { useShipperUsersQuery } from '../../../../features/auth/auth.api';
 import { useShipmentsQuery } from '../../../../features/shipments/shipments.api';
 import type { ShipmentListItemDto } from '../../../../features/shipments/shipments.types';
-import { useTasksQuery } from '../../../../features/tasks/tasks.api';
+import { useCourierOptionsQuery, useTasksQuery } from '../../../../features/tasks/tasks.api';
 import type { TaskListItemDto } from '../../../../features/tasks/tasks.types';
 import { getErrorMessage } from '../../../../services/api/errors';
 import { useAuthStore } from '../../../../store/authStore';
@@ -282,6 +283,10 @@ export function BranchFinanceCodSettlementPage(): React.JSX.Element {
     { refetchInterval: false },
   );
   const deliveryTasksQuery = useTasksQuery(accessToken, { taskType: 'DELIVERY' }, { refetchInterval: false });
+  const courierOptionsQuery = useCourierOptionsQuery(accessToken);
+  const shipperUsersQuery = useShipperUsersQuery(accessToken, {
+    hubCode: appliedFilters.hubCode === 'all' ? undefined : appliedFilters.hubCode,
+  });
   const hubsQuery = useHubsQuery(accessToken, {});
   const createSettlementMutation = useCreateCodSettlementMutation(accessToken);
   const confirmSettlementMutation = useConfirmCodSettlementMutation(accessToken);
@@ -468,18 +473,21 @@ export function BranchFinanceCodSettlementPage(): React.JSX.Element {
   const courierOptions = useMemo(
     () =>
       Array.from(
-        new Set(
-          enrichedRecords
-            .map((record) => record.courierId)
-            .filter((courierId) => courierId !== UNKNOWN_COURIER),
-        ),
-      ).sort((a, b) => a.localeCompare(b)),
-    [enrichedRecords],
+        new Set([
+          ...enrichedRecords.map((record) => record.courierId),
+          ...(courierOptionsQuery.data ?? []).map((option) => option.courierId),
+          ...(shipperUsersQuery.data ?? []).map((user) => user.username),
+        ]),
+      )
+        .filter((courierId) => Boolean(courierId) && courierId !== UNKNOWN_COURIER)
+        .sort((a, b) => a.localeCompare(b)),
+    [courierOptionsQuery.data, enrichedRecords, shipperUsersQuery.data],
   );
 
   const courierSummaries = useMemo<CourierCodSummary[]>(() => {
     const summaryByCourier = new Map<string, CourierCodSummary>();
 
+    // 1. Process all cash records (couriers with active COD collections/batches)
     for (const record of cashRecords) {
       const key = buildSummaryKey(record.courierId, record.hubCode);
       const latestBatch = latestBatchByKey.get(key) ?? null;
@@ -535,10 +543,86 @@ export function BranchFinanceCodSettlementPage(): React.JSX.Element {
       summaryByCourier.set(key, summary);
     }
 
+    // 2. Also ensure all registered couriers in this hub are displayed (even with 0đ COD to remit)
+    const hubCouriers = new Set<string>();
+
+    for (const user of shipperUsersQuery.data ?? []) {
+      if (user.username) {
+        hubCouriers.add(user.username);
+      }
+    }
+
+    for (const task of deliveryTasksQuery.data ?? []) {
+      if (task.assignedCourierId && task.assignedCourierId !== UNKNOWN_COURIER) {
+        if (!task.shipmentCode) {
+          hubCouriers.add(task.assignedCourierId);
+          continue;
+        }
+        const shipment = shipmentByCode.get(task.shipmentCode.trim().toUpperCase());
+        if (!shipment || isShipmentInBranchScope(shipment, selectedHubCodes, hubScopeTokens)) {
+          hubCouriers.add(task.assignedCourierId);
+        }
+      }
+    }
+
+    for (const opt of courierOptionsQuery.data ?? []) {
+      if (opt.courierId && opt.courierId !== UNKNOWN_COURIER) {
+        hubCouriers.add(opt.courierId);
+      }
+    }
+
+    const defaultHubForCourier =
+      appliedFilters.hubCode && appliedFilters.hubCode !== 'all'
+        ? appliedFilters.hubCode
+        : selectedHubCodes[0] ?? defaultHubCode ?? UNKNOWN_HUB;
+
+    for (const courierId of hubCouriers) {
+      if (appliedFilters.courierId !== 'all' && courierId !== appliedFilters.courierId) {
+        continue;
+      }
+
+      const key = buildSummaryKey(courierId, defaultHubForCourier);
+      if (!summaryByCourier.has(key)) {
+        const latestBatch = latestBatchByKey.get(key) ?? null;
+        summaryByCourier.set(key, {
+          key,
+          courierId,
+          hubCode: defaultHubForCourier,
+          codOrders: 0,
+          collectedOrders: 0,
+          remittedOrders: 0,
+          pendingOrders: 0,
+          codTotal: 0,
+          collectedTotal: 0,
+          remittedTotal: 0,
+          pendingRemitTotal: 0,
+          latestCollectedAt: null,
+          records: [],
+          creatableRecords: [],
+          waitingBatch: latestBatch?.status === 'WAITING_PAYMENT' ? latestBatch : null,
+          latestBatch,
+        });
+      }
+    }
+
     return Array.from(summaryByCourier.values()).sort(
-      (a, b) => b.pendingRemitTotal - a.pendingRemitTotal || b.codTotal - a.codTotal,
+      (a, b) =>
+        b.pendingRemitTotal - a.pendingRemitTotal ||
+        b.codTotal - a.codTotal ||
+        a.courierId.localeCompare(b.courierId),
     );
-  }, [batchedShipmentCodes, cashRecords, latestBatchByKey]);
+  }, [
+    appliedFilters.courierId,
+    appliedFilters.hubCode,
+    batchedShipmentCodes,
+    cashRecords,
+    courierOptionsQuery.data,
+    defaultHubCode,
+    deliveryTasksQuery.data,
+    latestBatchByKey,
+    selectedHubCodes,
+    shipperUsersQuery.data,
+  ]);
 
 
 
@@ -866,7 +950,15 @@ export function BranchFinanceCodSettlementPage(): React.JSX.Element {
                     <td className="ops-branch-cod__money">{formatCurrency(summary.codTotal)}</td>
                     <td className="ops-branch-cod__money" style={{ color: '#059669', fontWeight: 'bold' }}>{formatCurrency(summary.collectedTotal)}</td>
                     <td className="ops-branch-cod__money" style={{ color: '#2563EB' }}>{formatCurrency(summary.remittedTotal)}</td>
-                    <td className="ops-branch-cod__money" style={{ color: '#D97706', fontWeight: 'bold' }}>{formatCurrency(summary.pendingRemitTotal)}</td>
+                    <td
+                      className="ops-branch-cod__money"
+                      style={{
+                        color: summary.pendingRemitTotal > 0 ? '#D97706' : '#059669',
+                        fontWeight: 'bold',
+                      }}
+                    >
+                      {formatCurrency(summary.pendingRemitTotal)}
+                    </td>
                     <td>
                       {batch ? (
                         <div className="ops-branch-cod__batch-cell">
@@ -879,38 +971,55 @@ export function BranchFinanceCodSettlementPage(): React.JSX.Element {
                         <span className="ops-branch-cod__status ops-branch-cod__status--muted">
                           Preview từ vận đơn
                         </span>
+                      ) : summary.pendingRemitTotal === 0 && summary.remittedTotal > 0 ? (
+                        <span className="ops-branch-cod__status ops-branch-cod__status--success">
+                          Đã nộp đủ COD
+                        </span>
+                      ) : summary.pendingRemitTotal === 0 ? (
+                        <span
+                          className="ops-branch-cod__status ops-branch-cod__status--success"
+                          style={{ borderColor: '#86efac', background: '#f0fdf4', color: '#166534' }}
+                        >
+                          0đ (Đã đóng đủ)
+                        </span>
                       ) : (
                         <span className="ops-branch-cod__muted">Chưa tạo batch</span>
                       )}
                     </td>
                     <td>
-                      <div className="ops-branch-cod__actions">
-                        {hasWaitingBatch ? (
+                      {summary.pendingRemitTotal === 0 ? (
+                        <span className="ops-branch-cod__muted" style={{ color: '#059669', fontWeight: 600 }}>
+                          {summary.remittedTotal > 0 ? '✓ Đã hoàn tất' : '✓ Đủ điều kiện ca'}
+                        </span>
+                      ) : (
+                        <div className="ops-branch-cod__actions">
+                          {hasWaitingBatch ? (
+                            <button
+                              type="button"
+                              onClick={() => summary.waitingBatch && setViewQrBatch(summary.waitingBatch)}
+                              style={{ backgroundColor: '#10B981', borderColor: '#10B981', color: '#FFFFFF' }}
+                            >
+                              Thanh toán QR
+                            </button>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => setPendingQrSummary(summary)}
+                              disabled={!canCreateQr || createSettlementMutation.isPending}
+                            >
+                              Tạo QR
+                            </button>
+                          )}
                           <button
+                            className="ops-branch-cod__secondary-button"
+                            disabled={!canConfirmBatch || confirmSettlementMutation.isPending}
+                            onClick={() => batch && openConfirmModal(batch)}
                             type="button"
-                            onClick={() => summary.waitingBatch && setViewQrBatch(summary.waitingBatch)}
-                            style={{ backgroundColor: '#10B981', borderColor: '#10B981', color: '#FFFFFF' }}
                           >
-                            Thanh toán QR
+                            Xác nhận thủ công
                           </button>
-                        ) : (
-                          <button
-                            type="button"
-                            onClick={() => setPendingQrSummary(summary)}
-                            disabled={!canCreateQr || createSettlementMutation.isPending}
-                          >
-                            Tạo QR
-                          </button>
-                        )}
-                        <button
-                          className="ops-branch-cod__secondary-button"
-                          disabled={!canConfirmBatch || confirmSettlementMutation.isPending}
-                          onClick={() => batch && openConfirmModal(batch)}
-                          type="button"
-                        >
-                          Xác nhận thủ công
-                        </button>
-                      </div>
+                        </div>
+                      )}
                     </td>
                   </tr>
                 );

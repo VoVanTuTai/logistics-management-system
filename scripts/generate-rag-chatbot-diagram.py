@@ -340,7 +340,7 @@ def build_rag_pipeline_svg():
         <g transform="translate(14, 34)">
           <rect width="{col_w - 60}" height="110" rx="3" fill="#FFFFFF" stroke="#000000" stroke-width="1"/>
           <text x="12" y="20" class="card-code">• ShipmentService (:3002): Lấy trạng thái kiện hàng, lịch sử bưu tá phát hàng.</text>
-          <text x="12" y="40" class="card-code">• PricingService (:3003): Tính cước IATA (DxRxC)/5000 so sánh trọng lượng thực.</text>
+          <text x="12" y="40" class="card-code">• PricingService (:3003): Tính cước IATA (DxRxC)/6000 so sánh trọng lượng thực.</text>
           <text x="12" y="60" class="card-code">• WarehouseService (:3004): Kiểm tra lưu kho, cảnh báo hàng tồn đọng &gt; 30 ngày.</text>
           <text x="12" y="80" class="card-code">• IncidentService (:3008): Khởi tạo hồ sơ bồi thường BBBT trong thời hạn 24 giờ.</text>
           <text x="12" y="98" class="card-code">• Circuit Breaker: Timeout 2000ms ngắt an toàn bảo vệ hệ thống khi dịch vụ lỗi.</text>
@@ -828,9 +828,9 @@ def build_rag_pipeline_svg():
         <!-- Calculation Sub-box -->
         <g transform="translate(14, 54)">
           <rect width="{col_w - 60}" height="76" rx="3" fill="#FFFFFF" stroke="#4B5563" stroke-width="1"/>
-          <text x="12" y="20" class="math-formula">Trọng lượng thể tích: W_V = (40 × 30 × 30) / 5000 = 7.20 kg</text>
-          <text x="12" y="42" class="math-formula">So sánh trọng lượng thực: W = 2.0 kg  ➔  W_V (7.20 kg) &gt; W (2.0 kg)</text>
-          <text x="12" y="64" class="math-formula">Trọng lượng tính cước cuối cùng: W_Chargeable = 7.20 kg (Làm tròn nấc 7.5 kg)</text>
+          <text x="12" y="20" class="math-formula">Trọng lượng thể tích: W_V = (40 × 30 × 30) / 6000 = 6.00 kg</text>
+          <text x="12" y="42" class="math-formula">So sánh trọng lượng thực: W = 2.0 kg  ➔  W_V (6.00 kg) &gt; W (2.0 kg)</text>
+          <text x="12" y="64" class="math-formula">Trọng lượng tính cước cuối cùng: W_Chargeable = 6.00 kg</text>
         </g>
 
         <text x="14" y="152" class="matrix-txt"><tspan class="card-txt-bold">• Gọi PricingService (:3003):</tspan> <tspan class="card-code">calculateShippingFee(d=40, r=30, c=30, w=2.0, route="HN_SGN")</tspan>.</text>
@@ -862,7 +862,7 @@ def build_rag_pipeline_svg():
         <!-- Evaluation Specs -->
         <g transform="translate(14, 244)">
           <text x="0" y="16" class="matrix-txt"><tspan class="card-txt-bold">• Trực quan hóa giá cước:</tspan> Thẻ so sánh giá FeeCard giúp khách chủ động chọn gói cước phù hợp.</text>
-          <text x="0" y="38" class="matrix-txt"><tspan class="card-txt-bold">• Giải thích công thức:</tspan> Nêu rõ phép tính (DxRxC)/5000 để khách hàng hiểu và không thắc mắc.</text>
+          <text x="0" y="38" class="matrix-txt"><tspan class="card-txt-bold">• Giải thích công thức:</tspan> Nêu rõ phép tính (DxRxC)/6000 để khách hàng hiểu và không thắc mắc.</text>
           <text x="0" y="60" class="matrix-txt"><tspan class="card-txt-bold">• Độ chính xác tài chính:</tspan> Khớp 100% với biểu phí tính toán của hệ thống hạch toán doanh nghiệp.</text>
           <text x="0" y="80" class="card-code">Chuẩn đối chiếu: Quy tắc hiệp hội vận tải hàng không quốc tế IATA</text>
         </g>

@@ -369,7 +369,7 @@ def generate_svg():
 
     tools = [
         ("check_tracking(shipment_code)", "Shipment Service (:3001)", "Tra cứu vị trí thời gian thực, shipper phụ trách, lịch sử quét barcode"),
-        ("calc_shipping_fee(d, r, c, weight)", "Billing Service (:3007)", "Tính cước vận chuyển chuẩn thể tích IATA: (DxRxC)/5000 vs Khối lượng"),
+        ("calc_shipping_fee(d, r, c, weight)", "Billing Service (:3007)", "Tính cước vận chuyển chuẩn thể tích IATA: (DxRxC)/6000 vs Khối lượng"),
         ("get_claim_policy(category)", "Knowledge RAG (:3013)", "Trích xuất mức trần bồi thường, thời hạn SLA 24h & biên bản bất thường"),
         ("submit_claim_ticket(payload)", "Claims Service (:3931)", "Tự động khởi tạo ticket khiếu nại, gắn ảnh bể vỡ & chứng từ COD"),
         ("transfer_human(ticket_id)", "Gateway Core (:3000)", "Chuyển tiếp hội thoại sang điều phối viên người (Human-in-the-Loop)")

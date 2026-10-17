@@ -777,6 +777,12 @@ function DashboardLayout(): React.JSX.Element {
             keywords: 'quan ly chuyen hoan tra hang ve shop',
           },
           {
+            label: 'Đăng ký chuyển hoàn',
+            icon: 'return_block',
+            to: routePaths.returnBlockRegistration,
+            keywords: 'dang ky chuyen hoan tra hang ve shop tao don hoan',
+          },
+          {
             label: 'Radar cảnh báo SLA',
             icon: 'service_proactive',
             to: routePaths.serviceQualityProactiveActionBoard,

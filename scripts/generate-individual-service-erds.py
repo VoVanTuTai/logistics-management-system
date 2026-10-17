@@ -1458,10 +1458,10 @@ def generate_all_individual_erds():
     ]
     dim_cols = [
         {"key": "PK", "name": "id", "type": "VARCHAR(64)", "attr": "ID QUY TẮC IATA"},
-        {"key": "", "name": "divisor", "type": "INT", "attr": "HỆ SỐ QUY ĐỔI HÀNG KHÔNG (5000)"},
+        {"key": "", "name": "divisor", "type": "INT", "attr": "HỆ SỐ QUY ĐỔI HÀNG KHÔNG (6000)"},
         {"key": "", "name": "minChargeableWeight", "type": "FLOAT", "attr": "TRỌNG LƯỢNG TỐI THIỂU TÍNH CƯỚC"},
         {"key": "", "name": "roundingStepKg", "type": "FLOAT", "attr": "BƯỚC LÀM TRÒN CÂN (0.1 KG)"},
-        {"key": "", "name": "formulaDesc", "type": "VARCHAR(128)", "attr": "(L x W x H cm) / 5000"},
+        {"key": "", "name": "formulaDesc", "type": "VARCHAR(128)", "attr": "(L x W x H cm) / 6000"},
         {"key": "", "name": "effectiveFrom", "type": "DATE", "attr": "NGÀY BẮT ĐẦU ÁP DỤNG"}
     ]
     fuel_cols = [
@@ -1498,7 +1498,7 @@ def generate_all_individual_erds():
             "title": "ĐỘNG CƠ TÍNH CƯỚC TỐC ĐỘ CAO (IN-MEMORY PRICING ENGINE)",
             "bullets": [
                 "Kiến trúc không trạng thái (Stateless Engine): pricing-service tải ma trận bảng cước và quy tắc phụ phí lên bộ nhớ RAM để tính toán siêu tốc (< 5ms).",
-                "Quy chuẩn cước hàng không IATA: Tự động so sánh giữa trọng lượng thực tế (Gross Weight) và trọng lượng quy đổi thể tích (Volumetric Weight = L x W x H / 5000), lấy giá trị lớn hơn để tính cước.",
+                "Quy chuẩn cước hàng không IATA: Tự động so sánh giữa trọng lượng thực tế (Gross Weight) và trọng lượng quy đổi thể tích (Volumetric Weight = L x W x H / 6000), lấy giá trị lớn hơn để tính cước.",
                 "Dịch vụ giá trị gia tăng (VAS): Tự động tính phí bảo hiểm bưu gửi và phí thu hộ COD theo tỷ lệ lũy tiến."
             ]
         }

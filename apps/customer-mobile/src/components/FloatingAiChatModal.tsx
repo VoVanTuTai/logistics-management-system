@@ -53,6 +53,11 @@ const QUICK_SUGGESTIONS = [
     query: 'Tra cứu hành trình đơn hàng gần nhất của tôi',
   },
   {
+    icon: 'cube-outline' as const,
+    label: 'Đơn tôi vừa gửi',
+    query: 'đơn hàng tôi vừa gửi sao rồi',
+  },
+  {
     icon: 'car-outline' as const,
     label: 'Bưu tá qua lấy',
     query: 'Tôi muốn gửi một kiện hàng, bưu tá có qua lấy tận nơi không?',
@@ -316,101 +321,14 @@ export function FloatingAiChatModal({ visible, onClose }: FloatingAiChatModalPro
           /\b(?:09|08|07|03)\d{8}\b/.test(query) ||
           (/gửi cho|gui cho/i.test(query) && /ở|o|hà nội|ha noi|sài gòn|sai gon|hcm/i.test(query)));
 
-      const isSendOrderQuery =
-        isOrderConfirmation ||
-        isOrderInfoProvided ||
-        /gửi hàng|gui hang|gửi quà|gui qua|gửi đơn|gui don|tạo đơn|tao don|muốn gửi|muon gui|cách gửi|cach gui|bắt đầu gửi|gửi một đơn/i.test(query);
-
       const isClaimQuery = /CLM|khiếu nại|bồi thường|đền bù/i.test(query);
       const isDamageQuery = /hỏng|hư|bể|vỡ|móp|thiệt hại/i.test(query);
-      const isMultiOrderQuery = /nhiều đơn|nhieu don|các đơn|cac don|danh sách đơn|danh sach don|những đơn/i.test(query);
-      const isTrackingQuery = !isSendOrderQuery && /NX-|\b\d{10,14}\b|tra cứu|tra cuu|vận đơn|van don|đơn của tôi|don cua toi|đơn ở đâu|don o dau|kiểm tra đơn|kiem tra don|tình trạng đơn|tinh trang don|hành trình|hanh trinh/i.test(query);
       const isReturnQuery = /hoàn|bom|phí hoàn/i.test(query);
 
       let fallbackText = '';
       let toolsUsed: string[] = [];
-      let fallbackShipmentCards: ShipmentCard[] | undefined;
-      let fallbackActionChips: ActionChip[] | undefined;
 
-      if (isOrderConfirmation) {
-        toolsUsed = ['createRetailOrder(Auto-dispatch Courier)'];
-        const isReceiver = /người nhận|nguoi nhan|receiver/i.test(query);
-        const code = '333' + Math.floor(100000000 + Math.random() * 900000000).toString();
-        fallbackText =
-          `🎉 XÁC NHẬN TẠO ĐƠN HÀNG THÀNH CÔNG TRÊN HỆ THỐNG NEXUS LOGISTICS!\n\n` +
-          `Dạ em là Giao dịch viên bưu cục Nexus Logistics, em đã hoàn tất tạo đơn và chỉ định bưu cục tiếp nhận thành công cho anh/chị:\n\n` +
-          `• Mã vận đơn chính thức: ${code}\n` +
-          `• Trạng thái: Đã phân công bưu tá lấy hàng (TASK_ASSIGNED)\n` +
-          `• Bưu tá phụ trách lấy: Nguyễn Văn Tuấn (SĐT: 0908 123 456 - Tuyến SGN-01-TB)\n` +
-          `• Thời gian lấy hàng dự kiến: Trong vòng 30 - 60 phút tới (bưu tá sẽ gọi trước 15 phút khi qua).\n` +
-          `• Địa chỉ lấy hàng: 128 Phan Đăng Lưu, Phường 3, Quận Phú Nhuận, TP.HCM\n` +
-          `• Địa chỉ giao: 25 Tràng Tiền, Quận Hoàn Kiếm, TP. Hà Nội\n` +
-          `• Hàng hóa: Kiện hàng quà tặng người thân (Trọng lượng: 1.5 kg - COD: 0 VNĐ)\n` +
-          `• Hình thức thanh toán cước: ${isReceiver ? 'Người nhận thanh toán khi phát hàng' : 'Người gửi thanh toán (32.000 VNĐ - Đã ghi nhận)'}\n\n` +
-          `Anh/chị vui lòng đóng gói hàng cẩn thận theo quy chuẩn bưu phẩm để bàn giao cho bưu tá an toàn nhé! Em chúc anh/chị và người thân một ngày thật vui vẻ ạ!`;
-        fallbackShipmentCards = [
-          {
-            code,
-            itemName: 'Kiện hàng quà tặng người thân',
-            status: 'TASK_ASSIGNED',
-            statusText: 'Đã phân công bưu tá lấy hàng',
-            receiverCity: 'Quận Hoàn Kiếm, TP. Hà Nội',
-            receiverName: 'Anh Nguyễn Văn An',
-            codAmount: 0,
-            createdAt: 'Hôm nay',
-          },
-        ];
-        fallbackActionChips = [
-          { label: '🔍 Tra cứu đơn này', query: `Tra cứu hành trình đơn ${code}` },
-          { label: '📦 Xem các đơn của tôi', query: 'Tôi có những đơn hàng nào' },
-          { label: '➕ Gửi thêm đơn khác', query: 'Tôi muốn gửi một đơn hàng cho người thân' },
-        ];
-      } else if (isOrderInfoProvided) {
-        toolsUsed = ['quoteShipmentOrder(Ops Clerk Intake & Quotation)'];
-        const isReceiverPays = /người nhận thanh toán|nguoi nhan thanh toan|người nhận trả|nguoi nhan tra/i.test(query);
-        const payerText = isReceiverPays ? 'Người nhận thanh toán (RECEIVER_PAYS)' : 'Người gửi thanh toán (SENDER_PAYS)';
-        const payNow = isReceiverPays ? '0 VNĐ (Người nhận sẽ thanh toán 32.000 VNĐ khi nhận hàng)' : '32.000 VNĐ (Quý khách thanh toán trực tuyến ngay hoặc gửi tiền mặt cho bưu tá khi lấy hàng)';
-        fallbackText =
-          `Dạ em là Giao dịch viên bưu cục Nexus Logistics, em xin gửi lại Phiếu chi tiết tiếp nhận đơn hàng tạm tính và Báo giá cước phí vận chuyển:\n\n` +
-          `📋 PHIẾU TIẾP NHẬN BƯU GỬI TẠM TÍNH - NEXUS LOGISTICS\n` +
-          `• Điểm lấy hàng: 128 Phan Đăng Lưu, Phường 3, Quận Phú Nhuận, TP.HCM (Địa chỉ mặc định tài khoản)\n` +
-          `• Người nhận: Anh Nguyễn Văn An - 0912 345 678\n` +
-          `• Địa chỉ giao hàng: 25 Tràng Tiền, Quận Hoàn Kiếm, TP. Hà Nội\n` +
-          `• Hàng hóa: Kiện hàng quà tặng người thân (Trọng lượng: 1.5 kg)\n` +
-          `• Tiền thu hộ COD: 0 VNĐ (Quà tặng người thân)\n` +
-          `• Cước vận chuyển Door-to-Door: 32.000 VNĐ (Gói Tiêu chuẩn Tuyến TP.HCM ➔ Hà Nội)\n` +
-          `• Bảo hiểm bưu phẩm: Miễn phí gói Tiêu chuẩn (đền bù tối đa 4 lần cước theo Luật Bưu chính)\n` +
-          `• Hình thức thanh toán cước: ${payerText}\n\n` +
-          `💰 TỔNG TIỀN QUÝ KHÁCH CẦN THANH TOÁN:\n` +
-          `👉 ${payNow}\n\n` +
-          `Anh/chị kiểm tra lại thông tin, nếu đồng ý với mức giá này xin vui lòng bấm [Xác nhận & Tạo đơn ngay] hoặc [Thanh toán cước ngay] để em chính thức cấp mã vận đơn và điều phối bưu tá qua lấy hàng tận nhà ạ!`;
-        fallbackActionChips = [
-          { label: '✅ Xác nhận & Tạo đơn ngay', query: 'Xác nhận tạo đơn' },
-          { label: '💳 Thanh toán cước ngay', query: 'Thanh toán cước ngay và tạo đơn' },
-          { label: isReceiverPays ? '🔄 Đổi sang Người gửi trả' : '🔄 Đổi sang Người nhận trả', query: isReceiverPays ? 'Đổi sang Người gửi thanh toán cước' : 'Đổi sang Người nhận thanh toán cước' },
-          { label: '✏️ Chỉnh sửa thông tin', query: 'Tôi muốn sửa lại thông tin đơn hàng' },
-        ];
-      } else if (isSendOrderQuery) {
-        toolsUsed = ['intakeShipmentOrder(Ops Clerk Conversational Intake)'];
-        fallbackText =
-          `Chào anh/chị! Em là Giao dịch viên tiếp nhận bưu gửi tại Bưu cục Nexus Logistics. Rất vui được hỗ trợ anh/chị tạo đơn gửi quà cho người thân ngay trên hệ thống!\n\n` +
-          `Để em hoàn tất phiếu tiếp nhận và điều phối bưu tá đến lấy hàng nhanh chóng nhất, anh/chị vui lòng cho em biết các thông tin sau:\n\n` +
-          `1. 📍 Địa chỉ lấy hàng: Anh/chị muốn bưu tá đến lấy tại Địa chỉ mặc định của tài khoản (128 Phan Đăng Lưu, Phường 3, Quận Phú Nhuận, TP.HCM) hay lấy tại Địa chỉ lấy hàng mới ạ?\n` +
-          `2. 👤 Thông tin người nhận: Họ tên, Số điện thoại và Địa chỉ giao hàng chi tiết (Tỉnh/Thành, Quận/Huyện) của người nhận.\n` +
-          `3. 📦 Hàng hóa & Cân nặng: Tên mặt hàng (ví dụ: Quần áo, quà tặng, mỹ phẩm, thực phẩm khô...), nặng khoảng bao nhiêu kg và có thu tiền COD không ạ? (Quà tặng người thân thì thường là COD 0đ).\n` +
-          `4. 💳 Hình thức thanh toán cước phí: Đơn hàng này sẽ do:\n` +
-          `• Người gửi thanh toán (SENDER_PAYS): Quý khách thanh toán cước ngay hoặc đưa tiền mặt khi bưu tá đến lấy hàng.\n` +
-          `• Người nhận thanh toán (RECEIVER_PAYS): Người nhận sẽ thanh toán cước khi bưu tá giao hàng.\n\n` +
-          `Sau khi có đủ thông tin, em sẽ gửi lại Phiếu chi tiết đơn hàng và Báo giá cước phí, nếu anh/chị đồng ý hoặc thanh toán ngay thì đơn hàng mới chính thức được tạo trên hệ thống ạ!\n\n` +
-          `*(Anh/chị có thể bấm chọn nhanh các nút gợi ý bên dưới hoặc nhắn trực tiếp thông tin cho em nhé!)*`;
-        fallbackActionChips = [
-          { label: '📍 Lấy tại địa chỉ đã lưu', query: 'Lấy hàng tại địa chỉ đã lưu của tài khoản' },
-          { label: '📝 Nhập địa chỉ lấy mới', query: 'Tôi muốn lấy hàng tại địa chỉ mới' },
-          { label: '💳 Người gửi thanh toán', query: 'Người gửi thanh toán cước' },
-          { label: '📦 Người nhận thanh toán', query: 'Người nhận thanh toán cước' },
-          { label: '🎁 Hàng quà tặng (COD 0đ)', query: 'Hàng quà tặng người thân, COD 0đ' },
-        ];
-      } else if (isDamageQuery) {
+      if (isDamageQuery) {
         toolsUsed = ['getDamageAndClaimPolicy(Fragile Goods & Damage Settlement)'];
         fallbackText =
           `Quy trình xử lý sự cố hàng hư hỏng / bể vỡ theo Quy chuẩn Vận hành Nexus Logistics:\n\n` +
@@ -421,17 +339,13 @@ export function FloatingAiChatModal({ visible, onClose }: FloatingAiChatModalPro
           `3. Thời hạn giải quyết: Thẩm định trong 24h - 48h, hoàn tất chi trả bồi thường trong 03 - 05 ngày làm việc.\n\n` +
           `Quý khách có thể xem chi tiết tại Chính sách & Quy định dịch vụ của chúng tôi.`;
       } else if (isClaimQuery) {
-        toolsUsed = ['trackClaimStatus(CLM-202609-001)'];
+        toolsUsed = ['trackClaimStatus(CLM-Policy)'];
         fallbackText =
-          `Dạ chào bạn, Nexus Logistics đã kiểm tra tiến độ hồ sơ bồi thường:\n\n` +
-          `[TIẾN ĐỘ XỬ LÝ HỒ SƠ BỒI THƯỜNG MÃ CLM-202609-001]:\n` +
-          `• Mã vận đơn: 333000000001\n` +
-          `• Trạng thái: Đã phê duyệt chi trả bồi thường 100% (APPROVED_COMPENSATION)\n` +
-          `• Số tiền bồi thường duyệt chi: 15.000.000 VNĐ\n` +
-          `• Đơn vị chịu trách nhiệm: Hub Tân Bình (Lỗi bốc xếp ném hàng nứt vỡ)\n` +
-          `• Hình thức chi trả: Tự động chuyển khoản vào tài khoản ngân hàng trong kỳ đối soát COD gần nhất\n` +
-          `• Ngày hoàn tất phán quyết: 15/09/2026\n\n` +
-          `Hồ sơ đã hoàn tất phê duyệt chi trả theo quy định bưu chính.`;
+          `Dạ chào bạn, quy trình tra cứu hồ sơ khiếu nại bồi thường Nexus Logistics:\n\n` +
+          `• Để tra cứu tiến độ hồ sơ khiếu nại, bạn vui lòng gửi kèm mã hồ sơ khiếu nại (ví dụ: CLM-202609-001) hoặc mã vận đơn bưu gửi có phát sinh sự cố.\n` +
+          `• Thời hạn thẩm định hồ sơ: 24h - 48h làm việc kể từ khi lập biên bản đồng kiểm.\n` +
+          `• Hình thức giải ngân bồi thường: Chuyển khoản trực tiếp vào tài khoản ngân hàng hoặc cấn trừ kỳ đối soát gần nhất.\n\n` +
+          `Nếu cần khiếu nại gấp, bạn có thể gọi hotline trực ban CSKH: 1900 6868 để được nhân viên thụ lý hồ sơ.`;
       } else if (isReturnQuery) {
         toolsUsed = ['calculateReturnFee(Rule-based Policy)'];
         fallbackText =
@@ -440,30 +354,10 @@ export function FloatingAiChatModal({ visible, onClose }: FloatingAiChatModalPro
           `• Với Shop có tài khoản: Hệ thống tự động cấn trừ vào Bảng kê đối soát tiền thu hộ COD (COD Settlement Batch).\n` +
           `2. Đối Tác VIP Doanh Nghiệp (Sản lượng > 1.000 đơn/tháng): Áp dụng 0 VNĐ (Miễn phí chuyển hoàn 100%) theo thỏa thuận hợp đồng.\n\n` +
           `Quý khách có thể xem chi tiết tại Chính sách & Quy định dịch vụ của chúng tôi.`;
-      } else if (isMultiOrderQuery) {
-        toolsUsed = ['getUserShipments(Multi-order Overview)'];
-        fallbackText =
-          `Hệ thống Nexus Logistics ghi nhận tài khoản của bạn hiện có 03 đơn hàng đang hoạt động:\n\n` +
-          `• Đơn 333011573361 - Hàng: Kiện hàng mẫu - Trạng thái: Đã phân công bưu tá lấy hàng (Hub Tân Bình)\n` +
-          `• Đơn NX-88992211 - Hàng: Linh kiện điện tử - Trạng thái: Đang trên đường giao (Dự kiến 16:30)\n` +
-          `• Đơn NX-10293844 - Hàng: Thời trang may mặc - Trạng thái: Đang trung chuyển qua Hub Đà Nẵng\n\n` +
-          `Bạn muốn kiểm tra chi tiết hành trình của đơn nào trong số các đơn trên? Hãy gửi mã vận đơn cụ thể hoặc số thứ tự đơn.`;
-      } else if (isTrackingQuery) {
-        toolsUsed = ['trackShipment(333011573361)'];
-        fallbackText =
-          `[THÔNG TIN HÀNH TRÌNH VẬN ĐƠN GẦN NHẤT 333011573361]:\n` +
-          `• Trạng thái: Đã phân công nhân viên điều phối lấy hàng (TASK_ASSIGNED)\n` +
-          `• Hàng hóa: Kiện hàng mẫu (Khối lượng: 1.0 kg - COD: 0 VNĐ)\n` +
-          `• Tuyến đường: Hub Tân Định (TP.HCM) -> Hub Ba Đình (Hà Nội)\n` +
-          `• Lịch sử: Đã tạo đơn thành công trên hệ thống -> Hệ thống tự động chỉ định bưu cục gốc tiếp nhận.\n\n` +
-          `Lưu ý: Nếu bạn muốn tra cứu đơn khác hoặc danh sách nhiều đơn, vui lòng gửi mã vận đơn cụ thể hoặc hỏi "tôi có những đơn nào".`;
       } else {
         fallbackText =
-          `Kính chào Quý khách, tôi là Chuyên Viên Điều Phối Bưu Chính Nexus Express. Tôi sẵn sàng hỗ trợ Quý khách:\n` +
-          `1. Tra cứu hành trình bưu phẩm thời gian thực (gửi mã vận đơn NX-... hoặc số bưu gửi).\n` +
-          `2. Kiểm tra tiến độ đền bù khiếu nại (mã CLM-...). \n` +
-          `3. Hướng dẫn quy trình gửi hàng, giải đáp chính sách bồi thường và dự toán cước IATA.\n\n` +
-          `Quý khách cần hỗ trợ dịch vụ nào trên đây ạ?`;
+          `Dạ hiện tại kết nối mạng đến Trung tâm Điều phối Bưu cục tạm thời bị gián đoạn. ` +
+          `Quý khách vui lòng gửi lại mã vận đơn cụ thể hoặc liên hệ Hotline trực ban bưu cục 1900 6868 để được hỗ trợ kiểm tra trực tiếp.`;
       }
 
       const botMsg: ChatMessage = {
@@ -472,8 +366,6 @@ export function FloatingAiChatModal({ visible, onClose }: FloatingAiChatModalPro
         text: fallbackText,
         time: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
         toolsUsed,
-        shipmentCards: fallbackShipmentCards,
-        actionChips: fallbackActionChips,
       };
       setMessages((prev) => [...prev, botMsg]);
     } finally {
@@ -499,18 +391,18 @@ export function FloatingAiChatModal({ visible, onClose }: FloatingAiChatModalPro
             <View style={styles.header}>
               <View style={styles.headerLeft}>
                 <View style={styles.botIconWrapper}>
-                  <Ionicons name="headset" size={20} color="#FFFFFF" />
+                  <Ionicons name="bus" size={20} color="#38BDF8" />
                 </View>
                 <View>
                   <View style={styles.titleRow}>
-                    <Text style={styles.headerTitle}>Tổng Đài Bưu Chính Nexus</Text>
+                    <Text style={styles.headerTitle}>Trung Tâm Điều Phối Nexus</Text>
                     <View style={styles.ragBadge}>
                       <Text style={styles.ragBadgeText}>Bưu cục 24/7</Text>
                     </View>
                   </View>
                   <View style={styles.statusRow}>
                     <View style={styles.statusDot} />
-                    <Text style={styles.headerSubtitle}>Điều phối viên trực tuyến • Hotline 1900 1234</Text>
+                    <Text style={styles.headerSubtitle}>Trực tuyến 24/7 • Hotline 1900 6868</Text>
                   </View>
                 </View>
               </View>
@@ -522,6 +414,17 @@ export function FloatingAiChatModal({ visible, onClose }: FloatingAiChatModalPro
               >
                 <Ionicons name="close" size={22} color="#94A3B8" />
               </TouchableOpacity>
+            </View>
+
+            {/* Operational Linehaul SLA Banner */}
+            <View style={styles.slaBanner}>
+              <View style={styles.slaLeft}>
+                <View style={styles.slaDot} />
+                <Text style={styles.slaText}>
+                  Tuyến Trục Quốc Gia: <Text style={styles.slaBold}>Bình thường</Text>
+                </Text>
+              </View>
+              <Text style={styles.slaBadge}>SLA 99.4%</Text>
             </View>
 
             {/* 2. Quick Suggestions Chips */}
@@ -563,7 +466,7 @@ export function FloatingAiChatModal({ visible, onClose }: FloatingAiChatModalPro
                 >
                   {msg.sender === 'bot' && (
                     <View style={styles.botAvatarMini}>
-                      <Ionicons name="headset" size={14} color="#FFFFFF" />
+                      <Ionicons name="bus" size={14} color="#38BDF8" />
                     </View>
                   )}
 
@@ -760,7 +663,9 @@ const styles = StyleSheet.create({
     width: 38,
     height: 38,
     borderRadius: 12,
-    backgroundColor: '#1E40AF',
+    backgroundColor: '#1E293B',
+    borderWidth: 1,
+    borderColor: '#334155',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -807,6 +712,41 @@ const styles = StyleSheet.create({
     padding: 6,
     borderRadius: 8,
     backgroundColor: 'rgba(255, 255, 255, 0.08)',
+  },
+  slaBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#020617',
+    paddingHorizontal: 16,
+    paddingVertical: 6,
+    borderBottomWidth: 1,
+    borderBottomColor: '#1E293B',
+  },
+  slaLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  slaDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#38BDF8',
+  },
+  slaText: {
+    fontSize: 11,
+    color: '#94A3B8',
+  },
+  slaBold: {
+    fontWeight: '700',
+    color: '#E2E8F0',
+  },
+  slaBadge: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: '#64748B',
+    fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
   },
   quickSuggestionsWrapper: {
     backgroundColor: '#F8FAFC',
@@ -858,7 +798,9 @@ const styles = StyleSheet.create({
     width: 28,
     height: 28,
     borderRadius: 8,
-    backgroundColor: '#1E40AF',
+    backgroundColor: '#0F172A',
+    borderWidth: 1,
+    borderColor: '#334155',
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: 2,

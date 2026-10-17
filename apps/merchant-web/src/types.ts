@@ -8,6 +8,7 @@ export type ViewId =
   | 'change-requests'
   | 'returns'
   | 'claims'
+  | 'finance'
   | 'print'
   | 'account'
   | 'notifications';

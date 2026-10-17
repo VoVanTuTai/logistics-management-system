@@ -1655,7 +1655,18 @@ function CreateOrderPage() {
         navigate('/orders');
       }, 1200);
     } catch (err: any) {
-      setErrorMsg(err?.message || 'Tạo vận đơn thất bại. Vui lòng thử lại.');
+      if (
+        err?.message?.includes('Invalid or expired access token') ||
+        err?.status === 401
+      ) {
+        useAuthStore.getState().logout();
+        setErrorMsg('Phiên đăng nhập đã hết hạn. Đang chuyển hướng về trang Đăng nhập...');
+        setTimeout(() => {
+          navigate('/login');
+        }, 1200);
+      } else {
+        setErrorMsg(err?.message || 'Tạo vận đơn thất bại. Vui lòng thử lại.');
+      }
     } finally {
       setIsSubmitting(false);
     }
