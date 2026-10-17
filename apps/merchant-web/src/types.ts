@@ -7,6 +7,8 @@ export type ViewId =
   | 'tracking'
   | 'change-requests'
   | 'returns'
+  | 'claims'
+  | 'finance'
   | 'print'
   | 'account'
   | 'notifications';
@@ -272,3 +274,49 @@ export const DEFAULT_PROFILE: MerchantProfile = {
   defaultPickupAddressDetail: '',
   defaultPickupAddress: '',
 };
+
+export type ClaimIncidentType =
+  | 'DAMAGE'
+  | 'LOST_IN_TRANSIT'
+  | 'DELAY'
+  | 'COD_DISPUTE'
+  | 'WRONG_DELIVERY';
+
+export type ClaimStatus =
+  | 'PENDING_INSPECTION'
+  | 'ADJUDICATED'
+  | 'PAYMENT_APPROVED'
+  | 'SETTLED'
+  | 'REJECTED';
+
+export type ResponsibleParty =
+  | 'UNASSIGNED'
+  | 'ORIGIN_HUB'
+  | 'TRANSIT_HUB'
+  | 'DESTINATION_HUB'
+  | 'LINEHAUL_CARRIER'
+  | 'LAST_MILE_COURIER'
+  | 'MERCHANT';
+
+export interface MerchantClaim {
+  id: string;
+  claimCode: string;
+  shipmentCode: string;
+  customerName?: string | null;
+  customerPhone?: string | null;
+  incidentType: ClaimIncidentType;
+  status: ClaimStatus;
+  responsibleParty: ResponsibleParty;
+  declaredValue: number;
+  codAmount: number;
+  claimRequestedAmount: number;
+  approvedCompensationAmount: number;
+  liabilityRatioPercent: number;
+  packageDescription?: string | null;
+  damageDescription?: string | null;
+  adjudicationNotes?: string | null;
+  adjudicatedAt?: string | null;
+  merchantPaidAt?: string | null;
+  reportedAt: string;
+  createdAt: string;
+}

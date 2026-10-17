@@ -581,9 +581,12 @@ export function PriceCalculatorScreen({ navigation }: Props): React.JSX.Element 
                 <View style={styles.totalFeeCard}>
                   <Text style={styles.totalFeeLabel}>TỔNG CƯỚC ƯỚC TÍNH</Text>
                   <Text style={styles.totalFeeVal}>{formatVnd(calculatedFee.totalFee)}</Text>
-                  <Text style={styles.estimatedTimeText}>
-                    ⚡ Dự kiến giao: {calculatedFee.estimatedDays}
-                  </Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginTop: 4 }}>
+                    <Ionicons name="time-outline" size={14} color={colors.primary} style={{ marginRight: 4 }} />
+                    <Text style={styles.estimatedTimeText}>
+                      Dự kiến giao: {calculatedFee.estimatedDays}
+                    </Text>
+                  </View>
                 </View>
 
                 <View style={styles.feeBreakdownGroup}>

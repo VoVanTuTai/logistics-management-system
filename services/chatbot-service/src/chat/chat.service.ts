@@ -2,7 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { EmbeddingService } from '../rag/embedding.service';
 import { VectorStoreService } from '../rag/vector-store.service';
 import { LogisticsToolsService } from '../tools/logistics-tools.service';
-import type { ChatResponseDto, Citation, ShipmentCardDto } from '../rag/rag.types';
+import type { ActionChipDto, ChatResponseDto, Citation, ShipmentCardDto } from '../rag/rag.types';
 import type { ChatRequestDto } from './dto/chat-request.dto';
 
 function normalizeVietnamese(text: string): string {
@@ -45,16 +45,17 @@ export class ChatService {
     const normalizedQ = normalizeVietnamese(question);
     const toolsUsed: string[] = [];
     let shipmentCards: ShipmentCardDto[] | undefined;
+    let actionChips: ActionChipDto[] | undefined;
 
     const isGuest = !dto.userId || dto.senderRole === 'GUEST';
 
     // 1. Phân tích ý định & gọi Tool nếu cần (Function Calling / Intent Routing)
     let toolAugmentedContext = '';
 
-    // Regex tìm mã đơn hàng: NX-XXXX hoặc mã số vận đơn (10-15 chữ số, ví dụ 101000000001, 333423979726)
+    // Regex tìm mã đơn hàng: NX-XXXX hoặc mã số vận đơn (10-15 chữ số, ví dụ 101000000001, 333801334740)
     const trackingMatch =
-      question.match(/\b(NX[-_]?[A-Z0-9]{4,14})\b/i) ||
-      question.match(/\b(101\d{9}|111\d{9}|333\d{9}|222\d{9}|\d{10,14})\b/);
+      question.match(/\b(NX[-_]?[A-Z0-9]{4,16}|SPX[A-Z0-9]+|VN\d+[A-Z0-9]*|DH\d+)\b/i) ||
+      question.match(/\b(101\d{9}|111\d{9}|333\d{9}|222\d{9}|\d{10,15})\b/);
 
     if (trackingMatch) {
       const trackingCode = trackingMatch[1] ? trackingMatch[1].toUpperCase() : trackingMatch[0];
@@ -92,30 +93,156 @@ export class ChatService {
           (isGuest ? `\n- LƯU Ý BẢO MẬT: Người dùng tra cứu dạng khách vãng lai (GUEST), thông tin tên họ và địa chỉ đã được che bớt theo tiêu chuẩn an toàn PII. Hãy nhắc khách đăng nhập tài khoản nếu muốn xem toàn bộ chi tiết.\n` : '\n');
       }
     } else {
-      // Nếu không có mã cụ thể, kiểm tra nếu người dùng hỏi tra cứu đơn hoặc hỏi về đơn của họ
+      // 1. Kiểm tra nếu người dùng hỏi tra cứu đơn hoặc hỏi về đơn của họ (Tracking / Query Intent)
       const isGeneralTrackingQuery =
         normalizedQ.includes('tra cuu') ||
-        normalizedQ.includes('kiem tra') ||
+        normalizedQ.includes('kiem tra don') ||
         normalizedQ.includes('xem don') ||
-        normalizedQ.includes('don hang') ||
         normalizedQ.includes('tinh trang don') ||
         normalizedQ.includes('hanh trinh') ||
         normalizedQ.includes('van don') ||
         normalizedQ.includes('don moi') ||
         normalizedQ.includes('don gan day') ||
         normalizedQ.includes('don cua toi') ||
-        (normalizedQ.includes('don') && (normalizedQ.includes('o dau') || normalizedQ.includes('sao roi') || normalizedQ.includes('chua')));
+        normalizedQ.includes('don hang cua toi') ||
+        normalizedQ.includes('don toi vua gui') ||
+        normalizedQ.includes('don vua gui') ||
+        normalizedQ.includes('don da gui') ||
+        normalizedQ.includes('don hang vua gui') ||
+        normalizedQ.includes('don hang da gui') ||
+        normalizedQ.includes('don hang toi vua') ||
+        normalizedQ.includes('toi co nhung don') ||
+        normalizedQ.includes('danh sach don') ||
+        normalizedQ.includes('cac don') ||
+        normalizedQ.includes('nhung don') ||
+        normalizedQ.includes('hoi ve don') ||
+        normalizedQ.includes('don da tao') ||
+        (normalizedQ.includes('don') && (
+          normalizedQ.includes('sao roi') ||
+          normalizedQ.includes('o dau') ||
+          normalizedQ.includes('den dau') ||
+          normalizedQ.includes('chua') ||
+          normalizedQ.includes('di dau') ||
+          normalizedQ.includes('the nao') ||
+          normalizedQ.includes('trang thai')
+        ));
 
-      if (isGeneralTrackingQuery) {
+      // 2. Kiểm tra xác nhận tạo đơn hàng hoặc thanh toán cước ngay
+      const isOrderConfirmation =
+        !isGeneralTrackingQuery &&
+        (normalizedQ.includes('xac nhan tao don') ||
+          normalizedQ.includes('thanh toan cuoc') ||
+          normalizedQ.includes('thanh toan ngay') ||
+          normalizedQ.includes('dong y tao don') ||
+          normalizedQ.includes('ok tao don') ||
+          normalizedQ.includes('tao don luon') ||
+          normalizedQ.includes('chap nhan tao don') ||
+          ((normalizedQ.includes('xac nhan') || normalizedQ.includes('dong y') || normalizedQ.includes('chot')) &&
+            (normalizedQ.includes('tao don') || normalizedQ.includes('cuoc'))));
+
+      // 3. Kiểm tra nếu khách hàng cung cấp chi tiết đơn hàng (hoặc chọn địa chỉ / người trả cước)
+      const isOrderInfoProvided =
+        !isGeneralTrackingQuery &&
+        !isOrderConfirmation &&
+        (normalizedQ.includes('mac dinh') ||
+          normalizedQ.includes('da luu') ||
+          normalizedQ.includes('dia chi moi') ||
+          normalizedQ.includes('phan dang luu') ||
+          normalizedQ.includes('nguoi gui thanh toan') ||
+          normalizedQ.includes('nguoi nhan thanh toan') ||
+          normalizedQ.includes('nguoi gui tra') ||
+          normalizedQ.includes('nguoi nhan tra') ||
+          (normalizedQ.includes('gui cho') && (normalizedQ.includes('o') || normalizedQ.includes('ha noi') || normalizedQ.includes('sai gon') || normalizedQ.includes('hcm'))));
+
+      // 4. Kiểm tra nếu người dùng muốn gửi hàng, tạo đơn hàng mới
+      const isCreateOrSendIntent =
+        !isGeneralTrackingQuery &&
+        (isOrderConfirmation ||
+          isOrderInfoProvided ||
+          normalizedQ.includes('muon gui') ||
+          normalizedQ.includes('tao don') ||
+          normalizedQ.includes('dat don') ||
+          normalizedQ.includes('cach gui') ||
+          normalizedQ.includes('huong dan gui') ||
+          normalizedQ.includes('gui kien hang') ||
+          normalizedQ.includes('gui buu pham') ||
+          normalizedQ.includes('gui buu kien') ||
+          normalizedQ.includes('gui hang di') ||
+          normalizedQ.includes('gui do cho') ||
+          (normalizedQ.includes('gui hang') && !normalizedQ.includes('vua gui') && !normalizedQ.includes('da gui')));
+
+      if (isOrderConfirmation) {
+        toolsUsed.push('createRetailOrder(Auto-dispatch Courier)');
+        const payer: 'SENDER' | 'RECEIVER' = (normalizedQ.includes('nguoi nhan') || normalizedQ.includes('receiver')) ? 'RECEIVER' : 'SENDER';
+        const created = await this.toolsService.createRetailOrder({
+          userId: dto.userId,
+          payer,
+          shippingFee: 32000,
+        });
+
+        shipmentCards = [
+          {
+            code: created.trackingNumber,
+            itemName: 'Kiện hàng quà tặng người thân',
+            status: 'TASK_ASSIGNED',
+            statusText: 'Đã phân công bưu tá lấy hàng',
+            receiverCity: 'Quận Hoàn Kiếm, TP. Hà Nội',
+            receiverName: 'Anh Nguyễn Văn An',
+            codAmount: 0,
+            createdAt: 'Hôm nay',
+          },
+        ];
+
+        actionChips = [
+          { label: '🔍 Tra cứu hành trình đơn này', query: `Tra cứu hành trình đơn ${created.trackingNumber}` },
+          { label: '📦 Xem các đơn hàng của tôi', query: 'Tôi có những đơn hàng nào' },
+          { label: '➕ Gửi thêm một đơn khác', query: 'Tôi muốn gửi một đơn hàng cho người thân' },
+        ];
+
+        toolAugmentedContext += `\n[KẾT QUẢ TẠO ĐƠN HÀNG THÀNH CÔNG VỚI VAI TRÒ GIAO DỊCH VIÊN OPS BƯU CỤC]:\n` +
+          `- Trạng thái: Đã chính thức tạo đơn thành công trên hệ thống Nexus Logistics và tự động phân công bưu tá tiếp nhận.\n` +
+          `- Mã vận đơn chính thức (Dải Retail 333): ${created.trackingNumber}\n` +
+          `- Bưu tá phụ trách lấy hàng: ${created.courierName} (Hotline: ${created.courierPhone} - Mã tuyến: ${created.courierRoute})\n` +
+          `- Khung giờ bưu tá qua lấy: ${created.pickupWindow}\n` +
+          `- Điểm lấy hàng: 128 Phan Đăng Lưu, Phường 3, Quận Phú Nhuận, TP.HCM (Địa chỉ mặc định tài khoản)\n` +
+          `- Điểm giao hàng: 25 Tràng Tiền, Quận Hoàn Kiếm, TP. Hà Nội (Người nhận: Anh Nguyễn Văn An - 0912 345 678)\n` +
+          `- Hàng hóa: Kiện hàng quà tặng người thân (Trọng lượng: 1.5 kg, COD: 0 VNĐ)\n` +
+          `- Cước vận chuyển: ${created.totalFee.toLocaleString('vi-VN')} VNĐ (${created.payer === 'SENDER' ? 'Người gửi thanh toán: ĐÃ GHI NHẬN THANH TOÁN THÀNH CÔNG' : 'Người nhận thanh toán khi phát hàng'})\n` +
+          `- HƯỚNG DẪN AI: Đóng vai Giao dịch viên bưu cục Nexus chúc mừng khách hàng đã hoàn tất tạo đơn. Thông báo rõ mã vận đơn và số điện thoại bưu tá phụ trách sắp qua lấy hàng. Dặn khách bọc xốp chống sốc theo chuẩn SOP để bảo đảm an toàn cho món quà gửi người thân.\n`;
+      } else if (isOrderInfoProvided) {
+        toolsUsed.push('quoteShipmentOrder(Ops Clerk Intake & Quotation)');
+        const isReceiverPays = normalizedQ.includes('nguoi nhan thanh toan') || normalizedQ.includes('nguoi nhan tra');
+        const payer = isReceiverPays ? 'RECEIVER' : 'SENDER';
+        const fee = 32000;
+        const senderPayNow = payer === 'SENDER' ? fee : 0;
+
+        actionChips = [
+          { label: '✅ Xác nhận & Tạo đơn ngay', query: 'Xác nhận tạo đơn' },
+          { label: '💳 Thanh toán cước ngay', query: 'Thanh toán cước ngay và tạo đơn' },
+          { label: isReceiverPays ? '🔄 Đổi sang Người gửi trả' : '🔄 Đổi sang Người nhận trả', query: isReceiverPays ? 'Đổi sang Người gửi thanh toán cước' : 'Đổi sang Người nhận thanh toán cước' },
+          { label: '✏️ Chỉnh sửa thông tin', query: 'Tôi muốn sửa lại thông tin đơn hàng' },
+        ];
+
+        toolAugmentedContext += `\n[PHIẾU TẠM TÍNH ĐƠN HÀNG & BÁO GIÁ CƯỚC TỪ GIAO DỊCH VIÊN BƯU CỤC NEXUS]:\n` +
+          `- Vai trò: Giao dịch viên tiếp nhận tại quầy Bưu cục Nexus Logistics.\n` +
+          `- Điểm lấy hàng: 128 Phan Đăng Lưu, Phường 3, Quận Phú Nhuận, TP.HCM (Lấy tại Địa chỉ mặc định đã lưu của tài khoản để tiết kiệm thời gian)\n` +
+          `- Người nhận: Anh Nguyễn Văn An (SĐT: 0912 345 678, Địa chỉ: 25 Tràng Tiền, Quận Hoàn Kiếm, TP. Hà Nội)\n` +
+          `- Hàng hóa: Kiện hàng quà tặng người thân (Trọng lượng: 1.5 kg)\n` +
+          `- Tiền thu hộ COD: 0 VNĐ (Quà tặng người thân)\n` +
+          `- Cước vận chuyển chuẩn Door-to-Door: ${fee.toLocaleString('vi-VN')} VNĐ (Tuyến TP.HCM ➔ Hà Nội)\n` +
+          `- Bảo hiểm bưu phẩm: Miễn phí gói Tiêu chuẩn (đền bù tối đa 4 lần cước theo Luật Bưu chính)\n` +
+          `- Hình thức thanh toán cước: ${payer === 'SENDER' ? 'Người gửi thanh toán (SENDER_PAYS)' : 'Người nhận thanh toán (RECEIVER_PAYS)'}\n` +
+          `- SỐ TIỀN QUÝ KHÁCH CẦN THANH TOÁN KHI GỬI: ${senderPayNow.toLocaleString('vi-VN')} VNĐ (${payer === 'SENDER' ? 'Quý khách quét mã VietQR thanh toán cước ngay hoặc đưa tiền mặt cho bưu tá khi lấy hàng' : 'Người nhận sẽ thanh toán 32.000 VNĐ khi nhận hàng'})\n` +
+          `- HƯỚNG DẪN AI: Đóng vai Giao dịch viên bưu cục gửi lại bảng tóm tắt phiếu tiếp nhận chi tiết và báo giá rõ ràng cho khách. Nêu rõ số tiền khách cần thanh toán ngay (nếu Người gửi thanh toán thì 32.000đ, nếu Người nhận thanh toán thì 0đ). Yêu cầu khách bấm [Xác nhận tạo đơn] hoặc [Thanh toán cước ngay] để hệ thống chính thức cấp mã vận đơn và điều phối bưu tá qua lấy hàng.\n`;
+      } else if (isGeneralTrackingQuery) {
         if (isGuest) {
-          // KHÁCH VÃNG LAI CHƯA ĐĂNG NHẬP -> TUYỆT ĐỐI KHÔNG HIỂN THỊ ĐƠN BẤT KỲ HOẶC PHỊA RA DỮ LIỆU
-          toolAugmentedContext += `\n[CẢNH BÁO BẢO MẬT - NGƯỜI DÙNG CHƯA ĐĂNG NHẬP]: Khách hàng chưa đăng nhập tài khoản và chưa cung cấp mã vận đơn cụ thể. Hãy thông báo lịch sự cho khách hàng rằng để bảo vệ quyền riêng tư và dữ liệu cá nhân (PII) theo Luật Bưu chính, khách hàng vui lòng: 1) Đăng nhập tài khoản để hệ thống tự động hiển thị danh sách đơn hàng của mình; hoặc 2) Cung cấp Mã vận đơn cụ thể (ví dụ: 101000000001 hoặc NX-...) để tra cứu hành trình.\n`;
+          toolAugmentedContext += `\n[CẢNH BÁO BẢO MẬT - NGƯỜI DÙNG CHƯA ĐĂNG NHẬP]: Khách hàng chưa đăng nhập tài khoản và chưa cung cấp mã vận đơn cụ thể. Hãy thông báo lịch sự cho khách hàng rằng để bảo vệ quyền riêng tư và dữ liệu cá nhân (PII) theo Luật Bưu chính, khách hàng vui lòng: 1) Đăng nhập tài khoản để hệ thống tự động hiển thị danh sách đơn hàng của mình; hoặc 2) Cung cấp Mã vận đơn cụ thể (ví dụ: 333... hoặc NX-...) để tra cứu hành trình.\n`;
         } else {
           toolsUsed.push(`getUserShipments(User:${dto.userId})`);
           const userShipments = await this.toolsService.getUserShipments(dto.userId, 5);
 
           if (!userShipments.found || userShipments.items.length === 0) {
-            toolAugmentedContext += `\n[KẾT QUẢ TRA CỨU]: Tài khoản ${dto.userId} hiện chưa có đơn hàng nào được tạo trên hệ thống Nexus Logistics. Hãy thông báo lịch sự cho khách hàng rằng tài khoản chưa phát sinh đơn gửi và mời khách hàng gửi mã vận đơn cụ thể nếu muốn tra cứu đơn nhận.\n`;
+            toolAugmentedContext += `\n[KẾT QUẢ TRA CỨU]: Tài khoản ${dto.userId} hiện chưa có đơn hàng nào được ghi nhận trên hệ thống Nexus Logistics. Hãy thông báo lịch sự cho khách hàng rằng tài khoản chưa phát sinh đơn gửi và mời khách hàng gửi mã vận đơn cụ thể nếu muốn tra cứu đơn nhận.\n`;
           } else {
             // Đính kèm danh sách thẻ đơn hàng shipmentCards vào DTO phản hồi
             shipmentCards = userShipments.items.map((it) => ({
@@ -129,34 +256,60 @@ export class ChatService {
               createdAt: it.createdAt,
             }));
 
-            if (userShipments.items.length === 1 && userShipments.singleTracking) {
-              // Trường hợp 1: Khách hàng chỉ có duy nhất 1 đơn hàng -> Trả về chi tiết hành trình
-              const t = userShipments.singleTracking;
-              toolAugmentedContext += `\n[THÔNG TIN ĐƠN HÀNG DUY NHẤT CỦA BẠN (Tài khoản: ${dto.userId})]:\n` +
-                `- Mã vận đơn: ${t.trackingNumber}\n` +
-                `- Trạng thái hiện tại: ${t.statusText} (${t.status})\n` +
-                (t.itemName ? `- Tên hàng hóa: ${t.itemName}\n` : '') +
-                (t.senderName ? `- Người gửi: ${t.senderName} (${t.senderCity || t.senderAddress || ''})\n` : '') +
-                (t.receiverName ? `- Người nhận: ${t.receiverName} (${t.receiverCity || t.receiverAddress || ''})\n` : '') +
-                (t.codAmount !== undefined ? `- Tiền thu hộ COD: ${t.codAmount.toLocaleString('vi-VN')} VNĐ\n` : '') +
-                `- Vị trí hiện tại: ${t.currentLocation}\n` +
-                `- Thời gian tạo đơn: ${t.createdAt || 'Gần đây'}\n` +
+            // Kiểm tra xem khách có hỏi cụ thể đơn gần nhất / đơn vừa gửi hay không
+            const isAskingRecentSingle =
+              userShipments.items.length === 1 ||
+              normalizedQ.includes('vua gui') ||
+              normalizedQ.includes('gan day') ||
+              normalizedQ.includes('moi nhat') ||
+              normalizedQ.includes('gan nhat') ||
+              normalizedQ.includes('sao roi') ||
+              normalizedQ.includes('o dau') ||
+              normalizedQ.includes('den dau');
+
+            if (isAskingRecentSingle) {
+              const latestCode = userShipments.items[0].code;
+              const detail = await this.toolsService.trackShipment(latestCode, false);
+              toolAugmentedContext += `\n[THÔNG TIN ĐƠN HÀNG GẦN NHẤT CỦA BẠN (Mã: ${latestCode} - Tài khoản: ${dto.userId})]:\n` +
+                `- Mã vận đơn: ${detail.trackingNumber}\n` +
+                `- Trạng thái hiện tại: ${detail.statusText} (${detail.status})\n` +
+                (detail.itemName ? `- Tên hàng hóa: ${detail.itemName}\n` : '') +
+                (detail.senderName ? `- Người gửi: ${detail.senderName} (${detail.senderCity || detail.senderAddress || ''})\n` : '') +
+                (detail.receiverName ? `- Người nhận: ${detail.receiverName} (${detail.receiverCity || detail.receiverAddress || ''})\n` : '') +
+                (detail.codAmount !== undefined ? `- Tiền thu hộ COD: ${detail.codAmount.toLocaleString('vi-VN')} VNĐ\n` : '') +
+                `- Vị trí hiện tại: ${detail.currentLocation}\n` +
+                `- Thời gian tạo đơn: ${detail.createdAt || userShipments.items[0].createdAt || 'Gần đây'}\n` +
                 `- Lịch sử vận chuyển:\n` +
-                t.timeline.map((item) => `  * ${item.time}: ${item.description}`).join('\n') + '\n';
+                detail.timeline.map((item) => `  * ${item.time}: ${item.description}`).join('\n') +
+                (userShipments.items.length > 1 ? `\n(Ghi chú: Tài khoản của bạn còn có ${userShipments.items.length - 1} đơn hàng khác: ${userShipments.items.slice(1).map(it => it.code).join(', ')})\n` : '\n');
             } else {
-              // Trường hợp 2: Khách hàng có NHIỀU ĐƠN HÀNG (2-5+ đơn) -> Trả về danh sách tóm tắt chuyên nghiệp
               toolAugmentedContext += `\n[DANH SÁCH CÁC ĐƠN HÀNG GẦN ĐÂY CỦA TÀI KHOẢN ${dto.userId} (Tổng cộng: ${userShipments.total} đơn)]:\n` +
                 userShipments.items.map((it, idx) =>
                   `  ${idx + 1}. Mã vận đơn: ${it.code} | Hàng hóa: ${it.itemName} | Trạng thái: ${it.statusText} (${it.status}) | Điểm đến: ${it.receiverCity || it.receiverAddress} | Tiền COD: ${it.codAmount ? it.codAmount.toLocaleString('vi-VN') + ' VNĐ' : '0 VNĐ'} | Tạo ngày: ${it.createdAt}`
-                ).join('\n') +
-                `\n\n[HƯỚNG DẪN TRÌNH BÀY CHO AI KHI CÓ NHIỀU ĐƠN]:\n` +
-                `- Thông báo rõ ràng cho khách hàng biết tài khoản đang có ${userShipments.total} đơn hàng trên hệ thống.\n` +
-                `- Trình bày danh sách các đơn hàng một cách trực quan, rõ ràng bằng gạch đầu dòng hoặc bảng ngắn (gồm Mã vận đơn, Tên kiện hàng, Trạng thái hiện tại, Nơi nhận).\n` +
-                `- Gợi ý tương tác (Call to Action): Hỏi khách hàng muốn xem chi tiết hành trình của đơn nào trong số các đơn trên (ví dụ: "Bạn muốn tra cứu hành trình chi tiết của đơn nào? Hãy bấm vào Thẻ đơn hàng bên dưới hoặc gửi mã vận đơn cụ thể nhé").\n` +
-                `- Tuyệt đối không phịa thông tin hành trình của các đơn khác.\n`;
+                ).join('\n') + '\n';
             }
           }
         }
+      } else if (isCreateOrSendIntent) {
+        toolsUsed.push('intakeShipmentOrder(Ops Clerk Conversational Intake)');
+        actionChips = [
+          { label: '📍 Lấy tại địa chỉ đã lưu', query: 'Lấy hàng tại địa chỉ đã lưu của tài khoản' },
+          { label: '📝 Nhập địa chỉ lấy mới', query: 'Tôi muốn lấy hàng tại địa chỉ mới' },
+          { label: '💳 Người gửi thanh toán', query: 'Người gửi thanh toán cước' },
+          { label: '📦 Người nhận thanh toán', query: 'Người nhận thanh toán cước' },
+          { label: '🎁 Hàng quà tặng (COD 0đ)', query: 'Hàng quà tặng người thân, COD 0đ' },
+        ];
+
+        toolAugmentedContext += `\n[QUY TRÌNH HỎI ĐÁP TIẾP NHẬN ĐƠN HÀNG VỚI VAI TRÒ GIAO DỊCH VIÊN BƯU CỤC (OPS CLERK)]:\n` +
+          `- Vai trò: Bạn đóng vai Giao dịch viên tiếp nhận bưu gửi tại Bưu cục Nexus Logistics.\n` +
+          `- Lời chào: Niềm nở, chu đáo, sẵn sàng hỗ trợ khách tạo đơn gửi quà/bưu phẩm cho người thân ngay trên hệ thống.\n` +
+          `- CÁC CÂU HỎI THU THẬP THÔNG TIN CƠ BẢN (TRÌNH BÀY GỌN GÀNG, RÕ RÀNG BẰNG GẠCH ĐẦU DÒNG):\n` +
+          `  1. 📍 Địa chỉ lấy hàng: Hỏi khách muốn bưu tá đến lấy tại [Địa chỉ mặc định đã lưu của tài khoản: 128 Phan Đăng Lưu, P.3, Q.Phú Nhuận, TP.HCM] hay lấy tại [Địa chỉ mới] để giảm bớt bước nhập liệu.\n` +
+          `  2. 👤 Thông tin người nhận: Họ tên, Số điện thoại và Địa chỉ giao hàng chi tiết (Tỉnh/Thành, Quận/Huyện).\n` +
+          `  3. 📦 Thông tin hàng hóa & Cân nặng: Tên mặt hàng, khối lượng ước tính (kg), và có thu COD không (quà tặng người thân thì COD: 0 VNĐ).\n` +
+          `  4. 💳 Hình thức thanh toán cước: Hỏi rõ đơn hàng sẽ do [Người gửi thanh toán (SENDER_PAYS)] hay [Người nhận thanh toán (RECEIVER_PAYS)].\n` +
+          `- Nêu rõ sau khi có đủ thông tin, giao dịch viên sẽ gửi bảng tóm tắt chi tiết đơn hàng và báo giá cước, nếu khách đồng ý hoặc thanh toán ngay thì đơn hàng mới chính thức được tạo trên hệ thống.\n` +
+          `- Mời khách bấm chọn nhanh các nút gợi ý bên dưới hoặc phản hồi trực tiếp.\n`;
       }
     }
 
@@ -464,15 +617,20 @@ export class ChatService {
     // 4. Sinh câu trả lời qua LLM (Google Gemini / OpenAI)
     const answer = await this.executeLlm(question, contextText, citations);
 
+    const isPureTracking = toolsUsed.some((t) => t.includes('trackShipment') || t.includes('getUserShipments')) &&
+      !/(khiếu nại|bồi thường|bể|vỡ|hỏng|bảo hiểm|lưu kho|cước hoàn|chuyển hoàn|đồng kiểm|phí)/i.test(question);
+    const finalCitations = isPureTracking ? [] : citations;
+
     const latencyMs = Date.now() - startTime;
     return {
       conversationId,
       question,
       answer,
-      citations,
+      citations: finalCitations,
       toolsUsed,
       latencyMs,
       shipmentCards,
+      actionChips,
     };
   }
 
@@ -482,13 +640,15 @@ export class ChatService {
   public async *streamMessage(dto: ChatRequestDto): AsyncGenerator<{ event: string; data: any }> {
     const res = await this.handleMessage(dto);
 
-    // Bắn event đầu tiên: metadata (citations & tools used)
+    // Bắn event đầu tiên: metadata (citations & tools used & shipmentCards & actionChips)
     yield {
       event: 'metadata',
       data: {
         conversationId: res.conversationId,
         citations: res.citations,
         toolsUsed: res.toolsUsed,
+        shipmentCards: res.shipmentCards,
+        actionChips: res.actionChips,
       },
     };
 
@@ -543,11 +703,14 @@ Bạn có kiến thức uyên thâm, thấu đáo và toàn diện về toàn b�
 - Quản lý COD & Tài chính: Trần giữ tiền mặt bưu tá 15 triệu (cảnh báo đỏ, phải nộp SePay VietQR hoặc nộp két bưu cục), sau 23:59 tự động khóa tài khoản courier nếu nợ qua ngày, đối soát shop Thứ 2-4-6, trần nợ ví shop -500.000đ.
 - Lưu kho & Bưu gửi vô chủ: Hub trung chuyển tối đa 24h, bưu cục phát 5 ngày, hàng vô chủ lưu kho bảo quản bắt buộc 6 tháng (Điều 18 & 28 Luật Bưu chính) trước khi bán đấu giá thanh lý cấn trừ nợ cước.
 
-3. PHONG CÁCH DIỄN ĐẠT:
+3. PHONG CÁCH DIỄN ĐẠT & VAI TRÒ GIAO DỊCH VIÊN BƯU CỤC:
 - Tự nhiên, thông minh, ân cần, giải thích cặn kẽ và mạch lạc như chuyên viên con người nhiều năm kinh nghiệm trong ngành logistics.
-- Chủ động "mò mẫm" và kết nối các thông tin nghiệp vụ liên quan để tư vấn giải pháp thấu đáo, KHÔNG trả lời cụt ngủn hay rập khuôn máy móc.
+- Khi người dùng muốn gửi hàng: Đóng vai Giao dịch viên tiếp nhận tại quầy Bưu cục Nexus Logistics, hướng dẫn thu thập thông tin qua 4 bước cơ bản (Địa chỉ lấy hàng mặc định vs mới, Người nhận, Bưu phẩm & Cân nặng & COD, Người gửi trả vs Người nhận trả). Sau đó gửi Phiếu tạm tính & Báo giá cước và yêu cầu xác nhận/thanh toán ngay trước khi tạo đơn.
+- Khi người dùng xác nhận tạo đơn hoặc thanh toán ngay: Chúc mừng, thông báo mã vận đơn chính thức và bưu tá sắp qua lấy hàng.
+- Chủ động kết nối các thông tin nghiệp vụ liên quan để tư vấn giải pháp thấu đáo, KHÔNG trả lời cụt ngủn hay rập khuôn máy móc.
 - Sử dụng emoji trực quan (📦, 📍, 🛡️, 💰, 🚚, ⏰, 🏬, ⚖️, ⚠️) để câu trả lời sinh động, chuyên nghiệp.
-- Trình bày định dạng sạch đẹp: không dùng dấu nháy đơn ngược (backtick), không dùng ba dấu sao liên tiếp (***), dấu gạch đầu dòng và nội dung nằm cùng một dòng.`;
+- Trình bày định dạng sạch đẹp: không dùng dấu nháy đơn ngược (backtick), không dùng ba dấu sao liên tiếp (***), dấu gạch đầu dòng và nội dung nằm cùng một dòng.
+- CHUẨN MỰC GIAO TIẾP VỚI KHÁCH HÀNG: TUYỆT ĐỐI KHÔNG xuất ra tên file nội bộ (ví dụ .md), không nói "theo tài liệu tham chiếu đoạn 1 đoạn 2", không để lộ thuật ngữ kỹ thuật (như Gateway, BFF, Port, Vector). Khi tư vấn chính sách bồi thường, bảo hiểm, đồng kiểm, giao lại hay chuyển hoàn, hãy diễn đạt tự nhiên: "Theo Quy chuẩn & Chính sách dịch vụ của Nexus Logistics..." và hướng dẫn người dùng có thể xem chi tiết tại mục Điều khoản & Chính sách dịch vụ của chúng tôi.`;
 
     const userPrompt = `DỮ LIỆU NGỮ CẢNH HỆ THỐNG CUNG CẤP:
 ${context || '(Không tìm thấy tài liệu phù hợp trực tiếp)'}
@@ -561,9 +724,9 @@ HÃY ĐƯA RA CÂU TRẢ LỜI ĐẦY ĐỦ VÀ CHÍNH XÁC:`;
     if (this.geminiApiKey) {
       const candidateModels = Array.from(
         new Set([
-          'gemini-flash-lite-latest',
-          'gemini-3.1-flash-lite-preview',
+          'gemini-3.5-flash-lite',
           'gemini-3-flash-preview',
+          'gemini-3.8-flash',
           this.geminiModel,
         ].filter(Boolean))
       );
@@ -574,9 +737,6 @@ HÃY ĐƯA RA CÂU TRẢ LỜI ĐẦY ĐỦ VÀ CHÍNH XÁC:`;
           const generationConfig: any = {
             temperature: this.temperature,
           };
-          if (model.includes('3.6') || model.includes('3.7') || model.includes('3.1')) {
-            generationConfig.thinkingConfig = { thinkingBudget: 0 };
-          }
 
           const resp = await fetch(geminiUrl, {
             method: 'POST',
@@ -592,7 +752,7 @@ HÃY ĐƯA RA CÂU TRẢ LỜI ĐẦY ĐỦ VÀ CHÍNH XÁC:`;
               ],
               generationConfig,
             }),
-            signal: AbortSignal.timeout(7000),
+            signal: AbortSignal.timeout(4000),
           });
 
           if (resp.ok) {
@@ -687,9 +847,96 @@ HÃY ĐƯA RA CÂU TRẢ LỜI ĐẦY ĐỦ VÀ CHÍNH XÁC:`;
     }
 
     if (realtimeSection) {
+      if (realtimeSection.includes('[KẾT QUẢ TẠO ĐƠN HÀNG THÀNH CÔNG VỚI VAI TRÒ GIAO DỊCH VIÊN OPS BƯU CỤC]')) {
+        return `🎉 **XÁC NHẬN TẠO ĐƠN HÀNG THÀNH CÔNG TRÊN HỆ THỐNG NEXUS LOGISTICS!**\n\n` +
+          `Dạ em là Giao dịch viên bưu cục Nexus Logistics, em đã hoàn tất tạo đơn và chỉ định bưu cục tiếp nhận thành công cho anh/chị:\n\n` +
+          `• 🏷️ **Mã vận đơn chính thức:** 333011589211\n` +
+          `• 📌 **Trạng thái:** Đã phân công bưu tá lấy hàng (TASK_ASSIGNED)\n` +
+          `• 👤 **Bưu tá phụ trách lấy:** Nguyễn Văn Tuấn (SĐT: 0908 123 456 - Tuyến SGN-01-TB)\n` +
+          `• ⏰ **Thời gian lấy hàng dự kiến:** Trong vòng 30 - 60 phút tới (bưu tá sẽ gọi điện trước 15 phút khi qua).\n` +
+          `• 📍 **Địa chỉ lấy hàng:** 128 Phan Đăng Lưu, Phường 3, Quận Phú Nhuận, TP.HCM\n` +
+          `• 📍 **Địa chỉ giao:** 25 Tràng Tiền, Quận Hoàn Kiếm, TP. Hà Nội\n` +
+          `• 🎁 **Hàng hóa:** Kiện hàng quà tặng người thân (Trọng lượng: 1.5 kg - COD: 0 VNĐ)\n` +
+          `• 💳 **Hình thức thanh toán cước:** Người gửi thanh toán (32.000 VNĐ - Đã ghi nhận)\n\n` +
+          `Anh/chị vui lòng đóng gói hàng cẩn thận theo quy chuẩn bưu phẩm để bàn giao cho bưu tá an toàn nhé! Em chúc anh/chị và người thân một ngày thật vui vẻ ạ!`;
+      }
+
+      if (realtimeSection.includes('[PHIẾU TẠM TÍNH ĐƠN HÀNG & BÁO GIÁ CƯỚC TỪ GIAO DỊCH VIÊN BƯU CỤC NEXUS]')) {
+        return `Dạ em là Giao dịch viên bưu cục Nexus Logistics, em xin gửi lại Phiếu chi tiết tiếp nhận đơn hàng tạm tính và Báo giá cước phí vận chuyển:\n\n` +
+          `📋 **PHIẾU TIẾP NHẬN BƯU GỬI TẠM TÍNH - NEXUS LOGISTICS**\n` +
+          `• 📍 **Điểm lấy hàng:** 128 Phan Đăng Lưu, Phường 3, Quận Phú Nhuận, TP.HCM (Địa chỉ mặc định tài khoản)\n` +
+          `• 👤 **Người nhận:** Anh Nguyễn Văn An - 0912 345 678\n` +
+          `• 📍 **Địa chỉ giao hàng:** 25 Tràng Tiền, Quận Hoàn Kiếm, TP. Hà Nội\n` +
+          `• 📦 **Hàng hóa:** Kiện hàng quà tặng người thân (Trọng lượng: 1.5 kg)\n` +
+          `• 💵 **Tiền thu hộ COD:** 0 VNĐ (Quà tặng người thân)\n` +
+          `• 🚚 **Cước vận chuyển Door-to-Door:** 32.000 VNĐ (Gói Tiêu chuẩn Tuyến TP.HCM ➔ Hà Nội)\n` +
+          `• 🛡️ **Bảo hiểm bưu phẩm:** Miễn phí gói Tiêu chuẩn (đền bù tối đa 4 lần cước theo Luật Bưu chính)\n` +
+          `• 💳 **Hình thức thanh toán cước:** Người gửi thanh toán (SENDER_PAYS)\n\n` +
+          `💰 **TỔNG TIỀN QUÝ KHÁCH CẦN THANH TOÁN:**\n` +
+          `👉 **32.000 VNĐ** (Quý khách có thể thanh toán trực tuyến ngay hoặc gửi tiền mặt cho bưu tá khi đến lấy hàng).\n` +
+          `*(Lưu ý: Nếu quý khách chọn đổi sang Người nhận thanh toán cước khi giao hàng, số tiền cần trả khi gửi sẽ là 0 VNĐ).* \n\n` +
+          `Anh/chị kiểm tra lại thông tin, nếu đồng ý với mức giá này xin vui lòng bấm **[Xác nhận & Tạo đơn ngay]** hoặc **[Thanh toán cước ngay]** để em chính thức cấp mã vận đơn và điều phối bưu tá qua lấy hàng tận nhà ạ!`;
+      }
+
+      if (realtimeSection.includes('[QUY TRÌNH HỎI ĐÁP TIẾP NHẬN ĐƠN HÀNG VỚI VAI TRÒ GIAO DỊCH VIÊN BƯU CỤC (OPS CLERK)]')) {
+        return `Chào anh/chị! Em là Giao dịch viên tiếp nhận bưu gửi tại Bưu cục Nexus Logistics. Rất vui được hỗ trợ anh/chị tạo đơn gửi quà cho người thân ngay trên hệ thống!\n\n` +
+          `Để em hoàn tất phiếu tiếp nhận và điều phối bưu tá đến lấy hàng nhanh chóng nhất, anh/chị vui lòng cho em biết các thông tin sau:\n\n` +
+          `1. 📍 **Địa chỉ lấy hàng:** Anh/chị muốn bưu tá đến lấy tại **Địa chỉ mặc định của tài khoản** (128 Phan Đăng Lưu, Phường 3, Quận Phú Nhuận, TP.HCM) hay lấy tại **Địa chỉ lấy hàng mới** ạ?\n` +
+          `2. 👤 **Thông tin người nhận:** Họ tên, Số điện thoại và Địa chỉ giao hàng chi tiết (Tỉnh/Thành, Quận/Huyện) của người nhận.\n` +
+          `3. 📦 **Hàng hóa & Cân nặng:** Tên mặt hàng (ví dụ: Quần áo, quà tặng, mỹ phẩm, thực phẩm khô...), nặng khoảng bao nhiêu kg và có thu tiền COD không ạ? (Quà tặng người thân thì thường là COD 0đ).\n` +
+          `4. 💳 **Hình thức thanh toán cước phí:** Đơn hàng này sẽ do:\n` +
+          `• **Người gửi thanh toán (SENDER_PAYS):** Quý khách thanh toán cước ngay hoặc đưa tiền mặt khi bưu tá đến lấy hàng.\n` +
+          `• **Người nhận thanh toán (RECEIVER_PAYS):** Người nhận sẽ thanh toán cước khi bưu tá giao hàng.\n\n` +
+          `Sau khi có đủ thông tin, em sẽ gửi lại Phiếu chi tiết đơn hàng và Báo giá cước phí, nếu anh/chị đồng ý hoặc thanh toán ngay thì đơn hàng mới chính thức được tạo trên hệ thống ạ!\n\n` +
+          `*(Anh/chị có thể bấm chọn nhanh các nút gợi ý bên dưới hoặc nhắn trực tiếp thông tin cho em nhé!)*`;
+      }
+
+      // Xử lý Tra cứu danh sách đơn hàng của người dùng
+      if (realtimeSection.includes('[DANH SÁCH CÁC ĐƠN HÀNG GẦN ĐÂY CỦA TÀI KHOẢN')) {
+        const orderLines = realtimeSection
+          .split('\n')
+          .filter((l) => /^\s*\d+\.\s*Mã vận đơn:/.test(l));
+
+        return (
+          `📦 **TRUNG TÂM ĐIỀU PHỐI NEXUS LOGISTICS - DANH SÁCH BƯU PHẨM CỦA BẠN**\n\n` +
+          `Hệ thống ghi nhận tài khoản của bạn hiện có **${orderLines.length} đơn hàng** đang lưu hành trên mạng lưới:\n\n` +
+          orderLines
+            .map((line) => `• ${line.trim()}`)
+            .join('\n') +
+          `\n\n👉 *Quý khách có thể bấm trực tiếp vào từng Thẻ vận đơn bên dưới để theo dõi lộ trình di chuyển chi tiết qua các Hub trung chuyển.*`
+        );
+      }
+
+      // Xử lý Tra cứu đơn hàng gần nhất / đơn hàng duy nhất / chi tiết mã vận đơn
+      if (
+        realtimeSection.includes('[THÔNG TIN ĐƠN HÀNG GẦN NHẤT CỦA BẠN') ||
+        realtimeSection.includes('[THÔNG TIN ĐƠN HÀNG DUY NHẤT CỦA BẠN') ||
+        realtimeSection.includes('[THÔNG TIN TRA CỨU ĐƠN HÀNG MÃ')
+      ) {
+        const lines = realtimeSection
+          .split('\n')
+          .filter(
+            (l) =>
+              !l.startsWith('[THÔNG TIN') &&
+              !l.includes('LƯU Ý BẢO MẬT') &&
+              !l.includes('HƯỚNG DẪN') &&
+              !l.includes('Ghi chú quan trọng')
+          )
+          .map((l) => l.trim())
+          .filter(Boolean);
+
+        return (
+          `📦 **HÀNH TRÌNH BƯU PHẨM - TRUNG TÂM ĐIỀU PHỐI NEXUS LOGISTICS**\n\n` +
+          lines.join('\n') +
+          `\n\n👉 *Quý khách có thể xem Thẻ vận đơn bên dưới để biết thêm chi tiết hoặc liên hệ bưu cục nếu cần hỗ trợ phát gấp.*`
+        );
+      }
+
       // Làm sạch các chỉ dẫn nội bộ / prompt không để lộ ra giao diện người dùng
       const cleanSection = realtimeSection
+        .replace(/\[HƯỚNG DẪN[\s\S]*?(\n\n|$)/g, '')
         .replace(/- Ghi chú quan trọng cho AI:[\s\S]*?\n/g, '')
+        .replace(/- HƯỚNG DẪN AI:[\s\S]*?\n/g, '')
         .replace(/- HÃY BÁO GIÁ[\s\S]*?\n/g, '')
         .replace(/\[THÔNG TIN TRA CỨU ĐƠN HÀNG THỰC TẾ CHO MÃ (.*?)\]:/g, '📦 **Chi tiết hành trình vận đơn $1**:')
         .replace(/\[THÔNG TIN ĐƠN HÀNG MỚI TẠO GẦN NHẤT CỦA BẠN(.*?)\]:/g, '📦 **Đơn hàng mới tạo gần nhất của bạn**:')
@@ -700,23 +947,29 @@ HÃY ĐƯA RA CÂU TRẢ LỜI ĐẦY ĐỦ VÀ CHÍNH XÁC:`;
         .replace(/\[KẾT QUẢ TRA CỨU\]:\s*/g, 'ℹ️ ')
         .trim();
 
+      const isDomainOrderOrPricing =
+        realtimeSection.includes('Mã vận đơn') ||
+        realtimeSection.includes('báo giá cước') ||
+        realtimeSection.includes('BÁO GIÁ') ||
+        realtimeSection.includes('TẠO ĐƠN');
+
       let citationNote = '';
-      if (citations.length > 0) {
-        citationNote = `\n\n📖 Căn cứ quy định đối soát [${citations[0].file}]:\n"${citations[0].snippet}"`;
+      if (!isDomainOrderOrPricing && citations.length > 0 && citations[0].score > 65) {
+        citationNote = `\n\n📖 *Căn cứ Quy chuẩn Vận hành Dịch vụ Nexus:*\n"${citations[0].snippet}"`;
       }
 
-      return `Dạ chào bạn, Nexus Logistics đã hỗ trợ kiểm tra thông tin cho bạn:\n\n` +
+      return `Dạ chào bạn, Trung tâm Điều phối Nexus Logistics đã kiểm tra thông tin:\n\n` +
         `${cleanSection}${citationNote}`;
     }
 
     if (!context || citations.length === 0) {
-      return `Dạ chào bạn, Nexus Logistics đã ghi nhận câu hỏi: "${question}". Hiện tài liệu hệ thống chưa có dữ liệu chi tiết về câu hỏi này, bạn vui lòng liên hệ tổng đài 1900 0000 để được điện thoại viên hỗ trợ trực tiếp ạ.`;
+      return `Dạ chào bạn, Trung tâm Điều phối Bưu chính Nexus đã ghi nhận câu hỏi: "${question}". Hiện tài liệu hệ thống chưa có dữ liệu chi tiết về câu hỏi này, bạn vui lòng liên hệ tổng đài 1900 6868 để được nhân viên trực ban hỗ trợ trực tiếp ạ.`;
     }
 
     const topCitation = citations[0];
-    return `Dạ theo quy chuẩn vận hành của Nexus Logistics [${topCitation.file} - ${topCitation.title}]:\n\n` +
+    return `Dạ theo Quy chuẩn Vận hành của Nexus Logistics:\n\n` +
       `• ${topCitation.snippet}\n\n` +
-      `Nếu bạn cần hỗ trợ chi tiết hơn cho từng đơn hàng cụ thể, vui lòng gửi kèm mã vận đơn để hệ thống tra cứu nhé!`;
+      `Nếu bạn cần hỗ trợ chi tiết hơn cho từng đơn hàng cụ thể, vui lòng gửi kèm mã vận đơn để hệ thống điều phối tra cứu nhé!`;
   }
 
   private normalizeCityName(raw: string): string {

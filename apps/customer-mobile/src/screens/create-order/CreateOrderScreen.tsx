@@ -613,7 +613,7 @@ export function CreateOrderScreen({ navigation, route }: Props): React.JSX.Eleme
                       <View style={styles.addressBoxTextCol}>
                         <Text style={styles.addressComposedText}>{senderAddress.hubName}</Text>
                         <Text style={styles.addressHubText}>
-                          🏢 [{senderAddress.hubCode}] • {senderAddress.addressDetail || senderAddress.province}
+                          [{senderAddress.hubCode}] • {senderAddress.addressDetail || senderAddress.province}
                         </Text>
                       </View>
                     ) : (
@@ -695,7 +695,7 @@ export function CreateOrderScreen({ navigation, route }: Props): React.JSX.Eleme
                         {senderAddress ? (
                           <View style={styles.addressBoxTextCol}>
                             <Text style={styles.addressComposedText}>{senderAddress.composedAddress}</Text>
-                            <Text style={styles.addressHubText}>📍 Bưu cục gửi: {senderAddress.hubName} [{senderAddress.hubCode}]</Text>
+                            <Text style={styles.addressHubText}>Bưu cục gửi: {senderAddress.hubName} [{senderAddress.hubCode}]</Text>
                           </View>
                         ) : (
                           <Text style={styles.addressPlaceholderText}>+ Bấm để chọn từ danh sách Địa chỉ của tôi</Text>
@@ -730,7 +730,7 @@ export function CreateOrderScreen({ navigation, route }: Props): React.JSX.Eleme
                         {senderAddress ? (
                           <View style={styles.addressBoxTextCol}>
                             <Text style={styles.addressComposedText}>{senderAddress.composedAddress}</Text>
-                            <Text style={styles.addressHubText}>📍 Bưu cục gửi: {senderAddress.hubName} [{senderAddress.hubCode}]</Text>
+                            <Text style={styles.addressHubText}>Bưu cục gửi: {senderAddress.hubName} [{senderAddress.hubCode}]</Text>
                           </View>
                         ) : (
                           <Text style={styles.addressPlaceholderText}>+ Bấm để chọn Tỉnh / Thành / Bưu cục gửi mới</Text>
@@ -775,7 +775,7 @@ export function CreateOrderScreen({ navigation, route }: Props): React.JSX.Eleme
                 {receiverAddress ? (
                   <View style={styles.addressBoxTextCol}>
                     <Text style={styles.addressComposedText}>{receiverAddress.composedAddress}</Text>
-                    <Text style={styles.addressHubText}>📍 Bưu cục nhận: {receiverAddress.hubName} [{receiverAddress.hubCode}]</Text>
+                    <Text style={styles.addressHubText}>Bưu cục nhận: {receiverAddress.hubName} [{receiverAddress.hubCode}]</Text>
                   </View>
                 ) : (
                   <Text style={styles.addressPlaceholderText}>+ Bấm để chọn Tỉnh / Thành / Bưu cục nhận</Text>
@@ -1173,7 +1173,7 @@ export function CreateOrderScreen({ navigation, route }: Props): React.JSX.Eleme
                           {hub.name}
                         </Text>
                         <Text style={styles.hubItemAddress}>
-                          📍 {hub.addressDetail || hub.province}
+                          {hub.addressDetail || hub.province}
                         </Text>
                         <View style={styles.hubBadgeRow}>
                           <View style={styles.hubCodeBadge}>

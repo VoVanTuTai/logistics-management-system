@@ -23,14 +23,18 @@ import {
 } from './api';
 import type {
   ChangeRequest,
+  ClaimIncidentType,
+  ClaimStatus,
   CreateShipmentForm,
   IntrospectResponse,
   LoginResponse,
+  MerchantClaim,
   MerchantProfile,
   MerchantSession,
   NotificationItem,
   PickupRequest,
   PricingQuoteResponse,
+  ResponsibleParty,
   ReturnRequest,
   ShipmentDraft,
   ShipmentResponse,
@@ -53,11 +57,50 @@ const STORAGE_KEY_NOTIFICATIONS = 'merchant-web.notifications.v1';
 const STORAGE_KEY_RETURNS = 'merchant-web.return-requests.v1';
 const STORAGE_KEY_PROFILE = 'merchant-web.profile.v1';
 const STORAGE_KEY_PROFILE_PREFIX = 'merchant-web.profile.v2.';
-const CLIENT_SESSION_TTL_MS = 10 * 60 * 60 * 1000;
+const CLIENT_SESSION_TTL_MS = 24 * 60 * 60 * 1000;
 const ACCESS_TOKEN_REFRESH_WINDOW_MS = 60_000;
 const SHIPMENT_PAGE_SIZE = 8;
 const MERCHANT_PROFILE_SCOPE = 'MERCHANT_PROFILE';
 const MERCHANT_PROFILE_KEY_PREFIX = 'merchant.profile.';
+
+export interface SettlementBatch {
+  id: string;
+  code: string;
+  cycleName: string;
+  fromDate: string;
+  toDate: string;
+  payoutDate: string;
+  orderCount: number;
+  codTotal: number;
+  feeTotal: number;
+  returnFeeTotal: number;
+  netPayout: number;
+  status: 'PAID' | 'PROCESSING' | 'PENDING';
+  bankInfo: string;
+  transferRef?: string;
+  shipmentCodes: string[];
+}
+
+export interface FinancialLedgerEntry {
+  id: string;
+  occurredAt: string;
+  type: 'COD_COLLECTED' | 'SHIPPING_FEE' | 'RETURN_FEE' | 'CLAIM_COMPENSATION' | 'SETTLEMENT_PAYOUT' | 'DEBT_TOPUP';
+  title: string;
+  shipmentCode?: string;
+  amount: number;
+  balanceAfter: number;
+  note?: string;
+}
+
+export interface MerchantBankProfile {
+  bankName: string;
+  accountNumber: string;
+  accountHolder: string;
+  branch: string;
+  payoutSchedule: 'MWF' | 'DAILY';
+  autoPayout: boolean;
+}
+
 const DELIVERY_INFO_CHANGE_BLOCKED_STATUSES = new Set([
   'TASK_ASSIGNED',
   'DELIVERED',
@@ -1048,20 +1091,111 @@ function MerchantApp(): React.JSX.Element {
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [showTopupModal, setShowTopupModal] = useState(false);
 
+  // Claims & Disputes State
+  const [claims, setClaims] = useState<MerchantClaim[]>([]);
+  const [claimShipmentCode, setClaimShipmentCode] = useState('');
+  const [claimIncidentType, setClaimIncidentType] = useState<ClaimIncidentType>('DAMAGE');
+  const [claimRequestedAmount, setClaimRequestedAmount] = useState('');
+  const [claimDamageDesc, setClaimDamageDesc] = useState('');
+  const [claimPackageDesc, setClaimPackageDesc] = useState('');
+  const [claimSubmitting, setClaimSubmitting] = useState(false);
+  const [claimMessage, setClaimMessage] = useState<string | null>(null);
+  const [claimError, setClaimError] = useState<string | null>(null);
+  const [selectedClaimDetail, setSelectedClaimDetail] = useState<MerchantClaim | null>(null);
+  const [claimSearch, setClaimSearch] = useState('');
+  const [claimStatusFilter, setClaimStatusFilter] = useState('ALL');
+  const [isCreateClaimOpen, setIsCreateClaimOpen] = useState(false);
+
+  // Finance & Settlement State
+  const [financeSubTab, setFinanceSubTab] = useState<'overview' | 'batches' | 'ledger' | 'settings'>('overview');
+  const [financeLedgerSearch, setFinanceLedgerSearch] = useState('');
+  const [financeLedgerTypeFilter, setFinanceLedgerTypeFilter] = useState('ALL');
+  const [financeBatchStatusFilter, setFinanceBatchStatusFilter] = useState('ALL');
+  const [selectedSettlementBatch, setSelectedSettlementBatch] = useState<SettlementBatch | null>(null);
+  const [isEditingBankModalOpen, setIsEditingBankModalOpen] = useState(false);
+
+  const [merchantBankProfile, setMerchantBankProfile] = useState<MerchantBankProfile>(() => {
+    try {
+      const saved = localStorage.getItem('nexus_merchant_bank_settings');
+      if (saved) return JSON.parse(saved);
+    } catch {
+      // ignore
+    }
+    return {
+      bankName: 'Techcombank',
+      accountNumber: '19036788992011',
+      accountHolder: 'NEXUS MERCHANT PARTNER',
+      branch: 'Hội sở chính / CN Sài Gòn',
+      payoutSchedule: 'MWF',
+      autoPayout: true,
+    };
+  });
+
+  const [editBankForm, setEditBankForm] = useState<MerchantBankProfile>(merchantBankProfile);
+
   const navItems: Array<{ id: ViewId; label: string; icon: string; subtitle: string }> = [
     { id: 'dashboard', label: 'Tổng quan', icon: 'dashboard', subtitle: 'Merchant Portal > Tổng quan' },
     { id: 'create-shipment', label: 'Tạo đơn hàng', icon: 'add_box', subtitle: 'Đơn hàng > Tạo đơn hàng' },
     { id: 'shipments', label: 'Danh sách đơn hàng', icon: 'inventory_2', subtitle: 'Đơn hàng > Danh sách đơn hàng' },
     { id: 'pickups', label: 'Yêu cầu lấy hàng', icon: 'local_shipping', subtitle: 'Đơn hàng > Yêu cầu lấy hàng' },
     { id: 'tracking', label: 'Tra cứu vận đơn', icon: 'search', subtitle: 'Đơn hàng > Tra cứu vận đơn' },
-    { id: 'change-requests', label: 'Yêu cầu đổi thông tin giao', icon: 'edit_note', subtitle: 'Đơn hàng > Yêu cầu đổi thông tin' },
     { id: 'returns', label: 'Yêu cầu hoàn hàng', icon: 'assignment_return', subtitle: 'Đơn hàng > Yêu cầu hoàn hàng' },
+    { id: 'claims', label: 'Khiếu nại & Bồi thường', icon: 'gavel', subtitle: 'Khiếu nại & Đền bù > Quản lý sự cố' },
+    { id: 'finance', label: 'Đối soát & Tài chính', icon: 'account_balance_wallet', subtitle: 'Tài chính > Quản lý tiền hàng & Đối soát COD' },
     { id: 'print', label: 'In vận đơn', icon: 'print', subtitle: 'Đơn hàng > In vận đơn' },
     { id: 'account', label: 'Tài khoản', icon: 'person', subtitle: 'Tài khoản > Hồ sơ merchant' },
     { id: 'notifications', label: 'Thông báo', icon: 'notifications', subtitle: 'Hệ thống > Thông báo' },
   ];
 
   const shipmentRows = useMemo(() => shipments.map((s) => extractShipmentRow(s)), [shipments]);
+
+  interface NavGroupItem {
+    id: ViewId;
+    label: string;
+    icon: string;
+    badge?: string;
+    badgeType?: 'hot' | 'cod' | 'count';
+  }
+
+  interface NavGroup {
+    groupTitle: string;
+    items: NavGroupItem[];
+  }
+
+  const navGroups: NavGroup[] = useMemo(() => [
+    {
+      groupTitle: 'Tổng quan & Tra cứu',
+      items: [
+        { id: 'dashboard', label: 'Tổng quan vận hành', icon: 'dashboard' },
+        { id: 'tracking', label: 'Tra cứu hành trình', icon: 'travel_explore' },
+      ],
+    },
+    {
+      groupTitle: 'Vận hành đơn hàng',
+      items: [
+        { id: 'create-shipment', label: 'Tạo đơn hàng mới', icon: 'add_circle', badge: 'Mới', badgeType: 'hot' },
+        { id: 'shipments', label: 'Danh sách đơn hàng', icon: 'inventory_2', badge: shipmentRows.length > 0 ? String(shipmentRows.length) : undefined, badgeType: 'count' },
+        { id: 'pickups', label: 'Yêu cầu lấy hàng', icon: 'local_shipping' },
+        { id: 'print', label: 'In vận đơn hàng loạt', icon: 'print' },
+      ],
+    },
+    {
+      groupTitle: 'Xử lý sau giao & Sự cố',
+      items: [
+        { id: 'returns', label: 'Yêu cầu hoàn hàng', icon: 'assignment_return' },
+        { id: 'claims', label: 'Khiếu nại & Bồi thường', icon: 'gavel' },
+      ],
+    },
+    {
+      groupTitle: 'Tài chính & Cấu hình',
+      items: [
+        { id: 'finance', label: 'Đối soát & Tài chính', icon: 'account_balance_wallet', badge: 'COD', badgeType: 'cod' },
+        { id: 'account', label: 'Tài khoản & Hợp đồng', icon: 'manage_accounts' },
+        { id: 'notifications', label: 'Thông báo hệ thống', icon: 'notifications' },
+      ],
+    },
+  ], [shipmentRows.length]);
+
   const selectedShipment = useMemo(
     () => shipmentRows.find((r) => r.shipment.code === normalizeCode(selectedShipmentCode)) ?? null,
     [shipmentRows, selectedShipmentCode],
@@ -1769,6 +1903,294 @@ function MerchantApp(): React.JSX.Element {
 
   const insights = dashboardInsights;
 
+  // Financial Ledger Calculation (Real-time Statement)
+  const financialLedger = useMemo<FinancialLedgerEntry[]>(() => {
+    const entries: Array<Omit<FinancialLedgerEntry, 'balanceAfter'> & { timestamp: number }> = [];
+
+    // 1. Shipments: Fees and Delivered COD
+    shipmentRows.forEach((row, idx) => {
+      const ship = row.shipment;
+      const createdTime = new Date(ship.createdAt).getTime() || (Date.now() - (idx + 1) * 3600000);
+      const updatedTime = new Date(ship.updatedAt).getTime() || (createdTime + 1800000);
+
+      // Cước phí vận chuyển (Trừ tiền)
+      if (row.feeEstimate > 0) {
+        entries.push({
+          id: `FEE-${ship.code}`,
+          timestamp: createdTime,
+          occurredAt: ship.createdAt,
+          type: 'SHIPPING_FEE',
+          title: `Cước vận chuyển đơn hàng #${ship.code}`,
+          shipmentCode: ship.code,
+          amount: -Math.abs(row.feeEstimate),
+          note: `${row.serviceType || 'Tiêu chuẩn'} - ${row.weightKg}kg`,
+        });
+      }
+
+      // Tiền thu hộ COD khi phát thành công (Cộng tiền)
+      const st = String(ship.currentStatus ?? '').toUpperCase();
+      if (st.includes('DELIVERED') && row.codAmount > 0) {
+        entries.push({
+          id: `COD-${ship.code}`,
+          timestamp: updatedTime,
+          occurredAt: ship.updatedAt,
+          type: 'COD_COLLECTED',
+          title: `Thu hộ COD đơn hàng #${ship.code}`,
+          shipmentCode: ship.code,
+          amount: Math.abs(row.codAmount),
+          note: `Giao thành công cho ${row.receiverName}`,
+        });
+      }
+
+      // Phí chuyển hoàn 50% nếu đơn thất bại/hoàn trả
+      if (st.includes('RETURN') || st.includes('FAIL')) {
+        const returnFee = Math.round(row.feeEstimate * 0.5);
+        if (returnFee > 0) {
+          entries.push({
+            id: `RET-${ship.code}`,
+            timestamp: updatedTime + 1000,
+            occurredAt: ship.updatedAt,
+            type: 'RETURN_FEE',
+            title: `Phí chuyển hoàn 50% đơn #${ship.code}`,
+            shipmentCode: ship.code,
+            amount: -Math.abs(returnFee),
+            note: 'Chuyển hoàn kho người gửi',
+          });
+        }
+      }
+    });
+
+    // 2. Claim compensations (Cộng tiền bồi thường)
+    claims.forEach((claim) => {
+      if (
+        (claim.status === 'PAYMENT_APPROVED' || claim.status === 'SETTLED' || claim.status === 'ADJUDICATED') &&
+        (claim.approvedCompensationAmount ?? 0) > 0
+      ) {
+        const time = new Date(claim.adjudicatedAt || claim.createdAt).getTime();
+        entries.push({
+          id: `CLM-${claim.claimCode}`,
+          timestamp: time,
+          occurredAt: claim.adjudicatedAt || claim.createdAt,
+          type: 'CLAIM_COMPENSATION',
+          title: `Bồi thường sự cố khiếu nại #${claim.claimCode}`,
+          shipmentCode: claim.shipmentCode,
+          amount: Math.abs(claim.approvedCompensationAmount),
+          note: `${claim.incidentType} - Đã thẩm định chấp thuận`,
+        });
+      }
+    });
+
+    // Sắp xếp thời gian tăng dần để cộng dồn số dư chính xác
+    entries.sort((a, b) => a.timestamp - b.timestamp);
+
+    let running = 0;
+    const computed: FinancialLedgerEntry[] = entries.map((item) => {
+      running += item.amount;
+      return {
+        id: item.id,
+        occurredAt: item.occurredAt,
+        type: item.type,
+        title: item.title,
+        shipmentCode: item.shipmentCode,
+        amount: item.amount,
+        balanceAfter: running,
+        note: item.note,
+      };
+    });
+
+    // Trả về thời gian giảm dần (giao dịch mới nhất lên đầu)
+    return computed.reverse();
+  }, [shipmentRows, claims]);
+
+  // Settlement Batches (Kỳ đối soát định kỳ T2 - T4 - T6)
+  const settlementBatches = useMemo<SettlementBatch[]>(() => {
+    const deliveredRows = shipmentRows.filter((r) => {
+      const st = String(r.shipment.currentStatus ?? '').toUpperCase();
+      return st.includes('DELIVERED');
+    });
+
+    const half = Math.ceil(deliveredRows.length / 2);
+    const batchCurrentRows = deliveredRows.slice(0, half > 0 ? half : deliveredRows.length);
+    const batchPastRows = deliveredRows.slice(half > 0 ? half : 0);
+
+    const makeBatch = (
+      code: string,
+      cycleName: string,
+      fromDate: string,
+      toDate: string,
+      payoutDate: string,
+      items: typeof deliveredRows,
+      status: 'PAID' | 'PROCESSING' | 'PENDING',
+      transferRef?: string,
+    ): SettlementBatch => {
+      const codTotal = items.reduce((sum, r) => sum + r.codAmount, 0);
+      const feeTotal = items.reduce((sum, r) => sum + r.feeEstimate, 0);
+      const returnFeeTotal = 0;
+      const netPayout = codTotal - feeTotal - returnFeeTotal;
+      return {
+        id: code,
+        code,
+        cycleName,
+        fromDate,
+        toDate,
+        payoutDate,
+        orderCount: items.length,
+        codTotal,
+        feeTotal,
+        returnFeeTotal,
+        netPayout,
+        status,
+        bankInfo: `${merchantBankProfile.bankName} •••• ${merchantBankProfile.accountNumber.slice(-4)}`,
+        transferRef,
+        shipmentCodes: items.map((r) => r.shipment.code),
+      };
+    };
+
+    const batches: SettlementBatch[] = [];
+
+    // Kỳ hiện tại: Đang xử lý
+    batches.push(
+      makeBatch(
+        'ST-20261016-01',
+        'Kỳ Thứ 6 (14/10 - 16/10/2026)',
+        '2026-10-14',
+        '2026-10-16',
+        '2026-10-16 17:00',
+        batchCurrentRows.length > 0 ? batchCurrentRows : deliveredRows,
+        'PROCESSING',
+        undefined,
+      ),
+    );
+
+    // Kỳ trước: Đã chi trả thành công
+    batches.push(
+      makeBatch(
+        'ST-20261014-01',
+        'Kỳ Thứ 4 (11/10 - 13/10/2026)',
+        '2026-10-11',
+        '2026-10-13',
+        '2026-10-14 16:30',
+        batchPastRows.length > 0 ? batchPastRows : deliveredRows.slice(0, 1),
+        'PAID',
+        'NEXUS_BATCH_99210384',
+      ),
+    );
+
+    return batches;
+  }, [shipmentRows, merchantBankProfile]);
+
+  // Export Settlement Batch to CSV (BOM UTF-8 standard for Excel)
+  const exportBatchToCsv = (batch: SettlementBatch) => {
+    const items = shipmentRows.filter((r) => batch.shipmentCodes.includes(r.shipment.code));
+    const headers = [
+      'Mã vận đơn',
+      'Ngày tạo đơn',
+      'Người nhận',
+      'Số điện thoại',
+      'Địa chỉ giao',
+      'Tiền COD thu hộ (VNĐ)',
+      'Cước vận chuyển (VNĐ)',
+      'Thực nhận (VNĐ)',
+      'Trạng thái đơn',
+    ];
+
+    const rows = items.map((r) => [
+      r.shipment.code,
+      formatDate(r.shipment.createdAt),
+      `"${r.receiverName.replace(/"/g, '""')}"`,
+      r.receiverPhone,
+      `"${r.receiverAddress.replace(/"/g, '""')}"`,
+      r.codAmount,
+      r.feeEstimate,
+      r.codAmount - r.feeEstimate,
+      resolveShipmentStatusLabel(r.shipment),
+    ]);
+
+    const csvContent =
+      '\uFEFF' +
+      [
+        `BẢNG KÊ ĐỐI SOÁT CHI TIẾT - PHIÊN ${batch.code}`,
+        `Kỳ đối soát: ${batch.cycleName}`,
+        `Ngày chi trả: ${batch.payoutDate}`,
+        `Tổng tiền COD: ${batch.codTotal} VNĐ`,
+        `Tổng cước cấn trừ: ${batch.feeTotal} VNĐ`,
+        `Thực nhận: ${batch.netPayout} VNĐ`,
+        `Tài khoản thụ hưởng: ${batch.bankInfo}`,
+        '',
+        headers.join(','),
+        ...rows.map((row) => row.join(',')),
+      ].join('\r\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `Bang_ke_doi_soat_${batch.code}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
+  // Export Full Ledger to CSV
+  const exportAllLedgerCsv = () => {
+    const headers = [
+      'Thời gian',
+      'Mã giao dịch',
+      'Loại giao dịch',
+      'Nội dung',
+      'Mã vận đơn',
+      'Biến động (VNĐ)',
+      'Số dư sau GD (VNĐ)',
+      'Ghi chú',
+    ];
+
+    const rows = financialLedger.map((e) => [
+      formatDate(e.occurredAt),
+      e.id,
+      e.type,
+      `"${e.title.replace(/"/g, '""')}"`,
+      e.shipmentCode || '-',
+      e.amount,
+      e.balanceAfter,
+      `"${(e.note || '').replace(/"/g, '""')}"`,
+    ]);
+
+    const csvContent =
+      '\uFEFF' +
+      [
+        `SỔ CÁI BIẾN ĐỘNG TÀI CHÍNH NEXUS LOGISTICS - ${merchantBankProfile.accountHolder}`,
+        `Thời gian xuất: ${new Date().toLocaleString('vi-VN')}`,
+        `Số dư hiện tại: ${insights.netBalance} VNĐ`,
+        '',
+        headers.join(','),
+        ...rows.map((row) => row.join(',')),
+      ].join('\r\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `So_cai_tai_chinh_Nexus_${new Date().toISOString().slice(0, 10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
+  // Save Bank Profile
+  const handleSaveBankProfile = (e: FormEvent) => {
+    e.preventDefault();
+    setMerchantBankProfile(editBankForm);
+    try {
+      localStorage.setItem('nexus_merchant_bank_settings', JSON.stringify(editBankForm));
+    } catch {
+      // ignore
+    }
+    setIsEditingBankModalOpen(false);
+    alert('Đã cập nhật tài khoản ngân hàng thụ hưởng thành công!');
+  };
+
   useEffect(() => setListPage(1), [listSearch, listStatus, listService, listRegion, listFromDate, listToDate]);
 
   useEffect(() => {
@@ -1936,7 +2358,7 @@ function MerchantApp(): React.JSX.Element {
     (async () => {
       try {
         if (stored && isClientSessionExpired(stored.storedAt)) {
-          throw new Error('Phiên đăng nhập đã quá 10 giờ. Vui lòng đăng nhập lại.');
+          throw new Error('Phiên đăng nhập đã quá 24 giờ. Vui lòng đăng nhập lại.');
         }
 
         let nextSession = shouldRefreshAccessToken(storedSession)
@@ -2070,7 +2492,7 @@ function MerchantApp(): React.JSX.Element {
   ): Promise<void> {
     setDataLoading(true);
     setDataError(null);
-    const [shipRes, pickupRes, changeRes, hubsRes, profileRes, returnRes, tasksRes, shippersRes] = await Promise.allSettled([
+    const [shipRes, pickupRes, changeRes, hubsRes, profileRes, returnRes, tasksRes, shippersRes, claimsRes] = await Promise.allSettled([
       request<ShipmentResponse[]>('/merchant/shipment/shipments', { method: 'GET' }, accessToken),
       request<PickupRequest[]>('/merchant/pickup/pickups', { method: 'GET' }, accessToken),
       request<ChangeRequest[]>('/merchant/shipment/change-requests', { method: 'GET' }, accessToken),
@@ -2083,6 +2505,7 @@ function MerchantApp(): React.JSX.Element {
       request<ReturnCaseApiRecord[]>('/merchant/delivery/returns', { method: 'GET' }, accessToken),
       request<any[]>('/merchant/dispatch/tasks?taskType=PICKUP', { method: 'GET' }, accessToken),
       request<any[]>('/merchant/auth/auth/users?roleGroup=SHIPPER', { method: 'GET' }, accessToken),
+      request<MerchantClaim[]>('/merchant/shipment/claims', { method: 'GET' }, accessToken),
     ]);
 
     const ownedShipments =
@@ -2129,6 +2552,15 @@ function MerchantApp(): React.JSX.Element {
           .filter((item) => ownedShipmentCodes.has(normalizeCode(item.shipmentCode)))
           .map(mapReturnCaseToRequest),
       );
+    }
+
+    if (claimsRes.status === 'fulfilled') {
+      const items = claimsRes.value.filter((claim) =>
+        ownedShipments.length === 0 || ownedShipmentCodes.has(normalizeCode(claim.shipmentCode))
+      );
+      setClaims(items);
+    } else {
+      setClaims([]);
     }
 
     if (tasksRes.status === 'fulfilled') {
@@ -2812,6 +3244,64 @@ function MerchantApp(): React.JSX.Element {
     }
   }
 
+  async function submitCreateClaim(event?: FormEvent<HTMLFormElement>): Promise<void> {
+    event?.preventDefault();
+    if (!session) return;
+    if (!claimShipmentCode.trim()) {
+      setClaimError('Vui lòng nhập Mã vận đơn cần khiếu nại.');
+      return;
+    }
+    if (!claimDamageDesc.trim()) {
+      setClaimError('Vui lòng mô tả chi tiết sự cố / tình trạng hư hỏng.');
+      return;
+    }
+
+    setClaimSubmitting(true);
+    setClaimError(null);
+    setClaimMessage(null);
+
+    const code = normalizeCode(claimShipmentCode);
+    const targetShipment = shipmentRows.find((r) => r.shipment.code === code);
+
+    const payload = {
+      shipmentCode: code,
+      incidentType: claimIncidentType,
+      claimRequestedAmount: Number(claimRequestedAmount) || 0,
+      damageDescription: claimDamageDesc.trim(),
+      packageDescription: claimPackageDesc.trim() || targetShipment?.itemType || 'Bưu kiện thương mại điện tử',
+      originHubCode: targetShipment?.senderHubCode || 'HUB_TAN_BINH',
+      destinationHubCode: targetShipment?.receiverHubCode || 'HUB_TAN_BINH',
+      reportedBy: session.user.username,
+      declaredValue: targetShipment?.declaredValue || 0,
+      codAmount: targetShipment?.codAmount || 0,
+    };
+
+    try {
+      const created = await request<MerchantClaim>(
+        '/merchant/shipment/claims',
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        },
+        session.accessToken,
+      );
+
+      setClaims((prev) => [created, ...prev]);
+      setClaimMessage(`Tạo yêu cầu khiếu nại bồi thường [${created.claimCode}] thành công! Hồ sơ đã được chuyển giao Ban Giám Định Trách Nhiệm.`);
+      setClaimShipmentCode('');
+      setClaimRequestedAmount('');
+      setClaimDamageDesc('');
+      setClaimPackageDesc('');
+      setIsCreateClaimOpen(false);
+      setSelectedClaimDetail(created);
+    } catch (err) {
+      setClaimError(extractErrorMessage(err));
+    } finally {
+      setClaimSubmitting(false);
+    }
+  }
+
   async function saveAccountProfile(event?: FormEvent<HTMLFormElement>): Promise<void> {
     event?.preventDefault();
     if (!session) return;
@@ -3311,7 +3801,7 @@ function MerchantApp(): React.JSX.Element {
                         onClick={() => setLoginError(null)}
                         aria-label="Đóng thông báo"
                       >
-                        ✕
+                        <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>close</span>
                       </button>
                     </div>
 
@@ -3367,12 +3857,74 @@ function MerchantApp(): React.JSX.Element {
   return (
     <div className="app-shell app-shell--stitch">
       <aside className="sidebar sidebar--stitch">
-        <div className="brand-lockup brand-lockup--stitch"><h2 className="brand-title">NEXUS Logistic</h2><p className="brand-subtitle">Merchant Portal</p></div>
-        <nav className="nav-list nav-list--stitch">{navItems.map((item) => <button key={item.id} className={`nav-btn nav-btn--stitch ${activeView === item.id ? 'active' : ''}`} onClick={() => setActiveView(item.id)}><span className="nav-btn__main"><span className="material-symbols-outlined nav-icon" aria-hidden="true">{item.icon}</span><span>{item.label}</span></span>{item.id === 'notifications' && unreadNotifications > 0 ? <span className="nav-counter">{unreadNotifications}</span> : null}</button>)}</nav>
+        <div className="brand-lockup brand-lockup--stitch" style={{ marginBottom: '12px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span className="material-symbols-outlined" style={{ fontSize: '26px', color: '#0052cc' }}>hub</span>
+            <h2 className="brand-title">NEXUS Logistic</h2>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '6px', flexWrap: 'wrap' }}>
+            <span className="sidebar-badge-verified">
+              <span className="material-symbols-outlined" style={{ fontSize: '13px' }}>verified</span>
+              <span>Merchant Partner</span>
+            </span>
+            <span className="sidebar-badge-hub">{lockedSenderHub?.hubCode || 'HUB SÀI GÒN'}</span>
+          </div>
+        </div>
+
+        {/* Primary Action: Tạo đơn hàng mới */}
+        <div style={{ padding: '0 0 8px' }}>
+          <button
+            type="button"
+            className="sidebar-cta-btn"
+            onClick={() => setActiveView('create-shipment')}
+          >
+            <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>add_circle</span>
+            <span>Tạo đơn hàng mới</span>
+          </button>
+        </div>
+
+        {/* Grouped Navigation */}
+        <nav className="nav-list nav-list--stitch" style={{ overflowY: 'auto', flex: 1, paddingRight: '2px' }}>
+          {navGroups.map((group) => (
+            <div key={group.groupTitle} className="nav-group-section">
+              <div className="nav-group-header">
+                <span>{group.groupTitle}</span>
+              </div>
+              {group.items.map((item) => (
+                <button
+                  key={item.id}
+                  className={`nav-btn nav-btn--stitch ${activeView === item.id ? 'active' : ''}`}
+                  onClick={() => setActiveView(item.id)}
+                >
+                  <span className="nav-btn__main">
+                    <span className="material-symbols-outlined nav-icon" aria-hidden="true">
+                      {item.icon}
+                    </span>
+                    <span>{item.label}</span>
+                  </span>
+                  {item.badge ? (
+                    <span className={`nav-badge-pill nav-badge-pill--${item.badgeType || 'count'}`}>
+                      {item.badge}
+                    </span>
+                  ) : null}
+                  {item.id === 'notifications' && unreadNotifications > 0 ? (
+                    <span className="nav-counter">{unreadNotifications}</span>
+                  ) : null}
+                </button>
+              ))}
+            </div>
+          ))}
+        </nav>
+
         <div className="sidebar-actions sidebar-actions--stitch">
-          <button className="btn btn-secondary sidebar-action" onClick={() => void refreshAllData(session.accessToken, session.user)} disabled={dataLoading}>
-            <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>refresh</span>
-            <span>{dataLoading ? 'Đang tải...' : 'Tải lại'}</span>
+          <button
+            className="btn btn-secondary sidebar-action"
+            onClick={() => void refreshAllData(session.accessToken, session.user)}
+            disabled={dataLoading}
+            title="Đồng bộ dữ liệu"
+          >
+            <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>sync</span>
+            <span>{dataLoading ? 'Đang tải...' : 'Làm mới'}</span>
           </button>
           <button className="btn btn-danger sidebar-action" onClick={() => void handleLogout()}>
             <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>logout</span>
@@ -3388,15 +3940,55 @@ function MerchantApp(): React.JSX.Element {
             <div className="topbar-breadcrumb muted">{navItems.find((i) => i.id === activeView)?.subtitle}</div>
           </div>
           <div className="topbar-compact-actions">
-            <input className="input topbar-search-input" placeholder="Tìm kiếm nhanh..." />
+            {/* Quick Stat: COD Net Balance */}
+            <button
+              type="button"
+              className="topbar-quick-stat topbar-quick-stat--balance"
+              onClick={() => setActiveView('finance')}
+              title="Xem chi tiết sổ cái và đối soát tài chính"
+            >
+              <span className="material-symbols-outlined">account_balance_wallet</span>
+              <span>Số dư: <strong style={{ color: insights.netBalance >= 0 ? '#127a56' : '#ba1a1a' }}>{formatCurrency(insights.netBalance)}</strong></span>
+            </button>
+
+            {/* Quick Stat: Sender Hub */}
+            <div className="topbar-quick-stat topbar-quick-stat--hub" title="Bưu cục phụ trách tiếp nhận">
+              <span className="material-symbols-outlined">storefront</span>
+              <span>{lockedSenderHub?.hubName || lockedSenderHub?.hubCode || 'Bưu cục Sài Gòn'}</span>
+            </div>
+
             <div className="topbar-icon-group">
-              <span className="material-symbols-outlined topbar-icon">help</span>
-              <span className="material-symbols-outlined topbar-icon">settings</span>
-              <span className="topbar-avatar">{(session.user.username ?? 'M').slice(0, 1).toUpperCase()}</span>
+              <button
+                type="button"
+                className="topbar-icon-btn"
+                onClick={() => setActiveView('notifications')}
+                title="Thông báo"
+              >
+                <span className="material-symbols-outlined topbar-icon">notifications</span>
+                {unreadNotifications > 0 ? (
+                  <span style={{ position: 'absolute', top: '6px', right: '6px', width: '8px', height: '8px', borderRadius: '50%', background: '#dc2626' }} />
+                ) : null}
+              </button>
+              <button
+                type="button"
+                className="topbar-icon-btn"
+                onClick={() => setActiveView('account')}
+                title="Cài đặt tài khoản"
+              >
+                <span className="material-symbols-outlined topbar-icon">settings</span>
+              </button>
+              <div
+                className="topbar-user-badge"
+                onClick={() => setActiveView('account')}
+                title="Hồ sơ tài khoản"
+              >
+                <span className="topbar-avatar">{(session.user.username ?? 'M').slice(0, 1).toUpperCase()}</span>
+                <span style={{ fontSize: '13px', fontWeight: 600, color: '#102548' }}>{session.user.username}</span>
+              </div>
             </div>
           </div>
         </header>
-        <main className={`content ${activeView === 'change-requests' ? 'content--change' : ''} ${activeView === 'print' ? 'content--print' : ''} ${activeView === 'returns' ? 'content--returns' : ''} ${activeView === 'account' ? 'content--account' : ''}`}>
+        <main className={`content ${activeView === 'change-requests' ? 'content--change' : ''} ${activeView === 'print' ? 'content--print' : ''} ${activeView === 'returns' ? 'content--returns' : ''} ${activeView === 'account' ? 'content--account' : ''} ${activeView === 'finance' ? 'content--finance' : ''}`}>
           {dataError ? <p className="message error">{dataError}</p> : null}
 
           {insights.isNegativeBalanceLocked ? (
@@ -3516,8 +4108,8 @@ function MerchantApp(): React.JSX.Element {
                         <div className="merchant-location-sub">
                           Khu vực: <strong>{regProvince}</strong>
                           {regLat && regLng ? (
-                            <span className="merchant-location-coords" title="Tọa độ GPS kho hàng">
-                              • 🎯 GPS: {regLat.toFixed(5)}, {regLng.toFixed(5)}
+                            <span className="merchant-location-coords" title="Tọa độ GPS kho hàng" style={{ display: 'inline-flex', alignItems: 'center', gap: '2px' }}>
+                              • <span className="material-symbols-outlined" style={{ fontSize: '14px', verticalAlign: 'middle' }}>my_location</span> GPS: {regLat.toFixed(5)}, {regLng.toFixed(5)}
                             </span>
                           ) : null}
                         </div>
@@ -3552,6 +4144,74 @@ function MerchantApp(): React.JSX.Element {
                   </div>
                 );
               })()}
+
+              {/* Lối tắt nghiệp vụ Doanh nghiệp (Enterprise Launchpad) */}
+              <div className="dashboard-launchpad">
+                <div
+                  className="dashboard-launchpad-card"
+                  onClick={() => setActiveView('create-shipment')}
+                >
+                  <div className="dashboard-launchpad-icon" style={{ background: '#e7efff', color: '#0052cc' }}>
+                    <span className="material-symbols-outlined">add_circle</span>
+                  </div>
+                  <div>
+                    <div className="dashboard-launchpad-title">Tạo đơn hàng mới</div>
+                    <div className="dashboard-launchpad-desc">Lên đơn nhanh, tính cước tức thì</div>
+                  </div>
+                </div>
+
+                <div
+                  className="dashboard-launchpad-card"
+                  onClick={() => setActiveView('pickups')}
+                >
+                  <div className="dashboard-launchpad-icon" style={{ background: '#e8f7f0', color: '#127a56' }}>
+                    <span className="material-symbols-outlined">local_shipping</span>
+                  </div>
+                  <div>
+                    <div className="dashboard-launchpad-title">Yêu cầu lấy hàng (Pickup)</div>
+                    <div className="dashboard-launchpad-desc">Bưu tá tới kho lấy tận nơi</div>
+                  </div>
+                </div>
+
+                <div
+                  className="dashboard-launchpad-card"
+                  onClick={() => setActiveView('finance')}
+                >
+                  <div className="dashboard-launchpad-icon" style={{ background: '#fff4d9', color: '#8b5f07' }}>
+                    <span className="material-symbols-outlined">account_balance_wallet</span>
+                  </div>
+                  <div>
+                    <div className="dashboard-launchpad-title">Đối soát & Tiền hàng COD</div>
+                    <div className="dashboard-launchpad-desc">Theo dõi dòng tiền, cấn trừ cước T2-4-6</div>
+                  </div>
+                </div>
+
+                <div
+                  className="dashboard-launchpad-card"
+                  onClick={() => setActiveView('print')}
+                >
+                  <div className="dashboard-launchpad-icon" style={{ background: '#f1f4ff', color: '#0059b8' }}>
+                    <span className="material-symbols-outlined">print</span>
+                  </div>
+                  <div>
+                    <div className="dashboard-launchpad-title">In vận đơn hàng loạt</div>
+                    <div className="dashboard-launchpad-desc">Tem nhãn chuẩn A5 & K80 nhiệt</div>
+                  </div>
+                </div>
+
+                <div
+                  className="dashboard-launchpad-card"
+                  onClick={() => setActiveView('claims')}
+                >
+                  <div className="dashboard-launchpad-icon" style={{ background: '#fef2f2', color: '#dc2626' }}>
+                    <span className="material-symbols-outlined">gavel</span>
+                  </div>
+                  <div>
+                    <div className="dashboard-launchpad-title">Khiếu nại & Đền bù</div>
+                    <div className="dashboard-launchpad-desc">Xử lý sự cố bể vỡ, thất lạc</div>
+                  </div>
+                </div>
+              </div>
 
               <div className="metric-grid dashboard-metrics">
                 <div className="metric dashboard-metric"><div className="metric-title">Tổng số đơn hôm nay</div><div className="metric-value">{dashboardStats.totalToday}</div><div className="dashboard-metric__hint">Tạo mới trong ngày</div></div>
@@ -3729,7 +4389,10 @@ function MerchantApp(): React.JSX.Element {
                         ? `${lockedSenderHub.latitude.toFixed(5)}, ${lockedSenderHub.longitude.toFixed(5)}`
                         : 'Đang xác định'}
                     </strong>
-                    <span className="gps-verified-tag">✓ Đã liên kết hợp đồng</span>
+                    <span className="gps-verified-tag" style={{ display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
+                      <span className="material-symbols-outlined" style={{ fontSize: '13px' }}>verified</span>
+                      Đã liên kết hợp đồng
+                    </span>
                   </div>
 
                   <div className="contract-pickup-notice">
@@ -3948,9 +4611,9 @@ function MerchantApp(): React.JSX.Element {
                           }))
                         }
                       >
-                        <option value="VIEW_ONLY">👁️ Cho xem không cho thử (Mặc định)</option>
-                        <option value="NONE">🚫 Không cho xem hàng (Thu COD trước)</option>
-                        <option value="TRY_ON">✅ Cho thử hàng (Mặc thử/cắm điện 5 phút)</option>
+                        <option value="VIEW_ONLY">Cho xem hàng, không thử (Mặc định)</option>
+                        <option value="NONE">Không cho xem hàng (Thu COD trước khi mở)</option>
+                        <option value="TRY_ON">Cho thử hàng (Thử đồ / Kiểm tra hoạt động 5 phút)</option>
                       </select>
                     </div>
 
@@ -4039,12 +4702,12 @@ function MerchantApp(): React.JSX.Element {
 
                       <div className="dimension-summary-box">
                         <span>
-                          Quy đổi thể tích (D x R x C / 5000):{' '}
+                          Quy đổi thể tích (D x R x C / 6000):{' '}
                           <strong className="dimension-summary-highlight">
                             {((Number(createForm.lengthCm || 0) *
                               Number(createForm.widthCm || 0) *
                               Number(createForm.heightCm || 0)) /
-                              5000).toFixed(2)}{' '}
+                              6000).toFixed(2)}{' '}
                             kg
                           </strong>
                         </span>
@@ -4481,7 +5144,7 @@ function MerchantApp(): React.JSX.Element {
             </section>
           </> : null}
 
-          {activeView === 'shipment-detail' ? <section className="grid">{!selectedShipment ? <div className="card"><div className="empty">Chưa chọn shipment.</div></div> : <><div className="card"><h3>Chi tiết shipment {selectedShipment.shipment.code}</h3><div className="details-grid"><div className="detail-box"><div className="label">Người gửi</div><div>{selectedShipment.senderName}<br />{selectedShipment.senderPhone}<br />{selectedShipment.senderAddress}</div></div><div className="detail-box"><div className="label">Hub gửi</div><div>{selectedShipment.senderHubCode}<br />{selectedShipment.senderWard}, {selectedShipment.senderProvince}</div></div><div className="detail-box"><div className="label">Người nhận</div><div>{selectedShipment.receiverName}<br />{selectedShipment.receiverPhone}<br />{selectedShipment.receiverAddress}</div></div><div className="detail-box"><div className="label">Hub nhận</div><div>{selectedShipment.receiverHubCode}<br />{selectedShipment.receiverWard}, {selectedShipment.receiverProvince}</div></div><div className="detail-box"><div className="label">Hàng hóa</div><div>{selectedShipment.itemType}<br />{selectedShipment.weightKg}kg</div></div><div className="detail-box"><div className="label">COD / Phí</div><div>{formatCurrency(selectedShipment.codAmount)}<br />{formatCurrency(selectedShipment.feeEstimate)}</div></div><div className="detail-box"><div className="label">Dịch vụ</div><div>{selectedShipment.serviceType}</div></div><div className="detail-box"><div className="label">Pickup</div><div>{pickupByShipmentCode.get(normalizeCode(selectedShipment.shipment.code))?.pickupCode ?? 'Chưa tạo pickup'}</div></div></div><div className="btn-row" style={{ marginTop: 8 }}><span className={resolveShipmentStatusClass(selectedShipment.shipment)}>{resolveShipmentStatusLabel(selectedShipment.shipment)}</span><button className="btn btn-danger" onClick={() => { const reason = window.prompt('Lý do hủy đơn', '') ?? ''; void cancelShipment(selectedShipment.shipment.code, reason); }}>Hủy đơn</button><button className="btn btn-ghost" onClick={() => printShipment(selectedShipment)}>In vận đơn</button></div></div><div className="card grid"><h3>Sửa đơn nếu còn cho phép</h3><div className="grid grid-3"><input className="input" value={detailReceiverPhone} onChange={(e) => setDetailReceiverPhone(e.target.value)} placeholder="SĐT người nhận" /><input className="input" value={detailReceiverAddress} onChange={(e) => setDetailReceiverAddress(e.target.value)} placeholder="Địa chỉ người nhận" /><input className="input" value={detailDeliveryNote} onChange={(e) => setDetailDeliveryNote(e.target.value)} placeholder="Ghi chú giao hàng" /></div><div className="btn-row"><button className="btn btn-primary" title={resolveDeliveryInfoChangeBlockReason(selectedShipment) ?? undefined} disabled={detailUpdating || Boolean(resolveDeliveryInfoChangeBlockReason(selectedShipment))} onClick={() => { void saveDetailUpdate(); }}>{detailUpdating ? 'Đang cập nhật...' : 'Sửa đơn'}</button><button className="btn btn-secondary" onClick={() => { setChangeCode(selectedShipment.shipment.code); setActiveView('change-requests'); }}>Yêu cầu đổi thông tin giao</button><button className="btn btn-secondary" onClick={() => { setReturnCode(selectedShipment.shipment.code); setActiveView('returns'); }}>Yêu cầu hoàn hàng</button></div>{detailError ? <p className="message error">{detailError}</p> : null}{detailSuccess ? <p className="message success">{detailSuccess}</p> : null}</div><div className="card"><h3>Timeline xử lý đơn</h3>{detailTrackError ? <p className="message error">{detailTrackError}</p> : null}<div className="timeline">{detailTrackTimeline.length === 0 ? <div className="empty">Chưa có tracking event.</div> : detailTrackTimeline.map((ev) => <div key={ev.id} className="timeline-item"><strong>{ev.eventType}</strong><div className="muted">{formatDate(ev.occurredAt)} | actor={ev.actor ?? 'system'} | loc={ev.locationText ?? ev.locationCode ?? 'N/A'}</div></div>)}</div>{detailTrackCurrent ? <p className="muted">Current: {detailTrackCurrent.currentStatus ?? 'N/A'} | Last event: {detailTrackCurrent.lastEventType ?? 'N/A'}</p> : null}</div></>}</section> : null}
+          {activeView === 'shipment-detail' ? <section className="grid">{!selectedShipment ? <div className="card"><div className="empty">Chưa chọn shipment.</div></div> : <><div className="card"><h3>Chi tiết shipment {selectedShipment.shipment.code}</h3><div className="details-grid"><div className="detail-box"><div className="label">Người gửi</div><div>{selectedShipment.senderName}<br />{selectedShipment.senderPhone}<br />{selectedShipment.senderAddress}</div></div><div className="detail-box"><div className="label">Hub gửi</div><div>{selectedShipment.senderHubCode}<br />{selectedShipment.senderWard}, {selectedShipment.senderProvince}</div></div><div className="detail-box"><div className="label">Người nhận</div><div>{selectedShipment.receiverName}<br />{selectedShipment.receiverPhone}<br />{selectedShipment.receiverAddress}</div></div><div className="detail-box"><div className="label">Hub nhận</div><div>{selectedShipment.receiverHubCode}<br />{selectedShipment.receiverWard}, {selectedShipment.receiverProvince}</div></div><div className="detail-box"><div className="label">Hàng hóa</div><div>{selectedShipment.itemType}<br />{selectedShipment.weightKg}kg</div></div><div className="detail-box"><div className="label">COD / Phí</div><div>{formatCurrency(selectedShipment.codAmount)}<br />{formatCurrency(selectedShipment.feeEstimate)}</div></div><div className="detail-box"><div className="label">Dịch vụ</div><div>{selectedShipment.serviceType}</div></div><div className="detail-box"><div className="label">Pickup</div><div>{pickupByShipmentCode.get(normalizeCode(selectedShipment.shipment.code))?.pickupCode ?? 'Chưa tạo pickup'}</div></div></div><div className="btn-row" style={{ marginTop: 8 }}><span className={resolveShipmentStatusClass(selectedShipment.shipment)}>{resolveShipmentStatusLabel(selectedShipment.shipment)}</span><button className="btn btn-danger" onClick={() => { const reason = window.prompt('Lý do hủy đơn', '') ?? ''; void cancelShipment(selectedShipment.shipment.code, reason); }}>Hủy đơn</button><button className="btn btn-ghost" onClick={() => printShipment(selectedShipment)}>In vận đơn</button></div></div><div className="card grid"><h3>Sửa đơn nếu còn cho phép</h3><div className="grid grid-3"><input className="input" value={detailReceiverPhone} onChange={(e) => setDetailReceiverPhone(e.target.value)} placeholder="SĐT người nhận" /><input className="input" value={detailReceiverAddress} onChange={(e) => setDetailReceiverAddress(e.target.value)} placeholder="Địa chỉ người nhận" /><input className="input" value={detailDeliveryNote} onChange={(e) => setDetailDeliveryNote(e.target.value)} placeholder="Ghi chú giao hàng" /></div><div className="btn-row"><button className="btn btn-primary" title={resolveDeliveryInfoChangeBlockReason(selectedShipment) ?? undefined} disabled={detailUpdating || Boolean(resolveDeliveryInfoChangeBlockReason(selectedShipment))} onClick={() => { void saveDetailUpdate(); }}>{detailUpdating ? 'Đang cập nhật...' : 'Sửa đơn'}</button><button className="btn btn-secondary" onClick={() => { setReturnCode(selectedShipment.shipment.code); setActiveView('returns'); }}>Yêu cầu hoàn hàng</button><button className="btn btn-secondary" style={{ backgroundColor: '#fffbeb', borderColor: '#fde68a', color: '#b45309' }} onClick={() => { setClaimShipmentCode(selectedShipment.shipment.code); setIsCreateClaimOpen(true); setActiveView('claims'); }}>Khiếu nại / Bồi thường</button></div>{detailError ? <p className="message error">{detailError}</p> : null}{detailSuccess ? <p className="message success">{detailSuccess}</p> : null}</div><div className="card"><h3>Timeline xử lý đơn</h3>{detailTrackError ? <p className="message error">{detailTrackError}</p> : null}<div className="timeline">{detailTrackTimeline.length === 0 ? <div className="empty">Chưa có tracking event.</div> : detailTrackTimeline.map((ev) => <div key={ev.id} className="timeline-item"><strong>{ev.eventType}</strong><div className="muted">{formatDate(ev.occurredAt)} | actor={ev.actor ?? 'system'} | loc={ev.locationText ?? ev.locationCode ?? 'N/A'}</div></div>)}</div>{detailTrackCurrent ? <p className="muted">Current: {detailTrackCurrent.currentStatus ?? 'N/A'} | Last event: {detailTrackCurrent.lastEventType ?? 'N/A'}</p> : null}</div></>}</section> : null}
 
           {activeView === 'pickups' ? <>
             <section className="card pickup-hero">
@@ -4862,18 +5525,6 @@ function MerchantApp(): React.JSX.Element {
                             <span className="material-symbols-outlined">print</span>
                             <span>In đơn</span>
                           </button>
-                          <button
-                            type="button"
-                            className="btn btn-ghost btn-sm"
-                            title="Yêu cầu thay đổi thông tin giao hàng"
-                            onClick={() => {
-                              setChangeCode(trackingShipmentRow.shipment.code);
-                              setActiveView('change-requests');
-                            }}
-                          >
-                            <span className="material-symbols-outlined">edit_note</span>
-                            <span>Đổi giao</span>
-                          </button>
                         </div>
                       </div>
 
@@ -5052,137 +5703,28 @@ function MerchantApp(): React.JSX.Element {
             )}
           </> : null}
 
-          {activeView === 'change-requests' ? <>
-            <form className="change-reference-layout" onSubmit={(e) => { void submitChangeRequest(e); }}>
-              <section className="card change-search-card">
-                <h3>Bước 1: Tìm kiếm đơn hàng</h3>
-                <div className="change-search-row">
-                  <div className="change-search-input">
-                    <span className="change-search-input__icon">⌕</span>
-                    <input className="input change-search-input__field" value={changeCode} onChange={(e) => setChangeCode(e.target.value)} placeholder="Nhập mã vận đơn (Ví dụ: NEX-123456789)" />
-                  </div>
-                  <button className="btn btn-primary change-search-btn" type="button">Tìm kiếm</button>
+          {activeView === 'change-requests' ? (
+            <section className="card" style={{ maxWidth: 620, margin: '48px auto', textAlign: 'center', padding: '40px 24px' }}>
+              <div style={{ display: 'inline-flex', padding: 14, borderRadius: '50%', backgroundColor: '#f1f5f9', color: '#475569', marginBottom: 16 }}>
+                <span className="material-symbols-outlined" style={{ fontSize: 36 }}>domain_verification</span>
+              </div>
+              <h3 style={{ fontSize: 18, fontWeight: 700, color: '#0f172a', marginBottom: 10 }}>Tính năng đã được tinh giản theo chuẩn vận hành</h3>
+              <p className="muted" style={{ fontSize: 13, lineHeight: 1.6, marginBottom: 12 }}>
+                Để đảm bảo tính liên tục của hành trình xe tải trục Linehaul và tránh phát sinh in lại tem nhãn tại Hub, hệ thống không nhận yêu cầu đổi thông tin giao hàng sau khi hàng đã xuất kho.
+              </p>
+              <div style={{ textAlign: 'left', backgroundColor: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8, padding: 14, margin: '16px 0 24px 0', fontSize: 12.5, lineHeight: 1.6, color: '#334155' }}>
+                <div style={{ marginBottom: 6 }}>
+                  📦 <strong>Đơn hàng chưa bàn giao bưu tá</strong>: Quý khách có thể sửa trực tiếp thông tin người nhận tại màn hình <em>Chi tiết đơn hàng</em>.
                 </div>
-              </section>
-
-              <section className="change-reference-grid">
-                <div className="card change-current-card">
-                  <div className="change-card-title-row">
-                    <span className="change-card-icon">i</span>
-                    <h3>Thông tin hiện tại</h3>
-                  </div>
-                  <div className="change-info-grid">
-                    <div className="change-field">
-                      <label className="label">Tên người nhận</label>
-                      <input className="input change-readonly-input" value={changeShipmentPreview?.receiverName ?? ''} placeholder="Chưa có dữ liệu đơn hàng" readOnly />
-                    </div>
-                    <div className="change-field">
-                      <label className="label">Số điện thoại</label>
-                      <input className="input change-readonly-input" value={changeShipmentPreview?.receiverPhone ?? ''} placeholder="Chưa có dữ liệu đơn hàng" readOnly />
-                    </div>
-                    <div className="change-field">
-                      <label className="label">Địa chỉ giao hàng</label>
-                      <textarea className="textarea change-readonly-input change-current-address" value={changeShipmentPreview?.receiverAddress ?? ''} placeholder="Chưa có dữ liệu đơn hàng" readOnly />
-                    </div>
-                  </div>
-                </div>
-
-                <div className="card change-new-card">
-                  <div className="change-card-title-row">
-                    <span className="change-card-icon change-card-icon--accent">✎</span>
-                    <h3 className="change-accent-title">Thông tin mới</h3>
-                  </div>
-                  <div className="change-info-grid">
-                    <div className="change-field">
-                      <label className="label">Tên người nhận mới</label>
-                      <input className="input" value="" placeholder="Giữ theo thông tin hiện tại" readOnly />
-                    </div>
-                    <div className="change-field">
-                      <label className="label">Số điện thoại mới</label>
-                      <input className={`input ${changeType === 'change.phone' ? '' : 'change-disabled-input'}`} value={changeType === 'change.phone' ? changeValue : ''} onChange={(e) => setChangeValue(e.target.value)} placeholder="Nhập số điện thoại mới" readOnly={changeType !== 'change.phone'} />
-                    </div>
-                    <div className="change-field">
-                      <label className="label">Địa chỉ chi tiết mới</label>
-                      <textarea className={`textarea change-new-address ${changeType === 'change.address' ? '' : 'change-disabled-input'}`} value={changeType === 'change.address' ? changeValue : ''} onChange={(e) => setChangeValue(e.target.value)} placeholder="Số nhà, tên đường, phường/xã..." readOnly={changeType !== 'change.address'} />
-                    </div>
-                  </div>
-                </div>
-              </section>
-
-              <section className="card change-reason-card">
-                <div className="change-reference-form">
-                  <div className="change-field">
-                    <label className="label">Lý do thay đổi</label>
-                    <select className="select" value={changeType} onChange={(e) => setChangeType(e.target.value)}>
-                      <option value="change.phone">Khách hàng yêu cầu đổi số điện thoại</option>
-                      <option value="change.address">Khách hàng yêu cầu đổi địa chỉ nhận hàng</option>
-                      <option value="change.note">Khác / đổi ghi chú giao hàng</option>
-                    </select>
-                  </div>
-                  <div className="change-field">
-                    <label className="label">Chi tiết lý do</label>
-                    <textarea className={`textarea ${changeType === 'change.note' ? '' : 'change-disabled-input'}`} value={changeType === 'change.note' ? changeValue : ''} onChange={(e) => setChangeValue(e.target.value)} placeholder="Chi tiết lý do (nếu có)..." readOnly={changeType !== 'change.note'} />
-                  </div>
-                </div>
-                <div className="change-reference-actions">
-                  <button className="btn btn-ghost" type="button">Hủy</button>
-                  <button className="btn btn-primary change-submit-btn" type="submit" title={resolveDeliveryInfoChangeBlockReason(changeShipmentPreview) ?? undefined} disabled={changeLoading || Boolean(resolveDeliveryInfoChangeBlockReason(changeShipmentPreview))}>{changeLoading ? 'Đang gửi...' : 'Gửi yêu cầu thay đổi'}</button>
-                </div>
-                {resolveDeliveryInfoChangeBlockReason(changeShipmentPreview) ? <p className="message error">{resolveDeliveryInfoChangeBlockReason(changeShipmentPreview)}</p> : null}
-                {changeMessage ? <p className="message">{changeMessage}</p> : null}
-              </section>
-            </form>
-
-            <section className="card change-history-card change-history-card--secondary">
-              <div className="change-history-card__header">
                 <div>
-                  <p className="login-kicker">History</p>
-                  <h3>Lịch sử yêu cầu đổi thông tin</h3>
-                </div>
-                <div className="change-history-card__controls">
-                  <label className="label">Trạng thái</label>
-                  <select className="select change-history-card__select" value={changeStatusFilter} onChange={(e) => setChangeStatusFilter(e.target.value)}><option value="ALL">Tất cả</option><option value="PENDING">PENDING</option><option value="APPROVED">APPROVED</option><option value="REJECTED">REJECTED</option></select>
+                  🔄 <strong>Đơn hàng giao không thành công</strong>: Quý khách vui lòng tạo <em>Yêu cầu hoàn hàng</em> hoặc đăng ký chuyển tiếp khi bưu tá báo sự cố.
                 </div>
               </div>
-              <div className="table-wrap change-table-wrap">
-                <table className="change-table">
-                  <thead>
-                    <tr>
-                      <th>Vận đơn</th>
-                      <th>Thông tin cũ</th>
-                      <th>Thông tin mới</th>
-                      <th>Trạng thái</th>
-                      <th>Ngày yêu cầu</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {changeRows.map((item) => {
-                      const historyShipment = shipmentRows.find((row) => row.shipment.code === normalizeCode(item.shipmentCode));
-                      return <tr key={item.id}>
-                        <td className="change-code-cell">{item.shipmentCode}</td>
-                        <td>
-                          <div className="change-history-meta">
-                            <strong>{historyShipment?.receiverName ?? 'Thông tin hiện tại'}</strong>
-                            <span>{historyShipment?.receiverPhone ?? '-'}</span>
-                            <small>{historyShipment?.receiverAddress ?? '-'}</small>
-                          </div>
-                        </td>
-                        <td>
-                          <div className="change-history-meta change-history-meta--new">
-                            <strong>{item.requestType}</strong>
-                            <span>{typeof item.payload?.value === 'string' ? item.payload.value : '-'}</span>
-                          </div>
-                        </td>
-                        <td><span className={statusClass(item.status)}>{item.status}</span></td>
-                        <td>{formatDate(item.createdAt)}</td>
-                      </tr>;
-                    })}
-                  </tbody>
-                </table>
-              </div>
-              {changeRows.length === 0 ? <div className="empty change-empty">Chưa có yêu cầu thay đổi phù hợp bộ lọc.</div> : null}
+              <button className="btn btn-primary" onClick={() => setActiveView('shipments')}>
+                Quay lại danh sách đơn hàng
+              </button>
             </section>
-          </> : null}
+          ) : null}
 
           {activeView === 'returns' ? <section className="returns-layout">
             <div className="returns-top-grid">
@@ -5194,7 +5736,7 @@ function MerchantApp(): React.JSX.Element {
                   </div>
                   <div className="returns-search-row">
                     <div className="returns-search-input">
-                      <span className="returns-search-icon">⌕</span>
+                      <span className="material-symbols-outlined returns-search-icon">search</span>
                       <input className="input returns-search-field" value={returnCode} onChange={(e) => setReturnCode(e.target.value)} placeholder="Nhập mã vận đơn (VD: NX-889201...)" />
                     </div>
                     <button className="btn btn-primary returns-search-btn" type="button">Tìm kiếm</button>
@@ -5324,6 +5866,1065 @@ function MerchantApp(): React.JSX.Element {
             </section>
           </section> : null}
 
+          {activeView === 'claims' ? (
+            <section className="claims-layout">
+              {/* Claims Page Hero */}
+              <div className="card" style={{ padding: '24px', background: 'linear-gradient(135deg, #1e3a8a 0%, #0284c7 100%)', color: '#ffffff' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
+                  <div>
+                    <span style={{ fontSize: '12px', textTransform: 'uppercase', letterSpacing: '1px', fontWeight: 700, opacity: 0.9 }}>
+                      Claims & Disputes Management
+                    </span>
+                    <h2 style={{ fontSize: '24px', fontWeight: 800, margin: '6px 0 4px', color: '#ffffff' }}>
+                      Khiếu nại & Thẩm định Bồi thường Bưu phẩm
+                    </h2>
+                    <p style={{ margin: 0, fontSize: '13px', opacity: 0.85, maxWidth: '680px', lineHeight: 1.5 }}>
+                      Cổng tiếp nhận yêu cầu đền bù thiệt hại (hàng vỡ, mất mát, giao chậm, sai lệch COD). Hệ thống tự động phân định trách nhiệm bưu cục/shipper theo Ma trận 4 ô chuẩn SOP Nexus.
+                    </p>
+                  </div>
+
+                  <button
+                    className="btn"
+                    style={{ backgroundColor: '#ffffff', color: '#0369a1', fontWeight: 700, padding: '10px 18px', borderRadius: '10px', boxShadow: '0 4px 12px rgba(0,0,0,0.15)' }}
+                    onClick={() => {
+                      setIsCreateClaimOpen(true);
+                      setSelectedClaimDetail(null);
+                    }}
+                  >
+                    + Tạo yêu cầu bồi thường mới
+                  </button>
+                </div>
+              </div>
+
+              {/* KPI Cards */}
+              <div className="claims-kpi-grid">
+                <div className="claims-kpi-card">
+                  <div className="claims-kpi-header">
+                    <span className="claims-kpi-title">Tổng hồ sơ khiếu nại</span>
+                    <div className="claims-kpi-icon" style={{ background: '#e0f2fe', color: '#0284c7' }}>
+                      <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>gavel</span>
+                    </div>
+                  </div>
+                  <div className="claims-kpi-value">{claims.length}</div>
+                  <div className="claims-kpi-subtext">Hồ sơ đã ghi nhận trên hệ thống</div>
+                </div>
+
+                <div className="claims-kpi-card">
+                  <div className="claims-kpi-header">
+                    <span className="claims-kpi-title">Đang chờ giám định</span>
+                    <div className="claims-kpi-icon" style={{ background: '#fef3c7', color: '#b45309' }}>
+                      <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>pending_actions</span>
+                    </div>
+                  </div>
+                  <div className="claims-kpi-value" style={{ color: '#b45309' }}>
+                    {claims.filter((c) => c.status === 'PENDING_INSPECTION').length}
+                  </div>
+                  <div className="claims-kpi-subtext">Hội đồng đang kiểm tra camera & seal</div>
+                </div>
+
+                <div className="claims-kpi-card">
+                  <div className="claims-kpi-header">
+                    <span className="claims-kpi-title">Đã có phán quyết / Duyệt chi</span>
+                    <div className="claims-kpi-icon" style={{ background: '#ecfdf5', color: '#059669' }}>
+                      <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>verified</span>
+                    </div>
+                  </div>
+                  <div className="claims-kpi-value" style={{ color: '#059669' }}>
+                    {claims.filter((c) => c.status === 'ADJUDICATED' || c.status === 'PAYMENT_APPROVED' || c.status === 'SETTLED').length}
+                  </div>
+                  <div className="claims-kpi-subtext">Đã phân định bên chịu trách nhiệm</div>
+                </div>
+
+                <div className="claims-kpi-card">
+                  <div className="claims-kpi-header">
+                    <span className="claims-kpi-title">Đã tất toán đền bù</span>
+                    <div className="claims-kpi-icon" style={{ background: '#f3e8ff', color: '#7e22ce' }}>
+                      <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>payments</span>
+                    </div>
+                  </div>
+                  <div className="claims-kpi-value" style={{ color: '#7e22ce', fontSize: '20px' }}>
+                    {formatCurrency(
+                      claims
+                        .filter((c) => c.status === 'SETTLED' || c.status === 'PAYMENT_APPROVED')
+                        .reduce((sum, c) => sum + (c.approvedCompensationAmount || c.claimRequestedAmount || 0), 0)
+                    )}
+                  </div>
+                  <div className="claims-kpi-subtext">Đã cấn trừ khấu trừ hoàn tất</div>
+                </div>
+              </div>
+
+              {/* Status Message */}
+              {claimMessage ? <p className="message success">{claimMessage}</p> : null}
+              {claimError ? <p className="message error">{claimError}</p> : null}
+
+              {/* Main Content: Split Grid */}
+              <div className={`claims-main-grid ${isCreateClaimOpen || selectedClaimDetail ? 'claims-main-grid--split' : ''}`}>
+                {/* Left: Table of Claims */}
+                <div className="card">
+                  <div className="claims-toolbar">
+                    <div className="claims-search-wrap">
+                      <span className="material-symbols-outlined" style={{ color: '#94a3b8' }}>search</span>
+                      <input
+                        className="input"
+                        placeholder="Tìm theo Mã hồ sơ CLM, Mã vận đơn NX..."
+                        value={claimSearch}
+                        onChange={(e) => setClaimSearch(e.target.value)}
+                        style={{ width: '100%' }}
+                      />
+                    </div>
+
+                    <select
+                      className="claims-filter-select"
+                      value={claimStatusFilter}
+                      onChange={(e) => setClaimStatusFilter(e.target.value)}
+                    >
+                      <option value="ALL">-- Tất cả trạng thái --</option>
+                      <option value="PENDING_INSPECTION">Chờ giám định</option>
+                      <option value="ADJUDICATED">Đã phán quyết</option>
+                      <option value="PAYMENT_APPROVED">Đã duyệt chi trả</option>
+                      <option value="SETTLED">Đã tất toán</option>
+                      <option value="REJECTED">Từ chối bồi thường</option>
+                    </select>
+                  </div>
+
+                  <div className="table-wrap">
+                    <table className="table">
+                      <thead>
+                        <tr>
+                          <th>Mã hồ sơ</th>
+                          <th>Mã vận đơn</th>
+                          <th>Loại sự cố</th>
+                          <th>Số tiền yêu cầu</th>
+                          <th>Phán quyết duyệt</th>
+                          <th>Trạng thái</th>
+                          <th>Thao tác</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {claims
+                          .filter((c) => {
+                            if (claimStatusFilter !== 'ALL' && c.status !== claimStatusFilter) return false;
+                            if (claimSearch.trim()) {
+                              const q = claimSearch.trim().toLowerCase();
+                              return (
+                                c.claimCode.toLowerCase().includes(q) ||
+                                c.shipmentCode.toLowerCase().includes(q)
+                              );
+                            }
+                            return true;
+                          })
+                          .map((item) => {
+                            const isSelected = selectedClaimDetail?.id === item.id;
+                            let statusBadgeBg = '#f1f5f9';
+                            let statusBadgeText = '#475569';
+                            let statusLabel: string = item.status;
+                            if (item.status === 'PENDING_INSPECTION') {
+                              statusBadgeBg = '#fef3c7';
+                              statusBadgeText = '#b45309';
+                              statusLabel = 'Chờ giám định';
+                            } else if (item.status === 'ADJUDICATED') {
+                              statusBadgeBg = '#e0f2fe';
+                              statusBadgeText = '#0369a1';
+                              statusLabel = 'Đã phán quyết';
+                            } else if (item.status === 'PAYMENT_APPROVED') {
+                              statusBadgeBg = '#dcfce7';
+                              statusBadgeText = '#15803d';
+                              statusLabel = 'Đã duyệt chi';
+                            } else if (item.status === 'SETTLED') {
+                              statusBadgeBg = '#ecfdf5';
+                              statusBadgeText = '#047857';
+                              statusLabel = 'Đã tất toán';
+                            } else if (item.status === 'REJECTED') {
+                              statusBadgeBg = '#fee2e2';
+                              statusBadgeText = '#b91c1c';
+                              statusLabel = 'Từ chối';
+                            }
+
+                            let incidentLabel: string = item.incidentType;
+                            if (item.incidentType === 'DAMAGE') incidentLabel = 'Hư hỏng / Bể vỡ';
+                            else if (item.incidentType === 'LOST_IN_TRANSIT') incidentLabel = 'Thất lạc bưu kiện';
+                            else if (item.incidentType === 'DELAY') incidentLabel = 'Chậm trễ giao hàng';
+                            else if (item.incidentType === 'COD_DISPUTE') incidentLabel = 'Sai lệch tiền COD';
+
+                            return (
+                              <tr
+                                key={item.id}
+                                style={{ background: isSelected ? '#f8fafc' : undefined }}
+                              >
+                                <td>
+                                  <strong style={{ fontFamily: 'monospace', color: '#0284c7' }}>
+                                    {item.claimCode}
+                                  </strong>
+                                </td>
+                                <td>
+                                  <span style={{ fontFamily: 'monospace', fontWeight: 600 }}>
+                                    {item.shipmentCode}
+                                  </span>
+                                </td>
+                                <td>
+                                  <span style={{ fontSize: '13px' }}>{incidentLabel}</span>
+                                </td>
+                                <td>
+                                  <strong>{formatCurrency(item.claimRequestedAmount || item.declaredValue || 0)}</strong>
+                                </td>
+                                <td>
+                                  {item.approvedCompensationAmount ? (
+                                    <span style={{ color: '#16a34a', fontWeight: 700 }}>
+                                      {formatCurrency(item.approvedCompensationAmount)} ({item.liabilityRatioPercent}%)
+                                    </span>
+                                  ) : (
+                                    <span className="muted">Chưa chốt</span>
+                                  )}
+                                </td>
+                                <td>
+                                  <span
+                                    style={{
+                                      display: 'inline-block',
+                                      padding: '3px 8px',
+                                      borderRadius: '6px',
+                                      fontSize: '11px',
+                                      fontWeight: 700,
+                                      background: statusBadgeBg,
+                                      color: statusBadgeText,
+                                    }}
+                                  >
+                                    {statusLabel}
+                                  </span>
+                                </td>
+                                <td>
+                                  <button
+                                    className="btn btn-secondary"
+                                    style={{ padding: '4px 10px', fontSize: '12px' }}
+                                    onClick={() => {
+                                      setSelectedClaimDetail(item);
+                                      setIsCreateClaimOpen(false);
+                                    }}
+                                  >
+                                    Xem phán quyết
+                                  </button>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {claims.length === 0 ? (
+                    <div className="empty" style={{ padding: '36px 16px', textAlign: 'center' }}>
+                      <span className="material-symbols-outlined" style={{ fontSize: '40px', color: '#10b981', marginBottom: '8px' }}>
+                        verified_user
+                      </span>
+                      <h4>Hiện tại chưa có yêu cầu bồi thường nào</h4>
+                      <p className="muted" style={{ maxWidth: '420px', margin: '4px auto 14px' }}>
+                        Các đơn hàng của bạn đang được xử lý an toàn. Nếu có bưu kiện bị nứt vỡ hoặc thất lạc, hãy bấm nút tạo khiếu nại để được bồi thường.
+                      </p>
+                      <button
+                        className="btn btn-primary"
+                        onClick={() => {
+                          setIsCreateClaimOpen(true);
+                          setSelectedClaimDetail(null);
+                        }}
+                      >
+                        + Tạo khiếu nại đầu tiên
+                      </button>
+                    </div>
+                  ) : null}
+                </div>
+
+                {/* Right Column: Claim Form OR Claim Verdict Detail */}
+                {isCreateClaimOpen ? (
+                  <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <h3 style={{ margin: 0 }}>Tạo yêu cầu Bồi thường mới</h3>
+                      <button
+                        className="btn btn-ghost"
+                        style={{ padding: '4px 8px' }}
+                        onClick={() => setIsCreateClaimOpen(false)}
+                      >
+                        <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>close</span>
+                      </button>
+                    </div>
+
+                    <form onSubmit={submitCreateClaim} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                      <div>
+                        <label className="label">Mã vận đơn cần khiếu nại (*)</label>
+                        <input
+                          className="input"
+                          placeholder="VD: NX-88992211"
+                          value={claimShipmentCode}
+                          onChange={(e) => setClaimShipmentCode(e.target.value.toUpperCase())}
+                          required
+                        />
+                      </div>
+
+                      {/* Matching shipment preview */}
+                      {(() => {
+                        const row = shipmentRows.find((r) => r.shipment.code === normalizeCode(claimShipmentCode));
+                        if (!row) return null;
+                        return (
+                          <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '10px 12px', fontSize: '12px' }}>
+                            <div style={{ fontWeight: 700, color: '#0f172a', marginBottom: '4px', display: 'flex', alignItems: 'center' }}>
+                              <span className="material-symbols-outlined" style={{ fontSize: '14px', marginRight: '4px', color: 'var(--stitch-primary)' }}>inventory_2</span>
+                              <span>{row.itemType} ({row.weightKg}kg)</span>
+                            </div>
+                            <div style={{ color: '#475569' }}>
+                              Người nhận: {row.receiverName} ({row.receiverPhone}) - COD: {formatCurrency(row.codAmount)}
+                            </div>
+                            <div style={{ color: '#64748b', fontSize: '11px', marginTop: '2px' }}>
+                              Trạng thái hiện tại: {resolveShipmentStatusLabel(row.shipment)}
+                            </div>
+                          </div>
+                        );
+                      })()}
+
+                      <div>
+                        <label className="label">Loại sự cố / Tổn thất (*)</label>
+                        <select
+                          className="input"
+                          value={claimIncidentType}
+                          onChange={(e) => setClaimIncidentType(e.target.value as ClaimIncidentType)}
+                        >
+                          <option value="DAMAGE">Hàng hóa bị nứt vỡ, móp méo, hư hỏng (DAMAGE)</option>
+                          <option value="LOST_IN_TRANSIT">Thất lạc bưu kiện trong quá trình vận chuyển (LOST)</option>
+                          <option value="DELAY">Giao trễ hạn cam kết SLA quá 48h (DELAY)</option>
+                          <option value="COD_DISPUTE">Sai lệch tiền thu hộ COD khi đối soát (COD_DISPUTE)</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="label">Số tiền yêu cầu bồi thường (VND) (*)</label>
+                        <input
+                          className="input"
+                          type="number"
+                          placeholder="VD: 500000"
+                          value={claimRequestedAmount}
+                          onChange={(e) => setClaimRequestedAmount(e.target.value)}
+                          required
+                        />
+                      </div>
+
+                      <div>
+                        <label className="label">Mô tả hàng hóa bên trong</label>
+                        <input
+                          className="input"
+                          placeholder="VD: 2 bộ áo quần thể thao nam Coolmate"
+                          value={claimPackageDesc}
+                          onChange={(e) => setClaimPackageDesc(e.target.value)}
+                        />
+                      </div>
+
+                      <div>
+                        <label className="label">Mô tả chi tiết sự cố / Biên bản đồng kiểm (*)</label>
+                        <textarea
+                          className="input"
+                          rows={4}
+                          placeholder="Mô tả cụ thể tình trạng hàng hóa khi người nhận đồng kiểm, chữ ký shipper trên biên bản, hoặc thời điểm phát hiện thất lạc..."
+                          value={claimDamageDesc}
+                          onChange={(e) => setClaimDamageDesc(e.target.value)}
+                          required
+                        />
+                      </div>
+
+                      <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: '8px', padding: '10px 12px', fontSize: '12px', color: '#92400e', lineHeight: 1.5 }}>
+                        <strong>Quy chuẩn SOP Thẩm định:</strong> Ban Giám Định Trách Nhiệm sẽ truy xuất dữ liệu cân điện tử lúc nhập Hub và camera phân loại tự động để phân định trách nhiệm bưu cục/shipper trong vòng 24h.
+                      </div>
+
+                      <div className="btn-row" style={{ marginTop: '8px' }}>
+                        <button
+                          type="submit"
+                          className="btn btn-primary"
+                          disabled={claimSubmitting}
+                          style={{ flex: 1 }}
+                        >
+                          {claimSubmitting ? 'Đang gửi hồ sơ...' : 'Gửi yêu cầu bồi thường'}
+                        </button>
+                        <button
+                          type="button"
+                          className="btn btn-ghost"
+                          onClick={() => setIsCreateClaimOpen(false)}
+                        >
+                          Hủy
+                        </button>
+                      </div>
+                    </form>
+                  </div>
+                ) : selectedClaimDetail ? (
+                  <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div>
+                        <span style={{ fontSize: '11px', textTransform: 'uppercase', color: '#64748b', fontWeight: 700 }}>
+                          Chi tiết Phán quyết Trách nhiệm
+                        </span>
+                        <h3 style={{ margin: '2px 0 0', color: '#0284c7', fontFamily: 'monospace' }}>
+                          {selectedClaimDetail.claimCode}
+                        </h3>
+                      </div>
+                      <button
+                        className="btn btn-ghost"
+                        style={{ padding: '4px 8px' }}
+                        onClick={() => setSelectedClaimDetail(null)}
+                      >
+                        <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>close</span>
+                      </button>
+                    </div>
+
+                    <div style={{ fontSize: '13px', color: '#334155', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                      <div>Vận đơn: <strong>{selectedClaimDetail.shipmentCode}</strong></div>
+                      <div>Ngày lập hồ sơ: {formatDate(selectedClaimDetail.createdAt || selectedClaimDetail.reportedAt)}</div>
+                      <div>Số tiền yêu cầu: <strong>{formatCurrency(selectedClaimDetail.claimRequestedAmount || selectedClaimDetail.declaredValue || 0)}</strong></div>
+                    </div>
+
+                    {/* 4-Cell Liability Matrix Visualization */}
+                    <div>
+                      <div style={{ fontSize: '12px', fontWeight: 700, color: '#0f172a', marginBottom: '6px' }}>
+                        Ma trận Phân định Trách nhiệm 4 Ô (4-Cell Liability Matrix)
+                      </div>
+                      <div className="claims-matrix-grid">
+                        <div className={`claims-matrix-cell ${selectedClaimDetail.responsibleParty === 'ORIGIN_HUB' ? 'claims-matrix-cell--active' : ''}`}>
+                          <div className="claims-matrix-cell-title">
+                            <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>warehouse</span>
+                            1. Hub Gửi (Origin)
+                          </div>
+                          <div className="claims-matrix-cell-desc">Khâu tiếp nhận, cân đo & bao gói ban đầu</div>
+                        </div>
+
+                        <div className={`claims-matrix-cell ${selectedClaimDetail.responsibleParty === 'LINEHAUL_CARRIER' ? 'claims-matrix-cell--active' : ''}`}>
+                          <div className="claims-matrix-cell-title">
+                            <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>local_shipping</span>
+                            2. Linehaul (Vận chuyển)
+                          </div>
+                          <div className="claims-matrix-cell-desc">Vận chuyển xe tải liên tỉnh & seal niêm phong</div>
+                        </div>
+
+                        <div className={`claims-matrix-cell ${selectedClaimDetail.responsibleParty === 'LAST_MILE_COURIER' || selectedClaimDetail.responsibleParty === 'DESTINATION_HUB' ? 'claims-matrix-cell--active' : ''}`}>
+                          <div className="claims-matrix-cell-title">
+                            <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>sports_motorsports</span>
+                            3. Hub Phát / Shipper
+                          </div>
+                          <div className="claims-matrix-cell-desc">Khâu phát hàng, đồng kiểm với khách nhận</div>
+                        </div>
+
+                        <div className={`claims-matrix-cell ${selectedClaimDetail.responsibleParty === 'MERCHANT' ? 'claims-matrix-cell--active' : ''}`}>
+                          <div className="claims-matrix-cell-title">
+                            <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>store</span>
+                            4. Shop đóng gói
+                          </div>
+                          <div className="claims-matrix-cell-desc">Tiêu chuẩn chèn bọc chống va đập của shop</div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Official Verdict Banner */}
+                    <div className="claims-verdict-banner">
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span className="material-symbols-outlined" style={{ color: '#059669', fontSize: '20px' }}>gavel</span>
+                        <strong style={{ fontSize: '14px', color: '#065f46' }}>
+                          Kết luận của Hội đồng Giám định
+                        </strong>
+                      </div>
+                      <div style={{ fontSize: '13px', color: '#047857', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                        <div>Đơn vị chịu trách nhiệm: <strong>{selectedClaimDetail.responsibleParty || 'Đang thẩm định'}</strong></div>
+                        <div>Tỷ lệ đền bù phê duyệt: <strong>{selectedClaimDetail.liabilityRatioPercent || (selectedClaimDetail.approvedCompensationAmount ? 100 : 0)}%</strong></div>
+                        <div>Số tiền bồi thường: <strong style={{ fontSize: '16px', color: '#047857' }}>{formatCurrency(selectedClaimDetail.approvedCompensationAmount || 0)}</strong></div>
+                      </div>
+                      {selectedClaimDetail.damageDescription ? (
+                        <div style={{ fontSize: '12px', color: '#475569', marginTop: '6px', fontStyle: 'italic', background: '#ffffff', padding: '8px 10px', borderRadius: '6px' }}>
+                          "Mô tả sự cố: {selectedClaimDetail.damageDescription}"
+                        </div>
+                      ) : null}
+                    </div>
+
+                    <div className="btn-row" style={{ marginTop: '8px' }}>
+                      <button
+                        className="btn btn-secondary"
+                        onClick={() => {
+                          void openShipmentDetail(selectedClaimDetail.shipmentCode);
+                        }}
+                      >
+                        Xem chi tiết đơn hàng
+                      </button>
+                      <button
+                        className="btn btn-ghost"
+                        onClick={() => setSelectedClaimDetail(null)}
+                      >
+                        Đóng chi tiết
+                      </button>
+                    </div>
+                  </div>
+                ) : null}
+              </div>
+            </section>
+          ) : null}
+
+          {activeView === 'finance' ? (
+            <section className="finance-layout">
+              {/* Top Header Banner */}
+              <div className="finance-header-banner">
+                <div className="finance-header-left">
+                  <div className="finance-header-icon-wrap">
+                    <span className="material-symbols-outlined">account_balance_wallet</span>
+                  </div>
+                  <div className="finance-header-titles">
+                    <h2>Đối soát & Quản lý Tài chính</h2>
+                    <p>Minh bạch dòng tiền thu hộ COD, tự động cấn trừ cước vận chuyển và lịch trình chi trả định kỳ.</p>
+                  </div>
+                </div>
+                <div className="finance-header-actions">
+                  <button
+                    type="button"
+                    className="btn btn-secondary"
+                    onClick={exportAllLedgerCsv}
+                    title="Tải toàn bộ lịch sử biến động số dư (.csv)"
+                  >
+                    <span className="material-symbols-outlined" style={{ fontSize: '18px', marginRight: '6px' }}>download</span>
+                    <span>Xuất sổ cái (.csv)</span>
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-secondary"
+                    onClick={() => {
+                      setEditBankForm(merchantBankProfile);
+                      setIsEditingBankModalOpen(true);
+                    }}
+                  >
+                    <span className="material-symbols-outlined" style={{ fontSize: '18px', marginRight: '6px' }}>account_balance</span>
+                    <span>Tài khoản nhận tiền</span>
+                  </button>
+                  <button
+                    type="button"
+                    className={`btn ${insights.netBalance < 0 ? 'btn-danger' : 'btn-primary'}`}
+                    onClick={() => setShowTopupModal(true)}
+                  >
+                    <span className="material-symbols-outlined" style={{ fontSize: '18px', marginRight: '6px' }}>qr_code_2</span>
+                    <span>{insights.netBalance < 0 ? 'Thanh toán nợ cước' : 'Nạp tiền VietQR'}</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* 4 KPI Cards */}
+              <div className="finance-kpi-grid">
+                {/* 1. Số dư ròng khả dụng */}
+                <div className="finance-kpi-card">
+                  <div className="finance-kpi-card__top">
+                    <span className="finance-kpi-card__label">Số dư ròng khả dụng</span>
+                    <div className={`finance-kpi-card__icon ${insights.netBalance >= 0 ? 'finance-kpi-card__icon--success' : 'finance-kpi-card__icon--danger'}`}>
+                      <span className="material-symbols-outlined">{insights.netBalance >= 0 ? 'account_balance' : 'warning'}</span>
+                    </div>
+                  </div>
+                  <div className="finance-kpi-card__value" style={{ color: insights.netBalance >= 0 ? '#127a56' : '#ba1a1a' }}>
+                    {formatCurrency(insights.netBalance)}
+                  </div>
+                  <div className="finance-kpi-card__footer">
+                    <span className="material-symbols-outlined" style={{ fontSize: '15px', color: insights.netBalance >= 0 ? '#127a56' : '#ba1a1a' }}>
+                      {insights.netBalance >= 0 ? 'check_circle' : 'error'}
+                    </span>
+                    <span>{insights.netBalance >= 0 ? 'Đã cấn trừ cước • Sẵn sàng chi trả' : 'Vượt hạn mức nợ (-500.000đ)'}</span>
+                  </div>
+                </div>
+
+                {/* 2. COD đã thu */}
+                <div className="finance-kpi-card">
+                  <div className="finance-kpi-card__top">
+                    <span className="finance-kpi-card__label">COD đã thu (Chờ chi)</span>
+                    <div className="finance-kpi-card__icon finance-kpi-card__icon--primary">
+                      <span className="material-symbols-outlined">payments</span>
+                    </div>
+                  </div>
+                  <div className="finance-kpi-card__value" style={{ color: '#0052cc' }}>
+                    {formatCurrency(insights.deliveredCod)}
+                  </div>
+                  <div className="finance-kpi-card__footer">
+                    <span className="material-symbols-outlined" style={{ fontSize: '15px', color: '#0052cc' }}>verified</span>
+                    <span>Shipper đã giao thành công & nộp quỹ</span>
+                  </div>
+                </div>
+
+                {/* 3. COD đang giao */}
+                <div className="finance-kpi-card">
+                  <div className="finance-kpi-card__top">
+                    <span className="finance-kpi-card__label">COD đang giao (Dự kiến)</span>
+                    <div className="finance-kpi-card__icon finance-kpi-card__icon--info">
+                      <span className="material-symbols-outlined">local_shipping</span>
+                    </div>
+                  </div>
+                  <div className="finance-kpi-card__value" style={{ color: '#0059b8' }}>
+                    {formatCurrency(Math.max(0, insights.totalCod - insights.deliveredCod))}
+                  </div>
+                  <div className="finance-kpi-card__footer">
+                    <span className="material-symbols-outlined" style={{ fontSize: '15px', color: '#0059b8' }}>schedule</span>
+                    <span>Đơn hàng đang trên đường giao khách</span>
+                  </div>
+                </div>
+
+                {/* 4. Cước vận chuyển phát sinh */}
+                <div className="finance-kpi-card">
+                  <div className="finance-kpi-card__top">
+                    <span className="finance-kpi-card__label">Cước phát sinh trong kỳ</span>
+                    <div className="finance-kpi-card__icon finance-kpi-card__icon--danger">
+                      <span className="material-symbols-outlined">receipt_long</span>
+                    </div>
+                  </div>
+                  <div className="finance-kpi-card__value" style={{ color: '#ba1a1a' }}>
+                    {formatCurrency(insights.totalFee)}
+                  </div>
+                  <div className="finance-kpi-card__footer">
+                    <span className="material-symbols-outlined" style={{ fontSize: '15px', color: '#7c8aa2' }}>shield</span>
+                    <span>Hạn mức nợ cước trần: -500.000đ</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Subtabs Switcher */}
+              <div className="finance-subtabs-nav">
+                <button
+                  type="button"
+                  className={`finance-subtab-btn ${financeSubTab === 'overview' ? 'finance-subtab-btn--active' : ''}`}
+                  onClick={() => setFinanceSubTab('overview')}
+                >
+                  <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>dashboard</span>
+                  <span>Tổng quan dòng tiền</span>
+                </button>
+                <button
+                  type="button"
+                  className={`finance-subtab-btn ${financeSubTab === 'batches' ? 'finance-subtab-btn--active' : ''}`}
+                  onClick={() => setFinanceSubTab('batches')}
+                >
+                  <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>fact_check</span>
+                  <span>Kỳ đối soát & Bảng kê ({settlementBatches.length})</span>
+                </button>
+                <button
+                  type="button"
+                  className={`finance-subtab-btn ${financeSubTab === 'ledger' ? 'finance-subtab-btn--active' : ''}`}
+                  onClick={() => setFinanceSubTab('ledger')}
+                >
+                  <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>history_edu</span>
+                  <span>Sổ cái biến động số dư ({financialLedger.length})</span>
+                </button>
+                <button
+                  type="button"
+                  className={`finance-subtab-btn ${financeSubTab === 'settings' ? 'finance-subtab-btn--active' : ''}`}
+                  onClick={() => setFinanceSubTab('settings')}
+                >
+                  <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>account_balance</span>
+                  <span>Tài khoản thụ hưởng & Hợp đồng</span>
+                </button>
+              </div>
+
+              {/* Subtab 1: Tổng quan dòng tiền */}
+              {financeSubTab === 'overview' ? (
+                <div style={{ display: 'grid', gap: '20px' }}>
+                  {/* Kỳ đối soát gần nhất */}
+                  {settlementBatches[0] ? (
+                    <div className="finance-section-card">
+                      <div className="finance-section-header">
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                          <span className="material-symbols-outlined" style={{ color: '#0052cc', fontSize: '24px' }}>sync</span>
+                          <div>
+                            <h3 className="finance-section-title">Kỳ đối soát hiện tại ({settlementBatches[0].code})</h3>
+                            <div className="muted" style={{ fontSize: '13px' }}>{settlementBatches[0].cycleName}</div>
+                          </div>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                          <span className="finance-badge finance-badge--processing">
+                            <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>hourglass_top</span>
+                            <span>{settlementBatches[0].status === 'PAID' ? 'Đã chi trả' : 'Đang xử lý chi trả'}</span>
+                          </span>
+                          <button
+                            type="button"
+                            className="btn btn-secondary"
+                            onClick={() => exportBatchToCsv(settlementBatches[0])}
+                          >
+                            <span className="material-symbols-outlined" style={{ fontSize: '16px', marginRight: '6px' }}>download</span>
+                            <span>Tải bảng kê kỳ này (.csv)</span>
+                          </button>
+                        </div>
+                      </div>
+
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '16px', padding: '16px', background: '#f8fafc', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
+                        <div>
+                          <div className="muted" style={{ fontSize: '12px', textTransform: 'uppercase' }}>Số lượng đơn</div>
+                          <div style={{ fontSize: '18px', fontWeight: 700, color: '#102548' }}>{settlementBatches[0].orderCount} đơn</div>
+                        </div>
+                        <div>
+                          <div className="muted" style={{ fontSize: '12px', textTransform: 'uppercase' }}>Tổng COD thu hộ</div>
+                          <div style={{ fontSize: '18px', fontWeight: 700, color: '#127a56' }}>+{formatCurrency(settlementBatches[0].codTotal)}</div>
+                        </div>
+                        <div>
+                          <div className="muted" style={{ fontSize: '12px', textTransform: 'uppercase' }}>Cước vận chuyển cấn trừ</div>
+                          <div style={{ fontSize: '18px', fontWeight: 700, color: '#ba1a1a' }}>-{formatCurrency(settlementBatches[0].feeTotal)}</div>
+                        </div>
+                        <div>
+                          <div className="muted" style={{ fontSize: '12px', textTransform: 'uppercase' }}>Thực nhận về tài khoản</div>
+                          <div style={{ fontSize: '20px', fontWeight: 800, color: '#0052cc' }}>{formatCurrency(settlementBatches[0].netPayout)}</div>
+                        </div>
+                        <div>
+                          <div className="muted" style={{ fontSize: '12px', textTransform: 'uppercase' }}>Tài khoản nhận tiền</div>
+                          <div style={{ fontSize: '14px', fontWeight: 600, color: '#334155' }}>{settlementBatches[0].bankInfo}</div>
+                        </div>
+                      </div>
+                    </div>
+                  ) : null}
+
+                  {/* Quy định & Chính sách đối soát */}
+                  <div className="finance-section-card">
+                    <h3 className="finance-section-title">
+                      <span className="material-symbols-outlined" style={{ color: '#0052cc' }}>policy</span>
+                      <span>Chính sách đối soát & Bảo toàn tiền hàng</span>
+                    </h3>
+                    <div className="finance-rules-list">
+                      <div className="finance-rule-item">
+                        <span className="material-symbols-outlined" style={{ color: '#127a56', fontSize: '22px' }}>verified_user</span>
+                        <div>
+                          <strong>Tính pháp lý của tiền COD:</strong> Toàn bộ tiền COD thu hộ từ người nhận thuộc quyền sở hữu 100% của Chủ Shop. Nexus Logistics cam kết bảo toàn nguyên vẹn và chi trả đúng kỳ hạn đối soát quy định.
+                        </div>
+                      </div>
+                      <div className="finance-rule-item">
+                        <span className="material-symbols-outlined" style={{ color: '#0052cc', fontSize: '22px' }}>calendar_month</span>
+                        <div>
+                          <strong>Chu kỳ chi trả tiêu chuẩn (Thứ 2 - Thứ 4 - Thứ 6):</strong>
+                          <ul style={{ margin: '6px 0 0 16px', padding: 0 }}>
+                            <li>Đơn giao thành công Thứ 7, Chủ nhật và Thứ 2: Đối soát và chi trả vào <strong>Thứ 4</strong>.</li>
+                            <li>Đơn giao thành công Thứ 3 và Thứ 4: Đối soát và chi trả vào <strong>Thứ 6</strong>.</li>
+                            <li>Đơn giao thành công Thứ 5 và Thứ 6: Đối soát và chi trả vào <strong>Thứ 2 tuần kế tiếp</strong>.</li>
+                          </ul>
+                        </div>
+                      </div>
+                      <div className="finance-rule-item">
+                        <span className="material-symbols-outlined" style={{ color: '#0059b8', fontSize: '22px' }}>currency_exchange</span>
+                        <div>
+                          <strong>Cơ chế cấn trừ tự động (Netting Settlement):</strong> Cước phí vận chuyển, phụ phí vượt cân và phí hoàn hàng (50% cước chiều đi) được tự động cấn trừ vào số tiền COD thu hộ trong kỳ, giúp Shop không phải chuyển tiền lẻ tẻ từng đơn.
+                        </div>
+                      </div>
+                      <div className="finance-rule-item">
+                        <span className="material-symbols-outlined" style={{ color: '#ba1a1a', fontSize: '22px' }}>lock_clock</span>
+                        <div>
+                          <strong>Hạn mức nợ cước âm tối đa (-500.000 VNĐ):</strong> Nếu số tiền cước phát sinh vượt quá tiền COD (số dư âm quá -500.000đ), hệ thống sẽ tạm khóa tạo đơn mới. Shop chỉ cần quét mã VietQR chuyển khoản thanh toán nợ, hệ thống SePay tự động mở khóa trong vòng 30 giây.
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ) : null}
+
+              {/* Subtab 2: Danh sách Kỳ đối soát */}
+              {financeSubTab === 'batches' ? (
+                <div className="finance-section-card">
+                  <div className="finance-section-header">
+                    <h3 className="finance-section-title">
+                      <span className="material-symbols-outlined" style={{ color: '#0052cc' }}>fact_check</span>
+                      <span>Danh sách các kỳ đối soát COD</span>
+                    </h3>
+                    <div className="finance-filter-toolbar">
+                      <select
+                        className="finance-filter-input"
+                        value={financeBatchStatusFilter}
+                        onChange={(e) => setFinanceBatchStatusFilter(e.target.value)}
+                      >
+                        <option value="ALL">Tất cả trạng thái</option>
+                        <option value="PAID">Đã chi trả</option>
+                        <option value="PROCESSING">Đang xử lý</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="finance-table-wrapper">
+                    <table className="finance-table">
+                      <thead>
+                        <tr>
+                          <th>Mã phiên</th>
+                          <th>Kỳ đối soát</th>
+                          <th>Số lượng đơn</th>
+                          <th>Tổng COD thu hộ</th>
+                          <th>Cước cấn trừ</th>
+                          <th>Thực nhận</th>
+                          <th>Thời gian chi trả</th>
+                          <th>Trạng thái</th>
+                          <th style={{ textAlign: 'right' }}>Thao tác</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {settlementBatches
+                          .filter((b) => financeBatchStatusFilter === 'ALL' || b.status === financeBatchStatusFilter)
+                          .map((batch) => (
+                            <tr key={batch.id}>
+                              <td>
+                                <span className="code-pill">{batch.code}</span>
+                              </td>
+                              <td>
+                                <div style={{ fontWeight: 600 }}>{batch.cycleName}</div>
+                                <div className="muted" style={{ fontSize: '11px' }}>{batch.fromDate} → {batch.toDate}</div>
+                              </td>
+                              <td>{batch.orderCount} đơn</td>
+                              <td className="money-plus">+{formatCurrency(batch.codTotal)}</td>
+                              <td className="money-minus">-{formatCurrency(batch.feeTotal)}</td>
+                              <td style={{ fontWeight: 800, fontSize: '14px', color: '#102548' }}>
+                                {formatCurrency(batch.netPayout)}
+                              </td>
+                              <td>
+                                <div>{batch.payoutDate}</div>
+                                {batch.transferRef ? (
+                                  <div className="muted" style={{ fontSize: '11px', fontFamily: 'monospace' }}>Ref: {batch.transferRef}</div>
+                                ) : null}
+                              </td>
+                              <td>
+                                {batch.status === 'PAID' ? (
+                                  <span className="finance-badge finance-badge--paid">
+                                    <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>check_circle</span>
+                                    <span>Đã chi trả</span>
+                                  </span>
+                                ) : (
+                                  <span className="finance-badge finance-badge--processing">
+                                    <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>hourglass_top</span>
+                                    <span>Đang xử lý</span>
+                                  </span>
+                                )}
+                              </td>
+                              <td style={{ textAlign: 'right' }}>
+                                <div style={{ display: 'inline-flex', gap: '6px' }}>
+                                  <button
+                                    type="button"
+                                    className="btn btn-ghost"
+                                    style={{ padding: '6px 10px', fontSize: '12px' }}
+                                    onClick={() => setSelectedSettlementBatch(batch)}
+                                  >
+                                    Xem đơn
+                                  </button>
+                                  <button
+                                    type="button"
+                                    className="btn btn-secondary"
+                                    style={{ padding: '6px 10px', fontSize: '12px' }}
+                                    onClick={() => exportBatchToCsv(batch)}
+                                    title="Tải bảng kê Excel/CSV"
+                                  >
+                                    <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>download</span>
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              ) : null}
+
+              {/* Subtab 3: Sổ cái biến động số dư */}
+              {financeSubTab === 'ledger' ? (
+                <div className="finance-section-card">
+                  <div className="finance-section-header">
+                    <h3 className="finance-section-title">
+                      <span className="material-symbols-outlined" style={{ color: '#0052cc' }}>history_edu</span>
+                      <span>Sổ cái biến động số dư thời gian thực</span>
+                    </h3>
+                    <div className="finance-filter-toolbar">
+                      <input
+                        className="finance-filter-input"
+                        placeholder="Tìm theo mã vận đơn..."
+                        value={financeLedgerSearch}
+                        onChange={(e) => setFinanceLedgerSearch(e.target.value)}
+                        style={{ width: '200px' }}
+                      />
+                      <select
+                        className="finance-filter-input"
+                        value={financeLedgerTypeFilter}
+                        onChange={(e) => setFinanceLedgerTypeFilter(e.target.value)}
+                      >
+                        <option value="ALL">Tất cả nghiệp vụ</option>
+                        <option value="COD_COLLECTED">Thu hộ COD (+)</option>
+                        <option value="SHIPPING_FEE">Cước vận chuyển (-)</option>
+                        <option value="RETURN_FEE">Cước hoàn hàng (-)</option>
+                        <option value="CLAIM_COMPENSATION">Bồi thường khiếu nại (+)</option>
+                      </select>
+                      <button
+                        type="button"
+                        className="btn btn-secondary"
+                        onClick={exportAllLedgerCsv}
+                      >
+                        <span className="material-symbols-outlined" style={{ fontSize: '16px', marginRight: '6px' }}>download</span>
+                        <span>Xuất CSV</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="finance-table-wrapper">
+                    <table className="finance-table">
+                      <thead>
+                        <tr>
+                          <th>Thời gian</th>
+                          <th>Mã giao dịch</th>
+                          <th>Loại nghiệp vụ</th>
+                          <th>Nội dung / Vận đơn</th>
+                          <th style={{ textAlign: 'right' }}>Biến động</th>
+                          <th style={{ textAlign: 'right' }}>Số dư sau GD</th>
+                          <th>Ghi chú</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {financialLedger
+                          .filter((entry) => {
+                            if (financeLedgerTypeFilter !== 'ALL' && entry.type !== financeLedgerTypeFilter) return false;
+                            if (financeLedgerSearch.trim()) {
+                              const q = financeLedgerSearch.trim().toUpperCase();
+                              return (
+                                entry.id.toUpperCase().includes(q) ||
+                                (entry.shipmentCode && entry.shipmentCode.toUpperCase().includes(q)) ||
+                                entry.title.toUpperCase().includes(q)
+                              );
+                            }
+                            return true;
+                          })
+                          .map((entry) => (
+                            <tr key={entry.id}>
+                              <td style={{ whiteSpace: 'nowrap', color: '#64748b', fontSize: '12px' }}>
+                                {formatDate(entry.occurredAt)}
+                              </td>
+                              <td>
+                                <span className="code-pill">{entry.id}</span>
+                              </td>
+                              <td>
+                                {entry.type === 'COD_COLLECTED' ? (
+                                  <span className="finance-badge finance-badge--paid">Thu hộ COD</span>
+                                ) : entry.type === 'SHIPPING_FEE' ? (
+                                  <span className="finance-badge finance-badge--danger">Cước vận chuyển</span>
+                                ) : entry.type === 'RETURN_FEE' ? (
+                                  <span className="finance-badge finance-badge--danger">Phí hoàn 50%</span>
+                                ) : entry.type === 'CLAIM_COMPENSATION' ? (
+                                  <span className="finance-badge finance-badge--paid">Bồi thường sự cố</span>
+                                ) : (
+                                  <span className="finance-badge finance-badge--pending">{entry.type}</span>
+                                )}
+                              </td>
+                              <td>
+                                <div style={{ fontWeight: 600 }}>{entry.title}</div>
+                                {entry.shipmentCode ? (
+                                  <button
+                                    type="button"
+                                    className="link-btn"
+                                    style={{ fontSize: '12px', padding: 0, textDecoration: 'underline' }}
+                                    onClick={() => {
+                                      if (entry.shipmentCode) void openShipmentDetail(entry.shipmentCode);
+                                    }}
+                                  >
+                                    Xem chi tiết đơn #{entry.shipmentCode}
+                                  </button>
+                                ) : null}
+                              </td>
+                              <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }} className={entry.amount >= 0 ? 'money-plus' : 'money-minus'}>
+                                {entry.amount >= 0 ? `+${formatCurrency(entry.amount)}` : `-${formatCurrency(Math.abs(entry.amount))}`}
+                              </td>
+                              <td style={{ textAlign: 'right', fontWeight: 700, whiteSpace: 'nowrap', color: '#102548' }}>
+                                {formatCurrency(entry.balanceAfter)}
+                              </td>
+                              <td className="muted" style={{ fontSize: '12px' }}>{entry.note || '-'}</td>
+                            </tr>
+                          ))}
+                        {financialLedger.length === 0 ? (
+                          <tr>
+                            <td colSpan={7} style={{ textAlign: 'center', padding: '32px' }} className="muted">
+                              Chưa phát sinh giao dịch tài chính nào trong kỳ.
+                            </td>
+                          </tr>
+                        ) : null}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              ) : null}
+
+              {/* Subtab 4: Tài khoản thụ hưởng & Hợp đồng */}
+              {financeSubTab === 'settings' ? (
+                <div className="finance-bank-profile-grid">
+                  {/* Cột 1: Thẻ tài khoản ngân hàng */}
+                  <div className="finance-section-card">
+                    <h3 className="finance-section-title">
+                      <span className="material-symbols-outlined" style={{ color: '#0052cc' }}>credit_card</span>
+                      <span>Tài khoản ngân hàng nhận tiền COD</span>
+                    </h3>
+                    <p className="muted" style={{ margin: 0, fontSize: '13px' }}>
+                      Tiền COD sau khi cấn trừ cước phí sẽ được hệ thống tự động bắn lệnh chuyển khoản Batch Transfer về tài khoản ngân hàng này.
+                    </p>
+
+                    <div className="finance-bank-card">
+                      <div className="finance-bank-card__top">
+                        <div className="finance-bank-card__chip" />
+                        <div className="finance-bank-card__bank-name">{merchantBankProfile.bankName}</div>
+                      </div>
+                      <div>
+                        <div className="muted" style={{ color: 'rgba(255,255,255,0.7)', fontSize: '11px', textTransform: 'uppercase' }}>Số tài khoản thụ hưởng</div>
+                        <div className="finance-bank-card__number">
+                          {merchantBankProfile.accountNumber.replace(/(\d{4})/g, '$1 ').trim()}
+                        </div>
+                      </div>
+                      <div className="finance-bank-card__bottom">
+                        <div>
+                          <div className="muted" style={{ color: 'rgba(255,255,255,0.7)', fontSize: '10px' }}>CHỦ TÀI KHOẢN</div>
+                          <div className="finance-bank-card__holder">{merchantBankProfile.accountHolder}</div>
+                          <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.85)', marginTop: '2px' }}>{merchantBankProfile.branch}</div>
+                        </div>
+                        <span className="finance-bank-card__tag">
+                          {merchantBankProfile.payoutSchedule === 'MWF' ? 'Chi trả Thứ 2 - 4 - 6' : 'Chi trả T+1 Hàng ngày'}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                      <button
+                        type="button"
+                        className="btn btn-secondary"
+                        onClick={() => {
+                          setEditBankForm(merchantBankProfile);
+                          setIsEditingBankModalOpen(true);
+                        }}
+                      >
+                        <span className="material-symbols-outlined" style={{ fontSize: '18px', marginRight: '6px' }}>edit</span>
+                        <span>Cập nhật tài khoản thụ hưởng</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Cột 2: Thông tin Hợp đồng & Pháp lý */}
+                  <div className="finance-section-card">
+                    <h3 className="finance-section-title">
+                      <span className="material-symbols-outlined" style={{ color: '#0052cc' }}>assignment</span>
+                      <span>Hợp đồng dịch vụ & Hạn mức</span>
+                    </h3>
+                    <div style={{ display: 'grid', gap: '14px', fontSize: '13px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #f1f5f9', paddingBottom: '10px' }}>
+                        <span className="muted">Gói hợp đồng:</span>
+                        <strong style={{ color: '#0052cc' }}>HỢP ĐỒNG TIÊU CHUẨN (STANDARD MERCHANT)</strong>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #f1f5f9', paddingBottom: '10px' }}>
+                        <span className="muted">Hình thức ký kết:</span>
+                        <span style={{ color: '#127a56', fontWeight: 600 }}>E-Contract (Đã KYC trực tuyến)</span>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #f1f5f9', paddingBottom: '10px' }}>
+                        <span className="muted">Hạn mức nợ cước cho phép:</span>
+                        <strong style={{ color: '#ba1a1a' }}>-500.000 VNĐ</strong>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #f1f5f9', paddingBottom: '10px' }}>
+                        <span className="muted">Phương thức chi trả:</span>
+                        <span>Batch Transfer tự động qua VietQR / Napas247</span>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #f1f5f9', paddingBottom: '10px' }}>
+                        <span className="muted">Chu kỳ đối soát:</span>
+                        <strong>Thứ 2 - Thứ 4 - Thứ 6 hàng tuần</strong>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #f1f5f9', paddingBottom: '10px' }}>
+                        <span className="muted">Nâng cấp Hợp đồng Doanh nghiệp (VIP):</span>
+                        <span style={{ color: '#0052cc', fontWeight: 600 }}>Liên hệ KAM để hưởng T+1 và Hạn mức 50.000.000đ</span>
+                      </div>
+                    </div>
+
+                    <div style={{ background: '#f8fafc', padding: '14px', borderRadius: '10px', border: '1px solid #e2e8f0', fontSize: '12px', color: '#64748b', lineHeight: 1.5 }}>
+                      <strong>Hỗ trợ kế toán đối soát:</strong> Nếu phát hiện sai lệch số tiền thu hộ COD hoặc cước phí so với thực tế, quý khách vui lòng tạo khiếu nại tại mục <strong>Khiếu nại & Bồi thường</strong> hoặc gửi email về <a href="mailto:finance@nexuslogistics.vn" style={{ color: '#0052cc' }}>finance@nexuslogistics.vn</a> kèm mã phiên đối soát.
+                    </div>
+                  </div>
+                </div>
+              ) : null}
+            </section>
+          ) : null}
+
           {activeView === 'print' ? <section className="print-layout">
             <div className="print-main-column">
               <section className="card print-filters-card">
@@ -5393,7 +6994,7 @@ function MerchantApp(): React.JSX.Element {
 
             <aside className="card print-sidebar-card">
               <div className="print-sidebar-card__header">
-                <span className="print-sidebar-icon">⌘</span>
+                <span className="material-symbols-outlined print-sidebar-icon">print</span>
                 <h3>Cấu hình in</h3>
               </div>
 
@@ -5529,85 +7130,81 @@ function MerchantApp(): React.JSX.Element {
                           <label className="label">Email</label>
                           <input className="input account-readonly-input" value={profile.email} placeholder="Email chua co contract backend" readOnly />
                         </div>
-                        <div className="account-field account-field--span-2">
-                          <label className="label">Tỉnh/Thành lấy hàng</label>
-                          <select
-                            className="input"
-                            value={profile.defaultPickupProvince}
-                            onChange={(e) => {
-                              const province = e.target.value;
-                              setProfile((p) => ({
-                                ...p,
-                                defaultPickupProvince: province,
-                                defaultPickupAddress: composeDefaultPickupAddress(
-                                  p.defaultPickupAddressDetail,
-                                  province,
-                                ),
-                              }));
-                            }}
-                          >
-                            <option value="">Chọn tỉnh / thành tại Việt Nam</option>
-                            {provinceOptions.map((province) => (
-                              <option key={`account-province-${province}`} value={province}>
-                                {province}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-                        <div className="account-field account-field--span-2">
-                          <label className="label">Địa chỉ chi tiết</label>
-                          <textarea
-                            className="textarea account-address-field"
-                            value={profile.defaultPickupAddressDetail}
-                            onChange={(e) => {
-                              const addressDetail = e.target.value;
-                              setProfile((p) => ({
-                                ...p,
-                                defaultPickupAddressDetail: addressDetail,
-                                defaultPickupAddress: composeDefaultPickupAddress(
-                                  addressDetail,
-                                  p.defaultPickupProvince,
-                                ),
-                              }));
-                            }}
-                            placeholder="Số nhà, tên đường, phường/xã..."
-                          />
-                        </div>
-                        <div className="account-field account-field--span-2">
-                          <label className="label">Địa chỉ lấy hàng mặc định</label>
-                          <textarea
-                            className="textarea account-address-field account-readonly-input"
-                            value={profile.defaultPickupAddress}
-                            placeholder="Hệ thống tự ghép từ địa chỉ chi tiết và tỉnh/thành"
-                            readOnly
-                          />
-                          <span className="muted">
-                            Bưu cục mặc định:{' '}
-                            {selectedAccountProvinceHub
-                              ? `${selectedAccountProvinceHub.hubName} (${selectedAccountProvinceHub.hubCode})`
-                              : 'Chọn tỉnh/thành để hệ thống gợi ý bưu cục.'}
-                          </span>
-                          <div className="account-gps-card">
-                            <span className="material-symbols-outlined account-gps-icon">location_on</span>
-                            <div className="account-gps-content">
-                              <h4>Tọa độ GPS điểm lấy hàng (Auto-dispatch)</h4>
-                              <p>
-                                Hệ thống tự động phân giải tọa độ địa lý (Geocoding) khi bạn lưu địa chỉ, đảm bảo điều phối tài xế lấy hàng chính xác theo vị trí kho.
-                              </p>
-                              <div className="account-gps-coords">
-                                📍{' '}
-                                {profile.latitude && profile.longitude
-                                  ? `${profile.latitude.toFixed(5)}, ${profile.longitude.toFixed(5)} (Đã xác thực tọa độ kho)`
-                                  : selectedAccountProvinceHub?.latitude && selectedAccountProvinceHub?.longitude
-                                  ? `${selectedAccountProvinceHub.latitude.toFixed(5)}, ${selectedAccountProvinceHub.longitude.toFixed(5)} (Tạm tính theo bưu cục)`
-                                  : 'Chưa có tọa độ — Hệ thống sẽ tự động xác định khi bạn lưu thay đổi'}
+                        {/* Fixed Warehouse & Auto-Dispatch Hub Card */}
+                        <div className="warehouse-fixed-card account-field--span-2">
+                          <div className="warehouse-card-header">
+                            <div className="warehouse-header-title">
+                              <span className="material-symbols-outlined" style={{ fontSize: 24, color: '#0052cc' }}>warehouse</span>
+                              <div>
+                                <h4>Kho Hàng & Điểm Lấy Định Danh (Store Location)</h4>
+                                <span className="muted" style={{ fontSize: 11 }}>Cố định theo phân vùng bưu chính & Tuyến shipper</span>
                               </div>
                             </div>
+                            <span className="warehouse-badge-lock">
+                              <span className="material-symbols-outlined" style={{ fontSize: 14 }}>lock</span>
+                              <span>Vị trí cố định (Đã khóa)</span>
+                            </span>
+                          </div>
+
+                          <div className="warehouse-grid-info">
+                            <div className="warehouse-info-item">
+                              <span className="warehouse-info-label">
+                                <span className="material-symbols-outlined" style={{ fontSize: 14, color: '#0052cc' }}>storefront</span>
+                                <span>Tên Kho / Store ID</span>
+                              </span>
+                              <span className="warehouse-info-value">{profile.shopName || session.user.username} (Mã: {session.user.id.slice(0, 8)})</span>
+                            </div>
+
+                            <div className="warehouse-info-item">
+                              <span className="warehouse-info-label">
+                                <span className="material-symbols-outlined" style={{ fontSize: 14, color: '#0052cc' }}>hub</span>
+                                <span>Bưu Cục Quản Lý (Origin Hub)</span>
+                              </span>
+                              <span className="warehouse-info-value">
+                                {selectedAccountProvinceHub
+                                  ? `${selectedAccountProvinceHub.hubName} (${selectedAccountProvinceHub.hubCode})`
+                                  : 'Hub Bưu Chính Khu Vực'}
+                              </span>
+                            </div>
+                          </div>
+
+                          <div className="warehouse-info-item" style={{ marginBottom: 14 }}>
+                            <span className="warehouse-info-label">
+                              <span className="material-symbols-outlined" style={{ fontSize: 14, color: '#0052cc' }}>location_on</span>
+                              <span>Địa chỉ kho lấy hàng vật lý</span>
+                            </span>
+                            <span className="warehouse-info-value" style={{ fontSize: 13, color: '#1e293b' }}>
+                              {profile.defaultPickupAddress || `${profile.defaultPickupAddressDetail || 'Địa chỉ kho'}, ${profile.defaultPickupProvince || 'TP.HCM'}`}
+                            </span>
+                          </div>
+
+                          <div className="warehouse-gps-strip">
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                              <span className="material-symbols-outlined" style={{ fontSize: 20, color: '#0284c7' }}>my_location</span>
+                              <div>
+                                <div style={{ fontSize: 11, fontWeight: 700, color: '#0f172a' }}>TỌA ĐỘ GPS AUTO-DISPATCH</div>
+                                <div style={{ fontSize: 11, color: '#64748b' }}>Phục vụ thuật toán phân vùng đa giác Tuyến bưu tá</div>
+                              </div>
+                            </div>
+                            <span className="warehouse-coords-code">
+                              {profile.latitude && profile.longitude
+                                ? `${profile.latitude.toFixed(5)}, ${profile.longitude.toFixed(5)}`
+                                : selectedAccountProvinceHub?.latitude && selectedAccountProvinceHub?.longitude
+                                ? `${selectedAccountProvinceHub.latitude.toFixed(5)}, ${selectedAccountProvinceHub.longitude.toFixed(5)}`
+                                : '10.86500, 106.68500'}
+                            </span>
+                          </div>
+
+                          <div className="warehouse-notice-box">
+                            <span className="material-symbols-outlined" style={{ fontSize: 18, color: '#d97706', flexShrink: 0, marginTop: 1 }}>info</span>
+                            <span>
+                              <strong>Quy chuẩn bưu chính:</strong> Mỗi tài khoản Store gắn liền với một tọa độ kho cố định để đảm bảo bưu tá lấy hàng chính xác theo tuyến. Nếu Quý khách có thêm kho tại địa chỉ khác, vui lòng liên hệ bưu cục để được cấp thêm <strong>Mã Store ID chi nhánh mới</strong>.
+                            </span>
                           </div>
                         </div>
                       </div>
                       <div className="account-profile-actions">
-                        <button className="btn btn-primary" type="submit" disabled={accountSaving}>{accountSaving ? 'Dang luu...' : 'Luu thay doi'}</button>
+                        <button className="btn btn-primary" type="submit" disabled={accountSaving}>{accountSaving ? 'Đang lưu...' : 'Lưu thông tin tài khoản'}</button>
                       </div>
                     </form>
                   </div>
@@ -5618,7 +7215,7 @@ function MerchantApp(): React.JSX.Element {
               <div className="account-side-column">
                 <section className="card account-security-card">
                   <div className="account-card-header">
-                    <span className="account-card-icon">PW</span>
+                    <span className="material-symbols-outlined account-card-icon">lock_reset</span>
                     <h3>Đổi mật khẩu</h3>
                   </div>
                   <form className="account-password-form" onSubmit={(e) => { void changeAccountPassword(e); }}>
@@ -5665,7 +7262,7 @@ function MerchantApp(): React.JSX.Element {
                 <button className="notifications-tab" type="button">Hệ thống</button>
                 <button className="notifications-tab" type="button">Khuyến mãi</button>
               </div>
-              <button className="notifications-mark-all" onClick={() => setNotifications((prev) => prev.map((n) => ({ ...n, read: true })))}><span className="notifications-inline-icon">✓</span><span>Đánh dấu tất cả là đã đọc</span></button>
+              <button className="notifications-mark-all" onClick={() => setNotifications((prev) => prev.map((n) => ({ ...n, read: true })))}><span className="material-symbols-outlined notifications-inline-icon">done_all</span><span>Đánh dấu tất cả là đã đọc</span></button>
             </div>
 
             <div className="notifications-list">
@@ -5673,24 +7270,24 @@ function MerchantApp(): React.JSX.Element {
                 const accentClass = !n.read ? 'notifications-card--unread' : 'notifications-card--read';
                 let levelClass = 'info';
                 let typeLabel = 'Hỗ trợ';
-                let iconLabel = '•';
+                let iconSymbol = 'notifications';
                 if (n.level === 'success') {
                   levelClass = 'success';
                   typeLabel = 'Đơn hàng';
-                  iconLabel = '✓';
+                  iconSymbol = 'check_circle';
                 } else if (n.level === 'error') {
                   levelClass = 'error';
                   typeLabel = 'Hệ thống';
-                  iconLabel = '!';
+                  iconSymbol = 'warning';
                 } else if (n.level === 'info') {
                   levelClass = 'info';
                   typeLabel = 'Hỗ trợ';
-                  iconLabel = '•';
+                  iconSymbol = 'notifications';
                 }
                 return <article className={`notifications-card ${accentClass}`} key={n.id}>
                   {!n.read ? <div className="notifications-card-accent" /> : null}
                   <div className={`notifications-card-icon notifications-card-icon--${levelClass}`}>
-                    <span>{iconLabel}</span>
+                    <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>{iconSymbol}</span>
                   </div>
                   <div className="notifications-card-body">
                     <div className="notifications-card-head">
@@ -5719,12 +7316,194 @@ function MerchantApp(): React.JSX.Element {
         </main>
       </div>
 
+      {isEditingBankModalOpen ? (
+        <div className="ops-modal-backdrop" onClick={() => setIsEditingBankModalOpen(false)}>
+          <div className="ops-modal-card" style={{ maxWidth: '480px', padding: '24px' }} onClick={(e) => e.stopPropagation()}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+              <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 800, color: 'var(--stitch-on-surface)' }}>
+                Cập nhật tài khoản thụ hưởng COD
+              </h3>
+              <button type="button" className="ops-modal-close-btn" onClick={() => setIsEditingBankModalOpen(false)}>
+                <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>close</span>
+              </button>
+            </div>
+            <form onSubmit={handleSaveBankProfile} style={{ display: 'grid', gap: '14px' }}>
+              <div>
+                <label className="label">Ngân hàng thụ hưởng</label>
+                <select
+                  className="input"
+                  value={editBankForm.bankName}
+                  onChange={(e) => setEditBankForm({ ...editBankForm, bankName: e.target.value })}
+                  required
+                >
+                  <option value="Techcombank">Techcombank (TCB)</option>
+                  <option value="Vietcombank">Vietcombank (VCB)</option>
+                  <option value="MBBank">MBBank (Ngân hàng Quân Đội)</option>
+                  <option value="VPBank">VPBank</option>
+                  <option value="ACB">ACB (Á Châu)</option>
+                  <option value="BIDV">BIDV</option>
+                  <option value="VietinBank">VietinBank</option>
+                  <option value="TPBank">TPBank</option>
+                  <option value="Sacombank">Sacombank</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="label">Số tài khoản ngân hàng</label>
+                <input
+                  className="input"
+                  value={editBankForm.accountNumber}
+                  onChange={(e) => setEditBankForm({ ...editBankForm, accountNumber: e.target.value })}
+                  placeholder="Ví dụ: 19036788992011"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="label">Tên chủ tài khoản (In hoa không dấu)</label>
+                <input
+                  className="input"
+                  value={editBankForm.accountHolder}
+                  onChange={(e) => setEditBankForm({ ...editBankForm, accountHolder: e.target.value.toUpperCase() })}
+                  placeholder="Ví dụ: NGUYEN VAN A"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="label">Chi nhánh ngân hàng</label>
+                <input
+                  className="input"
+                  value={editBankForm.branch}
+                  onChange={(e) => setEditBankForm({ ...editBankForm, branch: e.target.value })}
+                  placeholder="Ví dụ: Chi nhánh Ba Đình, Hà Nội"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="label">Chu kỳ nhận tiền COD</label>
+                <select
+                  className="input"
+                  value={editBankForm.payoutSchedule}
+                  onChange={(e) => setEditBankForm({ ...editBankForm, payoutSchedule: e.target.value as 'MWF' | 'DAILY' })}
+                >
+                  <option value="MWF">Thứ 2 - Thứ 4 - Thứ 6 hàng tuần (Mặc định)</option>
+                  <option value="DAILY">Hàng ngày T+1 (Dành cho đối tác VIP)</option>
+                </select>
+              </div>
+
+              <div style={{ background: '#f8fafc', padding: '10px 12px', borderRadius: '8px', fontSize: '12px', color: '#64748b' }}>
+                Lưu ý: Tên chủ tài khoản ngân hàng phải trùng khớp với người đại diện hợp đồng hoặc chủ doanh nghiệp để đảm bảo tính pháp lý khi giải ngân COD.
+              </div>
+
+              <div style={{ marginTop: '10px', display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+                <button type="button" className="btn btn-secondary" onClick={() => setIsEditingBankModalOpen(false)}>
+                  Hủy
+                </button>
+                <button type="submit" className="btn btn-primary">
+                  Lưu tài khoản
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      ) : null}
+
+      {selectedSettlementBatch ? (
+        <div className="ops-modal-backdrop" onClick={() => setSelectedSettlementBatch(null)}>
+          <div className="ops-modal-card" style={{ maxWidth: '800px', padding: '24px' }} onClick={(e) => e.stopPropagation()}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+              <div>
+                <h3 style={{ margin: '0 0 4px', fontSize: '18px', fontWeight: 800, color: 'var(--stitch-on-surface)' }}>
+                  Chi tiết kỳ đối soát #{selectedSettlementBatch.code}
+                </h3>
+                <div className="muted" style={{ fontSize: '13px' }}>
+                  {selectedSettlementBatch.cycleName} • {selectedSettlementBatch.orderCount} đơn hàng
+                </div>
+              </div>
+              <button type="button" className="ops-modal-close-btn" onClick={() => setSelectedSettlementBatch(null)}>
+                <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>close</span>
+              </button>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '12px', padding: '14px', background: '#f8fafc', borderRadius: '10px', marginBottom: '16px', border: '1px solid #e2e8f0' }}>
+              <div>
+                <div className="muted" style={{ fontSize: '11px', textTransform: 'uppercase' }}>Tổng COD thu hộ</div>
+                <div style={{ fontWeight: 700, color: '#127a56' }}>+{formatCurrency(selectedSettlementBatch.codTotal)}</div>
+              </div>
+              <div>
+                <div className="muted" style={{ fontSize: '11px', textTransform: 'uppercase' }}>Cước cấn trừ</div>
+                <div style={{ fontWeight: 700, color: '#ba1a1a' }}>-{formatCurrency(selectedSettlementBatch.feeTotal)}</div>
+              </div>
+              <div>
+                <div className="muted" style={{ fontSize: '11px', textTransform: 'uppercase' }}>Thực nhận</div>
+                <div style={{ fontWeight: 800, fontSize: '16px', color: '#0052cc' }}>{formatCurrency(selectedSettlementBatch.netPayout)}</div>
+              </div>
+              <div>
+                <div className="muted" style={{ fontSize: '11px', textTransform: 'uppercase' }}>Trạng thái</div>
+                <div>{selectedSettlementBatch.status === 'PAID' ? 'Đã chi trả' : 'Đang xử lý'}</div>
+              </div>
+            </div>
+
+            <div style={{ maxHeight: '340px', overflowY: 'auto', border: '1px solid #e2e8f0', borderRadius: '8px', marginBottom: '16px' }}>
+              <table className="finance-table" style={{ margin: 0 }}>
+                <thead>
+                  <tr>
+                    <th>Mã vận đơn</th>
+                    <th>Người nhận</th>
+                    <th>SĐT</th>
+                    <th style={{ textAlign: 'right' }}>Tiền COD</th>
+                    <th style={{ textAlign: 'right' }}>Cước phí</th>
+                    <th style={{ textAlign: 'right' }}>Thực nhận</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {shipmentRows
+                    .filter((r) => selectedSettlementBatch.shipmentCodes.includes(r.shipment.code))
+                    .map((r) => (
+                      <tr key={r.shipment.id}>
+                        <td><span className="code-pill">{r.shipment.code}</span></td>
+                        <td>{r.receiverName}</td>
+                        <td>{r.receiverPhone}</td>
+                        <td style={{ textAlign: 'right' }} className="money-plus">+{formatCurrency(r.codAmount)}</td>
+                        <td style={{ textAlign: 'right' }} className="money-minus">-{formatCurrency(r.feeEstimate)}</td>
+                        <td style={{ textAlign: 'right', fontWeight: 700 }}>{formatCurrency(r.codAmount - r.feeEstimate)}</td>
+                      </tr>
+                    ))}
+                </tbody>
+              </table>
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={() => exportBatchToCsv(selectedSettlementBatch)}
+              >
+                <span className="material-symbols-outlined" style={{ fontSize: '16px', marginRight: '6px' }}>download</span>
+                <span>Tải bảng kê Excel (.csv)</span>
+              </button>
+              <button
+                type="button"
+                className="btn btn-ghost"
+                onClick={() => setSelectedSettlementBatch(null)}
+              >
+                Đóng
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
       {showTopupModal ? (
         <div className="ops-modal-backdrop" onClick={() => setShowTopupModal(false)}>
           <div className="ops-modal-card" style={{ maxWidth: '440px', padding: '24px' }} onClick={(e) => e.stopPropagation()}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
               <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 800, color: 'var(--stitch-on-surface)' }}>Thanh toán nợ cước VietQR</h3>
-              <button type="button" className="ops-modal-close-btn" onClick={() => setShowTopupModal(false)}>✕</button>
+              <button type="button" className="ops-modal-close-btn" onClick={() => setShowTopupModal(false)}>
+                <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>close</span>
+              </button>
             </div>
             <div style={{ textAlign: 'center' }}>
               <p className="muted" style={{ fontSize: '13px', margin: '0 0 16px' }}>

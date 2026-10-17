@@ -99,7 +99,7 @@ def generate_svg():
             "tag": "CƯỚC IATA", "tag_bg": "#2563EB",
             "file": "01-pricing-weight.md",
             "title": "Quy chuẩn Trọng lượng Quy đổi",
-            "rule": "Công thức IATA: (D x R x C) / 5000",
+            "rule": "Công thức IATA: (D x R x C) / 6000",
             "cx": 485
         },
         {

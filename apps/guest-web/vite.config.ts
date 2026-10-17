@@ -7,7 +7,19 @@ export default defineConfig({
     host: '0.0.0.0',
     port: 5177,
     proxy: {
+      '/customer': {
+        target: 'http://127.0.0.1:3000',
+        changeOrigin: true,
+      },
       '/public': {
+        target: 'http://127.0.0.1:3000',
+        changeOrigin: true,
+      },
+      '/chat': {
+        target: 'http://127.0.0.1:3000',
+        changeOrigin: true,
+      },
+      '/media': {
         target: 'http://127.0.0.1:3000',
         changeOrigin: true,
       },

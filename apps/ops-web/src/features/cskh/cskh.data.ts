@@ -1,3 +1,5 @@
+import { opsApiClient } from '../../services/api/client';
+import { opsEndpoints } from '../../services/api/endpoints';
 import type {
   CskhInternalNote,
   CskhSummaryStats,
@@ -227,12 +229,33 @@ export function saveCskhTickets(tickets: CskhTicket[]): void {
 }
 
 export async function fetchCskhTicketsApi(): Promise<CskhTicket[]> {
-  await new Promise((r) => setTimeout(r, 120));
+  try {
+    const items = await opsApiClient.request<CskhTicket[]>(opsEndpoints.cskh.list);
+    if (Array.isArray(items) && items.length > 0) {
+      saveCskhTickets(items);
+      return items;
+    }
+  } catch (err) {
+    console.warn('[cskhApi] fetchCskhTickets failed, using local cache fallback', err);
+  }
   return readCskhTickets();
 }
 
 export async function createCskhTicketApi(input: Partial<CskhTicket>): Promise<CskhTicket> {
-  await new Promise((r) => setTimeout(r, 150));
+  try {
+    const created = await opsApiClient.request<CskhTicket>(opsEndpoints.cskh.create, {
+      method: 'POST',
+      body: input,
+    });
+    if (created && created.id) {
+      const current = readCskhTickets();
+      saveCskhTickets([created, ...current]);
+      return created;
+    }
+  } catch (err) {
+    console.warn('[cskhApi] createCskhTicket failed, falling back to local storage', err);
+  }
+
   const current = readCskhTickets();
   const nextNum = current.length + 1;
   const ticketCode = `TCK-202609-${String(nextNum).padStart(3, '0')}`;
@@ -281,7 +304,24 @@ export async function updateCskhTicketStatusApi(
   newStatus: CskhTicketStatus,
   resolutionNote?: string
 ): Promise<CskhTicket> {
-  await new Promise((r) => setTimeout(r, 120));
+  try {
+    const updated = await opsApiClient.request<CskhTicket>(opsEndpoints.cskh.updateStatus(ticketId), {
+      method: 'PATCH',
+      body: { status: newStatus, resolutionNote },
+    });
+    if (updated && updated.id) {
+      const current = readCskhTickets();
+      const idx = current.findIndex((t) => t.id === ticketId);
+      if (idx !== -1) {
+        current[idx] = updated;
+        saveCskhTickets(current);
+      }
+      return updated;
+    }
+  } catch (err) {
+    console.warn('[cskhApi] updateCskhTicketStatus failed, falling back to local', err);
+  }
+
   const current = readCskhTickets();
   const index = current.findIndex((t) => t.id === ticketId);
   if (index === -1) throw new Error('Ticket not found');
@@ -315,7 +355,24 @@ export async function updateCskhTicketStatusApi(
 }
 
 export async function addCskhInternalNoteApi(ticketId: string, content: string): Promise<CskhTicket> {
-  await new Promise((r) => setTimeout(r, 80));
+  try {
+    const updated = await opsApiClient.request<CskhTicket>(opsEndpoints.cskh.addNote(ticketId), {
+      method: 'POST',
+      body: { content, author: 'CSKH Operator', authorRole: 'CSKH Operator' },
+    });
+    if (updated && updated.id) {
+      const current = readCskhTickets();
+      const idx = current.findIndex((t) => t.id === ticketId);
+      if (idx !== -1) {
+        current[idx] = updated;
+        saveCskhTickets(current);
+      }
+      return updated;
+    }
+  } catch (err) {
+    console.warn('[cskhApi] addCskhInternalNote failed, falling back to local', err);
+  }
+
   const current = readCskhTickets();
   const index = current.findIndex((t) => t.id === ticketId);
   if (index === -1) throw new Error('Ticket not found');
@@ -333,6 +390,51 @@ export async function addCskhInternalNoteApi(ticketId: string, content: string):
   current[index] = ticket;
   saveCskhTickets(current);
   return ticket;
+}
+
+export async function escalateCskhTicketToClaimApi(
+  ticketId: string,
+  claimData?: {
+    requestedAmount?: number;
+    declaredValue?: number;
+    damageDescription?: string;
+  }
+): Promise<{ ticket: CskhTicket; claim?: any }> {
+  try {
+    const res = await opsApiClient.request<{ ticket: CskhTicket; claim: any }>(
+      opsEndpoints.cskh.escalateClaim(ticketId),
+      {
+        method: 'POST',
+        body: claimData || {},
+      }
+    );
+    if (res && res.ticket) {
+      const current = readCskhTickets();
+      const idx = current.findIndex((t) => t.id === ticketId);
+      if (idx !== -1) {
+        current[idx] = res.ticket;
+        saveCskhTickets(current);
+      }
+      return res;
+    }
+  } catch (err) {
+    console.warn('[cskhApi] escalateClaim failed, falling back to local', err);
+  }
+
+  // Fallback
+  const current = readCskhTickets();
+  const index = current.findIndex((t) => t.id === ticketId);
+  if (index === -1) throw new Error('Ticket not found');
+
+  const claimCode = `CLM-202610-${Math.floor(100 + Math.random() * 900)}`;
+  const ticket = {
+    ...current[index],
+    status: 'ESCALATED_CLAIMS' as CskhTicketStatus,
+    claimCode,
+  };
+  current[index] = ticket;
+  saveCskhTickets(current);
+  return { ticket, claim: { claimCode, liabilityStage: 'REPORTED' } };
 }
 
 export function computeCskhStats(tickets: CskhTicket[]): CskhSummaryStats {

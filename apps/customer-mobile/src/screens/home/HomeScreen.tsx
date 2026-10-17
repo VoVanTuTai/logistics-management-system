@@ -25,13 +25,14 @@ import { RateCalculatorCard } from './components/RateCalculatorCard';
 import { RecentOrdersSection } from './components/RecentOrdersSection';
 import { NewsAndHighlightsSection } from './components/NewsAndHighlightsSection';
 import { FloatingAiChatModal } from '../../components/FloatingAiChatModal';
+import { NotificationModal } from '../../components/NotificationModal';
 
 type Props = CompositeScreenProps<
   BottomTabScreenProps<MainTabParamList, 'HomeTab'>,
   NativeStackScreenProps<RootStackParamList>
 >;
 
-function mapShipmentToOrderModel(s: ShipmentResponse): OrderModel {
+function mapShipmentToOrderModel(s: ShipmentResponse, targetCategory: 'SENT' | 'RECEIVED' = 'SENT'): OrderModel {
   const meta = (s.metadata as Record<string, any>) || {};
   const sender = meta.sender || {};
   const receiver = meta.receiver || {};
@@ -50,7 +51,7 @@ function mapShipmentToOrderModel(s: ShipmentResponse): OrderModel {
   return {
     id: s.id,
     code: s.code,
-    category: 'SENT',
+    category: targetCategory,
     orderType: 'REGULAR',
     sender: {
       name: sender.name || 'Người gửi',
@@ -95,23 +96,37 @@ export function HomeScreen({ navigation }: Props): React.JSX.Element {
   const user = session?.user;
 
   const [recentOrders, setRecentOrders] = useState<OrderModel[]>([]);
+  const [receivedShipments, setReceivedShipments] = useState<ShipmentResponse[]>([]);
   const [loadingOrders, setLoadingOrders] = useState<boolean>(false);
   const [refreshing, setRefreshing] = useState<boolean>(false);
   const [isChatOpen, setIsChatOpen] = useState<boolean>(false);
+  const [showNotifModal, setShowNotifModal] = useState<boolean>(false);
 
   const fetchRecentShipments = async (showLoading = true) => {
     const token = authStore.getAccessToken();
-    const user = authStore.getUser();
+    const currentUser = authStore.getUser();
     if (!token) return;
 
     if (showLoading) setLoadingOrders(true);
     try {
-      const response = await shipmentApi.getShipments(token, { limit: 5, userId: user?.id });
-      const rawItems: ShipmentResponse[] = Array.isArray(response)
-        ? response
-        : response.items || [];
+      const [sentRes, recRes] = await Promise.allSettled([
+        shipmentApi.getShipments(token, { limit: 5, userId: currentUser?.id }),
+        shipmentApi.getReceivedShipments(token, { limit: 10, phone: currentUser?.phone }),
+      ]);
 
-      setRecentOrders(rawItems.map(mapShipmentToOrderModel));
+      if (sentRes.status === 'fulfilled') {
+        const rawItems: ShipmentResponse[] = Array.isArray(sentRes.value)
+          ? sentRes.value
+          : sentRes.value?.items || [];
+        setRecentOrders(rawItems.map((s) => mapShipmentToOrderModel(s, 'SENT')));
+      }
+
+      if (recRes.status === 'fulfilled') {
+        const rawRec: ShipmentResponse[] = Array.isArray(recRes.value)
+          ? recRes.value
+          : recRes.value?.items || [];
+        setReceivedShipments(rawRec);
+      }
     } catch {
       setRecentOrders([]);
     } finally {
@@ -176,7 +191,8 @@ export function HomeScreen({ navigation }: Props): React.JSX.Element {
         {/* A. HEADER & HERO WITH SEARCH CARD */}
         <HomeHeader
           userName={user?.displayName || user?.username || 'Khách hàng'}
-          onPressNotification={() => {}}
+          notificationCount={receivedShipments.length}
+          onPressNotification={() => setShowNotifModal(true)}
           onPressSearch={handleTracking}
           onPressCreateOrder={handleCreateOrder}
         />
@@ -208,12 +224,12 @@ export function HomeScreen({ navigation }: Props): React.JSX.Element {
         <NewsAndHighlightsSection onPressCreateOrder={handleCreateOrder} />
       </ScrollView>
 
-      {/* FLOATING AI CHATBOT CTA BUTTON */}
+      {/* FLOATING LOGISTICS DISPATCH CTA BUTTON */}
       <View style={styles.floatingContainer}>
         {!isChatOpen && (
           <View style={styles.floatingTag}>
             <View style={styles.pulsingDot} />
-            <Text style={styles.floatingTagText}>Hỏi Trợ Lý AI</Text>
+            <Text style={styles.floatingTagText}>Tổng Đài Bưu Cục</Text>
           </View>
         )}
         <TouchableOpacity
@@ -221,11 +237,8 @@ export function HomeScreen({ navigation }: Props): React.JSX.Element {
           style={styles.floatingBtn}
           onPress={() => setIsChatOpen(true)}
         >
-          <View style={styles.sparkleBadge}>
-            <Text style={styles.sparkleBadgeText}>✨</Text>
-          </View>
-          <Ionicons name="sparkles" size={18} color="#FFFFFF" />
-          <Text style={styles.floatingBtnText}>Trợ Lý AI</Text>
+          <Ionicons name="headset" size={18} color="#FFFFFF" />
+          <Text style={styles.floatingBtnText}>Điều Phối Bưu Cục</Text>
         </TouchableOpacity>
       </View>
 
@@ -233,6 +246,17 @@ export function HomeScreen({ navigation }: Props): React.JSX.Element {
       <FloatingAiChatModal
         visible={isChatOpen}
         onClose={() => setIsChatOpen(false)}
+      />
+
+      {/* NOTIFICATION MODAL (RECEIVED SHIPMENTS & COURIER ALERT) */}
+      <NotificationModal
+        visible={showNotifModal}
+        onClose={() => setShowNotifModal(false)}
+        receivedShipments={receivedShipments}
+        onSelectShipment={(s) => {
+          const ord = mapShipmentToOrderModel(s, 'RECEIVED');
+          navigation.navigate('OrderDetail', { order: ord });
+        }}
       />
     </View>
   );
@@ -279,7 +303,7 @@ const styles = StyleSheet.create({
   floatingBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#4F46E5',
+    backgroundColor: '#1D4ED8',
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderRadius: 28,

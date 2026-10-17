@@ -32,6 +32,7 @@ import {
 import { useAuthStore } from '../store/useAuthStore';
 import { shipmentApi, type ShipmentResponse } from '../services/api/shipment.api';
 import { printShippingLabel } from '../utils/shippingLabelService';
+import { resolveCourierForOrder, formatCourierPhone } from '../utils/courierResolver';
 import qrcode from 'qrcode-generator';
 
 function formatVnd(val?: number): string {
@@ -871,12 +872,20 @@ function OrderDetailModal({
   onPrint: (shipment: ShipmentResponse) => void;
 }) {
   const [copied, setCopied] = useState(false);
+  const [receiptStatus, setReceiptStatus] = useState<'UNCONFIRMED' | 'CONFIRMED' | 'REPORTED_NOT_RECEIVED'>('UNCONFIRMED');
   const meta = shipment.metadata || {};
   const sender = meta.sender || {};
   const receiver = meta.receiver || {};
   const pkg = meta.package || {};
   const service = meta.service || {};
   const badge = getStatusBadgeDetails(shipment.currentStatus);
+
+  const courier = resolveCourierForOrder({
+    courierId: meta.courierId,
+    courierName: meta.courierName,
+    courierPhone: meta.courierPhone,
+    receiverHubCode: receiver.hubCode || meta.receiverHubCode,
+  });
 
   const qrDataUrl = useMemo(() => {
     try {
@@ -1022,6 +1031,130 @@ function OrderDetailModal({
               </div>
             </div>
           </div>
+
+          {/* Courier Info Card */}
+          <div className="p-4 rounded-2xl bg-blue-50/70 border border-blue-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-blue-600 text-white font-bold shadow-md shadow-blue-600/20">
+                <Truck className="h-5 w-5" />
+              </div>
+              <div className="space-y-0.5">
+                <div className="flex items-center gap-2">
+                  <span className="font-extrabold text-slate-900 text-sm">{courier.name}</span>
+                  <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-bold">
+                    Bưu tá phát hàng
+                  </span>
+                </div>
+                <p className="text-[11px] text-slate-500 font-medium">
+                  {courier.hubName} • Tuyến phát trọng điểm
+                </p>
+                <p className="text-xs font-mono font-bold text-blue-700">
+                  {formatCourierPhone(courier.phone)}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 self-end sm:self-center">
+              <a
+                href={`tel:${courier.phone}`}
+                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-sm transition"
+              >
+                <Phone className="h-3.5 w-3.5" />
+                <span>Gọi bưu tá</span>
+              </a>
+              <button
+                type="button"
+                onClick={() => {
+                  navigator.clipboard.writeText(courier.phone);
+                  alert(`Đã sao chép SĐT bưu tá: ${courier.phone}`);
+                }}
+                className="p-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 transition"
+                title="Sao chép SĐT bưu tá"
+              >
+                <Copy className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          </div>
+
+          {/* Receiver Confirmation Section */}
+          {isReceiver ? (
+            <div className="p-4 rounded-2xl bg-white border-2 border-slate-200 shadow-sm space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  {receiptStatus === 'CONFIRMED' ? (
+                    <CheckCircle2 className="h-5 w-5 text-emerald-600" />
+                  ) : receiptStatus === 'REPORTED_NOT_RECEIVED' ? (
+                    <AlertTriangle className="h-5 w-5 text-rose-600" />
+                  ) : (
+                    <Package className="h-5 w-5 text-blue-600" />
+                  )}
+                  <span className="text-xs font-extrabold uppercase tracking-wide text-slate-800">
+                    {receiptStatus === 'CONFIRMED'
+                      ? 'Đã xác nhận nhận hàng'
+                      : receiptStatus === 'REPORTED_NOT_RECEIVED'
+                      ? 'Báo cáo: Chưa nhận được hàng'
+                      : 'Bạn đã nhận được hàng chưa?'}
+                  </span>
+                </div>
+
+                {receiptStatus === 'CONFIRMED' && (
+                  <span className="px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-black uppercase">
+                    Đã nhận an toàn
+                  </span>
+                )}
+                {receiptStatus === 'REPORTED_NOT_RECEIVED' && (
+                  <span className="px-2.5 py-0.5 rounded-full bg-rose-100 text-rose-800 text-[10px] font-black uppercase">
+                    Đang rà soát
+                  </span>
+                )}
+              </div>
+
+              {receiptStatus === 'CONFIRMED' ? (
+                <div className="p-3 bg-emerald-50 rounded-xl border border-emerald-200 text-emerald-900 text-xs flex items-center gap-2">
+                  <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
+                  <span>Bạn đã xác nhận nhận hàng nguyên vẹn thành công. Cảm ơn bạn đã lựa chọn Nexus Logistics!</span>
+                </div>
+              ) : receiptStatus === 'REPORTED_NOT_RECEIVED' ? (
+                <div className="p-3 bg-rose-50 rounded-xl border border-rose-200 text-rose-900 text-xs space-y-1.5">
+                  <div className="font-semibold flex items-center gap-2">
+                    <AlertTriangle className="h-4 w-4 text-rose-600 shrink-0" />
+                    <span>Nexus đã ghi nhận phản ánh của bạn. Bưu cục phát sẽ trực tiếp đối soát hành trình với bưu tá {courier.name}.</span>
+                  </div>
+                  <a
+                    href={`tel:${courier.phone}`}
+                    className="inline-flex items-center gap-1 text-xs font-bold text-rose-700 underline"
+                  >
+                    <Phone className="h-3 w-3" />
+                    Bấm để gọi ngay cho shipper: {courier.phone}
+                  </a>
+                </div>
+              ) : (
+                <div className="space-y-2.5">
+                  <p className="text-xs text-slate-600 leading-relaxed">
+                    Xác nhận nhận hàng giúp bảo vệ quyền lợi bưu chính và làm căn cứ giải quyết tức thì nếu có phát sinh thất lạc:
+                  </p>
+                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setReceiptStatus('CONFIRMED')}
+                      className="flex-1 inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-sm transition"
+                    >
+                      <Check className="h-4 w-4" />
+                      <span>Tôi đã nhận hàng</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setReceiptStatus('REPORTED_NOT_RECEIVED')}
+                      className="flex-1 inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 font-bold text-xs transition"
+                    >
+                      <AlertTriangle className="h-4 w-4 text-rose-600" />
+                      <span>Chưa nhận được</span>
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : null}
 
           {/* Package & Billing Summary */}
           <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-3">

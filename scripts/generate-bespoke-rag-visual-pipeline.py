@@ -220,7 +220,7 @@ def build_svg():
     lines.append('      <rect x="10" y="5" width="330" height="34" rx="5" fill="#F8FAFC" stroke="#E2E8F0" stroke-width="1.2"/>')
     lines.append('      <rect x="20" y="13" width="65" height="18" rx="3" fill="#E0F2FE"/>')
     lines.append('      <text x="52" y="26" class="mono" font-size="9.5px" font-weight="800" fill="#0369A1" text-anchor="middle">#chunk-01</text>')
-    lines.append('      <text x="95" y="27" font-size="11px" font-weight="700" fill="#0F172A">Cước IATA = (D x R x C) / 5000</text>')
+    lines.append('      <text x="95" y="27" font-size="11px" font-weight="700" fill="#0F172A">Cước IATA = (D x R x C) / 6000</text>')
     # Chunk 2 (Highlighted)
     lines.append('      <rect x="10" y="47" width="330" height="38" rx="5" fill="#F0FDF4" stroke="#10B981" stroke-width="1.6"/>')
     lines.append('      <rect x="20" y="56" width="65" height="18" rx="3" fill="#059669"/>')

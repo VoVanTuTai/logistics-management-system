@@ -293,7 +293,7 @@ def generate_svg():
     
     # Tool 2
     lines.append('    <text x="115" y="1162" class="code-line">📐 calc_shipping_fee(length, width, height, weight_kg)</text>')
-    lines.append('    <text x="115" y="1186" class="body-txt">   -> Tính cước thể tích chuẩn IATA: (DxRxC)/5000, đối soát cước tuyến &amp; tiền thu hộ COD.</text>')
+    lines.append('    <text x="115" y="1186" class="body-txt">   -> Tính cước thể tích chuẩn IATA: (DxRxC)/6000, đối soát cước tuyến &amp; tiền thu hộ COD.</text>')
     lines.append('    <text x="1600" y="1162" class="mono" font-size="12px" font-weight="800" fill="#059669" text-anchor="end">Billing Service (:3007)</text>')
 
     # Tool 3
@@ -395,7 +395,7 @@ def generate_svg():
 
     lines.append('    <line x1="985" y1="1830" x2="1765" y2="1830" stroke="#E2E8F0" stroke-width="1.2"/>')
     lines.append('    <text x="985" y="1865" class="code-line">Nghiệp vụ cốt lõi &amp; Cam kết Ground Truth:</text>')
-    lines.append('    <text x="985" y="1895" class="body-txt">• Tính cước thể tích chuẩn IATA quốc tế: Quy đổi = (DxRxC)/5000.</text>')
+    lines.append('    <text x="985" y="1895" class="body-txt">• Tính cước thể tích chuẩn IATA quốc tế: Quy đổi = (DxRxC)/6000.</text>')
     lines.append('    <text x="985" y="1925" class="body-txt">• Đối soát dòng tiền thu hộ COD minh bạch giữa Merchant &amp; Shipper.</text>')
     lines.append('    <text x="985" y="1955" class="body-txt">• Sổ cái kép (Double-Entry Bookkeeping): Bảo toàn tài chính tuyệt đối.</text>')
     lines.append('    <text x="985" y="1985" class="body-txt">• Khóa phân tán Redlock chống trùng lặp giao dịch thanh toán ví.</text>')

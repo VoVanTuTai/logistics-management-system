@@ -1,5 +1,6 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 
 import { colors, spacing } from '../theme';
 
@@ -31,14 +32,18 @@ export function StepIndicator({ currentStep }: StepIndicatorProps): React.JSX.El
                     isDone && styles.doneCircle,
                   ]}
                 >
-                  <Text
-                    style={[
-                      styles.circleText,
-                      (isActive || isDone) && styles.activeCircleText,
-                    ]}
-                  >
-                    {isDone ? '✓' : item.step}
-                  </Text>
+                  {isDone ? (
+                    <Ionicons name="checkmark" size={14} color="#FFFFFF" />
+                  ) : (
+                    <Text
+                      style={[
+                        styles.circleText,
+                        (isActive || isDone) && styles.activeCircleText,
+                      ]}
+                    >
+                      {item.step}
+                    </Text>
+                  )}
                 </View>
                 <Text
                   style={[
