@@ -384,6 +384,13 @@ export function extractShipmentRow(shipment: ShipmentResponse): ShipmentRow {
   const deliveryNote =
     asString(metadata.deliveryNote) || asString(metadata.note) || '-';
 
+  const pricing = asRecord(metadata.pricing);
+  const pricingBreakdown = Array.isArray(pricing?.breakdown)
+    ? (pricing.breakdown as Array<{ code: string; label: string; amount: number; basis?: string }>)
+    : undefined;
+  const chargeableWeightKg = asNumber(pricing?.chargeableWeightKg, 0) || undefined;
+  const pricingZone = asString(pricing?.zone) || undefined;
+
   return {
     shipment,
     senderName,
@@ -407,6 +414,9 @@ export function extractShipmentRow(shipment: ShipmentResponse): ShipmentRow {
     codAmount,
     feeEstimate,
     deliveryNote,
+    pricingBreakdown,
+    chargeableWeightKg,
+    pricingZone,
   };
 }
 
