@@ -18,6 +18,7 @@ export interface HubDto extends MasterdataBaseDto {
   parentCode?: string | null;
   zoneCode: string | null;
   address: string | null;
+  province?: string | null;
   district?: string | null;
   ward?: string | null;
   coverageRadiusKm?: number | null;

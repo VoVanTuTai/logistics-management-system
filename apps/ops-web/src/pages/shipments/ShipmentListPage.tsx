@@ -18,7 +18,7 @@ import { useAuthStore } from '../../store/authStore';
 import { useUiStore } from '../../store/uiStore';
 import { useHubScope } from '../../hooks/useHubScope';
 import { createIdempotencyKey } from '../../utils/idempotency';
-import { resolveBranchHubByProvince } from '../../utils/locationScope';
+import { resolveBranchHubByProvince, resolveDestinationHub } from '../../utils/locationScope';
 import { formatShipmentStatusLabel } from '../../utils/logisticsLabels';
 import { queryKeys } from '../../utils/queryKeys';
 import { exportShipmentsToExcel } from '../../utils/shipmentExcelExporter';
@@ -673,8 +673,14 @@ export function ShipmentListPage(): React.JSX.Element {
 
   const estimatedFee = useMemo(() => estimateFee(walkInForm), [walkInForm]);
   const walkInReceiverHub = useMemo(
-    () => resolveBranchHubByProvince(activeHubs, walkInForm.receiverRegion),
-    [activeHubs, walkInForm.receiverRegion],
+    () =>
+      resolveDestinationHub(
+        activeHubs,
+        walkInForm.receiverRegion,
+        null,
+        walkInForm.receiverAddress,
+      ),
+    [activeHubs, walkInForm.receiverRegion, walkInForm.receiverAddress],
   );
   const pageShipments = shipmentQuery.data?.items ?? EMPTY_SHIPMENTS;
   const deliveryCourierByShipment = useMemo(

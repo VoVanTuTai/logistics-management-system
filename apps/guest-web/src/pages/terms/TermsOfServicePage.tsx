@@ -119,8 +119,8 @@ export function TermsOfServicePage(): React.JSX.Element {
 
         {/* Error State */}
         {!loading && error && (
-          <div className="max-w-xl mx-auto bg-white rounded-3xl border border-red-100 shadow-xl shadow-red-500/5 p-8 text-center space-y-4">
-            <div className="w-12 h-12 rounded-2xl bg-red-50 text-red-600 flex items-center justify-center mx-auto">
+          <div className="max-w-xl mx-auto bg-white border border-red-200 rounded-xl shadow-xl p-8 text-center space-y-4">
+            <div className="w-12 h-12 bg-red-50 text-red-600 flex items-center justify-center mx-auto border border-red-100 rounded-xl">
               <ShieldAlert className="w-6 h-6" />
             </div>
             <div className="space-y-1">
@@ -130,7 +130,7 @@ export function TermsOfServicePage(): React.JSX.Element {
             <button
               type="button"
               onClick={fetchPolicies}
-              className="inline-flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition shadow-md shadow-blue-600/20"
+              className="inline-flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-lg transition shadow-sm"
             >
               <RefreshCw className="w-4 h-4" />
               <span>Thử lại</span>
@@ -166,7 +166,7 @@ export function TermsOfServicePage(): React.JSX.Element {
           type="button"
           onClick={handleScrollToTop}
           aria-label="Cuộn lên đầu trang"
-          className="fixed bottom-8 right-8 z-40 p-3 bg-blue-600 hover:bg-blue-700 text-white rounded-full shadow-lg shadow-blue-600/30 transition duration-200 animate-fade-in focus:outline-none focus:ring-4 focus:ring-blue-500/20"
+          className="fixed bottom-8 right-8 z-40 p-3 bg-blue-600 hover:bg-blue-700 text-white border border-blue-700 rounded-full shadow-lg transition duration-200 focus:outline-none"
         >
           <ArrowUp className="w-5 h-5" />
         </button>

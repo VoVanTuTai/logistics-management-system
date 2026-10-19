@@ -9,7 +9,12 @@ import { useCreateShipmentMutation } from '../../../../features/shipments/shipme
 import { getErrorMessage } from '../../../../services/api/errors';
 import { useAuthStore } from '../../../../store/authStore';
 import { createIdempotencyKey } from '../../../../utils/idempotency';
-import { formatHubFullAddress, resolveBranchHubByProvince } from '../../../../utils/locationScope';
+import {
+  formatHubFullAddress,
+  resolveBranchHubByProvince,
+  resolveDestinationHub,
+  normalizeLocationToken,
+} from '../../../../utils/locationScope';
 import { queryKeys } from '../../../../utils/queryKeys';
 import {
   openShippingLabelPrint,
@@ -359,16 +364,40 @@ export function BranchBusinessOrderCreatePage(): React.JSX.Element {
     return selectedProvince?.wards ?? [];
   }, [selectedProvince]);
 
-  // Bưu cục đích đến phụ trách giao
-  const receiverHub = useMemo(() => {
-    const resolved = resolveBranchHubByProvince(activeHubs, form.receiverRegion);
+  // Danh sách các Hub nhận hàng thuộc tỉnh/thành đã chọn
+  const availableReceiverHubs = useMemo(() => {
+    if (!form.receiverRegion) return [];
+    const provToken = normalizeLocationToken(form.receiverRegion);
+    return activeHubs.filter((hub) => {
+      if (!hub.isActive) return false;
+      const addr = normalizeLocationToken(hub.address ?? '');
+      const name = normalizeLocationToken(hub.name ?? '');
+      const full = normalizeLocationToken(formatHubFullAddress(hub));
+      return (
+        name.includes(provToken) ||
+        addr.includes(provToken) ||
+        full.includes(provToken) ||
+        provToken.includes(name)
+      );
+    });
+  }, [activeHubs, form.receiverRegion]);
+
+  // Bưu cục đích đến tự động phân giải thông minh dựa trên: Tỉnh/Thành + Phường/Xã + Địa chỉ chi tiết
+  const autoResolvedReceiverHub = useMemo(() => {
+    if (!form.receiverRegion) return null;
+    const resolved = resolveDestinationHub(
+      activeHubs,
+      form.receiverRegion,
+      form.receiverWard,
+      form.receiverAddress,
+    );
     if (resolved) return resolved;
     if (form.receiverRegion) {
       const isHn = form.receiverRegion.includes('Hà Nội');
       return {
         id: isHn ? 'hub-hn-hk' : 'hub-hcm-q1',
-        code: isHn ? 'HUB_HN_TX' : 'HUB_HCM_Q1',
-        name: `Bưu cục ${form.receiverRegion}`,
+        code: isHn ? '001001B001' : '003079B001',
+        name: isHn ? 'Hub TP. Hà Nội' : 'Hub TP. Hồ Chí Minh',
         address: form.receiverRegion,
         isActive: true,
         latitude: isHn ? 21.0285 : 10.7769,
@@ -378,7 +407,20 @@ export function BranchBusinessOrderCreatePage(): React.JSX.Element {
       } as HubDto;
     }
     return null;
-  }, [activeHubs, form.receiverRegion]);
+  }, [activeHubs, form.receiverRegion, form.receiverWard, form.receiverAddress]);
+
+  // Bưu cục đích thực tế (ưu tiên override nếu nhân viên chỉ định, còn lại tự động theo phường/xã)
+  const [receiverHubOverride, setReceiverHubOverride] = useState<string>('');
+
+  const receiverHub = useMemo(() => {
+    if (receiverHubOverride) {
+      const manual = activeHubs.find(
+        (h) => h.code.trim().toUpperCase() === receiverHubOverride.trim().toUpperCase(),
+      );
+      if (manual) return manual;
+    }
+    return autoResolvedReceiverHub;
+  }, [receiverHubOverride, activeHubs, autoResolvedReceiverHub]);
 
   // Bưu cục xuất phát lấy hàng
   const senderHub = useMemo(() => {
@@ -446,10 +488,19 @@ export function BranchBusinessOrderCreatePage(): React.JSX.Element {
   };
 
   const handleRegionChange = (region: string) => {
+    setReceiverHubOverride('');
     setForm((current) => ({
       ...current,
       receiverRegion: region,
       receiverWard: '',
+    }));
+  };
+
+  const handleWardChange = (ward: string) => {
+    setReceiverHubOverride('');
+    setForm((current) => ({
+      ...current,
+      receiverWard: ward,
     }));
   };
 
@@ -823,6 +874,11 @@ export function BranchBusinessOrderCreatePage(): React.JSX.Element {
               <span className="ops-branch-order-create__route-arrow">➔</span>
               <span className="ops-branch-order-create__route-point">
                 🎯 Nhận: <strong>[{receiverHub.code}] {receiverHub.name}</strong>
+                {form.receiverWard ? (
+                  <span className="ops-branch-order-create__coords-tag" style={{ color: '#0d9488', fontWeight: 700 }}>
+                    [{form.receiverWard}]
+                  </span>
+                ) : null}
                 {receiverHub.latitude && receiverHub.longitude ? (
                   <span className="ops-branch-order-create__coords-tag">
                     ({receiverHub.latitude.toFixed(4)}, {receiverHub.longitude.toFixed(4)})
@@ -884,7 +940,7 @@ export function BranchBusinessOrderCreatePage(): React.JSX.Element {
             <span>Phường/Xã nhận hàng</span>
             <select
               value={form.receiverWard}
-              onChange={(event) => updateForm('receiverWard', event.target.value)}
+              onChange={(event) => handleWardChange(event.target.value)}
               disabled={!form.receiverRegion || wardOptions.length === 0}
             >
               <option value="">
@@ -899,6 +955,45 @@ export function BranchBusinessOrderCreatePage(): React.JSX.Element {
                   {ward.name}
                 </option>
               ))}
+            </select>
+          </label>
+
+          <label className="ops-branch-order-create__field">
+            <span>
+              Bưu cục phát (Hub nhận)
+              {receiverHub && (
+                <span className="ops-branch-order-create__hub-status-badge">
+                  {receiverHubOverride
+                    ? '• Chỉ định thủ công'
+                    : form.receiverWard && receiverHub.code === autoResolvedReceiverHub?.code
+                    ? '• Khớp theo phường'
+                    : '• Hub cấp Tỉnh/Thành'}
+                </span>
+              )}
+            </span>
+            <select
+              value={receiverHub?.code || ''}
+              onChange={(event) => setReceiverHubOverride(event.target.value)}
+              disabled={!form.receiverRegion}
+            >
+              {!form.receiverRegion ? (
+                <option value="">Chọn tỉnh/thành trước</option>
+              ) : (
+                <>
+                  {receiverHub &&
+                    !availableReceiverHubs.some((h) => h.code === receiverHub.code) && (
+                      <option value={receiverHub.code}>
+                        [{receiverHub.code}] {receiverHub.name} (Tự động)
+                      </option>
+                    )}
+                  {availableReceiverHubs.map((hub) => (
+                    <option key={hub.code} value={hub.code}>
+                      [{hub.code}] {hub.name}{' '}
+                      {hub.code === autoResolvedReceiverHub?.code ? '★ Đang khớp' : ''}
+                    </option>
+                  ))}
+                </>
+              )}
             </select>
           </label>
 

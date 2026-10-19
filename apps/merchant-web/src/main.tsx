@@ -6,7 +6,6 @@ import {
   asNumber,
   asRecord,
   buildShipmentMetadata,
-  computeEstimatedFee,
   extractErrorMessage,
   extractShipmentRow,
   formatCurrency,
@@ -203,6 +202,71 @@ function normalizeLocationKey(value: string): string {
     .replace(/[\u0300-\u036f]/g, '')
     .replace(/[^a-zA-Z0-9]/g, '')
     .toUpperCase();
+}
+
+const PRICING_METRO_CITIES = new Set([
+  'HANOI',
+  'HN',
+  'TPHANOI',
+  'THANHPHOHANOI',
+  'HOCHIMINH',
+  'TPHOCHIMINH',
+  'THANHPHOHOCHIMINH',
+  'SAIGON',
+  'HCM',
+  'DANANG',
+  'DN',
+  'TPDANANG',
+  'THANHPHODANANG',
+]);
+
+function computeAccurateEstimatedFee(
+  form: CreateShipmentForm,
+  senderProvince?: string | null,
+  receiverProvince?: string | null,
+): number {
+  const serviceType = String(form.serviceType || 'STANDARD').toUpperCase();
+  let baseFee = 18000;
+  let extraRate = 3500;
+
+  if (serviceType.includes('SAME') || serviceType.includes('SUPER') || serviceType.includes('HOA_TOC')) {
+    baseFee = 42000;
+    extraRate = 8000;
+  } else if (serviceType.includes('EXPRESS') || serviceType.includes('NHANH')) {
+    baseFee = 28000;
+    extraRate = 5000;
+  }
+
+  const actualWeight = Math.max(0, asNumber(form.weightKg, 0));
+  const length = Math.max(0, asNumber(form.lengthCm, 0));
+  const width = Math.max(0, asNumber(form.widthCm, 0));
+  const height = Math.max(0, asNumber(form.heightCm, 0));
+
+  const volumetricWeight =
+    length > 0 && width > 0 && height > 0
+      ? (length * width * height) / 6000
+      : 0;
+
+  const chargeableWeight = Math.max(actualWeight, volumetricWeight);
+  const extraHalfKgUnits = Math.max(0, Math.ceil((chargeableWeight - 0.5) / 0.5));
+  const weightFee = extraHalfKgUnits * extraRate;
+
+  const normSender = normalizeLocationKey(senderProvince || form.senderProvince || '');
+  const normReceiver = normalizeLocationKey(receiverProvince || form.receiverProvince || form.receiverRegion || '');
+
+  let zoneFee = 0;
+  if (normSender && normReceiver && normSender === normReceiver) {
+    zoneFee = 0;
+  } else if (PRICING_METRO_CITIES.has(normSender) && PRICING_METRO_CITIES.has(normReceiver)) {
+    zoneFee = 7000;
+  } else if (normSender && normReceiver) {
+    zoneFee = 12000;
+  }
+
+  const cod = Math.max(0, asNumber(form.codAmount, 0));
+  const codFee = cod > 0 ? Math.min(Math.max(Math.round(cod * 0.005), 5000), 35000) : 0;
+
+  return Math.round(baseFee + weightFee + zoneFee + codFee);
 }
 
 function resolveProvinceLabel(rawProvince: string): string | null {
@@ -1230,8 +1294,6 @@ function MerchantApp(): React.JSX.Element {
     [shipmentRows, returnCode],
   );
   const unreadNotifications = useMemo(() => notifications.filter((n) => !n.read).length, [notifications]);
-  const autoEstimatedFee = useMemo(() => computeEstimatedFee(createForm), [createForm]);
-  const effectiveFee = pricingQuote?.totalFee ?? quotedFee ?? autoEstimatedFee;
   const hubLocationMap = useMemo(
     () => new Map(hubLocations.map((location) => [location.hubCode, location])),
     [hubLocations],
@@ -1287,6 +1349,14 @@ function MerchantApp(): React.JSX.Element {
       createForm.receiverWard,
     ],
   );
+  const autoEstimatedFee = useMemo(() => {
+    return computeAccurateEstimatedFee(
+      createForm,
+      lockedSenderHub?.province ?? createForm.senderProvince,
+      selectedReceiverHub?.province ?? createForm.receiverProvince,
+    );
+  }, [createForm, lockedSenderHub, selectedReceiverHub]);
+  const effectiveFee = pricingQuote?.totalFee ?? quotedFee ?? autoEstimatedFee;
   const senderComposedAddress = useMemo(
     () =>
       [createForm.senderAddressDetail.trim(), createForm.senderWard, createForm.senderProvince]
@@ -2701,12 +2771,24 @@ function MerchantApp(): React.JSX.Element {
   }
 
   async function quoteCreateShipmentFee(
-    form: CreateShipmentForm = createForm,
+    form?: CreateShipmentForm,
     options: { updateUi?: boolean } = {},
   ): Promise<PricingQuoteResponse> {
     if (!session) {
       throw new Error('Session is required');
     }
+
+    const targetReceiverProv = selectedReceiverHub?.province || createForm.receiverProvince;
+    const targetSenderProv = lockedSenderHub?.province || createForm.senderProvince;
+    const effectiveForm: CreateShipmentForm = form ?? {
+      ...createForm,
+      senderProvince: targetSenderProv,
+      senderHubCode: lockedSenderHub?.hubCode || createForm.senderHubCode,
+      receiverProvince: targetReceiverProv,
+      receiverRegion: targetReceiverProv,
+      receiverHubCode: selectedReceiverHub?.hubCode || createForm.receiverHubCode,
+      receiverWard: selectedReceiverHub?.ward || createForm.receiverWard,
+    };
 
     const shouldUpdateUi = options.updateUi ?? true;
 
@@ -2716,7 +2798,7 @@ function MerchantApp(): React.JSX.Element {
     }
 
     try {
-      const quote = await requestPricingQuote(form, session.accessToken);
+      const quote = await requestPricingQuote(effectiveForm, session.accessToken);
 
       if (shouldUpdateUi) {
         setPricingQuote(quote);
@@ -2738,6 +2820,43 @@ function MerchantApp(): React.JSX.Element {
       }
     }
   }
+
+  // Tự động báo giá (debounce) thời gian thực khi Merchant điều chỉnh thông số đơn hàng
+  useEffect(() => {
+    if (activeView !== 'create-shipment' || !session) {
+      return;
+    }
+
+    const targetReceiverProv = selectedReceiverHub?.province || createForm.receiverProvince;
+    const weightNum = Number(createForm.weightKg || 0);
+
+    if (!targetReceiverProv || weightNum <= 0) {
+      setPricingQuote(null);
+      setQuotedFee(null);
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      void quoteCreateShipmentFee(undefined, { updateUi: true }).catch(() => {
+        // Fallback tự động hiển thị autoEstimatedFee nếu mạng gián đoạn
+      });
+    }, 400);
+
+    return () => clearTimeout(timer);
+  }, [
+    activeView,
+    session,
+    lockedSenderHub,
+    selectedReceiverHub,
+    createForm.receiverProvince,
+    createForm.receiverHubCode,
+    createForm.weightKg,
+    createForm.lengthCm,
+    createForm.widthCm,
+    createForm.heightCm,
+    createForm.serviceType,
+    createForm.codAmount,
+  ]);
 
   async function submitCreateShipment(withPickup: boolean): Promise<void> {
     if (!session) return;
