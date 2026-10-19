@@ -200,11 +200,11 @@ if (-not $SkipMobile) {
 
   $courierDir = Join-Path $rootDir 'apps/courier-mobile'
   Start-Process powershell -ArgumentList "-NoExit", "-Command", "cd '$courierDir'; npm run start"
-  Write-Host "  [OK] Courier Mobile started in a new PowerShell window (Port 8081)"
+  Write-Host "  [OK] Courier Mobile started in a new PowerShell window (Port 8081+, auto-switch)"
 
   $customerDir = Join-Path $rootDir 'apps/customer-mobile'
   Start-Process powershell -ArgumentList "-NoExit", "-Command", "cd '$customerDir'; npm run start"
-  Write-Host "  [OK] Customer Mobile started in a new PowerShell window (Port 8082)"
+  Write-Host "  [OK] Customer Mobile started in a new PowerShell window (Port 8082+, auto-switch)"
 }
 
 Write-Host "`n=================================================" -ForegroundColor Green
@@ -216,8 +216,8 @@ Write-Host " Ops Web:         http://localhost:5173"
 Write-Host " Merchant Web:    http://localhost:5174"
 Write-Host " Admin Web:       http://localhost:5175"
 Write-Host " Guest Web:       http://localhost:5177"
-Write-Host " Courier Mobile:  Expo Port 8081"
-Write-Host " Customer Mobile: Expo Port 8082"
+Write-Host " Courier Mobile:  Expo Port 8081 (auto-switch if in use)"
+Write-Host " Customer Mobile: Expo Port 8082 (auto-switch if in use)"
 Write-Host "-------------------------------------------------"
 Write-Host " Demo Logins (Password for all: password):"
 Write-Host "   Merchant:  41100001"

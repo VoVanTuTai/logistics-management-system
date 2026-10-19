@@ -34,7 +34,7 @@ function loadDotEnvFile() {
     const rawValue = trimmedLine.slice(separatorIndex + 1).trim();
     const value = rawValue.replace(/^(['"])(.*)\1$/, '$2');
 
-    if (!process.env[key] || key.startsWith('EXPO_PUBLIC_')) {
+    if (process.env[key] === undefined) {
       process.env[key] = value;
     }
   }
@@ -42,6 +42,7 @@ function loadDotEnvFile() {
 
 function parseArgs(argv) {
   const lanIp = resolveLanIp();
+  let hasExplicitGateway = false;
   const options = {
     port: DEFAULT_PORT,
     host: 'localhost',
@@ -106,11 +107,21 @@ function parseArgs(argv) {
 
     if (arg.startsWith('--gateway=')) {
       options.gateway = normalizeBaseUrl(arg.slice('--gateway='.length));
+      hasExplicitGateway = true;
       continue;
     }
 
     if (arg.startsWith('--courier-id=')) {
       options.courierId = arg.slice('--courier-id='.length).trim() || options.courierId;
+    }
+  }
+
+  if (!hasExplicitGateway && options.lanIp) {
+    if (
+      !options.gateway ||
+      (isPrivateOrLocalUrl(options.gateway) && !options.gateway.includes(options.lanIp))
+    ) {
+      options.gateway = `http://${options.lanIp}:3000`;
     }
   }
 
@@ -120,6 +131,20 @@ function parseArgs(argv) {
 
   options.gateway = normalizeBaseUrl(options.gateway);
   return options;
+}
+
+function isPrivateOrLocalUrl(url) {
+  try {
+    const parsed = new URL(url);
+    const host = parsed.hostname;
+    if (host === 'localhost' || host === '127.0.0.1') return true;
+    if (/^192\.168\.\d+\.\d+$/.test(host)) return true;
+    if (/^10\.\d+\.\d+\.\d+$/.test(host)) return true;
+    if (/^172\.(1[6-9]|2[0-9]|3[0-1])\.\d+\.\d+$/.test(host)) return true;
+    return false;
+  } catch {
+    return false;
+  }
 }
 
 function isValidLanAddress(addressInfo) {
@@ -135,19 +160,46 @@ function isValidLanAddress(addressInfo) {
 function priorityOfInterface(interfaceName) {
   const normalizedName = interfaceName.toLowerCase();
 
-  if (normalizedName.includes('wi-fi') || normalizedName.includes('wifi')) {
+  // Primary Wi-Fi interfaces across OSes (macOS: en0, Linux: wlan0/wlp, Windows: Wi-Fi/wlan)
+  if (
+    normalizedName === 'en0' ||
+    normalizedName.includes('wi-fi') ||
+    normalizedName.includes('wifi') ||
+    normalizedName.startsWith('wlan') ||
+    normalizedName.startsWith('wlp')
+  ) {
     return 0;
   }
 
-  if (normalizedName.includes('ethernet') || normalizedName.startsWith('eth')) {
+  // Secondary Wi-Fi or primary Ethernet (macOS: en1, Linux/Windows: eth0, ethernet)
+  if (
+    normalizedName === 'en1' ||
+    normalizedName.includes('ethernet') ||
+    normalizedName.startsWith('eth') ||
+    normalizedName.startsWith('enp')
+  ) {
     return 1;
   }
 
+  if (normalizedName.startsWith('en')) {
+    return 2;
+  }
+
+  // Virtual / VPN / Docker / WSL / Apple Wireless Direct Link / Tunnel
   if (
     normalizedName.includes('virtual') ||
     normalizedName.includes('vethernet') ||
     normalizedName.includes('hyper-v') ||
-    normalizedName.includes('wsl')
+    normalizedName.includes('wsl') ||
+    normalizedName.includes('docker') ||
+    normalizedName.includes('vbox') ||
+    normalizedName.includes('vmware') ||
+    normalizedName.startsWith('utun') ||
+    normalizedName.startsWith('tun') ||
+    normalizedName.startsWith('tap') ||
+    normalizedName.startsWith('bridge') ||
+    normalizedName.startsWith('awdl') ||
+    normalizedName.startsWith('llw')
   ) {
     return 99;
   }
@@ -223,6 +275,40 @@ function checkTcpPort(port, host = '127.0.0.1') {
   });
 }
 
+function checkPortAvailable(port, host = '0.0.0.0') {
+  return new Promise((resolve) => {
+    const server = net.createServer();
+    server.unref();
+    server.on('error', () => resolve(false));
+    server.listen({ port, host, exclusive: true }, () => {
+      server.close(() => resolve(true));
+    });
+  });
+}
+
+async function isPortFree(port) {
+  const freeAll = await checkPortAvailable(port, '0.0.0.0');
+  if (!freeAll) return false;
+  const freeLocal = await checkPortAvailable(port, '127.0.0.1');
+  return freeLocal;
+}
+
+async function findAvailablePort(startPort, step = 2, maxAttempts = 30) {
+  let port = startPort;
+  for (let i = 0; i < maxAttempts; i++) {
+    if (await isPortFree(port)) {
+      return port;
+    }
+    port += step;
+  }
+  for (let p = startPort + 1; p < startPort + maxAttempts; p++) {
+    if (await isPortFree(p)) {
+      return p;
+    }
+  }
+  return startPort;
+}
+
 async function waitForServer(url, attempts = 40) {
   for (let attempt = 0; attempt < attempts; attempt += 1) {
     if (await checkHttpServer(url)) {
@@ -283,8 +369,39 @@ async function run() {
   loadDotEnvFile();
 
   const options = parseArgs(process.argv.slice(2));
-  const localUrl = buildLocalUrl(options.port);
 
+  if (options.mode === 'native' && options.host !== 'tunnel') {
+    const isBusy = !(await isPortFree(options.port));
+    if (isBusy) {
+      const originalPort = options.port;
+      const nextPort = await findAvailablePort(originalPort, 2);
+      console.log(`[courier-test] ⚡ Cổng ${originalPort} đang bận.`);
+      console.log(`[courier-test] 🔄 Đã tự động chuyển sang cổng khả dụng: ${nextPort}`);
+      options.port = nextPort;
+    }
+  }
+
+  if (options.mode === 'web') {
+    const isBusy = !(await isPortFree(options.port));
+    if (isBusy) {
+      const testUrl = buildLocalUrl(options.port);
+      if (await checkHttpServer(testUrl)) {
+        console.log(`[courier-test] Courier mobile is already running: ${testUrl}`);
+        console.log(`[courier-test] Gateway: ${options.gateway}`);
+        if (options.open) {
+          openUrl(testUrl);
+        }
+        return;
+      }
+      const originalPort = options.port;
+      const nextPort = await findAvailablePort(originalPort, 2);
+      console.log(`[courier-test] ⚡ Cổng ${originalPort} đang bận bởi dịch vụ khác.`);
+      console.log(`[courier-test] 🔄 Đã tự động chuyển sang cổng khả dụng: ${nextPort}`);
+      options.port = nextPort;
+    }
+  }
+
+  const localUrl = buildLocalUrl(options.port);
   applyEnv(options);
 
   if (options.printConfig) {
@@ -313,23 +430,6 @@ async function run() {
         2,
       ),
     );
-    return;
-  }
-
-  if (options.mode === 'native' && options.host !== 'tunnel' && await checkTcpPort(options.port)) {
-    console.log(`[courier-test] Port ${options.port} is already in use.`);
-    console.log('[courier-test] Stop the old Metro session or pass a different port:');
-    console.log(`  lsof -tiTCP:${options.port} -sTCP:LISTEN | xargs kill`);
-    console.log(`  pnpm --dir apps/courier-mobile run test:qr -- --port=8082 --clear`);
-    return;
-  }
-
-  if (options.mode === 'web' && await checkHttpServer(localUrl)) {
-    console.log(`[courier-test] Courier mobile is already running: ${localUrl}`);
-    console.log(`[courier-test] Gateway: ${process.env.EXPO_PUBLIC_GATEWAY_BASE_URL}`);
-    if (options.open) {
-      openUrl(localUrl);
-    }
     return;
   }
 

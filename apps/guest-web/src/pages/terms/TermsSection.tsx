@@ -38,7 +38,7 @@ export function TermsSection({ policy, index }: TermsSectionProps): React.JSX.El
           <ul key={`list-${keyIdx++}`} className="space-y-1.5 my-3 pl-2">
             {currentList.map((item, lIdx) => (
               <li key={lIdx} className="flex items-start gap-2.5 text-xs text-slate-700 leading-relaxed">
-                <span className="w-1.5 h-1.5 rounded-full bg-blue-500 shrink-0 mt-1.5" />
+                <span className="w-1.5 h-1.5 bg-blue-500 shrink-0 mt-1.5" />
                 <span>{renderInlineFormatting(item)}</span>
               </li>
             ))}
@@ -64,7 +64,7 @@ export function TermsSection({ policy, index }: TermsSectionProps): React.JSX.El
             key={`h3-${keyIdx++}`}
             className="text-sm font-bold text-slate-900 mt-5 mb-2 flex items-center gap-2 border-b border-slate-100 pb-1.5"
           >
-            <span className="w-2 h-2 rounded-sm bg-blue-600 shrink-0" />
+            <span className="w-2 h-2 bg-blue-600 shrink-0" />
             {trimmed.replace('### ', '')}
           </h4>,
         );
@@ -98,7 +98,7 @@ export function TermsSection({ policy, index }: TermsSectionProps): React.JSX.El
         const text = trimmed.replace(/^\d+\.\s/, '');
         elements.push(
           <div key={`num-${keyIdx++}`} className="flex items-start gap-2.5 my-2.5 text-xs text-slate-700 leading-relaxed">
-            <span className="w-5 h-5 rounded-full bg-blue-50 text-blue-700 font-bold text-[10px] flex items-center justify-center shrink-0 mt-0.5">
+            <span className="w-5 h-5 bg-blue-50 text-blue-700 font-bold text-[10px] flex items-center justify-center shrink-0 mt-0.5 border border-blue-200 rounded-md">
               {num}
             </span>
             <span>{renderInlineFormatting(text)}</span>
@@ -135,7 +135,7 @@ export function TermsSection({ policy, index }: TermsSectionProps): React.JSX.El
         return (
           <code
             key={pIdx}
-            className="px-1.5 py-0.5 rounded bg-slate-100 text-blue-700 font-mono text-[11px] font-semibold"
+            className="px-1.5 py-0.5 bg-slate-100 text-blue-700 font-mono text-[11px] font-semibold border border-slate-200 rounded-md"
           >
             {part.slice(1, -1)}
           </code>
@@ -148,13 +148,13 @@ export function TermsSection({ policy, index }: TermsSectionProps): React.JSX.El
   return (
     <article
       id={policy.slug}
-      className="scroll-mt-28 bg-white rounded-2xl border border-slate-200/80 shadow-sm p-6 lg:p-8 space-y-5 transition hover:shadow-md"
+      className="scroll-mt-28 bg-white border border-slate-200 rounded-xl shadow-sm p-6 lg:p-8 space-y-5 transition hover:shadow-md"
     >
       {/* Section Header */}
       <div className="flex flex-wrap items-start justify-between gap-3 pb-4 border-b border-slate-100">
         <div className="space-y-1 max-w-2xl">
           <div className="flex items-center gap-2">
-            <span className="px-2.5 py-0.5 rounded-full bg-blue-50 text-blue-700 font-bold text-[11px] uppercase tracking-wider flex items-center gap-1 border border-blue-100">
+            <span className="px-2.5 py-0.5 bg-blue-50 text-blue-700 font-bold text-[11px] uppercase tracking-wider flex items-center gap-1 border border-blue-200 rounded-full">
               <Tag className="w-3 h-3" />
               {CATEGORY_NAMES[policy.category] || policy.category}
             </span>
@@ -167,7 +167,7 @@ export function TermsSection({ policy, index }: TermsSectionProps): React.JSX.El
           </h2>
         </div>
 
-        <div className="flex items-center gap-1.5 text-xs text-slate-400 font-medium bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-100">
+        <div className="flex items-center gap-1.5 text-xs text-slate-500 font-medium bg-slate-50 px-3 py-1.5 border border-slate-200 rounded-full">
           <Calendar className="w-3.5 h-3.5 text-slate-500" />
           <span>Hiệu lực: {formatDate(policy.effectiveDate || policy.publishedAt)}</span>
         </div>
@@ -175,7 +175,7 @@ export function TermsSection({ policy, index }: TermsSectionProps): React.JSX.El
 
       {/* Summary Box */}
       {policy.summary && (
-        <div className="p-4 bg-gradient-to-r from-blue-50/70 to-indigo-50/40 rounded-xl border border-blue-100/80 text-xs text-blue-950 leading-relaxed flex items-start gap-3">
+        <div className="p-4 bg-blue-50/70 border border-blue-200 rounded-xl text-xs text-blue-950 leading-relaxed flex items-start gap-3">
           <CheckCircle className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
           <div>
             <span className="font-bold text-blue-900 block mb-0.5 uppercase text-[10px] tracking-wider">

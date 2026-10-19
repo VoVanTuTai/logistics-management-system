@@ -6,6 +6,9 @@ export interface FallbackPricingParams {
   receiverProvince?: string | null;
   weightKg?: number;
   codAmount?: number;
+  lengthCm?: number;
+  widthCm?: number;
+  heightCm?: number;
 }
 
 export function normalizeProvinceName(val?: string | null): string {
@@ -39,10 +42,23 @@ const METRO_CITIES = new Set([
 /**
  * Tính cước fallback chuẩn xác theo biểu giá NEXUS_RATES_2026_05 của pricing-service
  * Dùng khi API mạng gián đoạn hoặc offline để đồng nhất hoàn toàn với Mobile và Backend.
+ * Chuẩn IATA: Trọng lượng quy đổi thể tích = (Dài x Rộng x Cao) / 6000.
+ * Trọng lượng tính cước (Chargeable Weight) = max(Cân thực, Quy đổi thể tích).
  */
 export function computeFallbackQuote(params: FallbackPricingParams): PricingQuoteResponse {
   const sType = String(params.serviceType || 'STANDARD').toUpperCase();
-  const weight = Math.max(0.1, params.weightKg || 0.5);
+  const actualWeight = Math.max(0.1, params.weightKg || 0.5);
+  const length = Math.max(0, params.lengthCm || 0);
+  const width = Math.max(0, params.widthCm || 0);
+  const height = Math.max(0, params.heightCm || 0);
+
+  const volumetricWeight =
+    length > 0 && width > 0 && height > 0
+      ? Math.round(((length * width * height) / 6000) * 100) / 100
+      : 0;
+
+  const chargeableWeight = Math.round(Math.max(actualWeight, volumetricWeight) * 100) / 100;
+  const isVolumetric = volumetricWeight > actualWeight;
 
   let baseFee = 18000;
   let extraRate = 3500;
@@ -55,7 +71,7 @@ export function computeFallbackQuote(params: FallbackPricingParams): PricingQuot
     extraRate = 5000;
   }
 
-  const extraHalfKgUnits = Math.max(0, Math.ceil((weight - 0.5) / 0.5));
+  const extraHalfKgUnits = Math.max(0, Math.ceil((chargeableWeight - 0.5) / 0.5));
   const weightFee = extraHalfKgUnits * extraRate;
 
   const sNorm = normalizeProvinceName(params.senderProvince);
@@ -86,9 +102,11 @@ export function computeFallbackQuote(params: FallbackPricingParams): PricingQuot
   if (weightFee > 0) {
     breakdown.push({
       code: 'CHARGEABLE_WEIGHT',
-      label: 'Cước vượt nấc',
+      label: isVolumetric ? 'Cước vượt nấc (theo thể tích quy đổi)' : 'Cước vượt nấc',
       amount: weightFee,
-      basis: `${weight}kg (${extraHalfKgUnits} nấc 0.5kg)`,
+      basis: isVolumetric
+        ? `${chargeableWeight}kg (Quy đổi IATA: ${volumetricWeight}kg > Cân nặng: ${actualWeight}kg)`
+        : `${chargeableWeight}kg (${extraHalfKgUnits} nấc 0.5kg)`,
     });
   }
 
@@ -114,9 +132,9 @@ export function computeFallbackQuote(params: FallbackPricingParams): PricingQuot
     quoteId: `quote-fallback-${Date.now()}`,
     serviceType: sType,
     totalFee: Math.round(total / 100) * 100,
-    actualWeightKg: weight,
-    volumetricWeightKg: weight,
-    chargeableWeightKg: weight,
+    actualWeightKg: actualWeight,
+    volumetricWeightKg: volumetricWeight,
+    chargeableWeightKg: chargeableWeight,
     breakdown,
   };
 }

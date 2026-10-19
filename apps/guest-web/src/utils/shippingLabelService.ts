@@ -123,7 +123,7 @@ export function buildShippingLabelHtml(shipment: ShipmentResponse): string {
       .brand { display: flex; flex-direction: column; gap: 0.5mm; }
       .brand-title { font-size: 3.4mm; font-weight: 900; letter-spacing: 0.3px; text-transform: uppercase; color: #1e3a8a; line-height: 1.1; }
       .service { font-size: 4mm; font-weight: 800; color: #0f172a; line-height: 1.1; }
-      .badge-type { font-size: 2.2mm; font-weight: 800; background: #e0e7ff; color: #3730a3; padding: 0.8mm 1.5mm; border-radius: 1mm; width: fit-content; text-transform: uppercase; margin-top: 0.5mm; }
+      .badge-type { font-size: 2.2mm; font-weight: 800; background: #e0e7ff; color: #3730a3; padding: 0.8mm 1.5mm; border-radius: 0px; width: fit-content; text-transform: uppercase; margin-top: 0.5mm; }
       .barcode-wrap { text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.5mm; }
       .barcode {
         width: 96%;
