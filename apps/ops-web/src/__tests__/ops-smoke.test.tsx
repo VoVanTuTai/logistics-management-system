@@ -461,7 +461,7 @@ describe('ops-web smoke coverage', () => {
     expect(screen.getByText('NXS000001')).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: /Tạo đơn hàng/i }));
-    await user.click(screen.getByRole('button', { name: /^Tạo vận đơn$/i }));
+    await user.click(screen.getByRole('button', { name: /^(Tạo vận đơn|Tạo đơn)$/i }));
 
     expect(
       await screen.findByRole('alert', {

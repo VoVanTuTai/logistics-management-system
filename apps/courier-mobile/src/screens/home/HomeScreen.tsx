@@ -79,7 +79,7 @@ export function HomeScreen(): React.JSX.Element {
   const onRefresh = () => {
     void tasksQuery.refetch();
     void codRecordsQuery.refetch();
-    void refreshMobilePermissions();
+    void refreshMobilePermissions(true);
   };
   const refreshing = tasksQuery.isRefetching || codRecordsQuery.isRefetching;
 
@@ -114,11 +114,14 @@ export function HomeScreen(): React.JSX.Element {
   const isOverdueCodLocked = overdueCashAmount > 0;
   const isCashOverLimit = cashNeedRemit >= CASH_IN_HAND_LIMIT;
 
+  const codRefetchRef = React.useRef(codRecordsQuery.refetch);
+  codRefetchRef.current = codRecordsQuery.refetch;
+
   useFocusEffect(
     React.useCallback(() => {
       void refreshMobilePermissions();
-      void codRecordsQuery.refetch();
-    }, [refreshMobilePermissions, codRecordsQuery]),
+      void codRefetchRef.current();
+    }, [refreshMobilePermissions]),
   );
 
   const canScanPickup = canAccessCourierFeature(session?.user, 'scan.pickup');
