@@ -228,7 +228,8 @@ export function CourierLiabilitiesScreen(): React.JSX.Element {
                   </View>
                   <Text style={styles.qaContent}>{item.qaFinding}</Text>
                   <Text style={styles.qaBy}>
-                    Kết luận bởi: <strong>{item.adjudicatedBy}</strong> ({item.incidentDate})
+                    Kết luận bởi:{' '}
+                    <Text style={styles.qaByBold}>{item.adjudicatedBy}</Text> ({item.incidentDate})
                   </Text>
                 </View>
 
@@ -671,6 +672,9 @@ const styles = StyleSheet.create({
     fontSize: 10.5,
     color: '#7C3AED',
     marginTop: 6,
+  },
+  qaByBold: {
+    fontWeight: '700',
   },
   photosSection: {
     marginBottom: 12,

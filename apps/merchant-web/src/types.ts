@@ -139,6 +139,9 @@ export interface ShipmentRow {
   codAmount: number;
   feeEstimate: number;
   deliveryNote: string;
+  pricingBreakdown?: Array<{ code: string; label: string; amount: number; basis?: string }>;
+  chargeableWeightKg?: number;
+  pricingZone?: string;
 }
 
 export interface NotificationItem {
@@ -320,3 +323,133 @@ export interface MerchantClaim {
   reportedAt: string;
   createdAt: string;
 }
+
+export interface SettlementBatch {
+  id: string;
+  code: string;
+  cycleName: string;
+  fromDate: string;
+  toDate: string;
+  payoutDate: string;
+  orderCount: number;
+  codTotal: number;
+  feeTotal: number;
+  returnFeeTotal: number;
+  netPayout: number;
+  status: 'PAID' | 'PROCESSING' | 'PENDING';
+  bankInfo: string;
+  transferRef?: string;
+  shipmentCodes: string[];
+}
+
+export interface FinancialLedgerEntry {
+  id: string;
+  occurredAt: string;
+  type: 'COD_COLLECTED' | 'SHIPPING_FEE' | 'RETURN_FEE' | 'CLAIM_COMPENSATION' | 'SETTLEMENT_PAYOUT' | 'DEBT_TOPUP';
+  title: string;
+  shipmentCode?: string;
+  amount: number;
+  balanceAfter: number;
+  note?: string;
+}
+
+export interface MerchantBankProfile {
+  bankName: string;
+  accountNumber: string;
+  accountHolder: string;
+  branch: string;
+  payoutSchedule: 'MWF' | 'DAILY';
+  autoPayout: boolean;
+}
+
+export type MerchantRegionCode = 'HA_NOI' | 'DA_NANG' | 'HO_CHI_MINH';
+
+export interface HubApiRecord {
+  id: string;
+  code: string;
+  name: string;
+  zoneCode: string | null;
+  address: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
+  isActive: boolean;
+}
+
+export interface HubLocationOption {
+  hubCode: string;
+  hubName: string;
+  province: string;
+  ward: string;
+  district: string;
+  type: 'BRANCH' | 'SORTING_CENTER' | 'TRANSIT_HUB' | 'UNKNOWN';
+  regionCode: MerchantRegionCode | null;
+  fullAddress: string;
+  latitude?: number | null;
+  longitude?: number | null;
+  label: string;
+}
+
+export interface ConfigApiRecord {
+  id: string;
+  key: string;
+  value: unknown;
+  scope: string | null;
+}
+
+export interface MerchantProfileConfigPayload {
+  username: string;
+  citizenId: string;
+  regionCode: MerchantRegionCode;
+  regionLabel: string;
+  defaultHubCode: string | null;
+  defaultHubName: string | null;
+  defaultSenderAddress: string | null;
+  businessAddressDetail: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
+}
+
+export interface MerchantProfileApiRecord {
+  id: string;
+  username: string;
+  citizenId: string;
+  regionCode: MerchantRegionCode;
+  regionLabel: string;
+  defaultHubCode: string | null;
+  defaultHubName: string | null;
+  defaultSenderAddress: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ReturnCaseApiRecord {
+  id: string;
+  shipmentCode: string;
+  ndrCaseId: string | null;
+  note: string | null;
+  status: 'STARTED' | 'COMPLETED';
+  startedAt: string;
+  completedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface PublicTrackingSnapshotResponse {
+  shipmentCode: string;
+  current: TrackingCurrent | null;
+  timeline: TimelineEvent[];
+}
+
+export interface StoredMerchantSession {
+  session: MerchantSession;
+  storedAt: string;
+}
+
+export interface RememberedMerchantCredentials {
+  username: string;
+  password?: string;
+  rememberMe: boolean;
+}
+

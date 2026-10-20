@@ -2,6 +2,25 @@ import React, { FormEvent, useEffect, useMemo, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 
 import './styles.css';
+import { MerchantLoginForm } from './features/auth/MerchantLoginForm';
+import { MerchantSidebar } from './components/layout/MerchantSidebar';
+import { MerchantHeader } from './components/layout/MerchantHeader';
+import { MerchantDashboardView } from './features/dashboard/MerchantDashboardView';
+import { MerchantAccountView } from './features/account/MerchantAccountView';
+import { MerchantNotificationsView } from './features/notifications/MerchantNotificationsView';
+import { CreateShipmentView } from './features/shipments/CreateShipmentView';
+import { PrintShipmentView } from './features/shipments/PrintShipmentView';
+import { ShipmentDetailView } from './features/shipments/ShipmentDetailView';
+import { ShipmentListView } from './features/shipments/ShipmentListView';
+import { ChangeRequestView } from './features/requests/ChangeRequestView';
+import { ReturnRequestView } from './features/requests/ReturnRequestView';
+import { PickupRequestView } from './features/pickups/PickupRequestView';
+import { TrackingLookupView } from './features/tracking/TrackingLookupView';
+import { ClaimsView } from './features/claims/ClaimsView';
+import { MerchantFinanceView } from './features/finance/MerchantFinanceView';
+import { BankProfileModal } from './features/finance/BankProfileModal';
+import { SettlementBatchDetailModal } from './features/finance/SettlementBatchDetailModal';
+import { TopupVietQRModal } from './features/finance/TopupVietQRModal';
 import {
   asNumber,
   asRecord,
@@ -50,985 +69,107 @@ import {
   type ShippingLabelPrintPayload,
 } from './printing/shippingLabelPrint';
 
-const STORAGE_KEY_SESSION = 'merchant-web.session.v1';
-const STORAGE_KEY_DRAFTS = 'merchant-web.shipment-drafts.v1';
-const STORAGE_KEY_NOTIFICATIONS = 'merchant-web.notifications.v1';
-const STORAGE_KEY_RETURNS = 'merchant-web.return-requests.v1';
-const STORAGE_KEY_PROFILE = 'merchant-web.profile.v1';
-const STORAGE_KEY_PROFILE_PREFIX = 'merchant-web.profile.v2.';
-const CLIENT_SESSION_TTL_MS = 24 * 60 * 60 * 1000;
-const ACCESS_TOKEN_REFRESH_WINDOW_MS = 60_000;
-const SHIPMENT_PAGE_SIZE = 8;
-const MERCHANT_PROFILE_SCOPE = 'MERCHANT_PROFILE';
-const MERCHANT_PROFILE_KEY_PREFIX = 'merchant.profile.';
+import type {
+  ConfigApiRecord,
+  FinancialLedgerEntry,
+  HubApiRecord,
+  HubLocationOption,
+  MerchantBankProfile,
+  MerchantProfileApiRecord,
+  MerchantProfileConfigPayload,
+  MerchantRegionCode,
+  PublicTrackingSnapshotResponse,
+  RememberedMerchantCredentials,
+  ReturnCaseApiRecord,
+  SettlementBatch,
+  StoredMerchantSession,
+} from './types';
+export type { SettlementBatch, FinancialLedgerEntry, MerchantBankProfile };
+import {
+  ACCESS_TOKEN_REFRESH_WINDOW_MS,
+  CLIENT_SESSION_TTL_MS,
+  MERCHANT_PROFILE_KEY_PREFIX,
+  MERCHANT_PROFILE_SCOPE,
+  REMEMBERED_CREDENTIALS_STORAGE_KEY,
+  SHIPMENT_PAGE_SIZE,
+  STORAGE_KEY_DRAFTS,
+  STORAGE_KEY_NOTIFICATIONS,
+  STORAGE_KEY_PROFILE,
+  STORAGE_KEY_PROFILE_PREFIX,
+  STORAGE_KEY_RETURNS,
+  STORAGE_KEY_SESSION,
+} from './utils/session.utils';
+import { DELIVERY_INFO_CHANGE_BLOCKED_STATUSES } from './utils/shipment.utils';
+
+
+import {
+  escapeRegExp,
+  findHubByCode,
+  findHubByProvince,
+  findHubByProvinceWard,
+  geocodeAddress,
+  normalizeLocationKey,
+  parseHubLocation,
+  resolveHubByRegion,
+  resolveProvinceLabel,
+  resolveRegionCode,
+  resolveRegionCodeByZoneCode,
+  resolveRegionLabel,
+  resolveSelectedHub,
+  splitDefaultPickupAddress,
+  composeDefaultPickupAddress,
+} from './utils/location.utils';
+
+
+import {
+  PRICING_METRO_CITIES,
+  computeAccurateEstimatedFee,
+} from './utils/pricing.utils';
+import {
+  buildMerchantProfileKey,
+  buildProfileStorageKey,
+} from './utils/session.utils';
+
+
+import {
+  assertMerchantUser,
+  clearRememberedCredentials,
+  formatMerchantAuthErrorMessage,
+  getRememberedCredentials,
+  isClientSessionExpired,
+  isTokenExpired,
+  mapLoginResponseToMerchantSession,
+  mapMerchantProfileRecord,
+  parseMerchantProfileConfig,
+  readStoredMerchantSession,
+  refreshMerchantSession,
+  saveRememberedCredentials,
+  shouldRefreshAccessToken,
+  writeStoredMerchantSession,
+} from './utils/session.utils';
+
+
+import {
+  buildChangeRequestPayload,
+  filterPickupRequestsByUser,
+  isReturnRequestAllowed,
+  isShipmentOwnedByUser,
+  mapReturnCaseToRequest,
+  normalizeCreateForm,
+  normalizeMerchantIdentity,
+  normalizePhone,
+  parseReturnCaseNote,
+} from './utils/shipment.utils';
 
-export interface SettlementBatch {
-  id: string;
-  code: string;
-  cycleName: string;
-  fromDate: string;
-  toDate: string;
-  payoutDate: string;
-  orderCount: number;
-  codTotal: number;
-  feeTotal: number;
-  returnFeeTotal: number;
-  netPayout: number;
-  status: 'PAID' | 'PROCESSING' | 'PENDING';
-  bankInfo: string;
-  transferRef?: string;
-  shipmentCodes: string[];
-}
 
-export interface FinancialLedgerEntry {
-  id: string;
-  occurredAt: string;
-  type: 'COD_COLLECTED' | 'SHIPPING_FEE' | 'RETURN_FEE' | 'CLAIM_COMPENSATION' | 'SETTLEMENT_PAYOUT' | 'DEBT_TOPUP';
-  title: string;
-  shipmentCode?: string;
-  amount: number;
-  balanceAfter: number;
-  note?: string;
-}
 
-export interface MerchantBankProfile {
-  bankName: string;
-  accountNumber: string;
-  accountHolder: string;
-  branch: string;
-  payoutSchedule: 'MWF' | 'DAILY';
-  autoPayout: boolean;
-}
 
-const DELIVERY_INFO_CHANGE_BLOCKED_STATUSES = new Set([
-  'TASK_ASSIGNED',
-  'DELIVERED',
-  'DELIVERY_FAILED',
-  'NDR_CREATED',
-  'EXCEPTION',
-  'RETURN_STARTED',
-  'RETURN_COMPLETED',
-  'CANCELLED',
-]);
 
-interface StoredMerchantSession {
-  session: MerchantSession;
-  storedAt: string;
-}
 
-interface HubApiRecord {
-  id: string;
-  code: string;
-  name: string;
-  zoneCode: string | null;
-  address: string | null;
-  latitude?: number | null;
-  longitude?: number | null;
-  isActive: boolean;
-}
 
-interface HubLocationOption {
-  hubCode: string;
-  hubName: string;
-  province: string;
-  ward: string;
-  district: string;
-  type: 'BRANCH' | 'SORTING_CENTER' | 'TRANSIT_HUB' | 'UNKNOWN';
-  regionCode: MerchantRegionCode | null;
-  fullAddress: string;
-  latitude?: number | null;
-  longitude?: number | null;
-  label: string;
-}
 
-type MerchantRegionCode = 'HA_NOI' | 'DA_NANG' | 'HO_CHI_MINH';
 
-interface ConfigApiRecord {
-  id: string;
-  key: string;
-  value: unknown;
-  scope: string | null;
-}
 
-interface MerchantProfileConfigPayload {
-  username: string;
-  citizenId: string;
-  regionCode: MerchantRegionCode;
-  regionLabel: string;
-  defaultHubCode: string | null;
-  defaultHubName: string | null;
-  defaultSenderAddress: string | null;
-  businessAddressDetail: string | null;
-  latitude?: number | null;
-  longitude?: number | null;
-}
-
-interface MerchantProfileApiRecord {
-  id: string;
-  username: string;
-  citizenId: string;
-  regionCode: MerchantRegionCode;
-  regionLabel: string;
-  defaultHubCode: string | null;
-  defaultHubName: string | null;
-  defaultSenderAddress: string | null;
-  latitude?: number | null;
-  longitude?: number | null;
-  createdAt: string;
-  updatedAt: string;
-}
-
-interface ReturnCaseApiRecord {
-  id: string;
-  shipmentCode: string;
-  ndrCaseId: string | null;
-  note: string | null;
-  status: 'STARTED' | 'COMPLETED';
-  startedAt: string;
-  completedAt: string | null;
-  createdAt: string;
-  updatedAt: string;
-}
-
-interface PublicTrackingSnapshotResponse {
-  shipmentCode: string;
-  current: TrackingCurrent | null;
-  timeline: TimelineEvent[];
-}
-
-function normalizeLocationKey(value: string): string {
-  return value
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/[^a-zA-Z0-9]/g, '')
-    .toUpperCase();
-}
-
-const PRICING_METRO_CITIES = new Set([
-  'HANOI',
-  'HN',
-  'TPHANOI',
-  'THANHPHOHANOI',
-  'HOCHIMINH',
-  'TPHOCHIMINH',
-  'THANHPHOHOCHIMINH',
-  'SAIGON',
-  'HCM',
-  'DANANG',
-  'DN',
-  'TPDANANG',
-  'THANHPHODANANG',
-]);
-
-function computeAccurateEstimatedFee(
-  form: CreateShipmentForm,
-  senderProvince?: string | null,
-  receiverProvince?: string | null,
-): number {
-  const serviceType = String(form.serviceType || 'STANDARD').toUpperCase();
-  let baseFee = 18000;
-  let extraRate = 3500;
-
-  if (serviceType.includes('SAME') || serviceType.includes('SUPER') || serviceType.includes('HOA_TOC')) {
-    baseFee = 42000;
-    extraRate = 8000;
-  } else if (serviceType.includes('EXPRESS') || serviceType.includes('NHANH')) {
-    baseFee = 28000;
-    extraRate = 5000;
-  }
-
-  const actualWeight = Math.max(0, asNumber(form.weightKg, 0));
-  const length = Math.max(0, asNumber(form.lengthCm, 0));
-  const width = Math.max(0, asNumber(form.widthCm, 0));
-  const height = Math.max(0, asNumber(form.heightCm, 0));
-
-  const volumetricWeight =
-    length > 0 && width > 0 && height > 0
-      ? (length * width * height) / 6000
-      : 0;
-
-  const chargeableWeight = Math.max(actualWeight, volumetricWeight);
-  const extraHalfKgUnits = Math.max(0, Math.ceil((chargeableWeight - 0.5) / 0.5));
-  const weightFee = extraHalfKgUnits * extraRate;
-
-  const normSender = normalizeLocationKey(senderProvince || form.senderProvince || '');
-  const normReceiver = normalizeLocationKey(receiverProvince || form.receiverProvince || form.receiverRegion || '');
-
-  let zoneFee = 0;
-  if (normSender && normReceiver && normSender === normReceiver) {
-    zoneFee = 0;
-  } else if (PRICING_METRO_CITIES.has(normSender) && PRICING_METRO_CITIES.has(normReceiver)) {
-    zoneFee = 7000;
-  } else if (normSender && normReceiver) {
-    zoneFee = 12000;
-  }
-
-  const cod = Math.max(0, asNumber(form.codAmount, 0));
-  const codFee = cod > 0 ? Math.min(Math.max(Math.round(cod * 0.005), 5000), 35000) : 0;
-
-  return Math.round(baseFee + weightFee + zoneFee + codFee);
-}
-
-function resolveProvinceLabel(rawProvince: string): string | null {
-  const trimmedProvince = rawProvince.trim();
-  if (!trimmedProvince) {
-    return null;
-  }
-
-  const normalized = normalizeLocationKey(rawProvince);
-  if (['HOCHIMINH', 'HCM', 'TPHOCHIMINH', 'THANHPHOHOCHIMINH'].includes(normalized)) {
-    return 'Hồ Chí Minh';
-  }
-  if (['DANANG', 'DN', 'TPDANANG', 'THANHPHODANANG'].includes(normalized)) {
-    return 'Đà Nẵng';
-  }
-  if (['HANOI', 'HN', 'TPHANOI', 'THANHPHOHANOI'].includes(normalized)) {
-    return 'Hà Nội';
-  }
-
-  return trimmedProvince;
-}
-
-function resolveRegionCode(rawProvince: string): MerchantRegionCode | null {
-  const normalized = normalizeLocationKey(rawProvince);
-
-  if (!normalized) {
-    return null;
-  }
-
-  if (['HANOI', 'HN', 'TPHANOI', 'THANHPHOHANOI'].includes(normalized)) {
-    return 'HA_NOI';
-  }
-  if (['DANANG', 'DN', 'TPDANANG', 'THANHPHODANANG'].includes(normalized)) {
-    return 'DA_NANG';
-  }
-  if (['HOCHIMINH', 'HCM', 'TPHOCHIMINH', 'THANHPHOHOCHIMINH'].includes(normalized)) {
-    return 'HO_CHI_MINH';
-  }
-
-  return null;
-}
-
-function resolveRegionCodeByZoneCode(zoneCode: string | null | undefined): MerchantRegionCode | null {
-  if (zoneCode === '001') {
-    return 'HA_NOI';
-  }
-  if (zoneCode === '002') {
-    return 'DA_NANG';
-  }
-  if (zoneCode === '003') {
-    return 'HO_CHI_MINH';
-  }
-
-  return null;
-}
-
-function resolveRegionLabel(regionCode: MerchantRegionCode): string {
-  if (regionCode === 'HA_NOI') {
-    return 'miền Bắc';
-  }
-  if (regionCode === 'DA_NANG') {
-    return 'miền Trung';
-  }
-  return 'miền Nam';
-}
-
-function buildMerchantProfileKey(username: string): string {
-  return `${MERCHANT_PROFILE_KEY_PREFIX}${username.trim().toUpperCase()}`;
-}
-
-function buildProfileStorageKey(username: string): string {
-  return `${STORAGE_KEY_PROFILE_PREFIX}${username.trim().toUpperCase()}`;
-}
-
-function readStoredMerchantSession(): StoredMerchantSession | null {
-  const raw = window.localStorage.getItem(STORAGE_KEY_SESSION);
-  if (!raw) {
-    return null;
-  }
-
-  try {
-    const parsed = JSON.parse(raw) as MerchantSession | StoredMerchantSession;
-    if ('session' in parsed && parsed.session) {
-      return parsed;
-    }
-
-    return {
-      session: parsed as MerchantSession,
-      storedAt: new Date().toISOString(),
-    };
-  } catch {
-    return null;
-  }
-}
-
-function writeStoredMerchantSession(session: MerchantSession): void {
-  window.localStorage.setItem(
-    STORAGE_KEY_SESSION,
-    JSON.stringify({
-      session,
-      storedAt: new Date().toISOString(),
-    } satisfies StoredMerchantSession),
-  );
-}
-
-function isClientSessionExpired(storedAt: string): boolean {
-  const storedAtTime = new Date(storedAt).getTime();
-  return Number.isNaN(storedAtTime) || Date.now() - storedAtTime >= CLIENT_SESSION_TTL_MS;
-}
-
-function isTokenExpired(expiresAt: string): boolean {
-  const expiryTime = new Date(expiresAt).getTime();
-  return Number.isNaN(expiryTime) || Date.now() >= expiryTime;
-}
-
-function shouldRefreshAccessToken(session: MerchantSession): boolean {
-  const expiryTime = new Date(session.accessTokenExpiresAt).getTime();
-  return (
-    Number.isNaN(expiryTime) ||
-    Date.now() + ACCESS_TOKEN_REFRESH_WINDOW_MS >= expiryTime
-  );
-}
-
-function mapLoginResponseToMerchantSession(result: LoginResponse): MerchantSession {
-  assertMerchantUser(result.user);
-
-  return {
-    user: result.user,
-    accessToken: result.tokens.accessToken,
-    refreshToken: result.tokens.refreshToken,
-    accessTokenExpiresAt: result.tokens.accessTokenExpiresAt,
-    refreshTokenExpiresAt: result.tokens.refreshTokenExpiresAt,
-  };
-}
-
-function assertMerchantUser(user: LoginResponse['user']): void {
-  const isMerchant = user.roles.some((role) => role.trim().toUpperCase() === 'MERCHANT');
-
-  if (!isMerchant) {
-    throw new Error(
-      'Tài khoản không thuộc nhóm quyền MERCHANT. Vui lòng đăng nhập đúng cổng hệ thống.',
-    );
-  }
-}
-
-async function refreshMerchantSession(
-  session: MerchantSession,
-): Promise<MerchantSession> {
-  if (isTokenExpired(session.refreshTokenExpiresAt)) {
-    throw new Error('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.');
-  }
-
-  const result = await request<LoginResponse>('/merchant/auth/auth/refresh', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      refreshToken: session.refreshToken,
-      roleGroup: 'MERCHANT',
-    }),
-  });
-
-  return mapLoginResponseToMerchantSession(result);
-}
-
-function parseMerchantProfileConfig(
-  records: ConfigApiRecord[],
-  username: string,
-): MerchantProfileConfigPayload | null {
-  const normalizedUsername = username.trim().toUpperCase();
-  if (!normalizedUsername) {
-    return null;
-  }
-
-  const targetKey = buildMerchantProfileKey(normalizedUsername);
-  const record =
-    records.find((item) => item.key === targetKey) ??
-    records.find((item) => item.key.endsWith(`.${normalizedUsername}`));
-
-  if (!record || !record.value || typeof record.value !== 'object' || Array.isArray(record.value)) {
-    return null;
-  }
-
-  const payload = record.value as Record<string, unknown>;
-  const regionCode = payload.regionCode;
-
-  if (
-    typeof payload.username !== 'string' ||
-    typeof payload.citizenId !== 'string' ||
-    typeof regionCode !== 'string' ||
-    typeof payload.regionLabel !== 'string'
-  ) {
-    return null;
-  }
-
-  const normalizedRegionCode = regionCode as MerchantRegionCode;
-  if (!['HA_NOI', 'DA_NANG', 'HO_CHI_MINH'].includes(normalizedRegionCode)) {
-    return null;
-  }
-
-  return {
-    username: payload.username.trim().toUpperCase(),
-    citizenId: payload.citizenId.trim(),
-    regionCode: normalizedRegionCode,
-    regionLabel: payload.regionLabel.trim(),
-    defaultHubCode:
-      typeof payload.defaultHubCode === 'string' && payload.defaultHubCode.trim()
-        ? payload.defaultHubCode.trim().toUpperCase()
-        : null,
-    defaultHubName:
-      typeof payload.defaultHubName === 'string' && payload.defaultHubName.trim()
-        ? payload.defaultHubName.trim()
-        : null,
-    defaultSenderAddress:
-      typeof payload.defaultSenderAddress === 'string' && payload.defaultSenderAddress.trim()
-        ? payload.defaultSenderAddress.trim()
-        : null,
-    businessAddressDetail:
-      typeof payload.businessAddressDetail === 'string' && payload.businessAddressDetail.trim()
-        ? payload.businessAddressDetail.trim()
-        : null,
-  };
-}
-
-function mapMerchantProfileRecord(
-  record: MerchantProfileApiRecord | null,
-): MerchantProfileConfigPayload | null {
-  if (!record) {
-    return null;
-  }
-
-  return {
-    username: record.username.trim().toUpperCase(),
-    citizenId: record.citizenId.trim(),
-    regionCode: record.regionCode,
-    regionLabel: record.regionLabel.trim(),
-    defaultHubCode: record.defaultHubCode?.trim().toUpperCase() || null,
-    defaultHubName: record.defaultHubName?.trim() || null,
-    defaultSenderAddress: record.defaultSenderAddress?.trim() || null,
-    businessAddressDetail: null,
-    latitude: record.latitude ?? null,
-    longitude: record.longitude ?? null,
-  };
-}
-
-function buildChangeRequestPayload(
-  requestType: string,
-  value: string,
-): Record<string, unknown> {
-  const normalizedValue = value.trim();
-
-  if (requestType === 'change.phone') {
-    return {
-      value: normalizedValue,
-      receiverPhone: normalizedValue,
-    };
-  }
-
-  if (requestType === 'change.address') {
-    return {
-      value: normalizedValue,
-      receiverAddress: normalizedValue,
-    };
-  }
-
-  return {
-    value: normalizedValue,
-    deliveryNote: normalizedValue,
-  };
-}
-
-function parseReturnCaseNote(note: string | null): {
-  reason: string;
-  expectedReturnAt: string;
-} {
-  const fallbackReason = 'Return requested';
-  if (!note) {
-    return {
-      reason: fallbackReason,
-      expectedReturnAt: '-',
-    };
-  }
-
-  const reasonMatch = note.match(/reason=([^|]+)/i);
-  const expectedMatch = note.match(/expected=([^|]+)/i);
-
-  return {
-    reason: reasonMatch?.[1]?.trim() || note,
-    expectedReturnAt: expectedMatch?.[1]?.trim() || '-',
-  };
-}
-
-function mapReturnCaseToRequest(returnCase: ReturnCaseApiRecord): ReturnRequest {
-  const parsedNote = parseReturnCaseNote(returnCase.note);
-
-  return {
-    id: returnCase.id,
-    shipmentCode: returnCase.shipmentCode,
-    reason: parsedNote.reason,
-    expectedReturnAt: parsedNote.expectedReturnAt,
-    status: returnCase.status === 'COMPLETED' ? 'COMPLETED' : 'IN_TRANSIT',
-    createdAt: returnCase.createdAt,
-  };
-}
-
-function isReturnRequestAllowed(shipment: ShipmentResponse): boolean {
-  return !['DELIVERED', 'RETURN_COMPLETED', 'CANCELLED'].includes(
-    shipment.currentStatus,
-  );
-}
-
-function parseHubLocation(hub: HubApiRecord): HubLocationOption | null {
-  if (!hub.address) {
-    return null;
-  }
-
-  let province = '';
-  let ward = '';
-  let district = '';
-  let fullAddress = '';
-  let type: HubLocationOption['type'] = 'UNKNOWN';
-
-  try {
-    const payload = JSON.parse(hub.address) as Record<string, unknown>;
-    if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
-      return null;
-    }
-
-    const addressLine =
-      typeof payload.addressLine === 'string' ? payload.addressLine.trim() : '';
-    ward = typeof payload.ward === 'string' ? payload.ward.trim() : '';
-    province = typeof payload.province === 'string' ? payload.province.trim() : '';
-    district = typeof payload.district === 'string' ? payload.district.trim() : '';
-    if (
-      payload.type === 'BRANCH' ||
-      payload.type === 'SORTING_CENTER' ||
-      payload.type === 'TRANSIT_HUB'
-    ) {
-      type = payload.type;
-    }
-    const addressParts = [addressLine, ward, district, province]
-      .map((part) => part.trim())
-      .filter((part) => part.length > 0);
-    fullAddress = Array.from(new Set(addressParts)).join(', ');
-  } catch {
-    const segments = hub.address.split(',').map((segment) => segment.trim());
-    province = segments.length > 0 ? segments[segments.length - 1] : '';
-    district = segments.length > 1 ? segments[segments.length - 2] : '';
-    ward = district;
-    fullAddress = hub.address.trim();
-  }
-
-  const normalizedProvince = resolveProvinceLabel(province);
-  if (!normalizedProvince) {
-    return null;
-  }
-
-  const wardOrDistrict = ward || district || normalizedProvince;
-  const normalizedFullAddress =
-    fullAddress ||
-    [ward, district, normalizedProvince].filter((part) => part.length > 0).join(', ');
-
-  return {
-    hubCode: hub.code,
-    hubName: hub.name,
-    province: normalizedProvince,
-    ward: wardOrDistrict,
-    district,
-    type,
-    regionCode: resolveRegionCode(normalizedProvince) ?? resolveRegionCodeByZoneCode(hub.zoneCode),
-    fullAddress: normalizedFullAddress || hub.name,
-    latitude: hub.latitude ?? null,
-    longitude: hub.longitude ?? null,
-    label: `${hub.name} (${wardOrDistrict}, ${normalizedProvince})`,
-  };
-}
-
-function findHubByCode(
-  hubLocations: HubLocationOption[],
-  hubCode: string,
-): HubLocationOption | null {
-  const normalizedHubCode = normalizeCode(hubCode);
-
-  if (!normalizedHubCode) {
-    return null;
-  }
-
-  return (
-    hubLocations.find((location) => normalizeCode(location.hubCode) === normalizedHubCode) ??
-    null
-  );
-}
-
-function findHubByProvinceWard(
-  hubLocations: HubLocationOption[],
-  province: string,
-  ward: string,
-): HubLocationOption | null {
-  const normalizedProvince = normalizeLocationKey(province);
-  const normalizedWard = normalizeLocationKey(ward);
-
-  if (!normalizedProvince || !normalizedWard) {
-    return null;
-  }
-
-  return (
-    hubLocations.find(
-      (location) =>
-        normalizeLocationKey(location.province) === normalizedProvince &&
-        normalizeLocationKey(location.ward) === normalizedWard,
-    ) ?? null
-  );
-}
-
-function resolveSelectedHub(
-  hubLocations: HubLocationOption[],
-  hubCode: string,
-  province: string,
-  ward: string,
-): HubLocationOption | null {
-  const hubByCode = findHubByCode(hubLocations, hubCode);
-  if (hubByCode) {
-    const provinceMatches =
-      !province || normalizeLocationKey(hubByCode.province) === normalizeLocationKey(province);
-    const wardMatches =
-      !ward || normalizeLocationKey(hubByCode.ward) === normalizeLocationKey(ward);
-
-    if (provinceMatches && wardMatches) {
-      return hubByCode;
-    }
-  }
-
-  const hubByProvinceWard = findHubByProvinceWard(hubLocations, province, ward);
-  if (hubByProvinceWard) {
-    return hubByProvinceWard;
-  }
-
-  if (hubByCode) {
-    return hubByCode;
-  }
-
-  return null;
-}
-
-function resolveHubByRegion(
-  hubLocations: HubLocationOption[],
-  regionCode: MerchantRegionCode,
-): HubLocationOption | null {
-  const matchedLocations = hubLocations.filter(
-    (location) => location.regionCode === regionCode,
-  );
-
-  if (matchedLocations.length === 0) {
-    return null;
-  }
-
-  return matchedLocations.sort((left, right) => left.label.localeCompare(right.label, 'vi'))[0];
-}
-
-function composeDefaultPickupAddress(addressDetail: string, province: string): string {
-  return [addressDetail.trim(), province.trim()]
-    .filter((part) => part.length > 0)
-    .join(', ');
-}
-
-function splitDefaultPickupAddress(
-  defaultAddress: string,
-  knownProvinces: string[],
-): { addressDetail: string; province: string } {
-  const trimmedAddress = defaultAddress.trim();
-  if (!trimmedAddress) {
-    return {
-      addressDetail: '',
-      province: '',
-    };
-  }
-
-  const matchedProvince = knownProvinces
-    .slice()
-    .sort((left, right) => right.length - left.length)
-    .find(
-      (province) =>
-        normalizeLocationKey(trimmedAddress) === normalizeLocationKey(province) ||
-        normalizeLocationKey(trimmedAddress).endsWith(normalizeLocationKey(`, ${province}`)) ||
-        normalizeLocationKey(trimmedAddress).endsWith(normalizeLocationKey(province)),
-    );
-
-  if (!matchedProvince) {
-    return {
-      addressDetail: trimmedAddress,
-      province: '',
-    };
-  }
-
-  const detail = trimmedAddress
-    .replace(new RegExp(`\\s*,?\\s*${escapeRegExp(matchedProvince)}\\s*$`, 'iu'), '')
-    .trim();
-
-  return {
-    addressDetail: detail,
-    province: matchedProvince,
-  };
-}
-
-function escapeRegExp(value: string): string {
-  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-}
-
-async function geocodeAddress(
-  address: string,
-  fallbackCoords?: { latitude?: number | null; longitude?: number | null } | null,
-): Promise<{ latitude: number | null; longitude: number | null }> {
-  const trimmed = address.trim();
-  if (!trimmed) {
-    return {
-      latitude: fallbackCoords?.latitude ?? null,
-      longitude: fallbackCoords?.longitude ?? null,
-    };
-  }
-
-  try {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 3500);
-    const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(
-      trimmed,
-    )}&format=json&limit=1&countrycodes=vn`;
-    const response = await fetch(url, {
-      signal: controller.signal,
-      headers: {
-        Accept: 'application/json',
-      },
-    });
-    clearTimeout(timeoutId);
-
-    if (response.ok) {
-      const data = (await response.json()) as Array<{ lat: string; lon: string }>;
-      if (Array.isArray(data) && data.length > 0 && data[0].lat && data[0].lon) {
-        const lat = parseFloat(data[0].lat);
-        const lon = parseFloat(data[0].lon);
-        if (Number.isFinite(lat) && Number.isFinite(lon)) {
-          return { latitude: lat, longitude: lon };
-        }
-      }
-    }
-  } catch {
-    // Network or timeout failure, smoothly fall back to hub/default coordinates
-  }
-
-  return {
-    latitude: fallbackCoords?.latitude ?? null,
-    longitude: fallbackCoords?.longitude ?? null,
-  };
-}
-
-function findHubByProvince(
-  hubLocations: HubLocationOption[],
-  province: string,
-): HubLocationOption | null {
-  const normalizedProvince = normalizeLocationKey(province);
-  if (!normalizedProvince) {
-    return null;
-  }
-
-  const matchedLocations = hubLocations.filter(
-    (location) => normalizeLocationKey(location.province) === normalizedProvince,
-  );
-
-  return (
-    matchedLocations.find((location) => location.type === 'BRANCH') ??
-    matchedLocations.find((location) => location.type === 'SORTING_CENTER') ??
-    matchedLocations[0] ??
-    null
-  );
-}
-
-function normalizeCreateForm(
-  form: Partial<CreateShipmentForm> | null | undefined,
-): CreateShipmentForm {
-  return {
-    ...DEFAULT_CREATE_FORM,
-    ...form,
-    senderName: form?.senderName ?? '',
-    senderPhone: form?.senderPhone ?? '',
-    senderProvince: form?.senderProvince ?? '',
-    senderWard: form?.senderWard ?? '',
-    senderAddressDetail: form?.senderAddressDetail ?? '',
-    senderHubCode: form?.senderHubCode ?? '',
-    senderAddress: form?.senderAddress ?? '',
-    receiverName: form?.receiverName ?? '',
-    receiverPhone: form?.receiverPhone ?? '',
-    receiverProvince: form?.receiverProvince ?? '',
-    receiverWard: form?.receiverWard ?? '',
-    receiverAddressDetail: form?.receiverAddressDetail ?? '',
-    receiverHubCode: form?.receiverHubCode ?? '',
-    receiverAddress: form?.receiverAddress ?? '',
-    receiverRegion: form?.receiverRegion ?? '',
-    itemType: form?.itemType ?? '',
-    weightKg: form?.weightKg ?? '',
-    lengthCm: form?.lengthCm ?? '',
-    widthCm: form?.widthCm ?? '',
-    heightCm: form?.heightCm ?? '',
-    codAmount: form?.codAmount ?? '',
-    serviceType: form?.serviceType ?? 'STANDARD',
-    deliveryNote: form?.deliveryNote ?? '',
-  };
-}
-
-function normalizeMerchantIdentity(value: unknown): string {
-  return typeof value === 'string' ? value.trim().toUpperCase() : '';
-}
-
-function normalizePhone(value: unknown): string {
-  return typeof value === 'string' ? value.replace(/\D/g, '') : '';
-}
-
-function isShipmentOwnedByUser(
-  shipment: ShipmentResponse,
-  user: MerchantSession['user'] | null,
-): boolean {
-  if (!user) {
-    return false;
-  }
-
-  const metadata = asRecord(shipment.metadata) ?? {};
-  const createdByMeta = asRecord(metadata.createdBy);
-  const ownerCandidates = [
-    metadata.createdBy,
-    metadata.createdByUsername,
-    metadata.createdByUserId,
-    metadata.merchantCode,
-    metadata.merchantUsername,
-    createdByMeta?.username,
-    createdByMeta?.userId,
-    createdByMeta?.id,
-    createdByMeta?.merchantCode,
-  ]
-    .map(normalizeMerchantIdentity)
-    .filter((value) => value.length > 0);
-
-  const normalizedUsername = normalizeMerchantIdentity(user.username);
-  const normalizedUserId = normalizeMerchantIdentity(user.id);
-
-  if (
-    ownerCandidates.some(
-      (candidate) =>
-        candidate === normalizedUsername ||
-        (normalizedUserId.length > 0 && candidate === normalizedUserId),
-    )
-  ) {
-    return true;
-  }
-
-  const senderMeta = asRecord(metadata.sender);
-  const senderPhone = normalizePhone(senderMeta?.phone);
-  const merchantPhone = normalizePhone(user.phone ?? '');
-
-  return (
-    senderPhone.length > 0 &&
-    merchantPhone.length > 0 &&
-    senderPhone === merchantPhone
-  );
-}
-
-function filterPickupRequestsByUser(
-  pickupRequests: PickupRequest[],
-  shipments: ShipmentResponse[],
-  user: MerchantSession['user'] | null,
-): PickupRequest[] {
-  if (!user) {
-    return [];
-  }
-
-  const ownedShipmentCodes = new Set(
-    shipments
-      .filter((shipment) => isShipmentOwnedByUser(shipment, user))
-      .map((shipment) => normalizeCode(shipment.code))
-      .filter((shipmentCode) => shipmentCode.length > 0),
-  );
-
-  return pickupRequests
-    .map((pickup) => ({
-      ...pickup,
-      items: pickup.items.filter((item) =>
-        ownedShipmentCodes.has(normalizeCode(item.shipmentCode)),
-      ),
-    }))
-    .filter((pickup) => pickup.items.length > 0);
-}
-
-interface RememberedMerchantCredentials {
-  username: string;
-  password?: string;
-  rememberMe: boolean;
-}
-
-const REMEMBERED_CREDENTIALS_STORAGE_KEY = 'merchant-web.remembered-credentials';
-
-function getRememberedCredentials(): RememberedMerchantCredentials | null {
-  if (typeof window === 'undefined') return null;
-  try {
-    const raw = window.localStorage.getItem(REMEMBERED_CREDENTIALS_STORAGE_KEY);
-    if (!raw) return null;
-    const parsed = JSON.parse(raw) as Partial<RememberedMerchantCredentials>;
-    if (!parsed || typeof parsed !== 'object' || typeof parsed.username !== 'string') {
-      return null;
-    }
-    return {
-      username: parsed.username.trim(),
-      password: typeof parsed.password === 'string' ? parsed.password : '',
-      rememberMe: Boolean(parsed.rememberMe ?? true),
-    };
-  } catch {
-    return null;
-  }
-}
-
-function saveRememberedCredentials(credentials: {
-  username: string;
-  password?: string;
-  rememberMe: boolean;
-}): void {
-  if (typeof window === 'undefined') return;
-  try {
-    if (!credentials.rememberMe || !credentials.username.trim()) {
-      window.localStorage.removeItem(REMEMBERED_CREDENTIALS_STORAGE_KEY);
-      return;
-    }
-    const payload: RememberedMerchantCredentials = {
-      username: credentials.username.trim(),
-      password: credentials.password || '',
-      rememberMe: true,
-    };
-    window.localStorage.setItem(REMEMBERED_CREDENTIALS_STORAGE_KEY, JSON.stringify(payload));
-  } catch {
-    // Ignore localStorage write failures
-  }
-}
-
-function clearRememberedCredentials(): void {
-  if (typeof window === 'undefined') return;
-  try {
-    window.localStorage.removeItem(REMEMBERED_CREDENTIALS_STORAGE_KEY);
-  } catch {
-    // Ignore
-  }
-}
-
-function formatMerchantAuthErrorMessage(rawMessage: string | null | undefined): string {
-  if (!rawMessage) {
-    return 'Sai tên đăng nhập hoặc mật khẩu. Vui lòng kiểm tra lại.';
-  }
-  const normalized = rawMessage.trim().toLowerCase();
-  if (
-    normalized.includes('invalid credentials') ||
-    normalized.includes('unauthorized') ||
-    normalized.includes('sai tên') ||
-    normalized.includes('mật khẩu không đúng') ||
-    normalized.includes('wrong password')
-  ) {
-    return 'Sai tên đăng nhập hoặc mật khẩu. Vui lòng kiểm tra lại.';
-  }
-  return rawMessage;
-}
 
 function MerchantApp(): React.JSX.Element {
   const [booting, setBooting] = useState(true);
@@ -3754,359 +2895,47 @@ function MerchantApp(): React.JSX.Element {
 
   if (!session) {
     return (
-      <div className="login-shell">
-        <div className="login-layout">
-          {/* Left Side: Visual Focus & Brand Identity */}
-          <section className="login-hero">
-            <img className="login-hero-img" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAH9tY3PsZjp-XCnVG-y43-sPKhb-INEfJPNHYxHTVdm69WwoXvGDiw7DfuvmU5b3DHK_888jICATCwV5G1g3uvdjTPamNKyM8KJB2Ei4T4RBJ-M4US87urT0uP9tXDcCuNPz6FtF-nTa_G-XDYI2LyIsduJvHEffTuIOfqjWvAttJm8D15E5_GNR64ZxIKkl1kwxBKH-3LgX4daJfTkFTanBTrDiE0qwHwVdRRNZ_O-PizHz0CEsugBHSQU-6tzxan_Mxrdatluq8" alt="Logistics Background" />
-            <div className="login-hero-overlay" />
-            <div className="login-hero-content">
-              <div className="login-hero-top">
-                <span className="material-symbols-outlined brand-icon">hub</span>
-                <h1 className="brand-title">NEXUS Logistic</h1>
-              </div>
-              <div className="login-hero-copy">
-                <h2 className="login-hero-title">Nền tảng Logistics thông minh cho doanh nghiệp hiện đại</h2>
-                <p className="login-hero-text">Kết nối vận chuyển toàn cầu với quy trình tối ưu và dữ liệu thời gian thực.</p>
-              </div>
-              <div className="login-hero-stats">
-                <div className="login-stat">
-                  <strong>10k+</strong>
-                  <span>Đối tác tin dùng</span>
-                </div>
-                <div className="login-stat">
-                  <strong>24/7</strong>
-                  <span>Hỗ trợ kỹ thuật</span>
-                </div>
-              </div>
-            </div>
-          </section>
-
-          {/* Right Side: Login Form */}
-          <div className="login-card">
-            <div className="login-card-inner">
-              <div className="login-brand-header">
-                <div className="login-brand-logo">
-                  <span className="material-symbols-outlined brand-icon">hub</span>
-                  <span className="brand-title">NEXUS Logistic</span>
-                </div>
-                <p className="login-kicker-label">Merchant Portal</p>
-              </div>
-              
-              <div className="login-header-group">
-                <h2 className="login-title-new">Chào mừng trở lại</h2>
-                <p className="login-subtitle-new">Vui lòng nhập thông tin để truy cập hệ thống quản lý</p>
-              </div>
-
-              <form className="login-form-new" onSubmit={handleLogin}>
-                <div className="login-field-group">
-                  <label className="login-field-label" htmlFor="username">Mã Shop / SĐT / Email</label>
-                  <div className="login-input-wrapper">
-                    <span className="material-symbols-outlined login-input-icon">storefront</span>
-                    <input 
-                      className="login-input" 
-                      id="username" 
-                      value={loginUsername} 
-                      onChange={(e) => setLoginUsername(e.target.value)} 
-                      placeholder="VD: 41100001 hoặc 0941000001" 
-                      type="text" 
-                    />
-                  </div>
-                  <span className="login-field-hint">
-                    Đăng nhập bằng Mã bưu cục shop (41100001), Số điện thoại (0941000001) hoặc Email demo
-                  </span>
-                </div>
-
-                <div className="login-field-group">
-                  <label className="login-field-label" htmlFor="password">Mật khẩu</label>
-                  <div className="login-input-wrapper">
-                    <span className="material-symbols-outlined login-input-icon">lock</span>
-                    <input 
-                      className="login-input login-input-password" 
-                      id="password" 
-                      value={loginPassword} 
-                      onChange={(e) => setLoginPassword(e.target.value)} 
-                      placeholder="••••••••" 
-                      type={showPassword ? "text" : "password"} 
-                    />
-                    <button 
-                      className="login-input-toggle-btn" 
-                      type="button" 
-                      onClick={() => setShowPassword(!showPassword)}
-                    >
-                      <span className="material-symbols-outlined">
-                        {showPassword ? "visibility_off" : "visibility"}
-                      </span>
-                    </button>
-                  </div>
-                </div>
-
-                {/* Quick Demo Preset Selector */}
-                <div className="login-demo-presets">
-                  <div className="login-demo-header">
-                    <span className="material-symbols-outlined login-demo-icon">bolt</span>
-                    <span className="login-demo-title">Tài khoản Demo Nhanh (Click tự điền)</span>
-                  </div>
-                  <div className="login-demo-chip-list">
-                    <button
-                      type="button"
-                      className={`login-demo-chip ${loginUsername === '41100001' ? 'active' : ''}`}
-                      onClick={() => fillDemoAccount('41100001')}
-                      title="Shop Hàng Bài - Hoàn Kiếm, Hà Nội (SĐT: 0941000001)"
-                    >
-                      <span className="login-chip-badge hn">HN</span>
-                      <span className="login-chip-code">41100001</span>
-                      <span className="login-chip-name">P. Hàng Bài</span>
-                    </button>
-                    <button
-                      type="button"
-                      className={`login-demo-chip ${loginUsername === '41100048' ? 'active' : ''}`}
-                      onClick={() => fillDemoAccount('41100048')}
-                      title="Shop Thạch Thang - Hải Châu, Đà Nẵng (SĐT: 0941000048)"
-                    >
-                      <span className="login-chip-badge dn">ĐN</span>
-                      <span className="login-chip-code">41100048</span>
-                      <span className="login-chip-name">P. Thạch Thang</span>
-                    </button>
-                    <button
-                      type="button"
-                      className={`login-demo-chip ${loginUsername === '41100079' ? 'active' : ''}`}
-                      onClick={() => fillDemoAccount('41100079')}
-                      title="Shop Bến Thành - Quận 1, TP.HCM (SĐT: 0941000079)"
-                    >
-                      <span className="login-chip-badge hcm">HCM</span>
-                      <span className="login-chip-code">41100079</span>
-                      <span className="login-chip-name">P. Bến Thành</span>
-                    </button>
-                  </div>
-                </div>
-
-                <div className="login-utilities">
-                  <label className="login-remember-label">
-                    <input
-                      className="login-remember-checkbox"
-                      type="checkbox"
-                      checked={rememberMe}
-                      onChange={(e) => setRememberMe(e.target.checked)}
-                    />
-                    <span className="login-remember-text">Ghi nhớ đăng nhập</span>
-                  </label>
-                  <a className="login-forgot-link" href="#" onClick={(e) => e.preventDefault()}>Quên mật khẩu?</a>
-                </div>
-
-                <button className="login-submit-btn" type="submit" disabled={loginLoading}>
-                  <span>{loginLoading ? 'Đang Đăng Nhập...' : 'Đăng Nhập'}</span>
-                  <span className="material-symbols-outlined">login</span>
-                </button>
-              </form>
-
-              {/* Login Error Modal Dialog */}
-              {loginError && (
-                <div className="ops-modal-backdrop" onClick={() => setLoginError(null)}>
-                  <div
-                    className="ops-modal-card ops-modal-card--sm ops-login-error-modal"
-                    onClick={(e) => e.stopPropagation()}
-                    role="alertdialog"
-                    aria-modal="true"
-                    aria-labelledby="merchant-login-error-title"
-                  >
-                    <div className="ops-login-error-header">
-                      <div className="ops-login-error-icon-circle">
-                        <span className="material-symbols-outlined">error</span>
-                      </div>
-                      <button
-                        type="button"
-                        className="ops-modal-close-btn"
-                        onClick={() => setLoginError(null)}
-                        aria-label="Đóng thông báo"
-                      >
-                        <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>close</span>
-                      </button>
-                    </div>
-
-                    <div className="ops-login-error-body">
-                      <h3 id="merchant-login-error-title" className="ops-login-error-title">
-                        Đăng nhập không thành công
-                      </h3>
-                      <p className="ops-login-error-message">
-                        {loginError}
-                      </p>
-                    </div>
-
-                    <div className="ops-login-error-footer">
-                      <button
-                        type="button"
-                        className="ops-login-error-btn"
-                        onClick={() => setLoginError(null)}
-                        autoFocus
-                      >
-                        <span>Đã hiểu & Đăng nhập lại</span>
-                        <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>check_circle</span>
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              <div className="login-footer-support">
-                <p className="login-footer-support-text">
-                  Chưa có tài khoản?
-                  <a className="login-footer-support-link" href="#" onClick={(e) => e.preventDefault()}>
-                    Liên hệ bộ phận hỗ trợ
-                    <span className="material-symbols-outlined">support_agent</span>
-                  </a>
-                </p>
-              </div>
-
-              <div className="login-copyright-section">
-                <p className="login-copyright-text">© 2026 NEXUS Logistic System. All rights reserved.</p>
-                <div className="login-copyright-icons">
-                  <span className="material-symbols-outlined">language</span>
-                  <span className="material-symbols-outlined">security</span>
-                  <span className="material-symbols-outlined">policy</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+      <MerchantLoginForm
+        loginUsername={loginUsername}
+        loginPassword={loginPassword}
+        rememberMe={rememberMe}
+        loginLoading={loginLoading}
+        loginError={loginError}
+        showPassword={showPassword}
+        onUsernameChange={setLoginUsername}
+        onPasswordChange={setLoginPassword}
+        onRememberMeChange={setRememberMe}
+        onToggleShowPassword={() => setShowPassword(!showPassword)}
+        onClearLoginError={() => setLoginError(null)}
+        onSubmit={handleLogin}
+        onFillDemoAccount={fillDemoAccount}
+      />
     );
   }
 
   return (
     <div className="app-shell app-shell--stitch">
-      <aside className="sidebar sidebar--stitch">
-        <div className="brand-lockup brand-lockup--stitch" style={{ marginBottom: '12px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span className="material-symbols-outlined" style={{ fontSize: '26px', color: '#0052cc' }}>hub</span>
-            <h2 className="brand-title">NEXUS Logistic</h2>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '6px', flexWrap: 'wrap' }}>
-            <span className="sidebar-badge-verified">
-              <span className="material-symbols-outlined" style={{ fontSize: '13px' }}>verified</span>
-              <span>Merchant Partner</span>
-            </span>
-            <span className="sidebar-badge-hub">{lockedSenderHub?.hubCode || 'HUB SÀI GÒN'}</span>
-          </div>
-        </div>
-
-        {/* Primary Action: Tạo đơn hàng mới */}
-        <div style={{ padding: '0 0 8px' }}>
-          <button
-            type="button"
-            className="sidebar-cta-btn"
-            onClick={() => setActiveView('create-shipment')}
-          >
-            <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>add_circle</span>
-            <span>Tạo đơn hàng mới</span>
-          </button>
-        </div>
-
-        {/* Grouped Navigation */}
-        <nav className="nav-list nav-list--stitch" style={{ overflowY: 'auto', flex: 1, paddingRight: '2px' }}>
-          {navGroups.map((group) => (
-            <div key={group.groupTitle} className="nav-group-section">
-              <div className="nav-group-header">
-                <span>{group.groupTitle}</span>
-              </div>
-              {group.items.map((item) => (
-                <button
-                  key={item.id}
-                  className={`nav-btn nav-btn--stitch ${activeView === item.id ? 'active' : ''}`}
-                  onClick={() => setActiveView(item.id)}
-                >
-                  <span className="nav-btn__main">
-                    <span className="material-symbols-outlined nav-icon" aria-hidden="true">
-                      {item.icon}
-                    </span>
-                    <span>{item.label}</span>
-                  </span>
-                  {item.badge ? (
-                    <span className={`nav-badge-pill nav-badge-pill--${item.badgeType || 'count'}`}>
-                      {item.badge}
-                    </span>
-                  ) : null}
-                  {item.id === 'notifications' && unreadNotifications > 0 ? (
-                    <span className="nav-counter">{unreadNotifications}</span>
-                  ) : null}
-                </button>
-              ))}
-            </div>
-          ))}
-        </nav>
-
-        <div className="sidebar-actions sidebar-actions--stitch">
-          <button
-            className="btn btn-secondary sidebar-action"
-            onClick={() => void refreshAllData(session.accessToken, session.user)}
-            disabled={dataLoading}
-            title="Đồng bộ dữ liệu"
-          >
-            <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>sync</span>
-            <span>{dataLoading ? 'Đang tải...' : 'Làm mới'}</span>
-          </button>
-          <button className="btn btn-danger sidebar-action" onClick={() => void handleLogout()}>
-            <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>logout</span>
-            <span>Đăng xuất</span>
-          </button>
-        </div>
-      </aside>
+      <MerchantSidebar
+        lockedSenderHub={lockedSenderHub}
+        activeView={activeView}
+        navGroups={navGroups}
+        unreadNotifications={unreadNotifications}
+        dataLoading={dataLoading}
+        onSelectView={setActiveView}
+        onRefreshData={() => void refreshAllData(session.accessToken, session.user)}
+        onLogout={() => void handleLogout()}
+      />
 
       <div className="main">
-        <header className="topbar topbar--stitch">
-          <div className="topbar-shell-copy">
-            <strong className="topbar-title">{navItems.find((i) => i.id === activeView)?.label}</strong>
-            <div className="topbar-breadcrumb muted">{navItems.find((i) => i.id === activeView)?.subtitle}</div>
-          </div>
-          <div className="topbar-compact-actions">
-            {/* Quick Stat: COD Net Balance */}
-            <button
-              type="button"
-              className="topbar-quick-stat topbar-quick-stat--balance"
-              onClick={() => setActiveView('finance')}
-              title="Xem chi tiết sổ cái và đối soát tài chính"
-            >
-              <span className="material-symbols-outlined">account_balance_wallet</span>
-              <span>Số dư: <strong style={{ color: insights.netBalance >= 0 ? '#127a56' : '#ba1a1a' }}>{formatCurrency(insights.netBalance)}</strong></span>
-            </button>
-
-            {/* Quick Stat: Sender Hub */}
-            <div className="topbar-quick-stat topbar-quick-stat--hub" title="Bưu cục phụ trách tiếp nhận">
-              <span className="material-symbols-outlined">storefront</span>
-              <span>{lockedSenderHub?.hubName || lockedSenderHub?.hubCode || 'Bưu cục Sài Gòn'}</span>
-            </div>
-
-            <div className="topbar-icon-group">
-              <button
-                type="button"
-                className="topbar-icon-btn"
-                onClick={() => setActiveView('notifications')}
-                title="Thông báo"
-              >
-                <span className="material-symbols-outlined topbar-icon">notifications</span>
-                {unreadNotifications > 0 ? (
-                  <span style={{ position: 'absolute', top: '6px', right: '6px', width: '8px', height: '8px', borderRadius: '50%', background: '#dc2626' }} />
-                ) : null}
-              </button>
-              <button
-                type="button"
-                className="topbar-icon-btn"
-                onClick={() => setActiveView('account')}
-                title="Cài đặt tài khoản"
-              >
-                <span className="material-symbols-outlined topbar-icon">settings</span>
-              </button>
-              <div
-                className="topbar-user-badge"
-                onClick={() => setActiveView('account')}
-                title="Hồ sơ tài khoản"
-              >
-                <span className="topbar-avatar">{(session.user.username ?? 'M').slice(0, 1).toUpperCase()}</span>
-                <span style={{ fontSize: '13px', fontWeight: 600, color: '#102548' }}>{session.user.username}</span>
-              </div>
-            </div>
-          </div>
-        </header>
+        <MerchantHeader
+          activeView={activeView}
+          navItems={navItems}
+          netBalance={insights.netBalance}
+          lockedSenderHub={lockedSenderHub}
+          unreadNotifications={unreadNotifications}
+          username={session.user.username}
+          onSelectView={setActiveView}
+        />
         <main className={`content ${activeView === 'change-requests' ? 'content--change' : ''} ${activeView === 'print' ? 'content--print' : ''} ${activeView === 'returns' ? 'content--returns' : ''} ${activeView === 'account' ? 'content--account' : ''} ${activeView === 'finance' ? 'content--finance' : ''}`}>
           {dataError ? <p className="message error">{dataError}</p> : null}
 
@@ -4143,3522 +2972,403 @@ function MerchantApp(): React.JSX.Element {
           ) : null}
 
           {activeView === 'dashboard' ? (
-            <section className="dashboard-layout">
-              <div className="card dashboard-hero">
-                <div className="dashboard-hero__copy">
-                  <p className="login-kicker">Merchant performance</p>
-                  <h3>Tổng quan vận hành</h3>
-                  <p className="muted">Theo dõi nhịp đơn, COD và phí vận chuyển ước tính từ các vận đơn hiện có.</p>
-                </div>
-                <form className="dashboard-search" onSubmit={(e) => { void quickTrackFromDashboard(e); }}>
-                  <input className="input dashboard-search__input" value={dashboardSearchCode} onChange={(e) => setDashboardSearchCode(e.target.value)} placeholder="101000000001" />
-                  <button className="btn btn-primary dashboard-search__btn" type="submit">Tra cứu</button>
-                </form>
-              </div>
-
-              {/* Thẻ thông tin địa chỉ kho đăng ký & Bưu cục tiếp nhận của Shop phục vụ demo */}
-              {(() => {
-                const regShopAddress =
-                  profile.defaultPickupAddressDetail ||
-                  profile.defaultPickupAddress ||
-                  merchantProfileConfig?.defaultSenderAddress ||
-                  'Chưa cấu hình địa chỉ kho';
-
-                const regProvince =
-                  profile.defaultPickupProvince ||
-                  merchantProfileConfig?.regionLabel ||
-                  'Toàn quốc';
-
-                const defaultHub = lockedSenderHub ?? selectedAccountProvinceHub;
-                const regHubName =
-                  defaultHub?.hubName ||
-                  merchantProfileConfig?.defaultHubName ||
-                  'Bưu cục phụ trách';
-
-                const regHubCode =
-                  defaultHub?.hubCode ||
-                  merchantProfileConfig?.defaultHubCode ||
-                  'HUB_DEFAULT';
-
-                const regLat = profile.latitude ?? merchantProfileConfig?.latitude ?? defaultHub?.latitude;
-                const regLng = profile.longitude ?? merchantProfileConfig?.longitude ?? defaultHub?.longitude;
-
-                const regRoute = resolveRouteAndCourier(
-                  regShopAddress,
-                  defaultHub?.ward,
-                  undefined,
-                  regHubCode,
-                  true,
-                );
-
-                return (
-                  <div className="card merchant-location-card">
-                    <div className="merchant-location-card__header">
-                      <div className="merchant-location-card__title-box">
-                        <span className="material-symbols-outlined merchant-location-card__icon">storefront</span>
-                        <div>
-                          <div className="merchant-location-card__kicker">
-                            <span className="badge" style={{ backgroundColor: '#dcfce7', color: '#15803d', border: '1px solid #bbf7d0', fontWeight: 700 }}>Đang hoạt động</span>
-                            <span className="badge" style={{ backgroundColor: '#f1f5f9', color: '#334155', border: '1px solid #e2e8f0' }}>Tài khoản: {session.user.username}</span>
-                            {merchantProfileConfig?.citizenId ? (
-                              <span className="badge" style={{ backgroundColor: '#f1f5f9', color: '#334155', border: '1px solid #e2e8f0' }}>CCCD: {merchantProfileConfig.citizenId}</span>
-                            ) : null}
-                          </div>
-                          <h3 className="merchant-location-card__shop-name">
-                            {profile.shopName || session.user.displayName || 'Shop Đối Tác NEXUS'}
-                          </h3>
-                        </div>
-                      </div>
-                      <div className="merchant-location-card__hotline">
-                        <span className="material-symbols-outlined" style={{ fontSize: '18px', color: '#0284c7' }}>call</span>
-                        <span>Hotline Shop: <strong>{profile.contactPhone || session.user.phone || '0988-111-222'}</strong></span>
-                      </div>
-                    </div>
-
-                    <div className="merchant-location-grid">
-                      <div className="merchant-location-col">
-                        <div className="merchant-location-label">
-                          <span className="material-symbols-outlined" style={{ fontSize: '16px', color: '#dc2626' }}>location_on</span>
-                          <span>Kho hàng đăng ký lấy hàng</span>
-                        </div>
-                        <div className="merchant-location-value merchant-location-value--highlight">
-                          {regShopAddress}
-                        </div>
-                        <div className="merchant-location-sub">
-                          Khu vực: <strong>{regProvince}</strong>
-                          {regLat && regLng ? (
-                            <span className="merchant-location-coords" title="Tọa độ GPS kho hàng" style={{ display: 'inline-flex', alignItems: 'center', gap: '2px' }}>
-                              • <span className="material-symbols-outlined" style={{ fontSize: '14px', verticalAlign: 'middle' }}>my_location</span> GPS: {regLat.toFixed(5)}, {regLng.toFixed(5)}
-                            </span>
-                          ) : null}
-                        </div>
-                      </div>
-
-                      <div className="merchant-location-col">
-                        <div className="merchant-location-label">
-                          <span className="material-symbols-outlined" style={{ fontSize: '16px', color: '#2563eb' }}>domain</span>
-                          <span>Bưu cục (Hub) phụ trách tiếp nhận</span>
-                        </div>
-                        <div className="merchant-location-value">
-                          {regHubName}
-                        </div>
-                        <div className="merchant-location-sub">
-                          Mã bưu cục: <span className="badge" style={{ backgroundColor: '#eff6ff', color: '#1d4ed8', border: '1px solid #bfdbfe', fontWeight: 700 }}>{regHubCode}</span>
-                        </div>
-                      </div>
-
-                      <div className="merchant-location-col">
-                        <div className="merchant-location-label">
-                          <span className="material-symbols-outlined" style={{ fontSize: '16px', color: '#16a34a' }}>local_shipping</span>
-                          <span>Tuyến lấy & Shipper đảm nhiệm</span>
-                        </div>
-                        <div className="merchant-location-value" style={{ color: '#15803d', fontWeight: 700 }}>
-                          {regRoute.routeName}
-                        </div>
-                        <div className="merchant-location-sub">
-                          Shipper ID: <strong style={{ color: '#0f766e' }}>{regRoute.courierId}</strong> (Khớp phân vùng Geofence)
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })()}
-
-              {/* Lối tắt nghiệp vụ Doanh nghiệp (Enterprise Launchpad) */}
-              <div className="dashboard-launchpad">
-                <div
-                  className="dashboard-launchpad-card"
-                  onClick={() => setActiveView('create-shipment')}
-                >
-                  <div className="dashboard-launchpad-icon" style={{ background: '#e7efff', color: '#0052cc' }}>
-                    <span className="material-symbols-outlined">add_circle</span>
-                  </div>
-                  <div>
-                    <div className="dashboard-launchpad-title">Tạo đơn hàng mới</div>
-                    <div className="dashboard-launchpad-desc">Lên đơn nhanh, tính cước tức thì</div>
-                  </div>
-                </div>
-
-                <div
-                  className="dashboard-launchpad-card"
-                  onClick={() => setActiveView('pickups')}
-                >
-                  <div className="dashboard-launchpad-icon" style={{ background: '#e8f7f0', color: '#127a56' }}>
-                    <span className="material-symbols-outlined">local_shipping</span>
-                  </div>
-                  <div>
-                    <div className="dashboard-launchpad-title">Yêu cầu lấy hàng (Pickup)</div>
-                    <div className="dashboard-launchpad-desc">Bưu tá tới kho lấy tận nơi</div>
-                  </div>
-                </div>
-
-                <div
-                  className="dashboard-launchpad-card"
-                  onClick={() => setActiveView('finance')}
-                >
-                  <div className="dashboard-launchpad-icon" style={{ background: '#fff4d9', color: '#8b5f07' }}>
-                    <span className="material-symbols-outlined">account_balance_wallet</span>
-                  </div>
-                  <div>
-                    <div className="dashboard-launchpad-title">Đối soát & Tiền hàng COD</div>
-                    <div className="dashboard-launchpad-desc">Theo dõi dòng tiền, cấn trừ cước T2-4-6</div>
-                  </div>
-                </div>
-
-                <div
-                  className="dashboard-launchpad-card"
-                  onClick={() => setActiveView('print')}
-                >
-                  <div className="dashboard-launchpad-icon" style={{ background: '#f1f4ff', color: '#0059b8' }}>
-                    <span className="material-symbols-outlined">print</span>
-                  </div>
-                  <div>
-                    <div className="dashboard-launchpad-title">In vận đơn hàng loạt</div>
-                    <div className="dashboard-launchpad-desc">Tem nhãn chuẩn A5 & K80 nhiệt</div>
-                  </div>
-                </div>
-
-                <div
-                  className="dashboard-launchpad-card"
-                  onClick={() => setActiveView('claims')}
-                >
-                  <div className="dashboard-launchpad-icon" style={{ background: '#fef2f2', color: '#dc2626' }}>
-                    <span className="material-symbols-outlined">gavel</span>
-                  </div>
-                  <div>
-                    <div className="dashboard-launchpad-title">Khiếu nại & Đền bù</div>
-                    <div className="dashboard-launchpad-desc">Xử lý sự cố bể vỡ, thất lạc</div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="metric-grid dashboard-metrics">
-                <div className="metric dashboard-metric"><div className="metric-title">Tổng số đơn hôm nay</div><div className="metric-value">{dashboardStats.totalToday}</div><div className="dashboard-metric__hint">Tạo mới trong ngày</div></div>
-                <div className="metric dashboard-metric"><div className="metric-title">Đơn chờ pickup</div><div className="metric-value">{dashboardStats.waitingPickup}</div><div className="dashboard-metric__hint">Cần bàn giao lấy hàng</div></div>
-                <div className="metric dashboard-metric"><div className="metric-title">Đơn đang giao</div><div className="metric-value">{dashboardStats.inTransit}</div><div className="dashboard-metric__hint">Đang luân chuyển</div></div>
-                <div className="metric dashboard-metric"><div className="metric-title">Đơn giao thành công</div><div className="metric-value">{dashboardStats.delivered}</div><div className="dashboard-metric__hint">{dashboardInsights.deliveryRate}% toàn bộ đơn</div></div>
-                <div className="metric dashboard-metric"><div className="metric-title">Thất bại / hoàn</div><div className="metric-value">{dashboardStats.failedOrReturn}</div><div className="dashboard-metric__hint">{dashboardInsights.issueRate}% cần theo dõi</div></div>
-              </div>
-
-              <div className="dashboard-chart-grid">
-                <section className="card dashboard-chart-card dashboard-chart-card--wide">
-                  <div className="dashboard-card-header">
-                    <div>
-                      <p className="login-kicker">7 ngày gần nhất</p>
-                      <h3>Đơn hàng & phí vận chuyển</h3>
-                    </div>
-                    <span className="badge">{formatCurrency(dashboardInsights.totalFee)} phí ước tính</span>
-                  </div>
-                  <div className="dashboard-bars" aria-label="Biểu đồ đơn hàng 7 ngày gần nhất">
-                    {dashboardInsights.dailySeries.map((item) => (
-                      <div className="dashboard-bar-item" key={item.key}>
-                        <div className="dashboard-bar-stack">
-                          <span className="dashboard-bar dashboard-bar--fee" style={{ height: `${Math.max(8, (item.fee / dashboardInsights.maxDailyFee) * 100)}%` }} title={`${formatCurrency(item.fee)} phí ước tính`} />
-                          <span className="dashboard-bar dashboard-bar--orders" style={{ height: `${Math.max(8, (item.orders / dashboardInsights.maxDailyOrders) * 100)}%` }} title={`${item.orders} đơn`} />
-                        </div>
-                        <strong>{item.orders}</strong>
-                        <span>{item.label}</span>
-                        <small>{item.shortDate}</small>
-                      </div>
-                    ))}
-                  </div>
-                  <div className="dashboard-legend">
-                    <span><i className="dashboard-dot dashboard-dot--orders" /> Số đơn</span>
-                    <span><i className="dashboard-dot dashboard-dot--fee" /> Phí ước tính</span>
-                  </div>
-                </section>
-
-                <section className="card dashboard-chart-card">
-                  <div className="dashboard-card-header">
-                    <div>
-                      <p className="login-kicker">Tỷ trọng</p>
-                      <h3>Trạng thái đơn</h3>
-                    </div>
-                  </div>
-                  <div className="dashboard-status-chart">
-                    <div className="dashboard-donut" style={{ background: dashboardInsights.donutGradient }}>
-                      <div><strong>{shipmentRows.length}</strong><span>đơn</span></div>
-                    </div>
-                    <div className="dashboard-status-list">
-                      {dashboardInsights.statusGroups.map((item) => (
-                        <div className="dashboard-status-row" key={item.key}>
-                          <span><i style={{ background: item.color }} />{item.label}</span>
-                          <strong>{item.count}</strong>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </section>
-              </div>
-
-              <div className="dashboard-bottom-grid">
-                <section className="card dashboard-chart-card">
-                  <div className="dashboard-card-header">
-                    <div>
-                      <p className="login-kicker">Dòng tiền</p>
-                      <h3>COD & phí</h3>
-                    </div>
-                  </div>
-                  <div className="dashboard-cash-list">
-                    {dashboardInsights.cashItems.map((item) => (
-                      <div className="dashboard-cash-row" key={item.label}>
-                        <div className="dashboard-cash-row__head"><span>{item.label}</span><strong>{formatCurrency(item.value)}</strong></div>
-                        <div className="dashboard-cash-bar"><span style={{ width: `${Math.max(4, (item.value / dashboardInsights.maxCashValue) * 100)}%`, background: item.color }} /></div>
-                      </div>
-                    ))}
-                  </div>
-                </section>
-
-                <section className="card dashboard-recent-card">
-                  <div className="dashboard-card-header">
-                    <div>
-                      <p className="login-kicker">Gần đây</p>
-                      <h3>Đơn mới tạo</h3>
-                    </div>
-                    <span className="badge">{recentRows.length} đơn</span>
-                  </div>
-                  {recentRows.length === 0 ? <div className="empty">Chưa có đơn hàng.</div> : <div className="table-wrap dashboard-table-wrap"><table><thead><tr><th>Mã</th><th>Người nhận</th><th>SĐT</th><th>Trạng thái</th><th>Ngày tạo</th><th>Xem</th></tr></thead><tbody>{recentRows.map((row) => <tr key={row.shipment.id}><td>{row.shipment.code}</td><td>{row.receiverName}</td><td>{row.receiverPhone}</td><td><span className={resolveShipmentStatusClass(row.shipment)}>{resolveShipmentStatusLabel(row.shipment)}</span></td><td>{formatDate(row.shipment.createdAt)}</td><td><button className="btn btn-ghost" onClick={() => { void openShipmentDetail(row.shipment.code); }}>Xem</button></td></tr>)}</tbody></table></div>}
-                </section>
-              </div>
-            </section>
+            <MerchantDashboardView
+              dashboardSearchCode={dashboardSearchCode}
+              onDashboardSearchCodeChange={setDashboardSearchCode}
+              onQuickTrackFromDashboard={quickTrackFromDashboard}
+              profile={profile}
+              merchantProfileConfig={merchantProfileConfig}
+              lockedSenderHub={lockedSenderHub}
+              selectedAccountProvinceHub={selectedAccountProvinceHub}
+              session={session}
+              resolveRouteAndCourier={resolveRouteAndCourier}
+              onNavigateView={setActiveView}
+              dashboardStats={dashboardStats}
+              dashboardInsights={dashboardInsights}
+              shipmentRows={shipmentRows}
+              recentRows={recentRows}
+              resolveShipmentStatusClass={resolveShipmentStatusClass}
+              resolveShipmentStatusLabel={resolveShipmentStatusLabel}
+              onOpenShipmentDetail={(shipmentCode) => {
+                void openShipmentDetail(shipmentCode);
+              }}
+            />
           ) : null}
 
           {activeView === 'create-shipment' ? (
-            <section className="create-shipment-bento">
-              <div className="bento-left-stack">
-                {hubLocations.length === 0 ? (
-                  <p className="message error">
-                    Chưa có hub hợp lệ. Admin cần tạo hub trước để merchant chọn địa chỉ gửi/nhận.
-                  </p>
-                ) : null}
-                {hubLocations.length > 0 && !lockedSenderHub ? (
-                  <p className="message error">
-                    Tài khoản này chưa được admin gán khu vực/bưu cục gửi. Vui lòng liên hệ admin để cập nhật.
-                  </p>
-                ) : null}
-
-                {/* THẺ 1: KHO LẤY HÀNG (CỐ ĐỊNH THEO HỢP ĐỒNG) - READ-ONLY */}
-                <section className="contract-pickup-card">
-                  <div className="contract-pickup-header">
-                    <div>
-                      <div className="contract-pickup-badge">
-                        <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>verified</span>
-                        <span>Kho lấy hàng cố định</span>
-                      </div>
-                      <h3 style={{ margin: '8px 0 0', fontSize: '18px', fontWeight: 700, color: 'var(--stitch-on-surface)' }}>
-                        Điểm lấy hàng hợp đồng
-                      </h3>
-                    </div>
-                    <button
-                      type="button"
-                      className="btn btn-secondary btn-sm"
-                      onClick={() => setActiveView('account')}
-                      title="Đến mục Hồ sơ để sửa đổi địa chỉ kho và đồng bộ lại tọa độ"
-                    >
-                      <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>edit_location_alt</span>
-                      <span>Thay đổi tại Hồ sơ</span>
-                    </button>
-                  </div>
-
-                  <div className="contract-pickup-grid">
-                    <div className="contract-pickup-item">
-                      <span className="contract-pickup-label">Tên cửa hàng / Người gửi</span>
-                      <span className="contract-pickup-value">
-                        {profile.shopName || session.user.displayName || session.user.username}
-                      </span>
-                    </div>
-                    <div className="contract-pickup-item">
-                      <span className="contract-pickup-label">Số điện thoại liên hệ</span>
-                      <span className="contract-pickup-value">
-                        {profile.contactPhone || session.user.phone || 'Chưa cập nhật'}
-                      </span>
-                    </div>
-                    <div className="contract-pickup-item contract-pickup-full-address">
-                      <span className="contract-pickup-label">Địa chỉ kho lấy hàng</span>
-                      <div className="contract-pickup-value" style={{ marginTop: '4px', fontSize: '13px', lineHeight: '1.5' }}>
-                        {profile.defaultPickupAddress ||
-                          createForm.senderAddress ||
-                          lockedSenderHub?.fullAddress ||
-                          'Chưa thiết lập địa chỉ kho'}
-                      </div>
-                    </div>
-                    <div className="contract-pickup-item">
-                      <span className="contract-pickup-label">Khu vực & Bưu cục phụ trách</span>
-                      <span className="contract-pickup-value">
-                        {lockedSenderHub
-                          ? `${lockedSenderHub.hubName} (${lockedSenderHub.hubCode}) - ${lockedSenderHub.province}`
-                          : 'Chưa gán bưu cục'}
-                      </span>
-                    </div>
-                    <div className="contract-pickup-item">
-                      <span className="contract-pickup-label">Phương thức điều phối</span>
-                      <span className="contract-pickup-value" style={{ color: 'var(--stitch-primary)' }}>
-                        Tự động gom & phân công tài xế (Auto-dispatch)
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="pickup-gps-badge">
-                    <span className="gps-indicator-dot"></span>
-                    <span>Tọa độ GPS điều phối: </span>
-                    <strong>
-                      {profile.latitude && profile.longitude
-                        ? `${profile.latitude.toFixed(5)}, ${profile.longitude.toFixed(5)}`
-                        : lockedSenderHub?.latitude && lockedSenderHub?.longitude
-                        ? `${lockedSenderHub.latitude.toFixed(5)}, ${lockedSenderHub.longitude.toFixed(5)}`
-                        : 'Đang xác định'}
-                    </strong>
-                    <span className="gps-verified-tag" style={{ display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
-                      <span className="material-symbols-outlined" style={{ fontSize: '13px' }}>verified</span>
-                      Đã liên kết hợp đồng
-                    </span>
-                  </div>
-
-                  <div className="contract-pickup-notice">
-                    <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>lock</span>
-                    <span>Địa chỉ lấy hàng được cố định theo hồ sơ đăng ký để đảm bảo điều phối tài xế chính xác.</span>
-                  </div>
-                </section>
-
-                {/* THẺ 2: THÔNG TIN NGƯỜI NHẬN HÀNG */}
-                <section className="form-section-card">
-                  <div className="form-section-header">
-                    <div className="form-section-title-group">
-                      <div className="form-section-icon">
-                        <span className="material-symbols-outlined">person_pin_circle</span>
-                      </div>
-                      <div>
-                        <h3>Thông tin người nhận</h3>
-                        <p className="form-section-subtitle">Nhập thông tin người nhận và bưu cục phát hàng</p>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="form-grid-2">
-                    <div className="form-field-group">
-                      <label className="field-label">
-                        <span>Họ và tên người nhận <span className="field-required">*</span></span>
-                      </label>
-                      <input
-                        className="input"
-                        placeholder="Nguyễn Văn A"
-                        value={createForm.receiverName}
-                        onChange={(event) =>
-                          setCreateForm((previous) => ({
-                            ...previous,
-                            receiverName: event.target.value,
-                          }))
-                        }
-                      />
-                    </div>
-
-                    <div className="form-field-group">
-                      <label className="field-label">
-                        <span>Số điện thoại <span className="field-required">*</span></span>
-                      </label>
-                      <input
-                        className="input"
-                        placeholder="0912345678"
-                        value={createForm.receiverPhone}
-                        onChange={(event) =>
-                          setCreateForm((previous) => ({
-                            ...previous,
-                            receiverPhone: event.target.value,
-                          }))
-                        }
-                      />
-                    </div>
-
-                    <div className="form-field-group">
-                      <label className="field-label">
-                        <span>Tỉnh / Thành phố nhận <span className="field-required">*</span></span>
-                      </label>
-                      <select
-                        className="select"
-                        value={createForm.receiverProvince}
-                        onChange={(event) => {
-                          const receiverProvince = event.target.value;
-                          setCreateForm((previous) => ({
-                            ...previous,
-                            receiverProvince,
-                            receiverWard: '',
-                            receiverHubCode: '',
-                            receiverRegion: receiverProvince,
-                            receiverAddress: '',
-                          }));
-                        }}
-                      >
-                        <option value="">Chọn Tỉnh / Thành phố nhận</option>
-                        {provinceOptions.map((province) => (
-                          <option key={'receiver-' + province} value={province}>
-                            {province}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
-                    <div className="form-field-group">
-                      <label className="field-label">
-                        <span>Phường / Xã & Bưu cục phát <span className="field-required">*</span></span>
-                      </label>
-                      <select
-                        className="select"
-                        value={selectedReceiverHub?.hubCode ?? ''}
-                        disabled={!createForm.receiverProvince}
-                        onChange={(event) => {
-                          const selectedHub = findHubByCode(hubLocations, event.target.value);
-                          setCreateForm((previous) => ({
-                            ...previous,
-                            receiverWard: selectedHub?.ward ?? '',
-                            receiverHubCode: selectedHub?.hubCode ?? '',
-                            receiverRegion: createForm.receiverProvince,
-                          }));
-                        }}
-                      >
-                        <option value="">Chọn phường/xã và bưu cục phụ trách</option>
-                        {receiverHubOptions.map((location) => (
-                          <option key={'receiver-hub-' + location.hubCode} value={location.hubCode}>
-                            {location.ward} - {location.hubName} ({location.hubCode})
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
-                    <div className="form-field-group form-field-group--span-2">
-                      <label className="field-label">
-                        <span>Địa chỉ chi tiết người nhận <span className="field-required">*</span></span>
-                        <span className="field-hint">Số nhà, ngõ ngách, tên đường/tòa nhà</span>
-                      </label>
-                      <input
-                        className="input"
-                        placeholder="Ví dụ: Tòa nhà Landmark 81, 720A Điện Biên Phủ"
-                        value={createForm.receiverAddressDetail}
-                        onChange={(event) =>
-                          setCreateForm((previous) => ({
-                            ...previous,
-                            receiverAddressDetail: event.target.value,
-                          }))
-                        }
-                      />
-                    </div>
-
-                    <div className="form-field-group form-field-group--span-2">
-                      <label className="field-label">
-                        <span>Ghi chú giao hàng</span>
-                        <span className="field-hint">Chỉ dẫn cho tài xế giao hàng</span>
-                      </label>
-                      <textarea
-                        className="textarea"
-                        style={{ minHeight: '80px' }}
-                        placeholder="Ví dụ: Giao giờ hành chính, gọi điện trước khi giao, cho khách kiểm tra hàng..."
-                        value={createForm.deliveryNote}
-                        onChange={(event) =>
-                          setCreateForm((previous) => ({
-                            ...previous,
-                            deliveryNote: event.target.value,
-                          }))
-                        }
-                      />
-                    </div>
-                  </div>
-                </section>
-
-                {/* THẺ 3: THÔNG TIN KIỆN HÀNG & DỊCH VỤ */}
-                <section className="form-section-card">
-                  <div className="form-section-header">
-                    <div className="form-section-title-group">
-                      <div className="form-section-icon">
-                        <span className="material-symbols-outlined">inventory_2</span>
-                      </div>
-                      <div>
-                        <h3>Kiện hàng & Dịch vụ</h3>
-                        <p className="form-section-subtitle">Thông số kích thước, tiền thu hộ và gói dịch vụ vận chuyển</p>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="form-grid-2">
-                    <div className="form-field-group">
-                      <label className="field-label">
-                        <span>Loại hàng hóa / Tên sản phẩm</span>
-                      </label>
-                      <input
-                        className="input"
-                        placeholder="Thời trang, mỹ phẩm, đồ gia dụng..."
-                        value={createForm.itemType}
-                        onChange={(event) =>
-                          setCreateForm((previous) => ({
-                            ...previous,
-                            itemType: event.target.value,
-                          }))
-                        }
-                      />
-                    </div>
-
-                    <div className="form-field-group">
-                      <label className="field-label">
-                        <span>Gói cước dịch vụ</span>
-                      </label>
-                      <select
-                        className="select"
-                        value={createForm.serviceType}
-                        onChange={(event) =>
-                          setCreateForm((previous) => ({
-                            ...previous,
-                            serviceType: event.target.value as CreateShipmentForm['serviceType'],
-                          }))
-                        }
-                      >
-                        <option value="STANDARD">STANDARD - Tiết kiệm tiêu chuẩn</option>
-                        <option value="EXPRESS">EXPRESS - Chuyển phát nhanh</option>
-                        <option value="SAME_DAY">SAME_DAY - Giao hỏa tốc trong ngày</option>
-                      </select>
-                    </div>
-
-                    <div className="form-field-group">
-                      <label className="field-label">
-                        <span>Chính sách đồng kiểm (Quyền xem hàng)</span>
-                        <span className="field-hint">Quy định quyền mở hàng của người nhận</span>
-                      </label>
-                      <select
-                        className="select"
-                        value={createForm.inspectionPolicy ?? 'VIEW_ONLY'}
-                        onChange={(event) =>
-                          setCreateForm((previous) => ({
-                            ...previous,
-                            inspectionPolicy: event.target.value as CreateShipmentForm['inspectionPolicy'],
-                          }))
-                        }
-                      >
-                        <option value="VIEW_ONLY">Cho xem hàng, không thử (Mặc định)</option>
-                        <option value="NONE">Không cho xem hàng (Thu COD trước khi mở)</option>
-                        <option value="TRY_ON">Cho thử hàng (Thử đồ / Kiểm tra hoạt động 5 phút)</option>
-                      </select>
-                    </div>
-
-                    <div className="form-field-group form-field-group--span-2">
-                      <label className="field-label">
-                        <span>Tiền thu hộ COD (VNĐ)</span>
-                        <span className="field-hint">Số tiền tài xế cần thu khi giao hàng (để 0 nếu đã thanh toán)</span>
-                      </label>
-                      <input
-                        className="input"
-                        type="number"
-                        placeholder="0"
-                        value={createForm.codAmount}
-                        onChange={(event) =>
-                          setCreateForm((previous) => ({
-                            ...previous,
-                            codAmount: event.target.value,
-                          }))
-                        }
-                      />
-                    </div>
-
-                    <div className="form-field-group form-field-group--span-2">
-                      <label className="field-label">
-                        <span>Khối lượng & Kích thước kiện hàng</span>
-                        <span className="field-hint">Hệ thống tự tính trọng lượng quy đổi thể tích</span>
-                      </label>
-                      <div className="form-grid-4">
-                        <div className="form-field-group">
-                          <input
-                            className="input"
-                            placeholder="Khối lượng (kg)"
-                            value={createForm.weightKg}
-                            onChange={(event) =>
-                              setCreateForm((previous) => ({
-                                ...previous,
-                                weightKg: event.target.value,
-                              }))
-                            }
-                            title="Khối lượng (kg)"
-                          />
-                        </div>
-                        <div className="form-field-group">
-                          <input
-                            className="input"
-                            placeholder="Dài (cm)"
-                            value={createForm.lengthCm}
-                            onChange={(event) =>
-                              setCreateForm((previous) => ({
-                                ...previous,
-                                lengthCm: event.target.value,
-                              }))
-                            }
-                            title="Chiều dài (cm)"
-                          />
-                        </div>
-                        <div className="form-field-group">
-                          <input
-                            className="input"
-                            placeholder="Rộng (cm)"
-                            value={createForm.widthCm}
-                            onChange={(event) =>
-                              setCreateForm((previous) => ({
-                                ...previous,
-                                widthCm: event.target.value,
-                              }))
-                            }
-                            title="Chiều rộng (cm)"
-                          />
-                        </div>
-                        <div className="form-field-group">
-                          <input
-                            className="input"
-                            placeholder="Cao (cm)"
-                            value={createForm.heightCm}
-                            onChange={(event) =>
-                              setCreateForm((previous) => ({
-                                ...previous,
-                                heightCm: event.target.value,
-                              }))
-                            }
-                            title="Chiều cao (cm)"
-                          />
-                        </div>
-                      </div>
-
-                      <div className="dimension-summary-box">
-                        <span>
-                          Quy đổi thể tích (D x R x C / 6000):{' '}
-                          <strong className="dimension-summary-highlight">
-                            {((Number(createForm.lengthCm || 0) *
-                              Number(createForm.widthCm || 0) *
-                              Number(createForm.heightCm || 0)) /
-                              6000).toFixed(2)}{' '}
-                            kg
-                          </strong>
-                        </span>
-                        <span>
-                          Khối lượng thực tế:{' '}
-                          <strong className="dimension-summary-highlight">
-                            {Number(createForm.weightKg || 0).toFixed(2)} kg
-                          </strong>
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </section>
-              </div>
-
-              {/* BENTO RIGHT STACK: TÓM TẮT CƯỚC, ACTIONS, & NHÁP ĐÃ LƯU */}
-              <div className="bento-right-stack">
-                <section className="order-summary-card">
-                  <div className="order-summary-header">
-                    <span className="material-symbols-outlined" style={{ color: 'var(--stitch-primary)' }}>
-                      receipt_long
-                    </span>
-                    <h3>Chi phí & Báo giá</h3>
-                  </div>
-
-                  <div className="summary-rows-stack">
-                    <div className="summary-row">
-                      <span>Gói dịch vụ</span>
-                      <strong style={{ color: 'var(--stitch-primary)' }}>{createForm.serviceType}</strong>
-                    </div>
-                    <div className="summary-row">
-                      <span>Hub lấy hàng</span>
-                      <strong>{lockedSenderHub ? `${lockedSenderHub.hubCode}` : 'Chưa gán'}</strong>
-                    </div>
-                    <div className="summary-row">
-                      <span>Hub phát hàng</span>
-                      <strong>{createForm.receiverHubCode || 'Chưa chọn'}</strong>
-                    </div>
-
-                    {/* Khối phân tích trọng lượng IATA */}
-                    <div className="summary-weight-breakdown-box">
-                      <div className="summary-weight-row">
-                        <span>Cân thực: <strong>{Number(createForm.weightKg || 0).toFixed(2)} kg</strong></span>
-                        <span>Thể tích: <strong>{((Number(createForm.lengthCm || 0) * Number(createForm.widthCm || 0) * Number(createForm.heightCm || 0)) / 6000).toFixed(2)} kg</strong></span>
-                      </div>
-                      <div className="summary-weight-highlight">
-                        <span>Khối lượng tính cước:</span>
-                        <strong style={{ color: 'var(--stitch-primary)', fontSize: '13px' }}>
-                          {Math.max(
-                            Number(createForm.weightKg || 0),
-                            Number(((Number(createForm.lengthCm || 0) * Number(createForm.widthCm || 0) * Number(createForm.heightCm || 0)) / 6000).toFixed(2)),
-                          ).toFixed(2)} kg
-                        </strong>
-                      </div>
-                    </div>
-
-                    {/* Chi tiết từng khoản phí nếu có quote breakdown */}
-                    {pricingQuote?.breakdown && pricingQuote.breakdown.length > 0 ? (
-                      <div className="summary-breakdown-items">
-                        {pricingQuote.breakdown.map((item, idx) => (
-                          <div key={idx} className="summary-row summary-row-sub">
-                            <span>{item.label}</span>
-                            <span>{formatCurrency(item.amount)}</span>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="summary-row">
-                        <span>Cước phí ước tính</span>
-                        <strong>{formatCurrency(effectiveFee)}</strong>
-                      </div>
-                    )}
-
-                    <div className="summary-row">
-                      <span>Tiền thu hộ COD</span>
-                      <strong>{formatCurrency(codAmount)}</strong>
-                    </div>
-                    <div className="summary-row total">
-                      <span>Tổng cước tạm tính</span>
-                      <span className="summary-total-fee">{formatCurrency(effectiveFee)}</span>
-                    </div>
-
-                    {/* Nút bấm & Hộp giải thích công thức chuẩn bưu chính */}
-                    <div className="summary-formula-box">
-                      <button
-                        type="button"
-                        className="summary-formula-btn"
-                        onClick={() => setShowMerchantFormulaHelp(!showMerchantFormulaHelp)}
-                      >
-                        <span>{showMerchantFormulaHelp ? 'Thu gọn thuyết minh' : 'Chi tiết công thức chiết tính'}</span>
-                        <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>
-                          {showMerchantFormulaHelp ? 'expand_less' : 'expand_more'}
-                        </span>
-                      </button>
-
-                      {showMerchantFormulaHelp ? (
-                        <div className="summary-formula-popover">
-                          <div className="summary-formula-item">
-                            <strong>Khối lượng tính cước (Chuẩn IATA)</strong>
-                            <code>max(Cân thực, (D×R×C)/6000)</code>
-                          </div>
-                          <div className="summary-formula-item">
-                            <strong>Cơ chế lũy tiến</strong>
-                            <span>Cước cơ sở (0.5kg đầu) + Nấc 0.5kg vượt + Phụ phí tuyến vùng miền.</span>
-                          </div>
-                          <div className="summary-formula-item">
-                            <strong>Bảo mật thông tin Người nhận</strong>
-                            <span>Người nhận chỉ thấy số tiền COD cần thanh toán, hoàn toàn bảo mật biểu phí chi tiết của Shop.</span>
-                          </div>
-                        </div>
-                      ) : null}
-                    </div>
-                  </div>
-
-                  <div className="summary-actions-grid">
-                    <div className="btn-secondary-actions-row">
-                      <button
-                        type="button"
-                        className="btn btn-secondary"
-                        disabled={quoteLoading}
-                        onClick={() => {
-                          void quoteCreateShipmentFee();
-                        }}
-                      >
-                        <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>calculate</span>
-                        <span>{quoteLoading ? 'Đang tính...' : 'Tính phí'}</span>
-                      </button>
-                      <button type="button" className="btn btn-ghost" onClick={saveDraft}>
-                        <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>save</span>
-                        <span>Lưu nháp</span>
-                      </button>
-                    </div>
-
-                    <button
-                      type="button"
-                      className="btn btn-primary btn-primary-action"
-                      disabled={createLoading || hubLocations.length === 0 || !lockedSenderHub || insights.isNegativeBalanceLocked}
-                      onClick={() => {
-                        void submitCreateShipment(false);
-                      }}
-                    >
-                      <span className="material-symbols-outlined">add_task</span>
-                      <span>{createLoading ? 'Đang xử lý...' : 'Tạo đơn hàng'}</span>
-                    </button>
-
-                    <button
-                      type="button"
-                      className="btn btn-primary btn-primary-action"
-                      style={{
-                        background: 'linear-gradient(135deg, #0052cc 0%, #0c56d0 100%)',
-                        boxShadow: '0 4px 14px rgba(0, 82, 204, 0.3)',
-                      }}
-                      disabled={createLoading || hubLocations.length === 0 || !lockedSenderHub || insights.isNegativeBalanceLocked}
-                      onClick={() => {
-                        void submitCreateShipment(true);
-                      }}
-                    >
-                      <span className="material-symbols-outlined">electric_bolt</span>
-                      <span>Tạo đơn & Yêu cầu lấy ngay</span>
-                    </button>
-                  </div>
-
-                  {insights.isNegativeBalanceLocked ? (
-                    <p className="message error" style={{ marginTop: '14px' }}>
-                      Tài khoản đang vượt hạn mức nợ cước ({formatCurrency(insights.netBalance)} &lt; -500.000đ). Vui lòng thanh toán cước qua VietQR để mở khóa tạo đơn.
-                    </p>
-                  ) : null}
-                  {quoteError ? <p className="message error" style={{ marginTop: '14px' }}>{quoteError}</p> : null}
-                  {createError ? <p className="message error" style={{ marginTop: '14px' }}>{createError}</p> : null}
-                  {createSuccess ? <p className="message success" style={{ marginTop: '14px' }}>{createSuccess}</p> : null}
-                </section>
-
-                {/* DANH SÁCH BẢN NHÁP */}
-                <section className="form-section-card" style={{ padding: '20px' }}>
-                  <div className="order-summary-header" style={{ marginBottom: '14px', paddingBottom: '10px' }}>
-                    <span className="material-symbols-outlined" style={{ color: 'var(--stitch-primary)' }}>draft</span>
-                    <h3 style={{ fontSize: '15px' }}>Nháp đã lưu</h3>
-                  </div>
-
-                  <div style={{ display: 'flex', gap: '8px', marginBottom: '14px' }}>
-                    <input
-                      className="input"
-                      value={draftName}
-                      onChange={(event) => setDraftName(event.target.value)}
-                      placeholder="Tên bản nháp..."
-                      style={{ padding: '8px 12px', fontSize: '13px' }}
-                    />
-                  </div>
-
-                  {drafts.length === 0 ? (
-                    <div className="empty" style={{ padding: '16px', fontSize: '13px' }}>Chưa có nháp nào.</div>
-                  ) : (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                      {drafts.slice(0, 5).map((draft) => (
-                        <div
-                          key={draft.id}
-                          style={{
-                            background: 'var(--stitch-surface-container-low)',
-                            border: '1px solid var(--stitch-surface-container-high)',
-                            borderRadius: '10px',
-                            padding: '12px',
-                            display: 'flex',
-                            flexDirection: 'column',
-                            gap: '6px',
-                          }}
-                        >
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <strong style={{ fontSize: '13px', color: 'var(--stitch-on-surface)' }}>{draft.name}</strong>
-                            <span style={{ fontSize: '11px', color: 'var(--stitch-primary)', fontWeight: 600 }}>
-                              {formatCurrency(draft.quoteFee)}
-                            </span>
-                          </div>
-                          <div style={{ fontSize: '11px', color: 'var(--stitch-on-surface-variant)' }}>
-                            {formatDate(draft.createdAt)}
-                          </div>
-                          <div className="btn-row" style={{ marginTop: '4px', gap: '6px' }}>
-                            <button
-                              type="button"
-                              className="btn btn-secondary btn-sm"
-                              style={{ padding: '4px 10px', fontSize: '12px' }}
-                              onClick={() => {
-                                const draftForm = normalizeCreateForm(draft.form);
-                                const senderProvince = lockedSenderHub?.province ?? draftForm.senderProvince;
-                                const senderWard = lockedSenderHub?.ward ?? draftForm.senderWard;
-                                setCreateForm({
-                                  ...draftForm,
-                                  senderProvince,
-                                  senderWard,
-                                  senderHubCode: lockedSenderHub?.hubCode ?? draftForm.senderHubCode,
-                                  senderAddressDetail:
-                                    profile.defaultPickupAddressDetail || draftForm.senderAddressDetail,
-                                  senderAddress:
-                                    profile.defaultPickupAddress ||
-                                    [
-                                      draftForm.senderAddressDetail.trim(),
-                                      senderWard,
-                                      senderProvince,
-                                    ]
-                                      .filter(Boolean)
-                                      .join(', '),
-                                  senderLatitude:
-                                    profile.latitude ??
-                                    merchantProfileConfig?.latitude ??
-                                    lockedSenderHub?.latitude ??
-                                    undefined,
-                                  senderLongitude:
-                                    profile.longitude ??
-                                    merchantProfileConfig?.longitude ??
-                                    lockedSenderHub?.longitude ??
-                                    undefined,
-                                });
-                                setQuotedFee(draft.quoteFee);
-                              }}
-                            >
-                              Tải lại
-                            </button>
-                            <button
-                              type="button"
-                              className="btn btn-danger btn-sm"
-                              style={{ padding: '4px 8px', fontSize: '12px' }}
-                              onClick={() =>
-                                setDrafts((previous) =>
-                                  previous.filter((item) => item.id !== draft.id),
-                                )
-                              }
-                            >
-                              Xóa
-                            </button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </section>
-              </div>
-            </section>
+            <CreateShipmentView
+              hubLocations={hubLocations}
+              lockedSenderHub={lockedSenderHub}
+              profile={profile}
+              session={session}
+              createForm={createForm}
+              setCreateForm={setCreateForm}
+              provinceOptions={provinceOptions}
+              receiverHubOptions={receiverHubOptions}
+              selectedReceiverHub={selectedReceiverHub}
+              pricingQuote={pricingQuote}
+              effectiveFee={effectiveFee}
+              codAmount={codAmount}
+              showMerchantFormulaHelp={showMerchantFormulaHelp}
+              setShowMerchantFormulaHelp={setShowMerchantFormulaHelp}
+              quoteLoading={quoteLoading}
+              createLoading={createLoading}
+              quoteError={quoteError}
+              createError={createError}
+              createSuccess={createSuccess}
+              insights={insights}
+              draftName={draftName}
+              setDraftName={setDraftName}
+              drafts={drafts}
+              setDrafts={setDrafts}
+              merchantProfileConfig={merchantProfileConfig}
+              setQuotedFee={setQuotedFee}
+              quoteCreateShipmentFee={() => {
+                void quoteCreateShipmentFee();
+              }}
+              saveDraft={saveDraft}
+              submitCreateShipment={submitCreateShipment}
+              onNavigateView={setActiveView}
+              findHubByCode={(locations, code) => (code ? findHubByCode(locations, code) : null)}
+            />
           ) : null}
-          {activeView === 'shipments' ? <>
-            <section className="card shipment-list-hero">
-              <div className="shipment-list-hero__copy">
-                <p className="login-kicker">Shipment management</p>
-                <h3>Danh sách shipment</h3>
-                <p className="muted">Theo dõi, lọc và thao tác trên toàn bộ đơn hàng merchant trong cùng một bảng điều phối.</p>
-              </div>
-              <div className="shipment-list-hero__stats">
-                <span className="badge">Hiển thị: {visibleRows.length}</span>
-                <span className="badge">Tổng khớp: {filteredRows.length}</span>
-                <span className="badge">Trang: {listPage}/{totalPages}</span>
-              </div>
-            </section>
-            <section className="card shipment-filters">
-              <div className="shipment-filters__header">
-                <div>
-                  <p className="login-kicker">Filters</p>
-                  <h3>Bộ lọc đơn hàng</h3>
-                </div>
-                <div className="shipment-filters__summary muted">Tìm theo mã, tên người nhận, số điện thoại, trạng thái, dịch vụ, khu vực và thời gian tạo.</div>
-              </div>
-              <div className="shipment-filters__grid">
-                <div className="shipment-field shipment-field--search">
-                  <label className="label">Tìm kiếm</label>
-                  <input className="input" placeholder="Tìm mã / tên / SĐT" value={listSearch} onChange={(e) => setListSearch(e.target.value)} />
-                </div>
-                <div className="shipment-field">
-                  <label className="label">Trạng thái</label>
-                  <select className="select" value={listStatus} onChange={(e) => setListStatus(e.target.value)}><option value="ALL">Tất cả trạng thái</option><option value="CREATED">CREATED</option><option value="UPDATED">UPDATED</option><option value="WAITING_PICKUP">CHO_LAY_HANG</option><option value="DELIVERED">DELIVERED</option><option value="DELIVERY_FAILED">DELIVERY_FAILED</option><option value="RETURN_STARTED">RETURN_STARTED</option><option value="RETURN_COMPLETED">RETURN_COMPLETED</option><option value="CANCELLED">CANCELLED</option></select>
-                </div>
-                <div className="shipment-field">
-                  <label className="label">Dịch vụ</label>
-                  <select className="select" value={listService} onChange={(e) => setListService(e.target.value)}><option value="ALL">Tất cả dịch vụ</option>{serviceOptions.map((o) => <option key={o}>{o}</option>)}</select>
-                </div>
-                <div className="shipment-field">
-                  <label className="label">Khu vực</label>
-                  <select className="select" value={listRegion} onChange={(e) => setListRegion(e.target.value)}><option value="ALL">Tất cả khu vực</option>{regionOptions.map((o) => <option key={o}>{o}</option>)}</select>
-                </div>
-                <div className="shipment-field">
-                  <label className="label">Từ ngày</label>
-                  <input className="input" type="date" value={listFromDate} onChange={(e) => setListFromDate(e.target.value)} />
-                </div>
-                <div className="shipment-field">
-                  <label className="label">Đến ngày</label>
-                  <input className="input" type="date" value={listToDate} onChange={(e) => setListToDate(e.target.value)} />
-                </div>
-              </div>
-            </section>
-            <section className="card shipment-table-card">
-              <div className="shipment-table-card__header">
-                <div>
-                  <p className="login-kicker">Data table</p>
-                  <h3>Đơn hàng đang hiển thị</h3>
-                </div>
-                <div className="shipment-table-card__meta muted">Tổng số bản ghi khớp bộ lọc: {filteredRows.length}</div>
-              </div>
-              <div className="table-wrap shipment-table-wrap">
-                <table className="shipment-table">
-                  <thead>
-                    <tr>
-                      <th>Mã vận đơn</th>
-                      <th>Người nhận</th>
-                      <th>SĐT</th>
-                      <th>Trạng thái</th>
-                      <th>COD</th>
-                      <th>Phí</th>
-                      <th>Dịch vụ</th>
-                      <th>Ngày tạo</th>
-                      <th className="shipment-actions-th">Thao tác</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {visibleRows.map((row) => {
-                      const normalizedShipmentCode = normalizeCode(row.shipment.code);
-                      const hasPickup = pickupByShipmentCode.has(normalizedShipmentCode);
-                      return (
-                        <tr key={row.shipment.id}>
-                          <td className="shipment-code-cell">{row.shipment.code}</td>
-                          <td>
-                            <div className="shipment-recipient">
-                              <strong>{row.receiverName}</strong>
-                            </div>
-                          </td>
-                          <td>{row.receiverPhone}</td>
-                          <td><span className={resolveShipmentStatusClass(row.shipment)}>{resolveShipmentStatusLabel(row.shipment)}</span></td>
-                          <td>{formatCurrency(row.codAmount)}</td>
-                          <td>{formatCurrency(row.feeEstimate)}</td>
-                          <td><span className="shipment-service-chip">{row.serviceType}</span></td>
-                          <td>{formatDate(row.shipment.createdAt)}</td>
-                          <td>
-                            <div className="shipment-actions">
-                              <button
-                                type="button"
-                                className="btn shipment-action-btn shipment-action-btn--primary"
-                                title="Xem chi tiết & cập nhật đơn hàng"
-                                onClick={() => { void openShipmentDetail(row.shipment.code); }}
-                              >
-                                <span className="material-symbols-outlined shipment-action-icon">visibility</span>
-                                <span>Chi tiết</span>
-                              </button>
-                              <button
-                                type="button"
-                                className="btn shipment-action-btn shipment-action-btn--icon"
-                                title="In vận đơn"
-                                onClick={() => printShipment(row)}
-                              >
-                                <span className="material-symbols-outlined shipment-action-icon">print</span>
-                              </button>
-                              <button
-                                type="button"
-                                className={`btn shipment-action-btn shipment-action-btn--icon ${hasPickup ? 'shipment-action-btn--pickup-done' : 'shipment-action-btn--pickup'}`}
-                                title={hasPickup ? 'Đã tạo yêu cầu lấy hàng' : 'Tạo yêu cầu lấy hàng (Pickup)'}
-                                disabled={hasPickup}
-                                onClick={() => {
-                                  if (hasPickup) return;
-                                  void createPickupForShipment(row.shipment.code, `manual pickup ${row.shipment.code}`)
-                                    .then((createdPickup) => {
-                                      pushNotification('success', 'Đã tạo pickup', `Pickup ${createdPickup.pickupCode} cho ${row.shipment.code}`);
-                                    })
-                                    .catch((error) => {
-                                      pushNotification('error', 'Không tạo được pickup', extractErrorMessage(error));
-                                    });
-                                }}
-                              >
-                                <span className="material-symbols-outlined shipment-action-icon">
-                                  {hasPickup ? 'check_circle' : 'local_shipping'}
-                                </span>
-                              </button>
-                              <button
-                                type="button"
-                                className="btn shipment-action-btn shipment-action-btn--icon shipment-action-btn--cancel"
-                                title="Hủy đơn hàng"
-                                onClick={() => {
-                                  const reason = window.prompt('Lý do hủy đơn', '') ?? '';
-                                  void cancelShipment(row.shipment.code, reason);
-                                }}
-                              >
-                                <span className="material-symbols-outlined shipment-action-icon">cancel</span>
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-              {visibleRows.length === 0 ? <div className="empty shipment-empty">Không có dữ liệu.</div> : null}
-              <div className="shipment-pagination">
-                <div className="shipment-pagination__summary muted">Hiển thị {(listPage - 1) * SHIPMENT_PAGE_SIZE + (visibleRows.length > 0 ? 1 : 0)} - {(listPage - 1) * SHIPMENT_PAGE_SIZE + visibleRows.length} trong tổng số {filteredRows.length} đơn khớp bộ lọc</div>
-                <div className="shipment-pagination__controls">
-                  <button className="btn btn-ghost shipment-pagination__btn" disabled={listPage <= 1} onClick={() => setListPage((p) => Math.max(p - 1, 1))}>Trước</button>
-                  <span className="badge shipment-pagination__badge">Trang {listPage}/{totalPages}</span>
-                  <button className="btn btn-ghost shipment-pagination__btn" disabled={listPage >= totalPages} onClick={() => setListPage((p) => Math.min(p + 1, totalPages))}>Sau</button>
-                </div>
-              </div>
-            </section>
-          </> : null}
+          {activeView === 'shipments' ? (
+            <ShipmentListView
+              visibleRows={visibleRows}
+              filteredRows={filteredRows}
+              listPage={listPage}
+              totalPages={totalPages}
+              listSearch={listSearch}
+              listStatus={listStatus}
+              listService={listService}
+              listRegion={listRegion}
+              listFromDate={listFromDate}
+              listToDate={listToDate}
+              serviceOptions={serviceOptions}
+              regionOptions={regionOptions}
+              pickupByShipmentCode={pickupByShipmentCode}
+              onSearchChange={setListSearch}
+              onStatusChange={setListStatus}
+              onServiceChange={setListService}
+              onRegionChange={setListRegion}
+              onFromDateChange={setListFromDate}
+              onToDateChange={setListToDate}
+              onPageChange={setListPage}
+              resolveShipmentStatusClass={resolveShipmentStatusClass}
+              resolveShipmentStatusLabel={resolveShipmentStatusLabel}
+              onOpenShipmentDetail={(code) => {
+                void openShipmentDetail(code);
+              }}
+              onPrintShipment={printShipment}
+              onCreatePickupForShipment={(code) => {
+                const normalizedShipmentCode = normalizeCode(code);
+                if (pickupByShipmentCode.has(normalizedShipmentCode)) return;
+                void createPickupForShipment(code, `manual pickup ${code}`)
+                  .then((createdPickup) => {
+                    pushNotification('success', 'Đã tạo pickup', `Pickup ${createdPickup.pickupCode} cho ${code}`);
+                  })
+                  .catch((error) => {
+                    pushNotification('error', 'Không tạo được pickup', extractErrorMessage(error));
+                  });
+              }}
+              onCancelShipment={(code) => {
+                const reason = window.prompt('Lý do hủy đơn', '') ?? '';
+                void cancelShipment(code, reason);
+              }}
+            />
+          ) : null}
 
-          {activeView === 'shipment-detail' ? <section className="grid">{!selectedShipment ? <div className="card"><div className="empty">Chưa chọn shipment.</div></div> : <><div className="card"><h3>Chi tiết shipment {selectedShipment.shipment.code}</h3><div className="details-grid"><div className="detail-box"><div className="label">Người gửi</div><div>{selectedShipment.senderName}<br />{selectedShipment.senderPhone}<br />{selectedShipment.senderAddress}</div></div><div className="detail-box"><div className="label">Hub gửi</div><div>{selectedShipment.senderHubCode}<br />{selectedShipment.senderWard}, {selectedShipment.senderProvince}</div></div><div className="detail-box"><div className="label">Người nhận</div><div>{selectedShipment.receiverName}<br />{selectedShipment.receiverPhone}<br />{selectedShipment.receiverAddress}</div></div><div className="detail-box"><div className="label">Hub nhận</div><div>{selectedShipment.receiverHubCode}<br />{selectedShipment.receiverWard}, {selectedShipment.receiverProvince}</div></div><div className="detail-box"><div className="label">Hàng hóa</div><div>{selectedShipment.itemType}<br />{selectedShipment.weightKg}kg</div></div><div className="detail-box"><div className="label">COD / Phí</div><div>{formatCurrency(selectedShipment.codAmount)}<br />{formatCurrency(selectedShipment.feeEstimate)}</div></div><div className="detail-box"><div className="label">Dịch vụ</div><div>{selectedShipment.serviceType}</div></div><div className="detail-box"><div className="label">Pickup</div><div>{pickupByShipmentCode.get(normalizeCode(selectedShipment.shipment.code))?.pickupCode ?? 'Chưa tạo pickup'}</div></div></div><div className="btn-row" style={{ marginTop: 8 }}><span className={resolveShipmentStatusClass(selectedShipment.shipment)}>{resolveShipmentStatusLabel(selectedShipment.shipment)}</span><button className="btn btn-danger" onClick={() => { const reason = window.prompt('Lý do hủy đơn', '') ?? ''; void cancelShipment(selectedShipment.shipment.code, reason); }}>Hủy đơn</button><button className="btn btn-ghost" onClick={() => printShipment(selectedShipment)}>In vận đơn</button></div></div><div className="card grid"><h3>Sửa đơn nếu còn cho phép</h3><div className="grid grid-3"><input className="input" value={detailReceiverPhone} onChange={(e) => setDetailReceiverPhone(e.target.value)} placeholder="SĐT người nhận" /><input className="input" value={detailReceiverAddress} onChange={(e) => setDetailReceiverAddress(e.target.value)} placeholder="Địa chỉ người nhận" /><input className="input" value={detailDeliveryNote} onChange={(e) => setDetailDeliveryNote(e.target.value)} placeholder="Ghi chú giao hàng" /></div><div className="btn-row"><button className="btn btn-primary" title={resolveDeliveryInfoChangeBlockReason(selectedShipment) ?? undefined} disabled={detailUpdating || Boolean(resolveDeliveryInfoChangeBlockReason(selectedShipment))} onClick={() => { void saveDetailUpdate(); }}>{detailUpdating ? 'Đang cập nhật...' : 'Sửa đơn'}</button><button className="btn btn-secondary" onClick={() => { setReturnCode(selectedShipment.shipment.code); setActiveView('returns'); }}>Yêu cầu hoàn hàng</button><button className="btn btn-secondary" style={{ backgroundColor: '#fffbeb', borderColor: '#fde68a', color: '#b45309' }} onClick={() => { setClaimShipmentCode(selectedShipment.shipment.code); setIsCreateClaimOpen(true); setActiveView('claims'); }}>Khiếu nại / Bồi thường</button></div>{detailError ? <p className="message error">{detailError}</p> : null}{detailSuccess ? <p className="message success">{detailSuccess}</p> : null}</div><div className="card"><h3>Timeline xử lý đơn</h3>{detailTrackError ? <p className="message error">{detailTrackError}</p> : null}<div className="timeline">{detailTrackTimeline.length === 0 ? <div className="empty">Chưa có tracking event.</div> : detailTrackTimeline.map((ev) => <div key={ev.id} className="timeline-item"><strong>{ev.eventType}</strong><div className="muted">{formatDate(ev.occurredAt)} | actor={ev.actor ?? 'system'} | loc={ev.locationText ?? ev.locationCode ?? 'N/A'}</div></div>)}</div>{detailTrackCurrent ? <p className="muted">Current: {detailTrackCurrent.currentStatus ?? 'N/A'} | Last event: {detailTrackCurrent.lastEventType ?? 'N/A'}</p> : null}</div></>}</section> : null}
+          {activeView === 'shipment-detail' ? (
+            <ShipmentDetailView
+              selectedShipment={selectedShipment}
+              pickupByShipmentCode={pickupByShipmentCode}
+              detailReceiverPhone={detailReceiverPhone}
+              detailReceiverAddress={detailReceiverAddress}
+              detailDeliveryNote={detailDeliveryNote}
+              detailUpdating={detailUpdating}
+              detailError={detailError}
+              detailSuccess={detailSuccess}
+              detailTrackError={detailTrackError}
+              detailTrackTimeline={detailTrackTimeline}
+              detailTrackCurrent={detailTrackCurrent}
+              resolveShipmentStatusClass={resolveShipmentStatusClass}
+              resolveShipmentStatusLabel={resolveShipmentStatusLabel}
+              resolveDeliveryInfoChangeBlockReason={resolveDeliveryInfoChangeBlockReason}
+              onReceiverPhoneChange={setDetailReceiverPhone}
+              onReceiverAddressChange={setDetailReceiverAddress}
+              onDeliveryNoteChange={setDetailDeliveryNote}
+              onSaveDetailUpdate={saveDetailUpdate}
+              onCancelShipment={(code) => {
+                const reason = window.prompt('Lý do hủy đơn', '') ?? '';
+                void cancelShipment(code, reason);
+              }}
+              onPrintShipment={printShipment}
+              onRequestReturn={(code) => {
+                setReturnCode(code);
+                setActiveView('returns');
+              }}
+              onCreateClaim={(code) => {
+                setClaimShipmentCode(code);
+                setIsCreateClaimOpen(true);
+                setActiveView('claims');
+              }}
+            />
+          ) : null}
 
-          {activeView === 'pickups' ? <>
-            <section className="card pickup-hero">
-              <div className="pickup-hero__copy">
-                <p className="login-kicker">Pickup flow</p>
-                <h3>Tạo và quản lý yêu cầu lấy hàng</h3>
-                <p className="muted">Tập hợp vận đơn, cấu hình thông tin lấy hàng và theo dõi toàn bộ pickup request trong cùng một giao diện điều phối.</p>
-              </div>
-              <div className="pickup-hero__stats">
-                <span className="badge">Pickup hiện có: {pickupRows.length}</span>
-                <span className="badge">Tổng pickup: {pickups.length}</span>
-              </div>
-            </section>
-            <section className="card pickup-selection-card">
-              <div className="pickup-form-card__header">
-                <div>
-                  <p className="login-kicker">Available orders</p>
-                  <h3>Chọn đơn hàng cần lấy</h3>
-                </div>
-                <div className="pickup-form-card__note muted">Đơn tạo buổi sáng sẽ lấy trong ngày. Đơn tạo buổi chiều sẽ được lấy trước 12:00 trưa ngày mai.</div>
-              </div>
-              <div className="table-wrap pickup-table-wrap">
-                <table className="pickup-table pickup-order-table">
-                  <thead>
-                    <tr>
-                      <th className="pickup-select-cell">
-                        <input
-                          aria-label="Chọn tất cả đơn hàng"
-                          checked={allPickupRowsSelected}
-                          className="pickup-checkbox"
-                          disabled={pickupSelectableRows.length === 0}
-                          type="checkbox"
-                          onChange={(event) => toggleAllPickupShipments(event.target.checked)}
-                        />
-                      </th>
-                      <th>Mã vận đơn</th>
-                      <th>Người nhận</th>
-                      <th>Dịch vụ</th>
-                      <th>Khối lượng</th>
-                      <th>Ngày tạo</th>
-                      <th>Kho lấy</th>
-                      <th>Thời gian lấy hàng</th>
-                      <th>Trạng thái</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {pickupSelectableRows.map((row) => {
-                      const normalizedCode = normalizeCode(row.shipment.code);
-                      return <tr key={row.shipment.id} className={selectedPickupCodeSet.has(normalizedCode) ? 'pickup-order-row is-selected' : 'pickup-order-row'}>
-                        <td className="pickup-select-cell">
-                          <input
-                            aria-label={`Chọn đơn ${row.shipment.code}`}
-                            checked={selectedPickupCodeSet.has(normalizedCode)}
-                            className="pickup-checkbox"
-                            type="checkbox"
-                            onChange={(event) => togglePickupShipmentSelection(row.shipment.code, event.target.checked)}
-                          />
-                        </td>
-                        <td className="pickup-code-cell">{row.shipment.code}</td>
-                        <td>
-                          <div className="pickup-recipient">
-                            <strong>{row.receiverName}</strong>
-                            <small>{row.receiverPhone} · {row.receiverAddress}</small>
-                          </div>
-                        </td>
-                        <td><span className="shipment-service-chip">{row.serviceType}</span></td>
-                        <td>{row.weightKg} kg</td>
-                        <td>{formatDate(row.shipment.createdAt)}</td>
-                        <td>{row.senderHubCode || '-'}</td>
-                        <td className="pickup-window-cell">{resolvePickupWindowForShipment(row)}</td>
-                        <td><span className={resolveShipmentStatusClass(row.shipment)}>{resolveShipmentStatusLabel(row.shipment)}</span></td>
-                      </tr>;
-                    })}
-                  </tbody>
-                </table>
-              </div>
-              {pickupSelectableRows.length === 0 ? <div className="empty pickup-empty">Không có đơn hàng khả dụng để tạo yêu cầu lấy hàng.</div> : null}
-              <div className="pickup-request-bar">
-                <div>
-                  <strong>{selectedPickupRows.length} đơn đã chọn</strong>
-                  <p className="muted">{selectedPickupWindowSummary}</p>
-                </div>
-                <button className="btn btn-primary pickup-submit-btn" type="button" disabled={pickupLoading || selectedPickupRows.length === 0} onClick={() => { void submitPickupRequest(); }}>{pickupLoading ? 'Đang tạo...' : 'Yêu cầu lấy hàng'}</button>
-              </div>
-              {pickupMessage ? <p className="message">{pickupMessage}</p> : null}
-            </section>
-            <section className="card pickup-table-card">
-              <div className="pickup-table-card__header">
-                <div>
-                  <p className="login-kicker">Request list</p>
-                  <h3>Danh sách yêu cầu pickup</h3>
-                </div>
-                <div className="pickup-table-card__controls">
-                  <label className="label pickup-table-card__label">Trạng thái</label>
-                  <select className="select pickup-table-card__select" value={pickupStatusFilter} onChange={(e) => setPickupStatusFilter(e.target.value)}><option value="ALL">Tất cả</option><option value="REQUESTED">chờ duyệt</option><option value="COMPLETED">đã lấy/hoàn tất</option><option value="CANCELLED">đã hủy</option></select>
-                </div>
-              </div>
-              <div className="table-wrap pickup-table-wrap">
-                <table className="pickup-table">
-                  <thead>
-                    <tr>
-                      <th>Mã lấy hàng</th>
-                      <th>Vận đơn</th>
-                      <th>Trạng thái</th>
-                      <th>Shipper</th>
-                      <th>Ngày tạo</th>
-                      <th>Hành động</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {pickupRows.map((item) => {
-                      const cancelBlockReason = resolvePickupCancelBlockReason(item);
-                      return <tr key={item.id}>
-                        <td className="pickup-code-cell">{item.pickupCode}</td>
-                        <td>{item.items.map((it) => it.shipmentCode).join(', ') || '-'}</td>
-                        <td><span className={statusClass(item.status)}>{item.status}</span></td>
-                        <td>
-                          {(() => {
-                            const shipperInfo = resolveShipperForPickup(item);
-                            if (shipperInfo === 'Chưa gán') {
-                              return <span className="pickup-shipper-chip">Chưa gán</span>;
-                            }
-                            return <span className="pickup-shipper-chip" style={{ borderColor: 'var(--stitch-primary)', color: 'var(--stitch-primary)', background: 'rgba(0, 89, 184, 0.08)' }}>{shipperInfo}</span>;
-                          })()}
-                        </td>
-                        <td>{formatDate(item.createdAt)}</td>
-                        <td>
-                          <div className="pickup-actions">
-                            <button className="btn btn-danger pickup-action-btn" title={cancelBlockReason ?? undefined} disabled={Boolean(cancelBlockReason)} onClick={() => { if (!session || cancelBlockReason) return; const reason = window.prompt('Lý do hủy pickup', '') ?? ''; void request<PickupRequest>(`/merchant/pickup/pickups/${encodeURIComponent(item.id)}/cancel`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ reason: reason.trim() || null }) }, session.accessToken).then((cancelled) => setPickups((prev) => prev.map((pickup) => pickup.id === item.id ? cancelled : pickup))); }}>Hủy pickup</button>
-                            {cancelBlockReason ? <div className="muted pickup-action-note">{cancelBlockReason}</div> : null}
-                          </div>
-                        </td>
-                      </tr>;
-                    })}
-                  </tbody>
-                </table>
-              </div>
-              {pickupRows.length === 0 ? <div className="empty pickup-empty">Chưa có yêu cầu pickup phù hợp bộ lọc.</div> : null}
-            </section>
-          </> : null}
+          {activeView === 'pickups' ? (
+            <PickupRequestView
+              pickupRows={pickupRows}
+              pickups={pickups}
+              pickupSelectableRows={pickupSelectableRows}
+              allPickupRowsSelected={allPickupRowsSelected}
+              selectedPickupCodeSet={selectedPickupCodeSet}
+              selectedPickupRows={selectedPickupRows}
+              selectedPickupWindowSummary={selectedPickupWindowSummary}
+              pickupLoading={pickupLoading}
+              pickupMessage={pickupMessage}
+              pickupStatusFilter={pickupStatusFilter}
+              resolvePickupWindowForShipment={resolvePickupWindowForShipment}
+              resolveShipmentStatusClass={resolveShipmentStatusClass}
+              resolveShipmentStatusLabel={resolveShipmentStatusLabel}
+              resolvePickupCancelBlockReason={resolvePickupCancelBlockReason}
+              resolveShipperForPickup={resolveShipperForPickup}
+              onToggleAllPickupShipments={toggleAllPickupShipments}
+              onTogglePickupShipmentSelection={togglePickupShipmentSelection}
+              onSubmitPickupRequest={submitPickupRequest}
+              onPickupStatusFilterChange={setPickupStatusFilter}
+              onCancelPickup={(item) => {
+                if (!session) return;
+                const reason = window.prompt('Lý do hủy pickup', '') ?? '';
+                void request<PickupRequest>(
+                  `/merchant/pickup/pickups/${encodeURIComponent(item.id)}/cancel`,
+                  {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ reason: reason.trim() || null }),
+                  },
+                  session.accessToken,
+                ).then((cancelled) =>
+                  setPickups((prev) =>
+                    prev.map((pickup) => (pickup.id === item.id ? cancelled : pickup)),
+                  ),
+                );
+              }}
+            />
+          ) : null}
 
-          {activeView === 'tracking' ? <>
-            <section className="card tracking-search-card">
-              <div className="tracking-search-card__header">
-                <div>
-                  <p className="login-kicker">Tracking lookup</p>
-                  <h3>Tra cứu vận đơn</h3>
-                </div>
-                <div className="tracking-search-card__hint muted">
-                  Xem trạng thái, hành trình và toàn bộ thông tin đơn hàng trong một màn hình.
-                </div>
-              </div>
-              <form className="tracking-search-form" onSubmit={(e) => { void lookupTracking(e); }}>
-                <div className="tracking-search-input">
-                  <span className="material-symbols-outlined tracking-search-input__icon">search</span>
-                  <input
-                    className="input tracking-search-input__field"
-                    value={trackingCode}
-                    onChange={(e) => setTrackingCode(e.target.value)}
-                    placeholder="Nhập mã vận đơn (VD: SHIP-123456789)"
-                  />
-                  {trackingCode ? (
-                    <button
-                      type="button"
-                      className="tracking-search-input__clear"
-                      title="Xóa mã"
-                      onClick={() => setTrackingCode('')}
-                    >
-                      <span className="material-symbols-outlined">close</span>
-                    </button>
-                  ) : null}
-                </div>
-                <button
-                  className="btn btn-primary tracking-search-btn"
-                  type="submit"
-                  disabled={trackingLoading || !trackingCode.trim()}
-                >
-                  <span className="material-symbols-outlined">search</span>
-                  <span>{trackingLoading ? 'Đang tra cứu...' : 'Tra cứu'}</span>
-                </button>
-              </form>
-
-              {/* Quick Sample / Recent Shipments Suggestions */}
-              {shipments.length > 0 ? (
-                <div className="tracking-quick-suggestions">
-                  <span className="tracking-quick-label">
-                    <span className="material-symbols-outlined">schedule</span>
-                    Đơn hàng gần đây:
-                  </span>
-                  <div className="tracking-quick-chips">
-                    {shipments.slice(0, 4).map((s) => (
-                      <button
-                        key={s.id}
-                        type="button"
-                        className={`tracking-quick-chip ${normalizeCode(trackingCode) === normalizeCode(s.code) ? 'tracking-quick-chip--active' : ''}`}
-                        onClick={() => {
-                          setTrackingCode(s.code);
-                          void lookupTracking(undefined, s.code);
-                        }}
-                      >
-                        <strong>{s.code}</strong>
-                        <span>({resolveShipmentStatusLabel(s)})</span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              ) : null}
-
-              {trackingError ? (
-                <div className="tracking-error-banner">
-                  <span className="material-symbols-outlined">error_outline</span>
-                  <div>
-                    <strong>Không tìm thấy dữ liệu vận đơn</strong>
-                    <p>{trackingError}</p>
-                  </div>
-                </div>
-              ) : null}
-            </section>
-
-            <section className="tracking-summary-grid">
-              <div className="card tracking-summary-card">
-                <div className="tracking-summary-card__header">
-                  <span className="tracking-summary-card__label">Trạng thái hiện tại</span>
-                  <span className="material-symbols-outlined tracking-summary-card__icon">sync_alt</span>
-                </div>
-                <div className="tracking-summary-card__body">
-                  {trackingCurrent?.currentStatus || trackingShipmentRow ? (
-                    <span className={`status ${trackingShipmentRow ? resolveShipmentStatusClass(trackingShipmentRow.shipment) : statusClass(trackingCurrent?.currentStatus ?? '')}`}>
-                      {trackingShipmentRow ? resolveShipmentStatusLabel(trackingShipmentRow.shipment) : (trackingCurrent?.currentStatus ?? 'N/A')}
-                    </span>
-                  ) : (
-                    <h4 className="tracking-summary-card__placeholder">N/A</h4>
-                  )}
-                </div>
-              </div>
-
-              <div className="card tracking-summary-card">
-                <div className="tracking-summary-card__header">
-                  <span className="tracking-summary-card__label">Vị trí hiện tại</span>
-                  <span className="material-symbols-outlined tracking-summary-card__icon">location_on</span>
-                </div>
-                <div className="tracking-summary-card__body">
-                  <h4 className={trackingCurrent?.currentLocationText || trackingCurrent?.currentLocationCode || trackingShipmentRow?.senderHubCode ? 'tracking-summary-card__value' : 'tracking-summary-card__placeholder'}>
-                    {trackingCurrent?.currentLocationText ?? trackingCurrent?.currentLocationCode ?? trackingShipmentRow?.senderHubCode ?? 'N/A'}
-                  </h4>
-                </div>
-              </div>
-
-              <div className="card tracking-summary-card">
-                <div className="tracking-summary-card__header">
-                  <span className="tracking-summary-card__label">Sự kiện cuối</span>
-                  <span className="material-symbols-outlined tracking-summary-card__icon">event_note</span>
-                </div>
-                <div className="tracking-summary-card__body">
-                  <h4 className={trackingCurrent?.lastEventType ? 'tracking-summary-card__value' : 'tracking-summary-card__placeholder'}>
-                    {trackingCurrent?.lastEventType ? formatTrackingEventName(trackingCurrent.lastEventType) : 'N/A'}
-                  </h4>
-                </div>
-              </div>
-
-              <div className="card tracking-summary-card">
-                <div className="tracking-summary-card__header">
-                  <span className="tracking-summary-card__label">Thời điểm sự kiện cuối</span>
-                  <span className="material-symbols-outlined tracking-summary-card__icon">schedule</span>
-                </div>
-                <div className="tracking-summary-card__body">
-                  <h4 className={trackingCurrent?.lastEventAt ? 'tracking-summary-card__value' : 'tracking-summary-card__placeholder'}>
-                    {trackingCurrent?.lastEventAt ? formatDate(trackingCurrent.lastEventAt) : '-'}
-                  </h4>
-                </div>
-              </div>
-            </section>
-
-            {!trackingShipmentRow && !trackingCurrent && trackingTimeline.length === 0 ? (
-              <section className="card tracking-empty-stitch">
-                <div className="tracking-empty-stitch__icon-wrap">
-                  <span className="material-symbols-outlined tracking-empty-stitch__icon">history</span>
-                </div>
-                <h4 className="tracking-empty-stitch__title">
-                  {trackingLoading ? 'Đang tra cứu dữ liệu...' : 'Chưa có timeline event.'}
-                </h4>
-                <p className="tracking-empty-stitch__desc muted">
-                  {trackingLoading
-                    ? 'Hệ thống đang kết nối và đồng bộ hành trình vận đơn từ mạng lưới hub & courier...'
-                    : 'Nhập mã vận đơn và nhấn "Tra cứu" để xem lịch sử hành trình chi tiết của đơn hàng này.'}
-                </p>
-
-                {shipments.length > 0 && !trackingLoading ? (
-                  <div className="tracking-empty-stitch__quick-panel">
-                    <div className="tracking-empty-stitch__quick-title">Hoặc chọn nhanh từ danh sách đơn hàng gần đây của bạn:</div>
-                    <div className="tracking-empty-stitch__quick-list">
-                      {shipments.slice(0, 5).map((s) => {
-                        const sRow = shipmentRows.find((r) => r.shipment.id === s.id);
-                        return (
-                          <div key={s.id} className="tracking-empty-stitch__quick-item">
-                            <div className="tracking-empty-stitch__quick-info">
-                              <strong>{s.code}</strong>
-                              <span>{sRow ? `${sRow.receiverName} · ${sRow.receiverProvince}` : formatDate(s.createdAt)}</span>
-                            </div>
-                            <span className={resolveShipmentStatusClass(s)}>{resolveShipmentStatusLabel(s)}</span>
-                            <button
-                              type="button"
-                              className="btn btn-secondary btn-sm"
-                              onClick={() => {
-                                setTrackingCode(s.code);
-                                void lookupTracking(undefined, s.code);
-                              }}
-                            >
-                              Tra cứu ngay
-                            </button>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                ) : null}
-              </section>
-            ) : (
-              <section className="tracking-detail-layout">
-                <div className="card tracking-order-card">
-                  <div className="tracking-order-card__header">
-                    <div>
-                      <p className="login-kicker">Shipment info</p>
-                      <h3>Thông tin đơn hàng</h3>
-                    </div>
-                    {trackingShipmentRow ? (
-                      <span className={resolveShipmentStatusClass(trackingShipmentRow.shipment)}>
-                        {resolveShipmentStatusLabel(trackingShipmentRow.shipment)}
-                      </span>
-                    ) : null}
-                  </div>
-
-                  {!trackingShipmentRow ? (
-                    <div className="empty tracking-empty tracking-empty--compact">
-                      {trackingLoading
-                        ? 'Đang tải thông tin đơn hàng...'
-                        : 'Đơn hàng không thuộc danh sách quản lý trực tiếp của tài khoản, thông tin hành trình được đồng bộ từ mạng lưới bưu cục.'}
-                    </div>
-                  ) : (
-                    <>
-                      {/* Code & Quick Action Toolbar */}
-                      <div className="tracking-code-action-bar">
-                        <div className="tracking-code-tag">
-                          <span className="material-symbols-outlined">tag</span>
-                          <strong>{trackingShipmentRow.shipment.code}</strong>
-                          <button
-                            type="button"
-                            className="tracking-copy-btn"
-                            title="Sao chép mã vận đơn"
-                            onClick={() => {
-                              void navigator.clipboard.writeText(trackingShipmentRow.shipment.code);
-                              setCopiedTracking(true);
-                              setTimeout(() => setCopiedTracking(false), 2000);
-                            }}
-                          >
-                            <span className="material-symbols-outlined">
-                              {copiedTracking ? 'check' : 'content_copy'}
-                            </span>
-                            <span>{copiedTracking ? 'Đã sao chép' : 'Sao chép'}</span>
-                          </button>
-                        </div>
-                        <div className="tracking-quick-action-btns">
-                          <button
-                            type="button"
-                            className="btn btn-ghost btn-sm"
-                            title="Xem chi tiết đơn hàng"
-                            onClick={() => { void openShipmentDetail(trackingShipmentRow.shipment.code); }}
-                          >
-                            <span className="material-symbols-outlined">visibility</span>
-                            <span>Chi tiết</span>
-                          </button>
-                          <button
-                            type="button"
-                            className="btn btn-ghost btn-sm"
-                            title="In vận đơn"
-                            onClick={() => printShipment(trackingShipmentRow)}
-                          >
-                            <span className="material-symbols-outlined">print</span>
-                            <span>In đơn</span>
-                          </button>
-                        </div>
-                      </div>
-
-                      {/* Visual Route Flow: Sender -> Receiver */}
-                      <div className="tracking-route-flow">
-                        <div className="tracking-route-node tracking-route-node--sender">
-                          <div className="tracking-route-node__header">
-                            <span className="material-symbols-outlined tracking-route-node__icon">upload</span>
-                            <div>
-                              <span className="tracking-route-node__kicker">Người gửi</span>
-                              <strong className="tracking-route-node__name">{trackingShipmentRow.senderName}</strong>
-                            </div>
-                          </div>
-                          <div className="tracking-route-node__phone">
-                            <span className="material-symbols-outlined">call</span>
-                            <span>{trackingShipmentRow.senderPhone}</span>
-                          </div>
-                          <div className="tracking-route-node__address">
-                            <span className="material-symbols-outlined">place</span>
-                            <span>{trackingShipmentRow.senderAddress}, {trackingShipmentRow.senderWard}, {trackingShipmentRow.senderProvince}</span>
-                          </div>
-                          {trackingShipmentRow.senderHubCode ? (
-                            <div className="tracking-route-node__hub">
-                              <span className="material-symbols-outlined">warehouse</span>
-                              <span>Hub gửi: <strong>{trackingShipmentRow.senderHubCode}</strong></span>
-                            </div>
-                          ) : null}
-                        </div>
-
-                        <div className="tracking-route-connector">
-                          <span className="material-symbols-outlined">arrow_forward</span>
-                          <span className="tracking-route-connector__line"></span>
-                        </div>
-
-                        <div className="tracking-route-node tracking-route-node--receiver">
-                          <div className="tracking-route-node__header">
-                            <span className="material-symbols-outlined tracking-route-node__icon">download</span>
-                            <div>
-                              <span className="tracking-route-node__kicker">Người nhận</span>
-                              <strong className="tracking-route-node__name">{trackingShipmentRow.receiverName}</strong>
-                            </div>
-                          </div>
-                          <div className="tracking-route-node__phone">
-                            <span className="material-symbols-outlined">call</span>
-                            <span>{trackingShipmentRow.receiverPhone}</span>
-                          </div>
-                          <div className="tracking-route-node__address">
-                            <span className="material-symbols-outlined">place</span>
-                            <span>{trackingShipmentRow.receiverAddress}, {trackingShipmentRow.receiverWard}, {trackingShipmentRow.receiverProvince}</span>
-                          </div>
-                          {trackingShipmentRow.receiverHubCode ? (
-                            <div className="tracking-route-node__hub">
-                              <span className="material-symbols-outlined">warehouse</span>
-                              <span>Hub nhận: <strong>{trackingShipmentRow.receiverHubCode}</strong></span>
-                            </div>
-                          ) : null}
-                        </div>
-                      </div>
-
-                      {/* Package Specifications & Financials */}
-                      <div className="tracking-info-grid">
-                        <div className="tracking-info-item">
-                          <span>Dịch vụ</span>
-                          <strong>{trackingShipmentRow.serviceType}</strong>
-                        </div>
-                        <div className="tracking-info-item">
-                          <span>Khối lượng</span>
-                          <strong>{trackingShipmentRow.weightKg} kg</strong>
-                        </div>
-                        <div className="tracking-info-item">
-                          <span>Thu hộ (COD)</span>
-                          <strong className="text-primary">{formatCurrency(trackingShipmentRow.codAmount)}</strong>
-                        </div>
-                        <div className="tracking-info-item">
-                          <span>Cước phí</span>
-                          <strong>{formatCurrency(trackingShipmentRow.feeEstimate)}</strong>
-                        </div>
-                        <div className="tracking-info-item">
-                          <span>Yêu cầu lấy hàng</span>
-                          <strong>{trackingPickupRequest?.pickupCode ?? 'Chưa tạo pickup'}</strong>
-                        </div>
-                        <div className="tracking-info-item">
-                          <span>Ngày tạo đơn</span>
-                          <strong>{formatDate(trackingShipmentRow.shipment.createdAt)}</strong>
-                        </div>
-                        {trackingShipmentRow.deliveryNote ? (
-                          <div className="tracking-info-item tracking-info-item--wide tracking-info-item--note">
-                            <span>Ghi chú giao hàng</span>
-                            <strong>{trackingShipmentRow.deliveryNote}</strong>
-                          </div>
-                        ) : null}
-                      </div>
-                    </>
-                  )}
-                </div>
-
-                {/* Right Column: Journey Timeline Stepper */}
-                <div className="card tracking-timeline-card">
-                  <div className="tracking-timeline-card__header">
-                    <div>
-                      <p className="login-kicker">Journey</p>
-                      <h3>Hành trình vận đơn</h3>
-                    </div>
-                    <span className="badge tracking-status-badge">
-                      <span className="material-symbols-outlined">format_list_bulleted</span>
-                      {trackingTimeline.length} sự kiện
-                    </span>
-                  </div>
-
-                  <div className="tracking-progress">
-                    {trackingTimeline.length === 0 ? (
-                      <div className="empty tracking-empty">
-                        {trackingLoading ? 'Đang tải hành trình vận đơn...' : 'Chưa có timeline event nào được ghi nhận.'}
-                      </div>
-                    ) : (
-                      <div className="tracking-stepper">
-                        {trackingTimeline.map((ev, index) => {
-                          const isLatest = index === 0;
-                          return (
-                            <div
-                              key={ev.id}
-                              className={`tracking-stepper-node ${isLatest ? 'tracking-stepper-node--latest' : ''}`}
-                            >
-                              <div className="tracking-stepper-dot">
-                                <span className="material-symbols-outlined">
-                                  {getTrackingEventIcon(ev.eventType)}
-                                </span>
-                              </div>
-                              <div className="tracking-stepper-content">
-                                <div className="tracking-stepper-header">
-                                  <div className="tracking-stepper-title-wrap">
-                                    <h4 className="tracking-stepper-title">
-                                      {formatTrackingEventName(ev.eventType)}
-                                    </h4>
-                                    {isLatest ? (
-                                      <span className="tracking-stepper-latest-badge">Mới nhất</span>
-                                    ) : null}
-                                  </div>
-                                  <span className="tracking-stepper-code-tag">{ev.eventType}</span>
-                                </div>
-
-                                {ev.statusAfterEvent ? (
-                                  <div className="tracking-stepper-status-after">
-                                    <span className="tracking-stepper-status-label">Trạng thái:</span>
-                                    <span className={statusClass(ev.statusAfterEvent)}>
-                                      {ev.statusAfterEvent}
-                                    </span>
-                                  </div>
-                                ) : null}
-
-                                <div className="tracking-stepper-meta">
-                                  <div className="tracking-stepper-meta-item" title="Thời điểm xảy ra">
-                                    <span className="material-symbols-outlined">schedule</span>
-                                    <span>{formatDate(ev.occurredAt)}</span>
-                                  </div>
-                                  <div className="tracking-stepper-meta-item" title="Địa điểm / Kho">
-                                    <span className="material-symbols-outlined">location_on</span>
-                                    <span>{ev.locationText ?? ev.locationCode ?? 'Trạm trung chuyển'}</span>
-                                  </div>
-                                  <div className="tracking-stepper-meta-item" title="Người thực hiện">
-                                    <span className="material-symbols-outlined">
-                                      {ev.actor ? 'person' : 'smart_toy'}
-                                    </span>
-                                    <span>{ev.actor ?? 'Hệ thống'}</span>
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </section>
-            )}
-          </> : null}
+          {activeView === 'tracking' ? (
+            <TrackingLookupView
+              trackingCode={trackingCode}
+              trackingLoading={trackingLoading}
+              trackingError={trackingError}
+              shipments={shipments}
+              shipmentRows={shipmentRows}
+              trackingCurrent={trackingCurrent}
+              trackingShipmentRow={trackingShipmentRow}
+              trackingPickupRequest={trackingPickupRequest}
+              trackingTimeline={trackingTimeline}
+              copiedTracking={copiedTracking}
+              resolveShipmentStatusClass={resolveShipmentStatusClass}
+              resolveShipmentStatusLabel={resolveShipmentStatusLabel}
+              onTrackingCodeChange={setTrackingCode}
+              onLookupTracking={lookupTracking}
+              onSetCopiedTracking={setCopiedTracking}
+              onOpenShipmentDetail={(code) => {
+                void openShipmentDetail(code);
+              }}
+              onPrintShipment={printShipment}
+            />
+          ) : null}
 
           {activeView === 'change-requests' ? (
-            <section className="card" style={{ maxWidth: 620, margin: '48px auto', textAlign: 'center', padding: '40px 24px' }}>
-              <div style={{ display: 'inline-flex', padding: 14, borderRadius: '50%', backgroundColor: '#f1f5f9', color: '#475569', marginBottom: 16 }}>
-                <span className="material-symbols-outlined" style={{ fontSize: 36 }}>domain_verification</span>
-              </div>
-              <h3 style={{ fontSize: 18, fontWeight: 700, color: '#0f172a', marginBottom: 10 }}>Tính năng đã được tinh giản theo chuẩn vận hành</h3>
-              <p className="muted" style={{ fontSize: 13, lineHeight: 1.6, marginBottom: 12 }}>
-                Để đảm bảo tính liên tục của hành trình xe tải trục Linehaul và tránh phát sinh in lại tem nhãn tại Hub, hệ thống không nhận yêu cầu đổi thông tin giao hàng sau khi hàng đã xuất kho.
-              </p>
-              <div style={{ textAlign: 'left', backgroundColor: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8, padding: 14, margin: '16px 0 24px 0', fontSize: 12.5, lineHeight: 1.6, color: '#334155' }}>
-                <div style={{ marginBottom: 6 }}>
-                  📦 <strong>Đơn hàng chưa bàn giao bưu tá</strong>: Quý khách có thể sửa trực tiếp thông tin người nhận tại màn hình <em>Chi tiết đơn hàng</em>.
-                </div>
-                <div>
-                  🔄 <strong>Đơn hàng giao không thành công</strong>: Quý khách vui lòng tạo <em>Yêu cầu hoàn hàng</em> hoặc đăng ký chuyển tiếp khi bưu tá báo sự cố.
-                </div>
-              </div>
-              <button className="btn btn-primary" onClick={() => setActiveView('shipments')}>
-                Quay lại danh sách đơn hàng
-              </button>
-            </section>
+            <ChangeRequestView onBackToShipments={() => setActiveView('shipments')} />
           ) : null}
 
-          {activeView === 'returns' ? <section className="returns-layout">
-            <div className="returns-top-grid">
-              <div className="returns-main-column">
-                <section className="card returns-search-card">
-                  <div className="returns-step-header">
-                    <span className="returns-step-badge">1</span>
-                    <h3>Bước 1: Tìm kiếm đơn hàng cần hoàn</h3>
-                  </div>
-                  <div className="returns-search-row">
-                    <div className="returns-search-input">
-                      <span className="material-symbols-outlined returns-search-icon">search</span>
-                      <input className="input returns-search-field" value={returnCode} onChange={(e) => setReturnCode(e.target.value)} placeholder="Nhập mã vận đơn (VD: NX-889201...)" />
-                    </div>
-                    <button className="btn btn-primary returns-search-btn" type="button">Tìm kiếm</button>
-                  </div>
-                </section>
-
-                <section className="card returns-order-card">
-                  <div className="returns-order-card__header">
-                    <h4>Thông tin đơn hàng</h4>
-                    <span className="returns-order-status">{returnShipmentPreview ? resolveShipmentStatusLabel(returnShipmentPreview.shipment) : 'Chờ giao lại'}</span>
-                  </div>
-                  <div className="returns-order-grid">
-                    <div className="returns-order-block">
-                      <div>
-                        <p className="muted">Người nhận</p>
-                        <strong>{returnShipmentPreview?.receiverName ?? 'Chưa có dữ liệu đơn hàng'}</strong>
-                      </div>
-                      <div>
-                        <p className="muted">Số điện thoại</p>
-                        <strong>{returnShipmentPreview?.receiverPhone ?? '-'}</strong>
-                      </div>
-                    </div>
-                    <div className="returns-order-block">
-                      <div>
-                        <p className="muted">Địa chỉ giao hàng</p>
-                        <span>{returnShipmentPreview?.receiverAddress ?? 'Nhập mã vận đơn để xem thông tin.'}</span>
-                      </div>
-                      <div>
-                        <p className="muted">Lịch sử giao hàng gần nhất</p>
-                        <span className="returns-order-note">Yêu cầu hoàn sẽ được duyệt ngay và chặn thao tác thường trên vận đơn.</span>
-                      </div>
-                    </div>
-                  </div>
-                </section>
-
-                <section className="card returns-form-card">
-                  <div className="returns-step-header">
-                    <span className="returns-step-badge">2</span>
-                    <h3>Yêu cầu hoàn</h3>
-                  </div>
-                  <form className="returns-form" onSubmit={(e) => { void createReturnRequest(e); }}>
-                    <div className="returns-field">
-                      <label className="label">Lý do hoàn hàng</label>
-                      <select className="select" value={returnReason} onChange={(e) => setReturnReason(e.target.value)}>
-                        <option value="">Chọn lý do hoàn hàng...</option>
-                        <option value="Khách hàng hủy đơn">Khách hàng hủy đơn</option>
-                        <option value="Không liên lạc được khách hàng">Không liên lạc được khách hàng</option>
-                        <option value="Sai địa chỉ giao hàng">Sai địa chỉ giao hàng</option>
-                        <option value="Hàng hóa bị hư hỏng">Hàng hóa bị hư hỏng</option>
-                        <option value="Khách từ chối nhận hàng">Khách từ chối nhận hàng</option>
-                      </select>
-                    </div>
-                    <div className="returns-field">
-                      <label className="label">Ghi chú chi tiết</label>
-                      <textarea className="textarea returns-notes" value={returnNotes} onChange={(e) => setReturnNotes(e.target.value)} placeholder="Nhập chi tiết yêu cầu hoàn hàng cho bưu tá..." />
-                    </div>
-                    <div className="returns-form-actions">
-                      <button className="btn btn-ghost" type="button">Hủy</button>
-                      <button className="btn btn-primary returns-submit-btn" type="submit" disabled={returnLoading}>{returnLoading ? 'Đang gửi...' : 'Gửi yêu cầu hoàn hàng'}</button>
-                    </div>
-                    {returnMessage ? <p className="message">{returnMessage}</p> : null}
-                  </form>
-                </section>
-              </div>
-
-              <div className="returns-side-column">
-                <section className="card returns-info-card">
-                  <div className="returns-info-card__header">
-                    <span className="returns-info-icon">i</span>
-                    <h4>Lưu ý quan trọng</h4>
-                  </div>
-                  <ul className="returns-info-list">
-                    <li>Yêu cầu hoàn hàng áp dụng cho các đơn đang xử lý giao lại hoặc phát sinh nhu cầu hoàn từ merchant.</li>
-                    <li>Sau khi gửi yêu cầu, hệ thống sẽ duyệt chuyển hoàn ngay và OPS có thể in tem chuyển hoàn.</li>
-                    <li>Phí hoàn hàng vẫn tuân theo hợp đồng dịch vụ hiện tại của merchant.</li>
-                    <li>Yêu cầu hoàn được lưu vào delivery-service và publish return.started theo contract hiện có.</li>
-                  </ul>
-                </section>
-
-                <section className="card returns-metric-card">
-                  <p className="muted">Tỷ lệ hoàn hàng tháng này</p>
-                  <div className="returns-metric-row">
-                    <strong>4.2%</strong>
-                    <span className="returns-metric-chip">+0.5%</span>
-                  </div>
-                  <div className="returns-metric-bar">
-                    <span className="returns-metric-bar__fill" />
-                  </div>
-                </section>
-              </div>
-            </div>
-
-            <section className="card returns-history-card">
-              <div className="returns-history-card__header">
-                <h3>Lịch sử yêu cầu hoàn hàng</h3>
-                <select className="select returns-history-filter" value={returnStatusFilter} onChange={(e) => setReturnStatusFilter(e.target.value)}>
-                  <option value="ALL">Tất cả</option>
-                  <option value="IN_TRANSIT">IN_TRANSIT</option>
-                  <option value="COMPLETED">COMPLETED</option>
-                </select>
-              </div>
-              <div className="table-wrap returns-table-wrap">
-                <table className="returns-table">
-                  <thead>
-                    <tr>
-                      <th>Mã vận đơn</th>
-                      <th>Ngày gửi yêu cầu</th>
-                      <th>Lý do</th>
-                      <th>Dự kiến hoàn</th>
-                      <th>Trạng thái</th>
-                      <th>Thao tác</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {returnRows.map((item) => <tr key={item.id}>
-                      <td className="returns-code-cell">{item.shipmentCode}</td>
-                      <td>{formatDate(item.createdAt)}</td>
-                      <td>{item.reason}</td>
-                      <td>{item.expectedReturnAt}</td>
-                      <td><span className={statusClass(item.status)}>{item.status}</span></td>
-                      <td><div className="returns-actions"><button className="btn btn-ghost" onClick={() => { void openShipmentDetail(item.shipmentCode); }}>Xem đơn</button><button className="btn btn-secondary" onClick={() => { setTrackingCode(item.shipmentCode); setActiveView('tracking'); void lookupTracking(undefined, item.shipmentCode); }}>Tracking</button></div></td>
-                    </tr>)}
-                  </tbody>
-                </table>
-              </div>
-              {returnRows.length === 0 ? <div className="empty returns-empty">Chưa có yêu cầu hoàn hàng phù hợp bộ lọc.</div> : null}
-            </section>
-          </section> : null}
+          {activeView === 'returns' ? (
+            <ReturnRequestView
+              returnCode={returnCode}
+              returnShipmentPreview={returnShipmentPreview}
+              returnReason={returnReason}
+              returnNotes={returnNotes}
+              returnLoading={returnLoading}
+              returnMessage={returnMessage}
+              returnStatusFilter={returnStatusFilter}
+              returnRows={returnRows}
+              onReturnCodeChange={setReturnCode}
+              onReturnReasonChange={setReturnReason}
+              onReturnNotesChange={setReturnNotes}
+              onReturnStatusFilterChange={setReturnStatusFilter}
+              onSubmitReturn={createReturnRequest}
+              onOpenShipmentDetail={(shipmentCode) => {
+                void openShipmentDetail(shipmentCode);
+              }}
+              onLookupTracking={(shipmentCode) => {
+                setTrackingCode(shipmentCode);
+                setActiveView('tracking');
+                void lookupTracking(undefined, shipmentCode);
+              }}
+            />
+          ) : null}
 
           {activeView === 'claims' ? (
-            <section className="claims-layout">
-              {/* Claims Page Hero */}
-              <div className="card" style={{ padding: '24px', background: 'linear-gradient(135deg, #1e3a8a 0%, #0284c7 100%)', color: '#ffffff' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
-                  <div>
-                    <span style={{ fontSize: '12px', textTransform: 'uppercase', letterSpacing: '1px', fontWeight: 700, opacity: 0.9 }}>
-                      Claims & Disputes Management
-                    </span>
-                    <h2 style={{ fontSize: '24px', fontWeight: 800, margin: '6px 0 4px', color: '#ffffff' }}>
-                      Khiếu nại & Thẩm định Bồi thường Bưu phẩm
-                    </h2>
-                    <p style={{ margin: 0, fontSize: '13px', opacity: 0.85, maxWidth: '680px', lineHeight: 1.5 }}>
-                      Cổng tiếp nhận yêu cầu đền bù thiệt hại (hàng vỡ, mất mát, giao chậm, sai lệch COD). Hệ thống tự động phân định trách nhiệm bưu cục/shipper theo Ma trận 4 ô chuẩn SOP Nexus.
-                    </p>
-                  </div>
-
-                  <button
-                    className="btn"
-                    style={{ backgroundColor: '#ffffff', color: '#0369a1', fontWeight: 700, padding: '10px 18px', borderRadius: '10px', boxShadow: '0 4px 12px rgba(0,0,0,0.15)' }}
-                    onClick={() => {
-                      setIsCreateClaimOpen(true);
-                      setSelectedClaimDetail(null);
-                    }}
-                  >
-                    + Tạo yêu cầu bồi thường mới
-                  </button>
-                </div>
-              </div>
-
-              {/* KPI Cards */}
-              <div className="claims-kpi-grid">
-                <div className="claims-kpi-card">
-                  <div className="claims-kpi-header">
-                    <span className="claims-kpi-title">Tổng hồ sơ khiếu nại</span>
-                    <div className="claims-kpi-icon" style={{ background: '#e0f2fe', color: '#0284c7' }}>
-                      <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>gavel</span>
-                    </div>
-                  </div>
-                  <div className="claims-kpi-value">{claims.length}</div>
-                  <div className="claims-kpi-subtext">Hồ sơ đã ghi nhận trên hệ thống</div>
-                </div>
-
-                <div className="claims-kpi-card">
-                  <div className="claims-kpi-header">
-                    <span className="claims-kpi-title">Đang chờ giám định</span>
-                    <div className="claims-kpi-icon" style={{ background: '#fef3c7', color: '#b45309' }}>
-                      <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>pending_actions</span>
-                    </div>
-                  </div>
-                  <div className="claims-kpi-value" style={{ color: '#b45309' }}>
-                    {claims.filter((c) => c.status === 'PENDING_INSPECTION').length}
-                  </div>
-                  <div className="claims-kpi-subtext">Hội đồng đang kiểm tra camera & seal</div>
-                </div>
-
-                <div className="claims-kpi-card">
-                  <div className="claims-kpi-header">
-                    <span className="claims-kpi-title">Đã có phán quyết / Duyệt chi</span>
-                    <div className="claims-kpi-icon" style={{ background: '#ecfdf5', color: '#059669' }}>
-                      <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>verified</span>
-                    </div>
-                  </div>
-                  <div className="claims-kpi-value" style={{ color: '#059669' }}>
-                    {claims.filter((c) => c.status === 'ADJUDICATED' || c.status === 'PAYMENT_APPROVED' || c.status === 'SETTLED').length}
-                  </div>
-                  <div className="claims-kpi-subtext">Đã phân định bên chịu trách nhiệm</div>
-                </div>
-
-                <div className="claims-kpi-card">
-                  <div className="claims-kpi-header">
-                    <span className="claims-kpi-title">Đã tất toán đền bù</span>
-                    <div className="claims-kpi-icon" style={{ background: '#f3e8ff', color: '#7e22ce' }}>
-                      <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>payments</span>
-                    </div>
-                  </div>
-                  <div className="claims-kpi-value" style={{ color: '#7e22ce', fontSize: '20px' }}>
-                    {formatCurrency(
-                      claims
-                        .filter((c) => c.status === 'SETTLED' || c.status === 'PAYMENT_APPROVED')
-                        .reduce((sum, c) => sum + (c.approvedCompensationAmount || c.claimRequestedAmount || 0), 0)
-                    )}
-                  </div>
-                  <div className="claims-kpi-subtext">Đã cấn trừ khấu trừ hoàn tất</div>
-                </div>
-              </div>
-
-              {/* Status Message */}
-              {claimMessage ? <p className="message success">{claimMessage}</p> : null}
-              {claimError ? <p className="message error">{claimError}</p> : null}
-
-              {/* Main Content: Split Grid */}
-              <div className={`claims-main-grid ${isCreateClaimOpen || selectedClaimDetail ? 'claims-main-grid--split' : ''}`}>
-                {/* Left: Table of Claims */}
-                <div className="card">
-                  <div className="claims-toolbar">
-                    <div className="claims-search-wrap">
-                      <span className="material-symbols-outlined" style={{ color: '#94a3b8' }}>search</span>
-                      <input
-                        className="input"
-                        placeholder="Tìm theo Mã hồ sơ CLM, Mã vận đơn NX..."
-                        value={claimSearch}
-                        onChange={(e) => setClaimSearch(e.target.value)}
-                        style={{ width: '100%' }}
-                      />
-                    </div>
-
-                    <select
-                      className="claims-filter-select"
-                      value={claimStatusFilter}
-                      onChange={(e) => setClaimStatusFilter(e.target.value)}
-                    >
-                      <option value="ALL">-- Tất cả trạng thái --</option>
-                      <option value="PENDING_INSPECTION">Chờ giám định</option>
-                      <option value="ADJUDICATED">Đã phán quyết</option>
-                      <option value="PAYMENT_APPROVED">Đã duyệt chi trả</option>
-                      <option value="SETTLED">Đã tất toán</option>
-                      <option value="REJECTED">Từ chối bồi thường</option>
-                    </select>
-                  </div>
-
-                  <div className="table-wrap">
-                    <table className="table">
-                      <thead>
-                        <tr>
-                          <th>Mã hồ sơ</th>
-                          <th>Mã vận đơn</th>
-                          <th>Loại sự cố</th>
-                          <th>Số tiền yêu cầu</th>
-                          <th>Phán quyết duyệt</th>
-                          <th>Trạng thái</th>
-                          <th>Thao tác</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {claims
-                          .filter((c) => {
-                            if (claimStatusFilter !== 'ALL' && c.status !== claimStatusFilter) return false;
-                            if (claimSearch.trim()) {
-                              const q = claimSearch.trim().toLowerCase();
-                              return (
-                                c.claimCode.toLowerCase().includes(q) ||
-                                c.shipmentCode.toLowerCase().includes(q)
-                              );
-                            }
-                            return true;
-                          })
-                          .map((item) => {
-                            const isSelected = selectedClaimDetail?.id === item.id;
-                            let statusBadgeBg = '#f1f5f9';
-                            let statusBadgeText = '#475569';
-                            let statusLabel: string = item.status;
-                            if (item.status === 'PENDING_INSPECTION') {
-                              statusBadgeBg = '#fef3c7';
-                              statusBadgeText = '#b45309';
-                              statusLabel = 'Chờ giám định';
-                            } else if (item.status === 'ADJUDICATED') {
-                              statusBadgeBg = '#e0f2fe';
-                              statusBadgeText = '#0369a1';
-                              statusLabel = 'Đã phán quyết';
-                            } else if (item.status === 'PAYMENT_APPROVED') {
-                              statusBadgeBg = '#dcfce7';
-                              statusBadgeText = '#15803d';
-                              statusLabel = 'Đã duyệt chi';
-                            } else if (item.status === 'SETTLED') {
-                              statusBadgeBg = '#ecfdf5';
-                              statusBadgeText = '#047857';
-                              statusLabel = 'Đã tất toán';
-                            } else if (item.status === 'REJECTED') {
-                              statusBadgeBg = '#fee2e2';
-                              statusBadgeText = '#b91c1c';
-                              statusLabel = 'Từ chối';
-                            }
-
-                            let incidentLabel: string = item.incidentType;
-                            if (item.incidentType === 'DAMAGE') incidentLabel = 'Hư hỏng / Bể vỡ';
-                            else if (item.incidentType === 'LOST_IN_TRANSIT') incidentLabel = 'Thất lạc bưu kiện';
-                            else if (item.incidentType === 'DELAY') incidentLabel = 'Chậm trễ giao hàng';
-                            else if (item.incidentType === 'COD_DISPUTE') incidentLabel = 'Sai lệch tiền COD';
-
-                            return (
-                              <tr
-                                key={item.id}
-                                style={{ background: isSelected ? '#f8fafc' : undefined }}
-                              >
-                                <td>
-                                  <strong style={{ fontFamily: 'monospace', color: '#0284c7' }}>
-                                    {item.claimCode}
-                                  </strong>
-                                </td>
-                                <td>
-                                  <span style={{ fontFamily: 'monospace', fontWeight: 600 }}>
-                                    {item.shipmentCode}
-                                  </span>
-                                </td>
-                                <td>
-                                  <span style={{ fontSize: '13px' }}>{incidentLabel}</span>
-                                </td>
-                                <td>
-                                  <strong>{formatCurrency(item.claimRequestedAmount || item.declaredValue || 0)}</strong>
-                                </td>
-                                <td>
-                                  {item.approvedCompensationAmount ? (
-                                    <span style={{ color: '#16a34a', fontWeight: 700 }}>
-                                      {formatCurrency(item.approvedCompensationAmount)} ({item.liabilityRatioPercent}%)
-                                    </span>
-                                  ) : (
-                                    <span className="muted">Chưa chốt</span>
-                                  )}
-                                </td>
-                                <td>
-                                  <span
-                                    style={{
-                                      display: 'inline-block',
-                                      padding: '3px 8px',
-                                      borderRadius: '6px',
-                                      fontSize: '11px',
-                                      fontWeight: 700,
-                                      background: statusBadgeBg,
-                                      color: statusBadgeText,
-                                    }}
-                                  >
-                                    {statusLabel}
-                                  </span>
-                                </td>
-                                <td>
-                                  <button
-                                    className="btn btn-secondary"
-                                    style={{ padding: '4px 10px', fontSize: '12px' }}
-                                    onClick={() => {
-                                      setSelectedClaimDetail(item);
-                                      setIsCreateClaimOpen(false);
-                                    }}
-                                  >
-                                    Xem phán quyết
-                                  </button>
-                                </td>
-                              </tr>
-                            );
-                          })}
-                      </tbody>
-                    </table>
-                  </div>
-
-                  {claims.length === 0 ? (
-                    <div className="empty" style={{ padding: '36px 16px', textAlign: 'center' }}>
-                      <span className="material-symbols-outlined" style={{ fontSize: '40px', color: '#10b981', marginBottom: '8px' }}>
-                        verified_user
-                      </span>
-                      <h4>Hiện tại chưa có yêu cầu bồi thường nào</h4>
-                      <p className="muted" style={{ maxWidth: '420px', margin: '4px auto 14px' }}>
-                        Các đơn hàng của bạn đang được xử lý an toàn. Nếu có bưu kiện bị nứt vỡ hoặc thất lạc, hãy bấm nút tạo khiếu nại để được bồi thường.
-                      </p>
-                      <button
-                        className="btn btn-primary"
-                        onClick={() => {
-                          setIsCreateClaimOpen(true);
-                          setSelectedClaimDetail(null);
-                        }}
-                      >
-                        + Tạo khiếu nại đầu tiên
-                      </button>
-                    </div>
-                  ) : null}
-                </div>
-
-                {/* Right Column: Claim Form OR Claim Verdict Detail */}
-                {isCreateClaimOpen ? (
-                  <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <h3 style={{ margin: 0 }}>Tạo yêu cầu Bồi thường mới</h3>
-                      <button
-                        className="btn btn-ghost"
-                        style={{ padding: '4px 8px' }}
-                        onClick={() => setIsCreateClaimOpen(false)}
-                      >
-                        <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>close</span>
-                      </button>
-                    </div>
-
-                    <form onSubmit={submitCreateClaim} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                      <div>
-                        <label className="label">Mã vận đơn cần khiếu nại (*)</label>
-                        <input
-                          className="input"
-                          placeholder="VD: NX-88992211"
-                          value={claimShipmentCode}
-                          onChange={(e) => setClaimShipmentCode(e.target.value.toUpperCase())}
-                          required
-                        />
-                      </div>
-
-                      {/* Matching shipment preview */}
-                      {(() => {
-                        const row = shipmentRows.find((r) => r.shipment.code === normalizeCode(claimShipmentCode));
-                        if (!row) return null;
-                        return (
-                          <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '10px 12px', fontSize: '12px' }}>
-                            <div style={{ fontWeight: 700, color: '#0f172a', marginBottom: '4px', display: 'flex', alignItems: 'center' }}>
-                              <span className="material-symbols-outlined" style={{ fontSize: '14px', marginRight: '4px', color: 'var(--stitch-primary)' }}>inventory_2</span>
-                              <span>{row.itemType} ({row.weightKg}kg)</span>
-                            </div>
-                            <div style={{ color: '#475569' }}>
-                              Người nhận: {row.receiverName} ({row.receiverPhone}) - COD: {formatCurrency(row.codAmount)}
-                            </div>
-                            <div style={{ color: '#64748b', fontSize: '11px', marginTop: '2px' }}>
-                              Trạng thái hiện tại: {resolveShipmentStatusLabel(row.shipment)}
-                            </div>
-                          </div>
-                        );
-                      })()}
-
-                      <div>
-                        <label className="label">Loại sự cố / Tổn thất (*)</label>
-                        <select
-                          className="input"
-                          value={claimIncidentType}
-                          onChange={(e) => setClaimIncidentType(e.target.value as ClaimIncidentType)}
-                        >
-                          <option value="DAMAGE">Hàng hóa bị nứt vỡ, móp méo, hư hỏng (DAMAGE)</option>
-                          <option value="LOST_IN_TRANSIT">Thất lạc bưu kiện trong quá trình vận chuyển (LOST)</option>
-                          <option value="DELAY">Giao trễ hạn cam kết SLA quá 48h (DELAY)</option>
-                          <option value="COD_DISPUTE">Sai lệch tiền thu hộ COD khi đối soát (COD_DISPUTE)</option>
-                        </select>
-                      </div>
-
-                      <div>
-                        <label className="label">Số tiền yêu cầu bồi thường (VND) (*)</label>
-                        <input
-                          className="input"
-                          type="number"
-                          placeholder="VD: 500000"
-                          value={claimRequestedAmount}
-                          onChange={(e) => setClaimRequestedAmount(e.target.value)}
-                          required
-                        />
-                      </div>
-
-                      <div>
-                        <label className="label">Mô tả hàng hóa bên trong</label>
-                        <input
-                          className="input"
-                          placeholder="VD: 2 bộ áo quần thể thao nam Coolmate"
-                          value={claimPackageDesc}
-                          onChange={(e) => setClaimPackageDesc(e.target.value)}
-                        />
-                      </div>
-
-                      <div>
-                        <label className="label">Mô tả chi tiết sự cố / Biên bản đồng kiểm (*)</label>
-                        <textarea
-                          className="input"
-                          rows={4}
-                          placeholder="Mô tả cụ thể tình trạng hàng hóa khi người nhận đồng kiểm, chữ ký shipper trên biên bản, hoặc thời điểm phát hiện thất lạc..."
-                          value={claimDamageDesc}
-                          onChange={(e) => setClaimDamageDesc(e.target.value)}
-                          required
-                        />
-                      </div>
-
-                      <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: '8px', padding: '10px 12px', fontSize: '12px', color: '#92400e', lineHeight: 1.5 }}>
-                        <strong>Quy chuẩn SOP Thẩm định:</strong> Ban Giám Định Trách Nhiệm sẽ truy xuất dữ liệu cân điện tử lúc nhập Hub và camera phân loại tự động để phân định trách nhiệm bưu cục/shipper trong vòng 24h.
-                      </div>
-
-                      <div className="btn-row" style={{ marginTop: '8px' }}>
-                        <button
-                          type="submit"
-                          className="btn btn-primary"
-                          disabled={claimSubmitting}
-                          style={{ flex: 1 }}
-                        >
-                          {claimSubmitting ? 'Đang gửi hồ sơ...' : 'Gửi yêu cầu bồi thường'}
-                        </button>
-                        <button
-                          type="button"
-                          className="btn btn-ghost"
-                          onClick={() => setIsCreateClaimOpen(false)}
-                        >
-                          Hủy
-                        </button>
-                      </div>
-                    </form>
-                  </div>
-                ) : selectedClaimDetail ? (
-                  <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <div>
-                        <span style={{ fontSize: '11px', textTransform: 'uppercase', color: '#64748b', fontWeight: 700 }}>
-                          Chi tiết Phán quyết Trách nhiệm
-                        </span>
-                        <h3 style={{ margin: '2px 0 0', color: '#0284c7', fontFamily: 'monospace' }}>
-                          {selectedClaimDetail.claimCode}
-                        </h3>
-                      </div>
-                      <button
-                        className="btn btn-ghost"
-                        style={{ padding: '4px 8px' }}
-                        onClick={() => setSelectedClaimDetail(null)}
-                      >
-                        <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>close</span>
-                      </button>
-                    </div>
-
-                    <div style={{ fontSize: '13px', color: '#334155', display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                      <div>Vận đơn: <strong>{selectedClaimDetail.shipmentCode}</strong></div>
-                      <div>Ngày lập hồ sơ: {formatDate(selectedClaimDetail.createdAt || selectedClaimDetail.reportedAt)}</div>
-                      <div>Số tiền yêu cầu: <strong>{formatCurrency(selectedClaimDetail.claimRequestedAmount || selectedClaimDetail.declaredValue || 0)}</strong></div>
-                    </div>
-
-                    {/* 4-Cell Liability Matrix Visualization */}
-                    <div>
-                      <div style={{ fontSize: '12px', fontWeight: 700, color: '#0f172a', marginBottom: '6px' }}>
-                        Ma trận Phân định Trách nhiệm 4 Ô (4-Cell Liability Matrix)
-                      </div>
-                      <div className="claims-matrix-grid">
-                        <div className={`claims-matrix-cell ${selectedClaimDetail.responsibleParty === 'ORIGIN_HUB' ? 'claims-matrix-cell--active' : ''}`}>
-                          <div className="claims-matrix-cell-title">
-                            <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>warehouse</span>
-                            1. Hub Gửi (Origin)
-                          </div>
-                          <div className="claims-matrix-cell-desc">Khâu tiếp nhận, cân đo & bao gói ban đầu</div>
-                        </div>
-
-                        <div className={`claims-matrix-cell ${selectedClaimDetail.responsibleParty === 'LINEHAUL_CARRIER' ? 'claims-matrix-cell--active' : ''}`}>
-                          <div className="claims-matrix-cell-title">
-                            <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>local_shipping</span>
-                            2. Linehaul (Vận chuyển)
-                          </div>
-                          <div className="claims-matrix-cell-desc">Vận chuyển xe tải liên tỉnh & seal niêm phong</div>
-                        </div>
-
-                        <div className={`claims-matrix-cell ${selectedClaimDetail.responsibleParty === 'LAST_MILE_COURIER' || selectedClaimDetail.responsibleParty === 'DESTINATION_HUB' ? 'claims-matrix-cell--active' : ''}`}>
-                          <div className="claims-matrix-cell-title">
-                            <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>sports_motorsports</span>
-                            3. Hub Phát / Shipper
-                          </div>
-                          <div className="claims-matrix-cell-desc">Khâu phát hàng, đồng kiểm với khách nhận</div>
-                        </div>
-
-                        <div className={`claims-matrix-cell ${selectedClaimDetail.responsibleParty === 'MERCHANT' ? 'claims-matrix-cell--active' : ''}`}>
-                          <div className="claims-matrix-cell-title">
-                            <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>store</span>
-                            4. Shop đóng gói
-                          </div>
-                          <div className="claims-matrix-cell-desc">Tiêu chuẩn chèn bọc chống va đập của shop</div>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Official Verdict Banner */}
-                    <div className="claims-verdict-banner">
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <span className="material-symbols-outlined" style={{ color: '#059669', fontSize: '20px' }}>gavel</span>
-                        <strong style={{ fontSize: '14px', color: '#065f46' }}>
-                          Kết luận của Hội đồng Giám định
-                        </strong>
-                      </div>
-                      <div style={{ fontSize: '13px', color: '#047857', display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                        <div>Đơn vị chịu trách nhiệm: <strong>{selectedClaimDetail.responsibleParty || 'Đang thẩm định'}</strong></div>
-                        <div>Tỷ lệ đền bù phê duyệt: <strong>{selectedClaimDetail.liabilityRatioPercent || (selectedClaimDetail.approvedCompensationAmount ? 100 : 0)}%</strong></div>
-                        <div>Số tiền bồi thường: <strong style={{ fontSize: '16px', color: '#047857' }}>{formatCurrency(selectedClaimDetail.approvedCompensationAmount || 0)}</strong></div>
-                      </div>
-                      {selectedClaimDetail.damageDescription ? (
-                        <div style={{ fontSize: '12px', color: '#475569', marginTop: '6px', fontStyle: 'italic', background: '#ffffff', padding: '8px 10px', borderRadius: '6px' }}>
-                          "Mô tả sự cố: {selectedClaimDetail.damageDescription}"
-                        </div>
-                      ) : null}
-                    </div>
-
-                    <div className="btn-row" style={{ marginTop: '8px' }}>
-                      <button
-                        className="btn btn-secondary"
-                        onClick={() => {
-                          void openShipmentDetail(selectedClaimDetail.shipmentCode);
-                        }}
-                      >
-                        Xem chi tiết đơn hàng
-                      </button>
-                      <button
-                        className="btn btn-ghost"
-                        onClick={() => setSelectedClaimDetail(null)}
-                      >
-                        Đóng chi tiết
-                      </button>
-                    </div>
-                  </div>
-                ) : null}
-              </div>
-            </section>
+            <ClaimsView
+              claims={claims}
+              claimMessage={claimMessage}
+              claimError={claimError}
+              claimSearch={claimSearch}
+              claimStatusFilter={claimStatusFilter}
+              selectedClaimDetail={selectedClaimDetail}
+              isCreateClaimOpen={isCreateClaimOpen}
+              claimShipmentCode={claimShipmentCode}
+              claimIncidentType={claimIncidentType}
+              claimRequestedAmount={claimRequestedAmount}
+              claimPackageDesc={claimPackageDesc}
+              claimDamageDesc={claimDamageDesc}
+              claimSubmitting={claimSubmitting}
+              shipmentRows={shipmentRows}
+              onSetIsCreateClaimOpen={setIsCreateClaimOpen}
+              onSetSelectedClaimDetail={setSelectedClaimDetail}
+              onSetClaimSearch={setClaimSearch}
+              onSetClaimStatusFilter={setClaimStatusFilter}
+              onSetClaimShipmentCode={setClaimShipmentCode}
+              onSetClaimIncidentType={setClaimIncidentType}
+              onSetClaimRequestedAmount={setClaimRequestedAmount}
+              onSetClaimPackageDesc={setClaimPackageDesc}
+              onSetClaimDamageDesc={setClaimDamageDesc}
+              onSubmitCreateClaim={submitCreateClaim}
+              onOpenShipmentDetail={(shipmentCode) => {
+                void openShipmentDetail(shipmentCode);
+              }}
+              resolveShipmentStatusLabel={resolveShipmentStatusLabel}
+            />
           ) : null}
 
           {activeView === 'finance' ? (
-            <section className="finance-layout">
-              {/* Top Header Banner */}
-              <div className="finance-header-banner">
-                <div className="finance-header-left">
-                  <div className="finance-header-icon-wrap">
-                    <span className="material-symbols-outlined">account_balance_wallet</span>
-                  </div>
-                  <div className="finance-header-titles">
-                    <h2>Đối soát & Quản lý Tài chính</h2>
-                    <p>Minh bạch dòng tiền thu hộ COD, tự động cấn trừ cước vận chuyển và lịch trình chi trả định kỳ.</p>
-                  </div>
-                </div>
-                <div className="finance-header-actions">
-                  <button
-                    type="button"
-                    className="btn btn-secondary"
-                    onClick={exportAllLedgerCsv}
-                    title="Tải toàn bộ lịch sử biến động số dư (.csv)"
-                  >
-                    <span className="material-symbols-outlined" style={{ fontSize: '18px', marginRight: '6px' }}>download</span>
-                    <span>Xuất sổ cái (.csv)</span>
-                  </button>
-                  <button
-                    type="button"
-                    className="btn btn-secondary"
-                    onClick={() => {
-                      setEditBankForm(merchantBankProfile);
-                      setIsEditingBankModalOpen(true);
-                    }}
-                  >
-                    <span className="material-symbols-outlined" style={{ fontSize: '18px', marginRight: '6px' }}>account_balance</span>
-                    <span>Tài khoản nhận tiền</span>
-                  </button>
-                  <button
-                    type="button"
-                    className={`btn ${insights.netBalance < 0 ? 'btn-danger' : 'btn-primary'}`}
-                    onClick={() => setShowTopupModal(true)}
-                  >
-                    <span className="material-symbols-outlined" style={{ fontSize: '18px', marginRight: '6px' }}>qr_code_2</span>
-                    <span>{insights.netBalance < 0 ? 'Thanh toán nợ cước' : 'Nạp tiền VietQR'}</span>
-                  </button>
-                </div>
-              </div>
-
-              {/* 4 KPI Cards */}
-              <div className="finance-kpi-grid">
-                {/* 1. Số dư ròng khả dụng */}
-                <div className="finance-kpi-card">
-                  <div className="finance-kpi-card__top">
-                    <span className="finance-kpi-card__label">Số dư ròng khả dụng</span>
-                    <div className={`finance-kpi-card__icon ${insights.netBalance >= 0 ? 'finance-kpi-card__icon--success' : 'finance-kpi-card__icon--danger'}`}>
-                      <span className="material-symbols-outlined">{insights.netBalance >= 0 ? 'account_balance' : 'warning'}</span>
-                    </div>
-                  </div>
-                  <div className="finance-kpi-card__value" style={{ color: insights.netBalance >= 0 ? '#127a56' : '#ba1a1a' }}>
-                    {formatCurrency(insights.netBalance)}
-                  </div>
-                  <div className="finance-kpi-card__footer">
-                    <span className="material-symbols-outlined" style={{ fontSize: '15px', color: insights.netBalance >= 0 ? '#127a56' : '#ba1a1a' }}>
-                      {insights.netBalance >= 0 ? 'check_circle' : 'error'}
-                    </span>
-                    <span>{insights.netBalance >= 0 ? 'Đã cấn trừ cước • Sẵn sàng chi trả' : 'Vượt hạn mức nợ (-500.000đ)'}</span>
-                  </div>
-                </div>
-
-                {/* 2. COD đã thu */}
-                <div className="finance-kpi-card">
-                  <div className="finance-kpi-card__top">
-                    <span className="finance-kpi-card__label">COD đã thu (Chờ chi)</span>
-                    <div className="finance-kpi-card__icon finance-kpi-card__icon--primary">
-                      <span className="material-symbols-outlined">payments</span>
-                    </div>
-                  </div>
-                  <div className="finance-kpi-card__value" style={{ color: '#0052cc' }}>
-                    {formatCurrency(insights.deliveredCod)}
-                  </div>
-                  <div className="finance-kpi-card__footer">
-                    <span className="material-symbols-outlined" style={{ fontSize: '15px', color: '#0052cc' }}>verified</span>
-                    <span>Shipper đã giao thành công & nộp quỹ</span>
-                  </div>
-                </div>
-
-                {/* 3. COD đang giao */}
-                <div className="finance-kpi-card">
-                  <div className="finance-kpi-card__top">
-                    <span className="finance-kpi-card__label">COD đang giao (Dự kiến)</span>
-                    <div className="finance-kpi-card__icon finance-kpi-card__icon--info">
-                      <span className="material-symbols-outlined">local_shipping</span>
-                    </div>
-                  </div>
-                  <div className="finance-kpi-card__value" style={{ color: '#0059b8' }}>
-                    {formatCurrency(Math.max(0, insights.totalCod - insights.deliveredCod))}
-                  </div>
-                  <div className="finance-kpi-card__footer">
-                    <span className="material-symbols-outlined" style={{ fontSize: '15px', color: '#0059b8' }}>schedule</span>
-                    <span>Đơn hàng đang trên đường giao khách</span>
-                  </div>
-                </div>
-
-                {/* 4. Cước vận chuyển phát sinh */}
-                <div className="finance-kpi-card">
-                  <div className="finance-kpi-card__top">
-                    <span className="finance-kpi-card__label">Cước phát sinh trong kỳ</span>
-                    <div className="finance-kpi-card__icon finance-kpi-card__icon--danger">
-                      <span className="material-symbols-outlined">receipt_long</span>
-                    </div>
-                  </div>
-                  <div className="finance-kpi-card__value" style={{ color: '#ba1a1a' }}>
-                    {formatCurrency(insights.totalFee)}
-                  </div>
-                  <div className="finance-kpi-card__footer">
-                    <span className="material-symbols-outlined" style={{ fontSize: '15px', color: '#7c8aa2' }}>shield</span>
-                    <span>Hạn mức nợ cước trần: -500.000đ</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Subtabs Switcher */}
-              <div className="finance-subtabs-nav">
-                <button
-                  type="button"
-                  className={`finance-subtab-btn ${financeSubTab === 'overview' ? 'finance-subtab-btn--active' : ''}`}
-                  onClick={() => setFinanceSubTab('overview')}
-                >
-                  <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>dashboard</span>
-                  <span>Tổng quan dòng tiền</span>
-                </button>
-                <button
-                  type="button"
-                  className={`finance-subtab-btn ${financeSubTab === 'batches' ? 'finance-subtab-btn--active' : ''}`}
-                  onClick={() => setFinanceSubTab('batches')}
-                >
-                  <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>fact_check</span>
-                  <span>Kỳ đối soát & Bảng kê ({settlementBatches.length})</span>
-                </button>
-                <button
-                  type="button"
-                  className={`finance-subtab-btn ${financeSubTab === 'ledger' ? 'finance-subtab-btn--active' : ''}`}
-                  onClick={() => setFinanceSubTab('ledger')}
-                >
-                  <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>history_edu</span>
-                  <span>Sổ cái biến động số dư ({financialLedger.length})</span>
-                </button>
-                <button
-                  type="button"
-                  className={`finance-subtab-btn ${financeSubTab === 'settings' ? 'finance-subtab-btn--active' : ''}`}
-                  onClick={() => setFinanceSubTab('settings')}
-                >
-                  <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>account_balance</span>
-                  <span>Tài khoản thụ hưởng & Hợp đồng</span>
-                </button>
-              </div>
-
-              {/* Subtab 1: Tổng quan dòng tiền */}
-              {financeSubTab === 'overview' ? (
-                <div style={{ display: 'grid', gap: '20px' }}>
-                  {/* Kỳ đối soát gần nhất */}
-                  {settlementBatches[0] ? (
-                    <div className="finance-section-card">
-                      <div className="finance-section-header">
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                          <span className="material-symbols-outlined" style={{ color: '#0052cc', fontSize: '24px' }}>sync</span>
-                          <div>
-                            <h3 className="finance-section-title">Kỳ đối soát hiện tại ({settlementBatches[0].code})</h3>
-                            <div className="muted" style={{ fontSize: '13px' }}>{settlementBatches[0].cycleName}</div>
-                          </div>
-                        </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                          <span className="finance-badge finance-badge--processing">
-                            <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>hourglass_top</span>
-                            <span>{settlementBatches[0].status === 'PAID' ? 'Đã chi trả' : 'Đang xử lý chi trả'}</span>
-                          </span>
-                          <button
-                            type="button"
-                            className="btn btn-secondary"
-                            onClick={() => exportBatchToCsv(settlementBatches[0])}
-                          >
-                            <span className="material-symbols-outlined" style={{ fontSize: '16px', marginRight: '6px' }}>download</span>
-                            <span>Tải bảng kê kỳ này (.csv)</span>
-                          </button>
-                        </div>
-                      </div>
-
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '16px', padding: '16px', background: '#f8fafc', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
-                        <div>
-                          <div className="muted" style={{ fontSize: '12px', textTransform: 'uppercase' }}>Số lượng đơn</div>
-                          <div style={{ fontSize: '18px', fontWeight: 700, color: '#102548' }}>{settlementBatches[0].orderCount} đơn</div>
-                        </div>
-                        <div>
-                          <div className="muted" style={{ fontSize: '12px', textTransform: 'uppercase' }}>Tổng COD thu hộ</div>
-                          <div style={{ fontSize: '18px', fontWeight: 700, color: '#127a56' }}>+{formatCurrency(settlementBatches[0].codTotal)}</div>
-                        </div>
-                        <div>
-                          <div className="muted" style={{ fontSize: '12px', textTransform: 'uppercase' }}>Cước vận chuyển cấn trừ</div>
-                          <div style={{ fontSize: '18px', fontWeight: 700, color: '#ba1a1a' }}>-{formatCurrency(settlementBatches[0].feeTotal)}</div>
-                        </div>
-                        <div>
-                          <div className="muted" style={{ fontSize: '12px', textTransform: 'uppercase' }}>Thực nhận về tài khoản</div>
-                          <div style={{ fontSize: '20px', fontWeight: 800, color: '#0052cc' }}>{formatCurrency(settlementBatches[0].netPayout)}</div>
-                        </div>
-                        <div>
-                          <div className="muted" style={{ fontSize: '12px', textTransform: 'uppercase' }}>Tài khoản nhận tiền</div>
-                          <div style={{ fontSize: '14px', fontWeight: 600, color: '#334155' }}>{settlementBatches[0].bankInfo}</div>
-                        </div>
-                      </div>
-                    </div>
-                  ) : null}
-
-                  {/* Quy định & Chính sách đối soát */}
-                  <div className="finance-section-card">
-                    <h3 className="finance-section-title">
-                      <span className="material-symbols-outlined" style={{ color: '#0052cc' }}>policy</span>
-                      <span>Chính sách đối soát & Bảo toàn tiền hàng</span>
-                    </h3>
-                    <div className="finance-rules-list">
-                      <div className="finance-rule-item">
-                        <span className="material-symbols-outlined" style={{ color: '#127a56', fontSize: '22px' }}>verified_user</span>
-                        <div>
-                          <strong>Tính pháp lý của tiền COD:</strong> Toàn bộ tiền COD thu hộ từ người nhận thuộc quyền sở hữu 100% của Chủ Shop. Nexus Logistics cam kết bảo toàn nguyên vẹn và chi trả đúng kỳ hạn đối soát quy định.
-                        </div>
-                      </div>
-                      <div className="finance-rule-item">
-                        <span className="material-symbols-outlined" style={{ color: '#0052cc', fontSize: '22px' }}>calendar_month</span>
-                        <div>
-                          <strong>Chu kỳ chi trả tiêu chuẩn (Thứ 2 - Thứ 4 - Thứ 6):</strong>
-                          <ul style={{ margin: '6px 0 0 16px', padding: 0 }}>
-                            <li>Đơn giao thành công Thứ 7, Chủ nhật và Thứ 2: Đối soát và chi trả vào <strong>Thứ 4</strong>.</li>
-                            <li>Đơn giao thành công Thứ 3 và Thứ 4: Đối soát và chi trả vào <strong>Thứ 6</strong>.</li>
-                            <li>Đơn giao thành công Thứ 5 và Thứ 6: Đối soát và chi trả vào <strong>Thứ 2 tuần kế tiếp</strong>.</li>
-                          </ul>
-                        </div>
-                      </div>
-                      <div className="finance-rule-item">
-                        <span className="material-symbols-outlined" style={{ color: '#0059b8', fontSize: '22px' }}>currency_exchange</span>
-                        <div>
-                          <strong>Cơ chế cấn trừ tự động (Netting Settlement):</strong> Cước phí vận chuyển, phụ phí vượt cân và phí hoàn hàng (50% cước chiều đi) được tự động cấn trừ vào số tiền COD thu hộ trong kỳ, giúp Shop không phải chuyển tiền lẻ tẻ từng đơn.
-                        </div>
-                      </div>
-                      <div className="finance-rule-item">
-                        <span className="material-symbols-outlined" style={{ color: '#ba1a1a', fontSize: '22px' }}>lock_clock</span>
-                        <div>
-                          <strong>Hạn mức nợ cước âm tối đa (-500.000 VNĐ):</strong> Nếu số tiền cước phát sinh vượt quá tiền COD (số dư âm quá -500.000đ), hệ thống sẽ tạm khóa tạo đơn mới. Shop chỉ cần quét mã VietQR chuyển khoản thanh toán nợ, hệ thống SePay tự động mở khóa trong vòng 30 giây.
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ) : null}
-
-              {/* Subtab 2: Danh sách Kỳ đối soát */}
-              {financeSubTab === 'batches' ? (
-                <div className="finance-section-card">
-                  <div className="finance-section-header">
-                    <h3 className="finance-section-title">
-                      <span className="material-symbols-outlined" style={{ color: '#0052cc' }}>fact_check</span>
-                      <span>Danh sách các kỳ đối soát COD</span>
-                    </h3>
-                    <div className="finance-filter-toolbar">
-                      <select
-                        className="finance-filter-input"
-                        value={financeBatchStatusFilter}
-                        onChange={(e) => setFinanceBatchStatusFilter(e.target.value)}
-                      >
-                        <option value="ALL">Tất cả trạng thái</option>
-                        <option value="PAID">Đã chi trả</option>
-                        <option value="PROCESSING">Đang xử lý</option>
-                      </select>
-                    </div>
-                  </div>
-
-                  <div className="finance-table-wrapper">
-                    <table className="finance-table">
-                      <thead>
-                        <tr>
-                          <th>Mã phiên</th>
-                          <th>Kỳ đối soát</th>
-                          <th>Số lượng đơn</th>
-                          <th>Tổng COD thu hộ</th>
-                          <th>Cước cấn trừ</th>
-                          <th>Thực nhận</th>
-                          <th>Thời gian chi trả</th>
-                          <th>Trạng thái</th>
-                          <th style={{ textAlign: 'right' }}>Thao tác</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {settlementBatches
-                          .filter((b) => financeBatchStatusFilter === 'ALL' || b.status === financeBatchStatusFilter)
-                          .map((batch) => (
-                            <tr key={batch.id}>
-                              <td>
-                                <span className="code-pill">{batch.code}</span>
-                              </td>
-                              <td>
-                                <div style={{ fontWeight: 600 }}>{batch.cycleName}</div>
-                                <div className="muted" style={{ fontSize: '11px' }}>{batch.fromDate} → {batch.toDate}</div>
-                              </td>
-                              <td>{batch.orderCount} đơn</td>
-                              <td className="money-plus">+{formatCurrency(batch.codTotal)}</td>
-                              <td className="money-minus">-{formatCurrency(batch.feeTotal)}</td>
-                              <td style={{ fontWeight: 800, fontSize: '14px', color: '#102548' }}>
-                                {formatCurrency(batch.netPayout)}
-                              </td>
-                              <td>
-                                <div>{batch.payoutDate}</div>
-                                {batch.transferRef ? (
-                                  <div className="muted" style={{ fontSize: '11px', fontFamily: 'monospace' }}>Ref: {batch.transferRef}</div>
-                                ) : null}
-                              </td>
-                              <td>
-                                {batch.status === 'PAID' ? (
-                                  <span className="finance-badge finance-badge--paid">
-                                    <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>check_circle</span>
-                                    <span>Đã chi trả</span>
-                                  </span>
-                                ) : (
-                                  <span className="finance-badge finance-badge--processing">
-                                    <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>hourglass_top</span>
-                                    <span>Đang xử lý</span>
-                                  </span>
-                                )}
-                              </td>
-                              <td style={{ textAlign: 'right' }}>
-                                <div style={{ display: 'inline-flex', gap: '6px' }}>
-                                  <button
-                                    type="button"
-                                    className="btn btn-ghost"
-                                    style={{ padding: '6px 10px', fontSize: '12px' }}
-                                    onClick={() => setSelectedSettlementBatch(batch)}
-                                  >
-                                    Xem đơn
-                                  </button>
-                                  <button
-                                    type="button"
-                                    className="btn btn-secondary"
-                                    style={{ padding: '6px 10px', fontSize: '12px' }}
-                                    onClick={() => exportBatchToCsv(batch)}
-                                    title="Tải bảng kê Excel/CSV"
-                                  >
-                                    <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>download</span>
-                                  </button>
-                                </div>
-                              </td>
-                            </tr>
-                          ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              ) : null}
-
-              {/* Subtab 3: Sổ cái biến động số dư */}
-              {financeSubTab === 'ledger' ? (
-                <div className="finance-section-card">
-                  <div className="finance-section-header">
-                    <h3 className="finance-section-title">
-                      <span className="material-symbols-outlined" style={{ color: '#0052cc' }}>history_edu</span>
-                      <span>Sổ cái biến động số dư thời gian thực</span>
-                    </h3>
-                    <div className="finance-filter-toolbar">
-                      <input
-                        className="finance-filter-input"
-                        placeholder="Tìm theo mã vận đơn..."
-                        value={financeLedgerSearch}
-                        onChange={(e) => setFinanceLedgerSearch(e.target.value)}
-                        style={{ width: '200px' }}
-                      />
-                      <select
-                        className="finance-filter-input"
-                        value={financeLedgerTypeFilter}
-                        onChange={(e) => setFinanceLedgerTypeFilter(e.target.value)}
-                      >
-                        <option value="ALL">Tất cả nghiệp vụ</option>
-                        <option value="COD_COLLECTED">Thu hộ COD (+)</option>
-                        <option value="SHIPPING_FEE">Cước vận chuyển (-)</option>
-                        <option value="RETURN_FEE">Cước hoàn hàng (-)</option>
-                        <option value="CLAIM_COMPENSATION">Bồi thường khiếu nại (+)</option>
-                      </select>
-                      <button
-                        type="button"
-                        className="btn btn-secondary"
-                        onClick={exportAllLedgerCsv}
-                      >
-                        <span className="material-symbols-outlined" style={{ fontSize: '16px', marginRight: '6px' }}>download</span>
-                        <span>Xuất CSV</span>
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="finance-table-wrapper">
-                    <table className="finance-table">
-                      <thead>
-                        <tr>
-                          <th>Thời gian</th>
-                          <th>Mã giao dịch</th>
-                          <th>Loại nghiệp vụ</th>
-                          <th>Nội dung / Vận đơn</th>
-                          <th style={{ textAlign: 'right' }}>Biến động</th>
-                          <th style={{ textAlign: 'right' }}>Số dư sau GD</th>
-                          <th>Ghi chú</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {financialLedger
-                          .filter((entry) => {
-                            if (financeLedgerTypeFilter !== 'ALL' && entry.type !== financeLedgerTypeFilter) return false;
-                            if (financeLedgerSearch.trim()) {
-                              const q = financeLedgerSearch.trim().toUpperCase();
-                              return (
-                                entry.id.toUpperCase().includes(q) ||
-                                (entry.shipmentCode && entry.shipmentCode.toUpperCase().includes(q)) ||
-                                entry.title.toUpperCase().includes(q)
-                              );
-                            }
-                            return true;
-                          })
-                          .map((entry) => (
-                            <tr key={entry.id}>
-                              <td style={{ whiteSpace: 'nowrap', color: '#64748b', fontSize: '12px' }}>
-                                {formatDate(entry.occurredAt)}
-                              </td>
-                              <td>
-                                <span className="code-pill">{entry.id}</span>
-                              </td>
-                              <td>
-                                {entry.type === 'COD_COLLECTED' ? (
-                                  <span className="finance-badge finance-badge--paid">Thu hộ COD</span>
-                                ) : entry.type === 'SHIPPING_FEE' ? (
-                                  <span className="finance-badge finance-badge--danger">Cước vận chuyển</span>
-                                ) : entry.type === 'RETURN_FEE' ? (
-                                  <span className="finance-badge finance-badge--danger">Phí hoàn 50%</span>
-                                ) : entry.type === 'CLAIM_COMPENSATION' ? (
-                                  <span className="finance-badge finance-badge--paid">Bồi thường sự cố</span>
-                                ) : (
-                                  <span className="finance-badge finance-badge--pending">{entry.type}</span>
-                                )}
-                              </td>
-                              <td>
-                                <div style={{ fontWeight: 600 }}>{entry.title}</div>
-                                {entry.shipmentCode ? (
-                                  <button
-                                    type="button"
-                                    className="link-btn"
-                                    style={{ fontSize: '12px', padding: 0, textDecoration: 'underline' }}
-                                    onClick={() => {
-                                      if (entry.shipmentCode) void openShipmentDetail(entry.shipmentCode);
-                                    }}
-                                  >
-                                    Xem chi tiết đơn #{entry.shipmentCode}
-                                  </button>
-                                ) : null}
-                              </td>
-                              <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }} className={entry.amount >= 0 ? 'money-plus' : 'money-minus'}>
-                                {entry.amount >= 0 ? `+${formatCurrency(entry.amount)}` : `-${formatCurrency(Math.abs(entry.amount))}`}
-                              </td>
-                              <td style={{ textAlign: 'right', fontWeight: 700, whiteSpace: 'nowrap', color: '#102548' }}>
-                                {formatCurrency(entry.balanceAfter)}
-                              </td>
-                              <td className="muted" style={{ fontSize: '12px' }}>{entry.note || '-'}</td>
-                            </tr>
-                          ))}
-                        {financialLedger.length === 0 ? (
-                          <tr>
-                            <td colSpan={7} style={{ textAlign: 'center', padding: '32px' }} className="muted">
-                              Chưa phát sinh giao dịch tài chính nào trong kỳ.
-                            </td>
-                          </tr>
-                        ) : null}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              ) : null}
-
-              {/* Subtab 4: Tài khoản thụ hưởng & Hợp đồng */}
-              {financeSubTab === 'settings' ? (
-                <div className="finance-bank-profile-grid">
-                  {/* Cột 1: Thẻ tài khoản ngân hàng */}
-                  <div className="finance-section-card">
-                    <h3 className="finance-section-title">
-                      <span className="material-symbols-outlined" style={{ color: '#0052cc' }}>credit_card</span>
-                      <span>Tài khoản ngân hàng nhận tiền COD</span>
-                    </h3>
-                    <p className="muted" style={{ margin: 0, fontSize: '13px' }}>
-                      Tiền COD sau khi cấn trừ cước phí sẽ được hệ thống tự động bắn lệnh chuyển khoản Batch Transfer về tài khoản ngân hàng này.
-                    </p>
-
-                    <div className="finance-bank-card">
-                      <div className="finance-bank-card__top">
-                        <div className="finance-bank-card__chip" />
-                        <div className="finance-bank-card__bank-name">{merchantBankProfile.bankName}</div>
-                      </div>
-                      <div>
-                        <div className="muted" style={{ color: 'rgba(255,255,255,0.7)', fontSize: '11px', textTransform: 'uppercase' }}>Số tài khoản thụ hưởng</div>
-                        <div className="finance-bank-card__number">
-                          {merchantBankProfile.accountNumber.replace(/(\d{4})/g, '$1 ').trim()}
-                        </div>
-                      </div>
-                      <div className="finance-bank-card__bottom">
-                        <div>
-                          <div className="muted" style={{ color: 'rgba(255,255,255,0.7)', fontSize: '10px' }}>CHỦ TÀI KHOẢN</div>
-                          <div className="finance-bank-card__holder">{merchantBankProfile.accountHolder}</div>
-                          <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.85)', marginTop: '2px' }}>{merchantBankProfile.branch}</div>
-                        </div>
-                        <span className="finance-bank-card__tag">
-                          {merchantBankProfile.payoutSchedule === 'MWF' ? 'Chi trả Thứ 2 - 4 - 6' : 'Chi trả T+1 Hàng ngày'}
-                        </span>
-                      </div>
-                    </div>
-
-                    <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                      <button
-                        type="button"
-                        className="btn btn-secondary"
-                        onClick={() => {
-                          setEditBankForm(merchantBankProfile);
-                          setIsEditingBankModalOpen(true);
-                        }}
-                      >
-                        <span className="material-symbols-outlined" style={{ fontSize: '18px', marginRight: '6px' }}>edit</span>
-                        <span>Cập nhật tài khoản thụ hưởng</span>
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Cột 2: Thông tin Hợp đồng & Pháp lý */}
-                  <div className="finance-section-card">
-                    <h3 className="finance-section-title">
-                      <span className="material-symbols-outlined" style={{ color: '#0052cc' }}>assignment</span>
-                      <span>Hợp đồng dịch vụ & Hạn mức</span>
-                    </h3>
-                    <div style={{ display: 'grid', gap: '14px', fontSize: '13px' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #f1f5f9', paddingBottom: '10px' }}>
-                        <span className="muted">Gói hợp đồng:</span>
-                        <strong style={{ color: '#0052cc' }}>HỢP ĐỒNG TIÊU CHUẨN (STANDARD MERCHANT)</strong>
-                      </div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #f1f5f9', paddingBottom: '10px' }}>
-                        <span className="muted">Hình thức ký kết:</span>
-                        <span style={{ color: '#127a56', fontWeight: 600 }}>E-Contract (Đã KYC trực tuyến)</span>
-                      </div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #f1f5f9', paddingBottom: '10px' }}>
-                        <span className="muted">Hạn mức nợ cước cho phép:</span>
-                        <strong style={{ color: '#ba1a1a' }}>-500.000 VNĐ</strong>
-                      </div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #f1f5f9', paddingBottom: '10px' }}>
-                        <span className="muted">Phương thức chi trả:</span>
-                        <span>Batch Transfer tự động qua VietQR / Napas247</span>
-                      </div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #f1f5f9', paddingBottom: '10px' }}>
-                        <span className="muted">Chu kỳ đối soát:</span>
-                        <strong>Thứ 2 - Thứ 4 - Thứ 6 hàng tuần</strong>
-                      </div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #f1f5f9', paddingBottom: '10px' }}>
-                        <span className="muted">Nâng cấp Hợp đồng Doanh nghiệp (VIP):</span>
-                        <span style={{ color: '#0052cc', fontWeight: 600 }}>Liên hệ KAM để hưởng T+1 và Hạn mức 50.000.000đ</span>
-                      </div>
-                    </div>
-
-                    <div style={{ background: '#f8fafc', padding: '14px', borderRadius: '10px', border: '1px solid #e2e8f0', fontSize: '12px', color: '#64748b', lineHeight: 1.5 }}>
-                      <strong>Hỗ trợ kế toán đối soát:</strong> Nếu phát hiện sai lệch số tiền thu hộ COD hoặc cước phí so với thực tế, quý khách vui lòng tạo khiếu nại tại mục <strong>Khiếu nại & Bồi thường</strong> hoặc gửi email về <a href="mailto:finance@nexuslogistics.vn" style={{ color: '#0052cc' }}>finance@nexuslogistics.vn</a> kèm mã phiên đối soát.
-                    </div>
-                  </div>
-                </div>
-              ) : null}
-            </section>
+            <MerchantFinanceView
+              insights={insights}
+              merchantBankProfile={merchantBankProfile}
+              settlementBatches={settlementBatches}
+              financialLedger={financialLedger}
+              financeSubTab={financeSubTab}
+              financeBatchStatusFilter={financeBatchStatusFilter}
+              financeLedgerSearch={financeLedgerSearch}
+              financeLedgerTypeFilter={financeLedgerTypeFilter}
+              exportAllLedgerCsv={exportAllLedgerCsv}
+              exportBatchToCsv={exportBatchToCsv}
+              onSetFinanceSubTab={setFinanceSubTab}
+              onSetFinanceBatchStatusFilter={setFinanceBatchStatusFilter}
+              onSetFinanceLedgerSearch={setFinanceLedgerSearch}
+              onSetFinanceLedgerTypeFilter={setFinanceLedgerTypeFilter}
+              onOpenEditBankModal={() => {
+                setEditBankForm(merchantBankProfile);
+                setIsEditingBankModalOpen(true);
+              }}
+              onShowTopupModal={() => setShowTopupModal(true)}
+              onSelectSettlementBatch={setSelectedSettlementBatch}
+              onOpenShipmentDetail={(shipmentCode) => {
+                void openShipmentDetail(shipmentCode);
+              }}
+            />
           ) : null}
 
-          {activeView === 'print' ? <section className="print-layout">
-            <div className="print-main-column">
-              <section className="card print-filters-card">
-                <div className="print-filters-grid">
-                  <div className="print-filter-block">
-                    <label className="label">Tìm kiếm vận đơn</label>
-                    <input className="input" value={printSingleCode} onChange={(e) => setPrintSingleCode(e.target.value)} placeholder="Nhập mã vận đơn (VD: NX123...)" />
-                  </div>
-                  <div className="print-filter-block">
-                    <label className="label">Trạng thái in</label>
-                    <div className="print-toggle-row">
-                      <span className="print-toggle-chip print-toggle-chip--active">Tất cả</span>
-                      <span className="print-toggle-chip">Chờ in</span>
-                      <span className="print-toggle-chip">Đã in</span>
-                    </div>
-                  </div>
-                  <div className="print-filter-block">
-                    <label className="label">Mã vận đơn hàng loạt</label>
-                    <textarea className="textarea print-bulk-input" value={printBulkCodes} onChange={(e) => setPrintBulkCodes(e.target.value)} placeholder="Nhập nhiều mã, cách nhau bằng dấu phẩy hoặc xuống dòng" />
-                  </div>
-                </div>
-              </section>
-
-              <section className="card print-table-card">
-                <div className="print-table-card__header">
-                  <div>
-                    <p className="login-kicker">Ready to print</p>
-                    <h3>Danh sách chờ in</h3>
-                  </div>
-                  <div className="print-table-card__meta muted">Hiển thị {Math.min(shipmentRows.length, 6)} trên {shipmentRows.length} vận đơn hiện có</div>
-                </div>
-                <div className="table-wrap print-table-wrap">
-                  <table className="print-table">
-                    <thead>
-                      <tr>
-                        <th>Mã vận đơn</th>
-                        <th>Người nhận</th>
-                        <th>Dịch vụ</th>
-                        <th>Trạng thái in</th>
-                        <th>Ngày tạo</th>
-                        <th>Thao tác</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {shipmentRows.slice(0, 6).map((row) => {
-                        const isSelected = normalizeCode(printSingleCode) === normalizeCode(row.shipment.code);
-                        return <tr key={row.shipment.id} className={isSelected ? 'print-row-selected' : ''}>
-                          <td className="print-code-cell">{row.shipment.code}</td>
-                          <td>
-                            <div className="print-recipient-cell">
-                              <strong>{row.receiverName}</strong>
-                              <span>{row.receiverPhone}</span>
-                            </div>
-                          </td>
-                          <td><span className="shipment-service-chip">{row.serviceType}</span></td>
-                          <td><span className={`print-status ${isSelected ? 'print-status--pending' : 'print-status--muted'}`}>{isSelected ? 'Chờ in' : 'Sẵn sàng'}</span></td>
-                          <td>{formatDate(row.shipment.createdAt)}</td>
-                          <td><button className="btn btn-ghost print-row-action" onClick={() => setPrintSingleCode(row.shipment.code)}>Xem</button></td>
-                        </tr>;
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-                {shipmentRows.length === 0 ? <div className="empty print-empty">Chưa có vận đơn để in.</div> : null}
-              </section>
-            </div>
-
-            <aside className="card print-sidebar-card">
-              <div className="print-sidebar-card__header">
-                <span className="material-symbols-outlined print-sidebar-icon">print</span>
-                <h3>Cấu hình in</h3>
-              </div>
-
-              <div className="print-config-group">
-                <label className="label">Khổ giấy</label>
-                <div className="print-option-list">
-                  <div className="print-option print-option--active">
-                    <div>
-                      <strong>A5 (Standard)</strong>
-                      <span>Phù hợp in laser văn phòng</span>
-                    </div>
-                    <span className="print-option-dot" />
-                  </div>
-                  <div className="print-option">
-                    <div>
-                      <strong>K80 (Thermal)</strong>
-                      <span>In nhiệt liên tục, tiết kiệm</span>
-                    </div>
-                  </div>
-                  <div className="print-option">
-                    <div>
-                      <strong>100x150mm</strong>
-                      <span>Chuẩn tem nhãn thương mại</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="print-config-group">
-                <label className="label">Nội dung in</label>
-                <select className="select">
-                  <option>Vận đơn đầy đủ (Full)</option>
-                  <option>Vận đơn rút gọn (Mini)</option>
-                  <option>Chỉ mã QR (QR Only)</option>
-                </select>
-              </div>
-
-              <div className="print-preview-card">
-                <div className="print-preview-sheet">
-                  <div className="print-preview-sheet__bar" />
-                  <div className="print-preview-sheet__hero">
-                    <div className="print-preview-sheet__qr">QR</div>
-                    <div className="print-preview-sheet__copy">
-                      <strong>{printPreviewRow?.shipment.code ?? 'Mã vận đơn'}</strong>
-                      <span>{printPreviewRow?.receiverName ?? 'Người nhận'}</span>
-                    </div>
-                  </div>
-                  <div className="print-preview-sheet__lines">
-                    <span />
-                    <span />
-                    <span />
-                  </div>
-                  <div className="print-preview-sheet__footer" />
-                </div>
-                <p className="muted">Bản xem trước khổ A5</p>
-              </div>
-
-              <div className="print-summary-row">
-                <span>Vận đơn đã chọn:</span>
-                <strong>{printBulkPreviewRows.length > 0 ? printBulkPreviewRows.length : printPreviewRow ? 1 : 0}</strong>
-              </div>
-
-              <div className="print-action-stack">
-                <button className="btn btn-primary print-primary-btn" onClick={() => { const row = shipmentRows.find((r) => r.shipment.code === normalizeCode(printSingleCode)); if (!row) { setPrintMessage('Không tìm thấy shipment trong danh sách hiện tại.'); return; } printShipment(row); setPrintMessage(`Đã mở popup in cho ${row.shipment.code}`); }}>In 1 vận đơn</button>
-                <button
-                  className="btn btn-secondary print-secondary-btn"
-                  onClick={() => {
-                    const codes = printBulkCodes
-                      .split(/[\s,;\n]+/)
-                      .map((c) => normalizeCode(c))
-                      .filter(Boolean);
-                    if (codes.length === 0) {
-                      setPrintMessage('Vui lòng nhập ít nhất 1 mã vận đơn để in.');
-                      return;
-                    }
-                    if (printBulkPreviewRows.length === 0) {
-                      setPrintMessage('Không tìm thấy vận đơn nào phù hợp với danh sách mã đã nhập.');
-                      return;
-                    }
-                    printMultipleShipments(printBulkPreviewRows);
-                    if (printBulkPreviewRows.length < codes.length) {
-                      setPrintMessage(`Đã mở popup in cho ${printBulkPreviewRows.length}/${codes.length} mã tìm thấy.`);
-                    } else {
-                      setPrintMessage(`Đã mở popup in cho toàn bộ ${printBulkPreviewRows.length} vận đơn.`);
-                    }
-                  }}
-                >
-                  In nhiều vận đơn
-                </button>
-                <div className="print-utility-row">
-                  <button className="btn btn-ghost" onClick={downloadCsv}>Tải danh sách đơn</button>
-                  <button className="btn btn-ghost" onClick={exportPdf}>Xuất PDF</button>
-                </div>
-              </div>
-
-              {printMessage ? <p className="message">{printMessage}</p> : null}
-            </aside>
-          </section> : null}
-
-          {activeView === 'account' ? <section className="account-layout">
-            <header className="account-page-header">
-              <h2>Tài khoản</h2>
-              <p className="muted">Quản lý thông tin định danh và cài đặt bảo mật của bạn.</p>
-            </header>
-
-            <div className="account-grid">
-              <div className="account-main-column">
-                <section className="card account-profile-card">
-                  <div className="account-card-header">
-                    <span className="account-card-icon">ID</span>
-                    <h3>Thông tin tài khoản</h3>
-                  </div>
-                  <div className="account-profile-content">
-                    <div className="account-avatar-block">
-                      <div className="account-avatar">{(session.user.username ?? 'M').slice(0, 2).toUpperCase()}</div>
-                      <button className="account-avatar-edit" type="button">Sửa</button>
-                    </div>
-                    <form className="account-profile-form" onSubmit={(e) => { void saveAccountProfile(e); }}>
-                      <div className="account-fields-grid">
-                        <div className="account-field">
-                          <label className="label">Tên Merchant</label>
-                          <input className="input" value={profile.shopName} onChange={(e) => setProfile((p) => ({ ...p, shopName: e.target.value }))} placeholder="Tên cửa hàng" />
-                        </div>
-                        <div className="account-field">
-                          <label className="label">Merchant ID</label>
-                          <input className="input account-readonly-input" value={session.user.id} readOnly />
-                        </div>
-                        <div className="account-field">
-                          <label className="label">Số điện thoại</label>
-                          <input className="input" value={profile.contactPhone} onChange={(e) => setProfile((p) => ({ ...p, contactPhone: e.target.value }))} placeholder="SĐT liên hệ" />
-                        </div>
-                        <div className="account-field">
-                          <label className="label">Email</label>
-                          <input className="input account-readonly-input" value={profile.email} placeholder="Email chua co contract backend" readOnly />
-                        </div>
-                        {/* Fixed Warehouse & Auto-Dispatch Hub Card */}
-                        <div className="warehouse-fixed-card account-field--span-2">
-                          <div className="warehouse-card-header">
-                            <div className="warehouse-header-title">
-                              <span className="material-symbols-outlined" style={{ fontSize: 24, color: '#0052cc' }}>warehouse</span>
-                              <div>
-                                <h4>Kho Hàng & Điểm Lấy Định Danh (Store Location)</h4>
-                                <span className="muted" style={{ fontSize: 11 }}>Cố định theo phân vùng bưu chính & Tuyến shipper</span>
-                              </div>
-                            </div>
-                            <span className="warehouse-badge-lock">
-                              <span className="material-symbols-outlined" style={{ fontSize: 14 }}>lock</span>
-                              <span>Vị trí cố định (Đã khóa)</span>
-                            </span>
-                          </div>
-
-                          <div className="warehouse-grid-info">
-                            <div className="warehouse-info-item">
-                              <span className="warehouse-info-label">
-                                <span className="material-symbols-outlined" style={{ fontSize: 14, color: '#0052cc' }}>storefront</span>
-                                <span>Tên Kho / Store ID</span>
-                              </span>
-                              <span className="warehouse-info-value">{profile.shopName || session.user.username} (Mã: {session.user.id.slice(0, 8)})</span>
-                            </div>
-
-                            <div className="warehouse-info-item">
-                              <span className="warehouse-info-label">
-                                <span className="material-symbols-outlined" style={{ fontSize: 14, color: '#0052cc' }}>hub</span>
-                                <span>Bưu Cục Quản Lý (Origin Hub)</span>
-                              </span>
-                              <span className="warehouse-info-value">
-                                {selectedAccountProvinceHub
-                                  ? `${selectedAccountProvinceHub.hubName} (${selectedAccountProvinceHub.hubCode})`
-                                  : 'Hub Bưu Chính Khu Vực'}
-                              </span>
-                            </div>
-                          </div>
-
-                          <div className="warehouse-info-item" style={{ marginBottom: 14 }}>
-                            <span className="warehouse-info-label">
-                              <span className="material-symbols-outlined" style={{ fontSize: 14, color: '#0052cc' }}>location_on</span>
-                              <span>Địa chỉ kho lấy hàng vật lý</span>
-                            </span>
-                            <span className="warehouse-info-value" style={{ fontSize: 13, color: '#1e293b' }}>
-                              {profile.defaultPickupAddress || `${profile.defaultPickupAddressDetail || 'Địa chỉ kho'}, ${profile.defaultPickupProvince || 'TP.HCM'}`}
-                            </span>
-                          </div>
-
-                          <div className="warehouse-gps-strip">
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                              <span className="material-symbols-outlined" style={{ fontSize: 20, color: '#0284c7' }}>my_location</span>
-                              <div>
-                                <div style={{ fontSize: 11, fontWeight: 700, color: '#0f172a' }}>TỌA ĐỘ GPS AUTO-DISPATCH</div>
-                                <div style={{ fontSize: 11, color: '#64748b' }}>Phục vụ thuật toán phân vùng đa giác Tuyến bưu tá</div>
-                              </div>
-                            </div>
-                            <span className="warehouse-coords-code">
-                              {profile.latitude && profile.longitude
-                                ? `${profile.latitude.toFixed(5)}, ${profile.longitude.toFixed(5)}`
-                                : selectedAccountProvinceHub?.latitude && selectedAccountProvinceHub?.longitude
-                                ? `${selectedAccountProvinceHub.latitude.toFixed(5)}, ${selectedAccountProvinceHub.longitude.toFixed(5)}`
-                                : '10.86500, 106.68500'}
-                            </span>
-                          </div>
-
-                          <div className="warehouse-notice-box">
-                            <span className="material-symbols-outlined" style={{ fontSize: 18, color: '#d97706', flexShrink: 0, marginTop: 1 }}>info</span>
-                            <span>
-                              <strong>Quy chuẩn bưu chính:</strong> Mỗi tài khoản Store gắn liền với một tọa độ kho cố định để đảm bảo bưu tá lấy hàng chính xác theo tuyến. Nếu Quý khách có thêm kho tại địa chỉ khác, vui lòng liên hệ bưu cục để được cấp thêm <strong>Mã Store ID chi nhánh mới</strong>.
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="account-profile-actions">
-                        <button className="btn btn-primary" type="submit" disabled={accountSaving}>{accountSaving ? 'Đang lưu...' : 'Lưu thông tin tài khoản'}</button>
-                      </div>
-                    </form>
-                  </div>
-                  {accountMessage ? <p className="message">{accountMessage}</p> : null}
-                </section>
-              </div>
-
-              <div className="account-side-column">
-                <section className="card account-security-card">
-                  <div className="account-card-header">
-                    <span className="material-symbols-outlined account-card-icon">lock_reset</span>
-                    <h3>Đổi mật khẩu</h3>
-                  </div>
-                  <form className="account-password-form" onSubmit={(e) => { void changeAccountPassword(e); }}>
-                    <div className="account-field">
-                      <label className="label">Mật khẩu hiện tại</label>
-                      <input className="input" type="password" value={passwordOld} onChange={(e) => setPasswordOld(e.target.value)} placeholder="Mật khẩu hiện tại" />
-                    </div>
-                    <div className="account-field">
-                      <label className="label">Mật khẩu mới</label>
-                      <input className="input" type="password" value={passwordNew} onChange={(e) => setPasswordNew(e.target.value)} placeholder="Mật khẩu mới" />
-                      <span className="muted">Tối thiểu 8 ký tự, bao gồm chữ cái và số.</span>
-                    </div>
-                    <div className="account-field">
-                      <label className="label">Xác nhận mật khẩu mới</label>
-                      <input className="input" type="password" value={passwordConfirm} onChange={(e) => setPasswordConfirm(e.target.value)} placeholder="Xác nhận mật khẩu mới" />
-                    </div>
-                    <button className="btn btn-ghost account-password-btn" type="submit" disabled={passwordSaving}>{passwordSaving ? 'Dang cap nhat...' : 'Cap nhat mat khau'}</button>
-                  </form>
-                  {passwordMessage ? <p className="message">{passwordMessage}</p> : null}
-                </section>
-
-                <section className="card account-session-card">
-                  <div className="account-session-copy">
-                    <h4>Trạng thái tài khoản</h4>
-                    <div className="account-session-badge">Đã xác thực</div>
-                  </div>
-                  <div className="account-session-meta">
-                    <div><span className="muted">Username</span><strong>{session.user.username}</strong></div>
-                    <div><span className="muted">Roles</span><strong>{session.user.roles.join(', ')}</strong></div>
-                    <div><span className="muted">Token hết hạn</span><strong>{formatDate(session.accessTokenExpiresAt)}</strong></div>
-                  </div>
-                </section>
-              </div>
-            </div>
-
-            <footer className="account-footer muted">Bao mat thong tin merchant la uu tien hang dau cua Nexus Logistic.</footer>
-          </section> : null}
-
-          {activeView === 'notifications' ? <section className="notifications-layout">
-            <div className="notifications-toolbar">
-              <div className="notifications-tabs">
-                <button className="notifications-tab notifications-tab--active" type="button">Tất cả</button>
-                <button className="notifications-tab" type="button">Đơn hàng</button>
-                <button className="notifications-tab" type="button">Hệ thống</button>
-                <button className="notifications-tab" type="button">Khuyến mãi</button>
-              </div>
-              <button className="notifications-mark-all" onClick={() => setNotifications((prev) => prev.map((n) => ({ ...n, read: true })))}><span className="material-symbols-outlined notifications-inline-icon">done_all</span><span>Đánh dấu tất cả là đã đọc</span></button>
-            </div>
-
-            <div className="notifications-list">
-              {notifications.length === 0 ? <div className="empty notifications-empty">Chưa có thông báo.</div> : notifications.map((n) => {
-                const accentClass = !n.read ? 'notifications-card--unread' : 'notifications-card--read';
-                let levelClass = 'info';
-                let typeLabel = 'Hỗ trợ';
-                let iconSymbol = 'notifications';
-                if (n.level === 'success') {
-                  levelClass = 'success';
-                  typeLabel = 'Đơn hàng';
-                  iconSymbol = 'check_circle';
-                } else if (n.level === 'error') {
-                  levelClass = 'error';
-                  typeLabel = 'Hệ thống';
-                  iconSymbol = 'warning';
-                } else if (n.level === 'info') {
-                  levelClass = 'info';
-                  typeLabel = 'Hỗ trợ';
-                  iconSymbol = 'notifications';
+          {activeView === 'print' ? (
+            <PrintShipmentView
+              shipmentRows={shipmentRows}
+              printSingleCode={printSingleCode}
+              printBulkCodes={printBulkCodes}
+              printPreviewRow={printPreviewRow}
+              printBulkPreviewRows={printBulkPreviewRows}
+              printMessage={printMessage}
+              onPrintSingleCodeChange={setPrintSingleCode}
+              onPrintBulkCodesChange={setPrintBulkCodes}
+              onPrintSingle={() => {
+                const row = shipmentRows.find((r) => r.shipment.code === normalizeCode(printSingleCode));
+                if (!row) {
+                  setPrintMessage('Không tìm thấy shipment trong danh sách hiện tại.');
+                  return;
                 }
-                return <article className={`notifications-card ${accentClass}`} key={n.id}>
-                  {!n.read ? <div className="notifications-card-accent" /> : null}
-                  <div className={`notifications-card-icon notifications-card-icon--${levelClass}`}>
-                    <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>{iconSymbol}</span>
-                  </div>
-                  <div className="notifications-card-body">
-                    <div className="notifications-card-head">
-                      <h3>{n.title}</h3>
-                      <span className="notifications-card-time">{formatDate(n.createdAt)}</span>
-                    </div>
-                    <p className="notifications-card-description">{n.description}</p>
-                    <div className="notifications-card-meta">
-                      <span className={`notifications-chip notifications-chip--${levelClass}`}>{typeLabel}</span>
-                      {!n.read ? <span className="notifications-unread-dot" /> : null}
-                    </div>
-                    <div className="notifications-card-actions">
-                      <button className="btn btn-ghost" onClick={() => setNotifications((prev) => prev.map((i) => i.id === n.id ? { ...i, read: true } : i))}>Đánh dấu đã đọc</button>
-                      <button className="btn btn-danger" onClick={() => setNotifications((prev) => prev.filter((i) => i.id !== n.id))}>Xóa</button>
-                    </div>
-                  </div>
-                </article>;
-              })}
-            </div>
+                printShipment(row);
+                setPrintMessage(`Đã mở popup in cho ${row.shipment.code}`);
+              }}
+              onPrintBulk={() => {
+                const codes = printBulkCodes
+                  .split(/[\s,;\n]+/)
+                  .map((c) => normalizeCode(c))
+                  .filter(Boolean);
+                if (codes.length === 0) {
+                  setPrintMessage('Vui lòng nhập ít nhất 1 mã vận đơn để in.');
+                  return;
+                }
+                if (printBulkPreviewRows.length === 0) {
+                  setPrintMessage('Không tìm thấy vận đơn nào phù hợp với danh sách mã đã nhập.');
+                  return;
+                }
+                printMultipleShipments(printBulkPreviewRows);
+                if (printBulkPreviewRows.length < codes.length) {
+                  setPrintMessage(`Đã mở popup in cho ${printBulkPreviewRows.length}/${codes.length} mã tìm thấy.`);
+                } else {
+                  setPrintMessage(`Đã mở popup in cho toàn bộ ${printBulkPreviewRows.length} vận đơn.`);
+                }
+              }}
+              onDownloadCsv={downloadCsv}
+              onExportPdf={exportPdf}
+            />
+          ) : null}
 
-            <div className="notifications-footer-bar">
-              <span className="muted">Hiển thị {Math.min(notifications.length, 5)} trên tổng số {notifications.length} thông báo</span>
-              <button className="btn btn-danger notifications-clear-btn" onClick={() => setNotifications([])}>Xóa toàn bộ</button>
-            </div>
-          </section> : null}
+          {activeView === 'account' ? (
+            <MerchantAccountView
+              session={session}
+              profile={profile}
+              onProfileChange={setProfile}
+              selectedAccountProvinceHub={selectedAccountProvinceHub}
+              accountSaving={accountSaving}
+              accountMessage={accountMessage}
+              onSaveAccountProfile={saveAccountProfile}
+              passwordOld={passwordOld}
+              passwordNew={passwordNew}
+              passwordConfirm={passwordConfirm}
+              passwordSaving={passwordSaving}
+              passwordMessage={passwordMessage}
+              onPasswordOldChange={setPasswordOld}
+              onPasswordNewChange={setPasswordNew}
+              onPasswordConfirmChange={setPasswordConfirm}
+              onChangeAccountPassword={changeAccountPassword}
+            />
+          ) : null}
+
+          {activeView === 'notifications' ? (
+            <MerchantNotificationsView
+              notifications={notifications}
+              onMarkAllRead={() => setNotifications((prev) => prev.map((n) => ({ ...n, read: true })))}
+              onMarkItemRead={(id) => setNotifications((prev) => prev.map((i) => i.id === id ? { ...i, read: true } : i))}
+              onDeleteItem={(id) => setNotifications((prev) => prev.filter((i) => i.id !== id))}
+              onClearAll={() => setNotifications([])}
+            />
+          ) : null}
         </main>
       </div>
 
-      {isEditingBankModalOpen ? (
-        <div className="ops-modal-backdrop" onClick={() => setIsEditingBankModalOpen(false)}>
-          <div className="ops-modal-card" style={{ maxWidth: '480px', padding: '24px' }} onClick={(e) => e.stopPropagation()}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-              <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 800, color: 'var(--stitch-on-surface)' }}>
-                Cập nhật tài khoản thụ hưởng COD
-              </h3>
-              <button type="button" className="ops-modal-close-btn" onClick={() => setIsEditingBankModalOpen(false)}>
-                <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>close</span>
-              </button>
-            </div>
-            <form onSubmit={handleSaveBankProfile} style={{ display: 'grid', gap: '14px' }}>
-              <div>
-                <label className="label">Ngân hàng thụ hưởng</label>
-                <select
-                  className="input"
-                  value={editBankForm.bankName}
-                  onChange={(e) => setEditBankForm({ ...editBankForm, bankName: e.target.value })}
-                  required
-                >
-                  <option value="Techcombank">Techcombank (TCB)</option>
-                  <option value="Vietcombank">Vietcombank (VCB)</option>
-                  <option value="MBBank">MBBank (Ngân hàng Quân Đội)</option>
-                  <option value="VPBank">VPBank</option>
-                  <option value="ACB">ACB (Á Châu)</option>
-                  <option value="BIDV">BIDV</option>
-                  <option value="VietinBank">VietinBank</option>
-                  <option value="TPBank">TPBank</option>
-                  <option value="Sacombank">Sacombank</option>
-                </select>
-              </div>
+      <BankProfileModal
+        isOpen={isEditingBankModalOpen}
+        onClose={() => setIsEditingBankModalOpen(false)}
+        editBankForm={editBankForm}
+        setEditBankForm={setEditBankForm}
+        onSaveBankProfile={handleSaveBankProfile}
+      />
 
-              <div>
-                <label className="label">Số tài khoản ngân hàng</label>
-                <input
-                  className="input"
-                  value={editBankForm.accountNumber}
-                  onChange={(e) => setEditBankForm({ ...editBankForm, accountNumber: e.target.value })}
-                  placeholder="Ví dụ: 19036788992011"
-                  required
-                />
-              </div>
+      <SettlementBatchDetailModal
+        batch={selectedSettlementBatch}
+        onClose={() => setSelectedSettlementBatch(null)}
+        shipmentRows={shipmentRows}
+        onExportBatchToCsv={exportBatchToCsv}
+      />
 
-              <div>
-                <label className="label">Tên chủ tài khoản (In hoa không dấu)</label>
-                <input
-                  className="input"
-                  value={editBankForm.accountHolder}
-                  onChange={(e) => setEditBankForm({ ...editBankForm, accountHolder: e.target.value.toUpperCase() })}
-                  placeholder="Ví dụ: NGUYEN VAN A"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="label">Chi nhánh ngân hàng</label>
-                <input
-                  className="input"
-                  value={editBankForm.branch}
-                  onChange={(e) => setEditBankForm({ ...editBankForm, branch: e.target.value })}
-                  placeholder="Ví dụ: Chi nhánh Ba Đình, Hà Nội"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="label">Chu kỳ nhận tiền COD</label>
-                <select
-                  className="input"
-                  value={editBankForm.payoutSchedule}
-                  onChange={(e) => setEditBankForm({ ...editBankForm, payoutSchedule: e.target.value as 'MWF' | 'DAILY' })}
-                >
-                  <option value="MWF">Thứ 2 - Thứ 4 - Thứ 6 hàng tuần (Mặc định)</option>
-                  <option value="DAILY">Hàng ngày T+1 (Dành cho đối tác VIP)</option>
-                </select>
-              </div>
-
-              <div style={{ background: '#f8fafc', padding: '10px 12px', borderRadius: '8px', fontSize: '12px', color: '#64748b' }}>
-                Lưu ý: Tên chủ tài khoản ngân hàng phải trùng khớp với người đại diện hợp đồng hoặc chủ doanh nghiệp để đảm bảo tính pháp lý khi giải ngân COD.
-              </div>
-
-              <div style={{ marginTop: '10px', display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
-                <button type="button" className="btn btn-secondary" onClick={() => setIsEditingBankModalOpen(false)}>
-                  Hủy
-                </button>
-                <button type="submit" className="btn btn-primary">
-                  Lưu tài khoản
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      ) : null}
-
-      {selectedSettlementBatch ? (
-        <div className="ops-modal-backdrop" onClick={() => setSelectedSettlementBatch(null)}>
-          <div className="ops-modal-card" style={{ maxWidth: '800px', padding: '24px' }} onClick={(e) => e.stopPropagation()}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-              <div>
-                <h3 style={{ margin: '0 0 4px', fontSize: '18px', fontWeight: 800, color: 'var(--stitch-on-surface)' }}>
-                  Chi tiết kỳ đối soát #{selectedSettlementBatch.code}
-                </h3>
-                <div className="muted" style={{ fontSize: '13px' }}>
-                  {selectedSettlementBatch.cycleName} • {selectedSettlementBatch.orderCount} đơn hàng
-                </div>
-              </div>
-              <button type="button" className="ops-modal-close-btn" onClick={() => setSelectedSettlementBatch(null)}>
-                <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>close</span>
-              </button>
-            </div>
-
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '12px', padding: '14px', background: '#f8fafc', borderRadius: '10px', marginBottom: '16px', border: '1px solid #e2e8f0' }}>
-              <div>
-                <div className="muted" style={{ fontSize: '11px', textTransform: 'uppercase' }}>Tổng COD thu hộ</div>
-                <div style={{ fontWeight: 700, color: '#127a56' }}>+{formatCurrency(selectedSettlementBatch.codTotal)}</div>
-              </div>
-              <div>
-                <div className="muted" style={{ fontSize: '11px', textTransform: 'uppercase' }}>Cước cấn trừ</div>
-                <div style={{ fontWeight: 700, color: '#ba1a1a' }}>-{formatCurrency(selectedSettlementBatch.feeTotal)}</div>
-              </div>
-              <div>
-                <div className="muted" style={{ fontSize: '11px', textTransform: 'uppercase' }}>Thực nhận</div>
-                <div style={{ fontWeight: 800, fontSize: '16px', color: '#0052cc' }}>{formatCurrency(selectedSettlementBatch.netPayout)}</div>
-              </div>
-              <div>
-                <div className="muted" style={{ fontSize: '11px', textTransform: 'uppercase' }}>Trạng thái</div>
-                <div>{selectedSettlementBatch.status === 'PAID' ? 'Đã chi trả' : 'Đang xử lý'}</div>
-              </div>
-            </div>
-
-            <div style={{ maxHeight: '340px', overflowY: 'auto', border: '1px solid #e2e8f0', borderRadius: '8px', marginBottom: '16px' }}>
-              <table className="finance-table" style={{ margin: 0 }}>
-                <thead>
-                  <tr>
-                    <th>Mã vận đơn</th>
-                    <th>Người nhận</th>
-                    <th>SĐT</th>
-                    <th style={{ textAlign: 'right' }}>Tiền COD</th>
-                    <th style={{ textAlign: 'right' }}>Cước phí</th>
-                    <th style={{ textAlign: 'right' }}>Thực nhận</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {shipmentRows
-                    .filter((r) => selectedSettlementBatch.shipmentCodes.includes(r.shipment.code))
-                    .map((r) => (
-                      <tr key={r.shipment.id}>
-                        <td><span className="code-pill">{r.shipment.code}</span></td>
-                        <td>{r.receiverName}</td>
-                        <td>{r.receiverPhone}</td>
-                        <td style={{ textAlign: 'right' }} className="money-plus">+{formatCurrency(r.codAmount)}</td>
-                        <td style={{ textAlign: 'right' }} className="money-minus">-{formatCurrency(r.feeEstimate)}</td>
-                        <td style={{ textAlign: 'right', fontWeight: 700 }}>{formatCurrency(r.codAmount - r.feeEstimate)}</td>
-                      </tr>
-                    ))}
-                </tbody>
-              </table>
-            </div>
-
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <button
-                type="button"
-                className="btn btn-secondary"
-                onClick={() => exportBatchToCsv(selectedSettlementBatch)}
-              >
-                <span className="material-symbols-outlined" style={{ fontSize: '16px', marginRight: '6px' }}>download</span>
-                <span>Tải bảng kê Excel (.csv)</span>
-              </button>
-              <button
-                type="button"
-                className="btn btn-ghost"
-                onClick={() => setSelectedSettlementBatch(null)}
-              >
-                Đóng
-              </button>
-            </div>
-          </div>
-        </div>
-      ) : null}
-
-      {showTopupModal ? (
-        <div className="ops-modal-backdrop" onClick={() => setShowTopupModal(false)}>
-          <div className="ops-modal-card" style={{ maxWidth: '440px', padding: '24px' }} onClick={(e) => e.stopPropagation()}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-              <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 800, color: 'var(--stitch-on-surface)' }}>Thanh toán nợ cước VietQR</h3>
-              <button type="button" className="ops-modal-close-btn" onClick={() => setShowTopupModal(false)}>
-                <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>close</span>
-              </button>
-            </div>
-            <div style={{ textAlign: 'center' }}>
-              <p className="muted" style={{ fontSize: '13px', margin: '0 0 16px' }}>
-                Quét mã QR bằng App ngân hàng bất kỳ để thanh toán nợ cước và mở khóa tạo đơn tự động.
-              </p>
-              <img
-                src={`https://img.vietqr.io/image/970422-123456789-compact2.png?amount=${Math.max(50000, Math.abs(insights.netBalance))}&addInfo=${encodeURIComponent(`NO CUOC ${session?.user?.username || 'SHOP'}`)}&accountName=${encodeURIComponent('NEXUS LOGISTICS')}`}
-                alt="VietQR Thanh toán nợ cước"
-                style={{ width: '240px', height: '240px', borderRadius: '12px', border: '1px solid #E2E8F0', margin: '0 auto', display: 'block' }}
-              />
-              <div style={{ marginTop: '16px', textAlign: 'left', background: '#F8FAFC', padding: '12px 14px', borderRadius: '8px', fontSize: '13px', lineHeight: '1.6' }}>
-                <div><strong>Ngân hàng thụ hưởng:</strong> MBBank (Ngân hàng Quân Đội)</div>
-                <div><strong>Số tài khoản:</strong> 123456789</div>
-                <div><strong>Chủ tài khoản:</strong> CÔNG TY CỔ PHẦN NEXUS LOGISTICS</div>
-                <div><strong>Số tiền nợ cần thanh toán:</strong> <span style={{ color: '#DC2626', fontWeight: 700 }}>{formatCurrency(Math.max(50000, Math.abs(insights.netBalance)))}</span></div>
-                <div><strong>Nội dung:</strong> NO CUOC {session?.user?.username || 'SHOP'}</div>
-              </div>
-            </div>
-            <div style={{ marginTop: '20px', display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
-              <button type="button" className="btn btn-secondary" onClick={() => setShowTopupModal(false)}>
-                Đóng
-              </button>
-              <button
-                type="button"
-                className="btn btn-primary"
-                onClick={() => {
-                  setShowTopupModal(false);
-                  alert('Hệ thống đang kiểm tra giao dịch chuyển khoản VietQR tự động. Số dư sẽ được cập nhật trong ít phút!');
-                }}
-              >
-                Đã chuyển khoản
-              </button>
-            </div>
-          </div>
-        </div>
-      ) : null}
+      <TopupVietQRModal
+        isOpen={showTopupModal}
+        onClose={() => setShowTopupModal(false)}
+        netBalance={insights.netBalance}
+        username={session?.user?.username}
+      />
     </div>
   );
 }
