@@ -394,7 +394,7 @@ def generate_svg():
 
     lines.append('    <line x1="990" y1="1840" x2="1760" y2="1840" stroke="#E2E8F0" stroke-width="1.2"/>')
     lines.append('    <text x="990" y="1870" class="mono" font-size="13px" font-weight="700" fill="#0F172A">Nghiệp vụ cốt lõi &amp; Cam kết Dữ liệu (Ground Truth):</text>')
-    lines.append('    <text x="990" y="1898" font-size="14.5px" font-weight="500" fill="#334155">• Quy chuẩn tính cước thể tích chuẩn IATA quốc tế: Trọng lượng quy đổi = (DxRxC)/5000.</text>')
+    lines.append('    <text x="990" y="1898" font-size="14.5px" font-weight="500" fill="#334155">• Quy chuẩn tính cước thể tích chuẩn IATA quốc tế: Trọng lượng quy đổi = (DxRxC)/6000.</text>')
     lines.append('    <text x="990" y="1926" font-size="14.5px" font-weight="500" fill="#334155">• Đối soát dòng tiền thu hộ COD minh bạch giữa Merchant, Sàn thương mại và Shipper.</text>')
     lines.append('    <text x="990" y="1954" font-size="14.5px" font-weight="500" fill="#334155">• Sổ cái kép (Double-Entry Bookkeeping): Đảm bảo cân đối tài chính tuyệt đối, chống thất thoát.</text>')
     lines.append('    <text x="990" y="1982" font-size="14.5px" font-weight="500" fill="#334155">• Khóa phân tán Redlock chống trùng lặp giao dịch thanh toán hoặc rút tiền ví merchant.</text>')

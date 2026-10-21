@@ -89,11 +89,12 @@ export class AuthSessionPrismaRepository extends AuthSessionRepository {
     return this.toEntity(record);
   }
 
-  async touch(id: string): Promise<AuthSession> {
+  async touch(id: string, extendExpiresAt?: Date): Promise<AuthSession> {
     const record = await this.prisma.authSession.update({
       where: { id },
       data: {
         lastUsedAt: new Date(),
+        ...(extendExpiresAt ? { accessTokenExpiresAt: extendExpiresAt } : {}),
       },
     });
 

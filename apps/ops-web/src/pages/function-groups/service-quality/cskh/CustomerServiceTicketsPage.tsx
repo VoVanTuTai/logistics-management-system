@@ -38,6 +38,7 @@ import {
   addCskhInternalNoteApi,
   computeCskhStats,
   createCskhTicketApi,
+  escalateCskhTicketToClaimApi,
   fetchCskhTicketsApi,
   updateCskhTicketStatusApi,
 } from '../../../../features/cskh/cskh.data';
@@ -255,19 +256,17 @@ export function CustomerServiceTicketsPage(): React.JSX.Element {
   const handleEscalateToClaims = async () => {
     if (!selectedTicket) return;
     const confirmEscalate = window.confirm(
-      `Bạn có chắc chắn muốn chuyển Ticket [${selectedTicket.ticketCode}] thành Hồ sơ Bồi thường Khiếu nại (Claims)?\n\nHồ sơ sẽ được chuyển đến Bộ phận Pháp chế & Phân định rủi ro để thẩm định giá trị tổn thất.`
+      `Bạn có chắc chắn muốn chuyển Ticket [${selectedTicket.ticketCode}] thành Hồ sơ Bồi thường Khiếu nại (Claims)?\n\nHệ thống sẽ tự động tạo một Hồ sơ Bồi thường (CompensationClaim) trên cơ sở dữ liệu tập trung liên kết hai chiều với Ticket này và chuyển sang Bộ phận Pháp chế & Phân định rủi ro.`
     );
     if (!confirmEscalate) return;
 
-    const generatedClaimCode = selectedTicket.claimCode || `CLM-202609-${Math.floor(100 + Math.random() * 900)}`;
-    const escalationNote = `Chuyển giao hồ sơ khiếu nại bể vỡ/hư hỏng sang Bộ phận Bồi thường CLM với mã tham chiếu: ${generatedClaimCode}`;
-
     try {
-      const updated = await updateCskhTicketStatusApi(selectedTicket.id, 'ESCALATED_CLAIMS', escalationNote);
-      updated.claimCode = generatedClaimCode;
-      setSelectedTicket(updated);
-      setTickets((prev) => prev.map((t) => (t.id === updated.id ? updated : t)));
-      alert(`Đã khởi tạo chuyển giao thành công sang Hồ sơ Đền bù: ${generatedClaimCode}`);
+      const res = await escalateCskhTicketToClaimApi(selectedTicket.id, {
+        damageDescription: selectedTicket.description,
+      });
+      setSelectedTicket(res.ticket);
+      setTickets((prev) => prev.map((t) => (t.id === res.ticket.id ? res.ticket : t)));
+      alert(`Đã khởi tạo thành công Hồ sơ Bồi thường [${res.ticket.claimCode || res.claim?.claimCode}] trên hệ thống CompensationClaim!`);
     } catch (err) {
       alert('Không thể chuyển tiếp sang CLM. Vui lòng thử lại!');
     }
@@ -872,10 +871,11 @@ export function CustomerServiceTicketsPage(): React.JSX.Element {
                     <button
                       type="button"
                       className="cskh-btn-primary"
-                      style={{ backgroundColor: '#d97706', fontSize: '12px', padding: '6px 12px' }}
+                      style={{ backgroundColor: '#d97706', fontSize: '12px', padding: '6px 14px', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
                       onClick={handleEscalateToClaims}
                     >
-                      🚀 Khởi tạo Hồ sơ Bồi thường (CLM)
+                      <ShieldAlert size={15} />
+                      <span>Khởi tạo Hồ sơ Bồi thường (CLM)</span>
                     </button>
                   </div>
                 </div>

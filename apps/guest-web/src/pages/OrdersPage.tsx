@@ -32,6 +32,7 @@ import {
 import { useAuthStore } from '../store/useAuthStore';
 import { shipmentApi, type ShipmentResponse } from '../services/api/shipment.api';
 import { printShippingLabel } from '../utils/shippingLabelService';
+import { resolveCourierForOrder, formatCourierPhone } from '../utils/courierResolver';
 import qrcode from 'qrcode-generator';
 
 function formatVnd(val?: number): string {
@@ -212,8 +213,8 @@ export function OrdersPage(): React.JSX.Element {
   if (!token || !phone) {
     return (
       <div className="mx-auto flex min-h-[75vh] max-w-lg items-center justify-center px-4 py-8">
-        <div className="w-full bg-white p-8 text-center rounded-3xl border border-slate-200 shadow-xl space-y-6">
-          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-blue-50 text-blue-600 border border-blue-100 shadow-inner">
+        <div className="w-full bg-white p-8 text-center border border-slate-300 shadow-xl space-y-6">
+          <div className="mx-auto flex h-16 w-16 items-center justify-center bg-blue-50 text-blue-600 border border-blue-200 shadow-inner">
             <Lock className="h-8 w-8" strokeWidth={1.8} />
           </div>
           <div className="space-y-2">
@@ -223,7 +224,7 @@ export function OrdersPage(): React.JSX.Element {
             </p>
           </div>
 
-          <div className="p-4 bg-gradient-to-br from-blue-50/80 to-indigo-50/60 rounded-2xl border border-blue-100 text-left text-xs space-y-2 text-blue-900 font-medium">
+          <div className="p-4 bg-blue-50/80 border border-blue-200 text-left text-xs space-y-2 text-blue-900 font-medium">
             <div className="flex items-center gap-2 font-bold text-blue-800">
               <ShieldCheck className="h-4 w-4 text-blue-600 shrink-0" />
               <span>Đồng bộ tài khoản Nexus:</span>
@@ -241,7 +242,7 @@ export function OrdersPage(): React.JSX.Element {
 
           <button
             onClick={() => navigate('/login')}
-            className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 hover:bg-blue-700 px-6 py-3.5 text-xs font-bold uppercase tracking-wider text-white shadow-md shadow-blue-600/25 transition"
+            className="w-full inline-flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 px-6 py-3.5 text-xs font-bold uppercase tracking-wider text-white shadow-md transition"
           >
             Đăng Nhập / Đăng Ký Ngay
             <ChevronRight className="h-4 w-4" strokeWidth={2} />
@@ -397,11 +398,11 @@ export function OrdersPage(): React.JSX.Element {
             <h1 className="text-2xl font-black text-slate-900 tracking-tight">
               Quản Lý Đơn Hàng
             </h1>
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 text-[11px] font-bold border border-emerald-200">
-              <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 bg-emerald-50 text-emerald-700 text-[11px] font-bold border border-emerald-200 rounded-full">
+              <span className="h-2 w-2 bg-emerald-500 rounded-full animate-pulse" />
               Đồng bộ Live Mobile
             </span>
-            <span className="hidden sm:inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-blue-50 text-blue-700 text-xs font-bold border border-blue-100">
+            <span className="hidden sm:inline-flex items-center gap-1 px-2.5 py-0.5 bg-blue-50 text-blue-700 text-xs font-bold border border-blue-200 rounded-full">
               <User className="h-3 w-3" />
               {phone}
             </span>
@@ -416,7 +417,7 @@ export function OrdersPage(): React.JSX.Element {
             type="button"
             onClick={handleRefresh}
             disabled={isRefreshing || isLoading}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 text-xs font-bold transition shadow-sm disabled:opacity-50"
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 text-xs font-bold rounded-lg transition shadow-sm disabled:opacity-50"
             title="Làm mới dữ liệu từ máy chủ"
           >
             <RefreshCw className={`h-3.5 w-3.5 ${isRefreshing ? 'animate-spin text-blue-600' : ''}`} />
@@ -425,7 +426,7 @@ export function OrdersPage(): React.JSX.Element {
           <button
             type="button"
             onClick={() => navigate('/create')}
-            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold uppercase tracking-wider transition shadow-md shadow-blue-600/20"
+            className="inline-flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold uppercase tracking-wider rounded-lg transition shadow-md"
           >
             <PlusCircle className="h-3.5 w-3.5" />
             <span>Tạo Vận Đơn</span>
@@ -435,7 +436,7 @@ export function OrdersPage(): React.JSX.Element {
 
       {/* 2. KPI QUICK STATS CARDS */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <div className="bg-white rounded-2xl p-3.5 border border-slate-200 shadow-sm space-y-1">
+        <div className="bg-white p-3.5 border border-slate-200 rounded-xl shadow-sm space-y-1">
           <div className="flex items-center justify-between text-xs text-slate-500 font-bold">
             <span>Tổng Đơn {activeCategory === 'SENT' ? 'Gửi' : 'Nhận'}</span>
             <Package className="h-4 w-4 text-blue-600" />
@@ -444,7 +445,7 @@ export function OrdersPage(): React.JSX.Element {
           <p className="text-[10px] text-slate-400 font-medium">Toàn bộ bưu gửi</p>
         </div>
 
-        <div className="bg-white rounded-2xl p-3.5 border border-slate-200 shadow-sm space-y-1">
+        <div className="bg-white p-3.5 border border-slate-200 rounded-xl shadow-sm space-y-1">
           <div className="flex items-center justify-between text-xs text-amber-600 font-bold">
             <span>Chờ Lấy Hàng</span>
             <Clock className="h-4 w-4 text-amber-600" />
@@ -453,7 +454,7 @@ export function OrdersPage(): React.JSX.Element {
           <p className="text-[10px] text-amber-500 font-medium">Chờ bưu tá lấy</p>
         </div>
 
-        <div className="bg-white rounded-2xl p-3.5 border border-slate-200 shadow-sm space-y-1">
+        <div className="bg-white p-3.5 border border-slate-200 rounded-xl shadow-sm space-y-1">
           <div className="flex items-center justify-between text-xs text-indigo-600 font-bold">
             <span>Đang Vận Chuyển / Giao</span>
             <Truck className="h-4 w-4 text-indigo-600" />
@@ -462,7 +463,7 @@ export function OrdersPage(): React.JSX.Element {
           <p className="text-[10px] text-indigo-500 font-medium">Đang trên đường</p>
         </div>
 
-        <div className="bg-white rounded-2xl p-3.5 border border-slate-200 shadow-sm space-y-1">
+        <div className="bg-white p-3.5 border border-slate-200 rounded-xl shadow-sm space-y-1">
           <div className="flex items-center justify-between text-xs text-emerald-600 font-bold">
             <span>Giao Thành Công</span>
             <CheckCircle2 className="h-4 w-4 text-emerald-600" />
@@ -473,23 +474,23 @@ export function OrdersPage(): React.JSX.Element {
       </div>
 
       {/* 3. DUAL CATEGORY SWITCHER (SENT vs RECEIVED) */}
-      <div className="bg-slate-100 p-1 rounded-2xl flex gap-1 border border-slate-200/80">
+      <div className="bg-slate-100 p-1 flex gap-1 border border-slate-300 rounded-xl">
         <button
           type="button"
           onClick={() => setActiveCategory('SENT')}
-          className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-xs font-extrabold transition-all duration-200 ${
+          className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 text-xs font-extrabold rounded-lg transition-all duration-200 ${
             activeCategory === 'SENT'
-              ? 'bg-white text-blue-700 shadow-sm'
+              ? 'bg-white text-blue-700 shadow-sm border border-slate-200'
               : 'text-slate-600 hover:text-slate-900'
           }`}
         >
           <Send className="h-4 w-4" />
           <span>Đơn Đã Gửi (Đã tạo)</span>
           <span
-            className={`px-2 py-0.5 rounded-full text-[11px] font-mono font-bold ${
+            className={`px-2 py-0.5 text-[11px] font-mono font-bold border rounded-full ${
               activeCategory === 'SENT'
-                ? 'bg-blue-100 text-blue-800'
-                : 'bg-slate-200 text-slate-700'
+                ? 'bg-blue-100 text-blue-800 border-blue-200'
+                : 'bg-slate-200 text-slate-700 border-slate-300'
             }`}
           >
             {sentOrders.length}
@@ -499,19 +500,19 @@ export function OrdersPage(): React.JSX.Element {
         <button
           type="button"
           onClick={() => setActiveCategory('RECEIVED')}
-          className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-xs font-extrabold transition-all duration-200 ${
+          className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 text-xs font-extrabold rounded-lg transition-all duration-200 ${
             activeCategory === 'RECEIVED'
-              ? 'bg-white text-purple-700 shadow-sm'
+              ? 'bg-white text-purple-700 shadow-sm border border-slate-200'
               : 'text-slate-600 hover:text-slate-900'
           }`}
         >
           <Inbox className="h-4 w-4" />
           <span>Đơn Nhận Hàng</span>
           <span
-            className={`px-2 py-0.5 rounded-full text-[11px] font-mono font-bold ${
+            className={`px-2 py-0.5 text-[11px] font-mono font-bold border rounded-full ${
               activeCategory === 'RECEIVED'
-                ? 'bg-purple-100 text-purple-800'
-                : 'bg-slate-200 text-slate-700'
+                ? 'bg-purple-100 text-purple-800 border-purple-200'
+                : 'bg-slate-200 text-slate-700 border-slate-300'
             }`}
           >
             {receivedOrders.length}
@@ -520,7 +521,7 @@ export function OrdersPage(): React.JSX.Element {
       </div>
 
       {/* 4. FILTER TOOLBAR: SEARCH + PICKUP METHOD + STATUS + TIME */}
-      <div className="bg-white rounded-2xl p-3 border border-slate-200 shadow-sm space-y-2.5">
+      <div className="bg-white p-3 border border-slate-200 rounded-xl shadow-sm space-y-2.5">
         <div className="flex flex-col md:flex-row gap-2.5">
           {/* Search Input */}
           <div className="relative flex-1">
@@ -530,7 +531,7 @@ export function OrdersPage(): React.JSX.Element {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Tìm theo mã vận đơn #NEXUS..., tên, SĐT, địa chỉ, tên hàng..."
-              className="w-full rounded-xl border border-slate-200 bg-slate-50 pl-10 pr-10 py-2 text-xs font-semibold text-slate-900 placeholder-slate-400 outline-none focus:bg-white focus:border-blue-600 focus:ring-2 focus:ring-blue-600/10 transition"
+              className="w-full border border-slate-300 bg-slate-50 pl-10 pr-10 py-2 text-xs font-semibold text-slate-900 placeholder-slate-400 outline-none rounded-lg focus:bg-white focus:border-blue-600 transition"
             />
             {searchQuery && (
               <button
@@ -549,7 +550,7 @@ export function OrdersPage(): React.JSX.Element {
               <select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-bold text-slate-800 outline-none focus:bg-white focus:border-blue-600"
+                className="w-full border border-slate-300 bg-slate-50 px-3 py-2 text-xs font-bold text-slate-800 outline-none rounded-lg focus:bg-white focus:border-blue-600"
               >
                 <option value="ALL">Tất cả trạng thái</option>
                 <option value="CREATED">Chờ lấy hàng</option>
@@ -568,7 +569,7 @@ export function OrdersPage(): React.JSX.Element {
               <select
                 value={timeFilter}
                 onChange={(e) => setTimeFilter(e.target.value)}
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-bold text-slate-800 outline-none focus:bg-white focus:border-blue-600"
+                className="w-full border border-slate-300 bg-slate-50 px-3 py-2 text-xs font-bold text-slate-800 outline-none rounded-lg focus:bg-white focus:border-blue-600"
               >
                 <option value="ALL">Tất cả thời gian</option>
                 <option value="TODAY">Hôm nay</option>
@@ -586,10 +587,10 @@ export function OrdersPage(): React.JSX.Element {
           <button
             type="button"
             onClick={() => setPickupTypeFilter('ALL')}
-            className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition ${
+            className={`px-2.5 py-1 text-[11px] font-bold transition border rounded-md ${
               pickupTypeFilter === 'ALL'
-                ? 'bg-blue-600 text-white shadow-sm'
-                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
+                : 'bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200'
             }`}
           >
             Tất cả
@@ -597,10 +598,10 @@ export function OrdersPage(): React.JSX.Element {
           <button
             type="button"
             onClick={() => setPickupTypeFilter('PICKUP')}
-            className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold transition ${
+            className={`inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-bold transition border rounded-md ${
               pickupTypeFilter === 'PICKUP'
-                ? 'bg-blue-600 text-white shadow-sm'
-                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
+                : 'bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200'
             }`}
           >
             <Truck className="h-3 w-3" />
@@ -609,10 +610,10 @@ export function OrdersPage(): React.JSX.Element {
           <button
             type="button"
             onClick={() => setPickupTypeFilter('DROP_OFF')}
-            className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold transition ${
+            className={`inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-bold transition border rounded-md ${
               pickupTypeFilter === 'DROP_OFF'
-                ? 'bg-blue-600 text-white shadow-sm'
-                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
+                : 'bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200'
             }`}
           >
             <Building2 className="h-3 w-3" />
@@ -623,14 +624,14 @@ export function OrdersPage(): React.JSX.Element {
 
       {/* 5. ORDERS LIST / GRID */}
       {isLoading ? (
-        <div className="p-16 bg-white rounded-3xl border border-slate-200 text-center space-y-3 shadow-sm">
+        <div className="p-16 bg-white border border-slate-200 rounded-xl text-center space-y-3 shadow-sm">
           <RefreshCw className="h-8 w-8 text-blue-600 animate-spin mx-auto" />
           <p className="text-xs font-bold text-slate-700">Đang đồng bộ danh sách đơn hàng từ Nexus Cloud...</p>
           <p className="text-[11px] text-slate-400">Kết nối máy chủ thời gian thực</p>
         </div>
       ) : filteredShipments.length === 0 ? (
-        <div className="p-16 bg-white rounded-3xl border border-slate-200 text-center space-y-4 shadow-sm">
-          <div className="mx-auto w-16 h-16 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-center text-slate-400 shadow-inner">
+        <div className="p-16 bg-white border border-slate-200 rounded-xl text-center space-y-4 shadow-sm">
+          <div className="mx-auto w-16 h-16 bg-slate-50 border border-slate-300 rounded-xl flex items-center justify-center text-slate-400 shadow-inner">
             <Package className="h-8 w-8" strokeWidth={1.75} />
           </div>
           <div className="space-y-1">
@@ -648,7 +649,7 @@ export function OrdersPage(): React.JSX.Element {
           {activeCategory === 'SENT' && (
             <button
               onClick={() => navigate('/create')}
-              className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold uppercase tracking-wider shadow-md shadow-blue-600/20 transition inline-flex items-center gap-1.5"
+              className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold uppercase tracking-wider rounded-lg shadow-md transition inline-flex items-center gap-1.5"
             >
               <PlusCircle className="h-4 w-4" />
               Tạo Vận Đơn Mới
@@ -685,19 +686,19 @@ export function OrdersPage(): React.JSX.Element {
             return (
               <div
                 key={s.id || s.code}
-                className="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm hover:border-blue-300 hover:shadow-md transition-all duration-200 flex flex-col justify-between space-y-3.5"
+                className="bg-white p-4 border border-slate-200 rounded-xl shadow-sm hover:border-blue-500 hover:shadow-md transition-all duration-200 flex flex-col justify-between space-y-3.5"
               >
                 {/* Header: Code + Badges */}
                 <div className="space-y-2">
                   <div className="flex items-center justify-between gap-2 flex-wrap">
                     <div className="flex items-center gap-1.5 flex-wrap">
-                      <span className="font-mono text-xs font-black text-blue-900 bg-blue-50 px-2 py-1 rounded-lg border border-blue-100">
+                      <span className="font-mono text-xs font-black text-blue-900 bg-blue-50 px-2 py-1 border border-blue-200 rounded-md">
                         #{s.code}
                       </span>
                       <button
                         type="button"
                         onClick={() => handleCopy(s.code)}
-                        className="p-1 text-slate-400 hover:text-blue-600 rounded transition"
+                        className="p-1 text-slate-400 hover:text-blue-600 rounded-md transition"
                         title="Sao chép mã"
                       >
                         {copiedCode === s.code ? (
@@ -709,10 +710,10 @@ export function OrdersPage(): React.JSX.Element {
 
                       {/* Pickup Method Badge */}
                       <span
-                        className={`text-[10px] font-bold px-2 py-0.5 rounded-full inline-flex items-center gap-1 ${
+                        className={`text-[10px] font-bold px-2 py-0.5 inline-flex items-center gap-1 border rounded-full ${
                           isDropOff
-                            ? 'bg-purple-50 text-purple-700 border border-purple-200'
-                            : 'bg-blue-50 text-blue-700 border border-blue-200'
+                            ? 'bg-purple-50 text-purple-700 border-purple-200'
+                            : 'bg-blue-50 text-blue-700 border-blue-200'
                         }`}
                       >
                         {isDropOff ? (
@@ -728,7 +729,7 @@ export function OrdersPage(): React.JSX.Element {
                     </div>
 
                     <span
-                      className={`inline-flex items-center gap-1.5 text-[10px] font-extrabold px-2.5 py-1 rounded-full border ${badge.bg}`}
+                      className={`inline-flex items-center gap-1.5 text-[10px] font-extrabold px-2.5 py-1 border rounded-full ${badge.bg}`}
                     >
                       <span className={`h-2 w-2 rounded-full ${badge.dot}`} />
                       {badge.label}
@@ -736,9 +737,9 @@ export function OrdersPage(): React.JSX.Element {
                   </div>
 
                   {/* Route Block: Sender -> Receiver */}
-                  <div className="bg-slate-50/80 rounded-xl p-2.5 border border-slate-100 text-xs space-y-2">
+                  <div className="bg-slate-50 p-2.5 border border-slate-200 rounded-lg text-xs space-y-2">
                     <div className="flex items-start gap-2">
-                      <div className="h-2 w-2 rounded-full bg-blue-500 shrink-0 mt-1" />
+                      <div className="h-2 w-2 bg-blue-500 rounded-full shrink-0 mt-1" />
                       <div className="min-w-0">
                         <div className="flex items-center gap-1.5">
                           <span className="text-[10px] text-slate-400 uppercase font-bold">Gửi từ:</span>
@@ -754,7 +755,7 @@ export function OrdersPage(): React.JSX.Element {
                     </div>
 
                     <div className="flex items-start gap-2">
-                      <div className="h-2 w-2 rounded-full bg-emerald-500 shrink-0 mt-1" />
+                      <div className="h-2 w-2 bg-emerald-500 rounded-full shrink-0 mt-1" />
                       <div className="min-w-0">
                         <div className="flex items-center gap-1.5">
                           <span className="text-[10px] text-slate-400 uppercase font-bold">Giao đến:</span>
@@ -772,15 +773,15 @@ export function OrdersPage(): React.JSX.Element {
 
                   {/* Info Chips: Weight, COD, Shipping Fee / Receiver Payment */}
                   <div className="grid grid-cols-3 gap-2 text-center text-xs">
-                    <div className="p-2 rounded-xl bg-slate-50 border border-slate-100">
+                    <div className="p-2 bg-slate-50 border border-slate-200 rounded-lg">
                       <span className="text-[9px] font-bold text-slate-400 uppercase block">Khối lượng</span>
                       <span className="font-bold text-slate-800 font-mono text-[11px]">{weight} kg</span>
                     </div>
-                    <div className="p-2 rounded-xl bg-slate-50 border border-slate-100">
+                    <div className="p-2 bg-slate-50 border border-slate-200 rounded-lg">
                       <span className="text-[9px] font-bold text-slate-400 uppercase block">Thu Hộ COD</span>
                       <span className="font-bold text-blue-700 font-mono text-[11px]">{formatVnd(cod)}</span>
                     </div>
-                    <div className="p-2 rounded-xl bg-slate-50 border border-slate-100">
+                    <div className="p-2 bg-slate-50 border border-slate-200 rounded-lg">
                       <span className="text-[9px] font-bold text-slate-400 uppercase block">
                         {activeCategory === 'RECEIVED' ? 'Cần Trả Shipper' : 'Cước Phí'}
                       </span>
@@ -804,7 +805,7 @@ export function OrdersPage(): React.JSX.Element {
                     <button
                       type="button"
                       onClick={() => printShippingLabel(s)}
-                      className="px-2.5 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-700 font-bold text-xs flex items-center gap-1 transition"
+                      className="px-2.5 py-1.5 border border-slate-300 hover:bg-slate-50 text-slate-700 font-bold text-xs rounded-lg flex items-center gap-1 transition"
                       title="In phiếu gửi hàng chuẩn"
                     >
                       <Printer className="h-3.5 w-3.5 text-slate-600" />
@@ -815,7 +816,7 @@ export function OrdersPage(): React.JSX.Element {
                     <button
                       type="button"
                       onClick={() => setSelectedOrderForModal(s)}
-                      className="px-2.5 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-700 font-bold text-xs flex items-center gap-1 transition"
+                      className="px-2.5 py-1.5 border border-slate-300 hover:bg-slate-50 text-slate-700 font-bold text-xs rounded-lg flex items-center gap-1 transition"
                     >
                       <Eye className="h-3.5 w-3.5 text-slate-600" />
                       <span>Chi tiết</span>
@@ -824,7 +825,7 @@ export function OrdersPage(): React.JSX.Element {
                     {/* HÀNH TRÌNH TRA CỨU */}
                     <RouterLink
                       to={`/?track=${encodeURIComponent(s.code)}`}
-                      className="px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs flex items-center gap-1 shadow-sm transition"
+                      className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-lg flex items-center gap-1 shadow-sm transition"
                     >
                       <span>Hành trình</span>
                       <ChevronRight className="h-3 w-3" />
@@ -871,12 +872,20 @@ function OrderDetailModal({
   onPrint: (shipment: ShipmentResponse) => void;
 }) {
   const [copied, setCopied] = useState(false);
+  const [receiptStatus, setReceiptStatus] = useState<'UNCONFIRMED' | 'CONFIRMED' | 'REPORTED_NOT_RECEIVED'>('UNCONFIRMED');
   const meta = shipment.metadata || {};
   const sender = meta.sender || {};
   const receiver = meta.receiver || {};
   const pkg = meta.package || {};
   const service = meta.service || {};
   const badge = getStatusBadgeDetails(shipment.currentStatus);
+
+  const courier = resolveCourierForOrder({
+    courierId: meta.courierId,
+    courierName: meta.courierName,
+    courierPhone: meta.courierPhone,
+    receiverHubCode: receiver.hubCode || meta.receiverHubCode,
+  });
 
   const qrDataUrl = useMemo(() => {
     try {
@@ -904,9 +913,9 @@ function OrderDetailModal({
       role="dialog"
       aria-modal="true"
     >
-      <div className="relative w-full max-w-2xl bg-white rounded-3xl shadow-2xl border border-slate-100 overflow-hidden my-8 animate-in fade-in zoom-in-95 duration-200">
+      <div className="relative w-full max-w-2xl bg-white shadow-2xl border-2 border-slate-900 rounded-2xl overflow-hidden my-8 animate-in fade-in zoom-in-95 duration-200">
         {/* Modal Header */}
-        <div className="bg-gradient-to-r from-slate-900 via-blue-950 to-slate-900 p-5 text-white flex items-center justify-between">
+        <div className="bg-slate-900 p-5 text-white flex items-center justify-between border-b border-slate-800 rounded-t-2xl">
           <div className="space-y-1">
             <div className="flex items-center gap-2">
               <Package className="h-5 w-5 text-blue-400" />
@@ -921,7 +930,7 @@ function OrderDetailModal({
               <button
                 type="button"
                 onClick={handleCopyCode}
-                className="p-1 text-slate-300 hover:text-white rounded bg-white/10 transition"
+                className="p-1 text-slate-300 hover:text-white bg-white/10 rounded-md transition"
                 title="Sao chép mã vận đơn"
               >
                 {copied ? <Check className="h-4 w-4 text-emerald-400" /> : <Copy className="h-4 w-4" />}
@@ -930,14 +939,14 @@ function OrderDetailModal({
           </div>
 
           <div className="flex items-center gap-2">
-            <span className={`inline-flex items-center gap-1.5 text-xs font-black px-3 py-1 rounded-full border ${badge.bg}`}>
+            <span className={`inline-flex items-center gap-1.5 text-xs font-black px-3 py-1 border rounded-full ${badge.bg}`}>
               <span className={`h-2 w-2 rounded-full ${badge.dot}`} />
               {badge.label}
             </span>
             <button
               type="button"
               onClick={onClose}
-              className="p-1.5 text-slate-300 hover:text-white rounded-xl bg-white/10 hover:bg-white/20 transition"
+              className="p-1.5 text-slate-300 hover:text-white bg-white/10 hover:bg-white/20 rounded-lg transition"
             >
               <X className="h-5 w-5" />
             </button>
@@ -947,10 +956,10 @@ function OrderDetailModal({
         {/* Modal Body */}
         <div className="p-6 space-y-5 max-h-[75vh] overflow-y-auto text-xs">
           {/* Quick Hub Routing & QR Banner */}
-          <div className="p-4 rounded-2xl bg-blue-50/60 border border-blue-100 flex items-center justify-between gap-4">
+          <div className="p-4 bg-blue-50/60 border border-blue-200 rounded-xl flex items-center justify-between gap-4">
             <div className="space-y-1.5">
               <div className="flex items-center gap-2">
-                <span className="text-[10px] font-bold uppercase text-blue-800 bg-blue-100 px-2 py-0.5 rounded">
+                <span className="text-[10px] font-bold uppercase text-blue-800 bg-blue-100 px-2 py-0.5 border border-blue-200 rounded-full">
                   {isDropOff ? 'Gửi hàng tại bưu cục' : 'Lấy hàng tận nơi'}
                 </span>
                 <span className="text-[11px] text-slate-500 font-medium">
@@ -958,11 +967,11 @@ function OrderDetailModal({
                 </span>
               </div>
               <div className="flex items-center gap-2 font-mono font-black text-sm text-slate-800">
-                <span className="px-2 py-0.5 bg-white rounded border border-slate-200">
+                <span className="px-2 py-0.5 bg-white border border-slate-300 rounded-md">
                   {sender.hubCode || meta.senderHubCode || 'HUB-HCM-001'}
                 </span>
                 <ArrowRight className="h-4 w-4 text-blue-600" />
-                <span className="px-2 py-0.5 bg-white rounded border border-slate-200">
+                <span className="px-2 py-0.5 bg-white border border-slate-300 rounded-md">
                   {receiver.hubCode || meta.receiverHubCode || 'HUB-HN-001'}
                 </span>
               </div>
@@ -970,7 +979,7 @@ function OrderDetailModal({
 
             {qrDataUrl && (
               <div className="text-center shrink-0">
-                <img src={qrDataUrl} alt="QR Code" className="w-16 h-16 rounded-lg border border-slate-200 bg-white p-0.5" />
+                <img src={qrDataUrl} alt="QR Code" className="w-16 h-16 border border-slate-300 bg-white p-0.5 rounded-lg" />
                 <span className="text-[9px] text-slate-400 font-mono block mt-0.5">Quét tra cứu</span>
               </div>
             )}
@@ -979,7 +988,7 @@ function OrderDetailModal({
           {/* Sender and Receiver Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Sender */}
-            <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-2">
+            <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
               <div className="flex items-center gap-1.5 text-blue-700 font-extrabold uppercase text-[11px]">
                 <MapPin className="h-3.5 w-3.5" />
                 Thông Tin Người Gửi
@@ -1001,7 +1010,7 @@ function OrderDetailModal({
             </div>
 
             {/* Receiver */}
-            <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-2">
+            <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
               <div className="flex items-center gap-1.5 text-emerald-700 font-extrabold uppercase text-[11px]">
                 <MapPin className="h-3.5 w-3.5" />
                 Thông Tin Người Nhận
@@ -1023,9 +1032,133 @@ function OrderDetailModal({
             </div>
           </div>
 
+          {/* Courier Info Card */}
+          <div className="p-4 bg-blue-50/70 border border-blue-200 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <div className="flex h-11 w-11 items-center justify-center bg-blue-600 text-white font-bold rounded-xl shadow-md">
+                <Truck className="h-5 w-5" />
+              </div>
+              <div className="space-y-0.5">
+                <div className="flex items-center gap-2">
+                  <span className="font-extrabold text-slate-900 text-sm">{courier.name}</span>
+                  <span className="px-2 py-0.5 bg-emerald-100 text-emerald-800 text-[10px] font-bold border border-emerald-200 rounded-full">
+                    Bưu tá phát hàng
+                  </span>
+                </div>
+                <p className="text-[11px] text-slate-500 font-medium">
+                  {courier.hubName} • Tuyến phát trọng điểm
+                </p>
+                <p className="text-xs font-mono font-bold text-blue-700">
+                  {formatCourierPhone(courier.phone)}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 self-end sm:self-center">
+              <a
+                href={`tel:${courier.phone}`}
+                className="inline-flex items-center gap-1.5 px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-lg shadow-sm transition"
+              >
+                <Phone className="h-3.5 w-3.5" />
+                <span>Gọi bưu tá</span>
+              </a>
+              <button
+                type="button"
+                onClick={() => {
+                  navigator.clipboard.writeText(courier.phone);
+                  alert(`Đã sao chép SĐT bưu tá: ${courier.phone}`);
+                }}
+                className="p-2 border border-slate-300 bg-white hover:bg-slate-50 text-slate-600 rounded-lg transition"
+                title="Sao chép SĐT bưu tá"
+              >
+                <Copy className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          </div>
+
+          {/* Receiver Confirmation Section */}
+          {isReceiver ? (
+            <div className="p-4 bg-white border border-slate-300 rounded-xl shadow-sm space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  {receiptStatus === 'CONFIRMED' ? (
+                    <CheckCircle2 className="h-5 w-5 text-emerald-600" />
+                  ) : receiptStatus === 'REPORTED_NOT_RECEIVED' ? (
+                    <AlertTriangle className="h-5 w-5 text-rose-600" />
+                  ) : (
+                    <Package className="h-5 w-5 text-blue-600" />
+                  )}
+                  <span className="text-xs font-extrabold uppercase tracking-wide text-slate-800">
+                    {receiptStatus === 'CONFIRMED'
+                      ? 'Đã xác nhận nhận hàng'
+                      : receiptStatus === 'REPORTED_NOT_RECEIVED'
+                      ? 'Báo cáo: Chưa nhận được hàng'
+                      : 'Bạn đã nhận được hàng chưa?'}
+                  </span>
+                </div>
+
+                {receiptStatus === 'CONFIRMED' && (
+                  <span className="px-2.5 py-0.5 bg-emerald-100 text-emerald-800 text-[10px] font-black uppercase border border-emerald-200 rounded-full">
+                    Đã nhận an toàn
+                  </span>
+                )}
+                {receiptStatus === 'REPORTED_NOT_RECEIVED' && (
+                  <span className="px-2.5 py-0.5 bg-rose-100 text-rose-800 text-[10px] font-black uppercase border border-rose-200 rounded-full">
+                    Đang rà soát
+                  </span>
+                )}
+              </div>
+
+              {receiptStatus === 'CONFIRMED' ? (
+                <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-900 text-xs rounded-lg flex items-center gap-2">
+                  <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
+                  <span>Bạn đã xác nhận nhận hàng nguyên vẹn thành công. Cảm ơn bạn đã lựa chọn Nexus Logistics!</span>
+                </div>
+              ) : receiptStatus === 'REPORTED_NOT_RECEIVED' ? (
+                <div className="p-3 bg-rose-50 border border-rose-200 text-rose-900 text-xs rounded-lg space-y-1.5">
+                  <div className="font-semibold flex items-center gap-2">
+                    <AlertTriangle className="h-4 w-4 text-rose-600 shrink-0" />
+                    <span>Nexus đã ghi nhận phản ánh của bạn. Bưu cục phát sẽ trực tiếp đối soát hành trình với bưu tá {courier.name}.</span>
+                  </div>
+                  <a
+                    href={`tel:${courier.phone}`}
+                    className="inline-flex items-center gap-1 text-xs font-bold text-rose-700 underline"
+                  >
+                    <Phone className="h-3 w-3" />
+                    Bấm để gọi ngay cho shipper: {courier.phone}
+                  </a>
+                </div>
+              ) : (
+                <div className="space-y-2.5">
+                  <p className="text-xs text-slate-600 leading-relaxed">
+                    Xác nhận nhận hàng giúp bảo vệ quyền lợi bưu chính và làm căn cứ giải quyết tức thì nếu có phát sinh thất lạc:
+                  </p>
+                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setReceiptStatus('CONFIRMED')}
+                      className="flex-1 inline-flex items-center justify-center gap-1.5 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-lg shadow-sm transition"
+                    >
+                      <Check className="h-4 w-4" />
+                      <span>Tôi đã nhận hàng</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setReceiptStatus('REPORTED_NOT_RECEIVED')}
+                      className="flex-1 inline-flex items-center justify-center gap-1.5 px-4 py-2.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 font-bold text-xs rounded-lg transition"
+                    >
+                      <AlertTriangle className="h-4 w-4 text-rose-600" />
+                      <span>Chưa nhận được</span>
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : null}
+
           {/* Package & Billing Summary */}
-          <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-3">
-            <div className="flex items-center justify-between border-b border-slate-200/80 pb-2">
+          <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-3">
+            <div className="flex items-center justify-between border-b border-slate-200 pb-2">
               <span className="text-[11px] font-extrabold uppercase text-slate-700">
                 {isReceiver ? 'Chi Tiết Kiện Hàng & Thanh Toán Nhận Hàng' : 'Chi Tiết Kiện Hàng & Cước Phí'}
               </span>
@@ -1035,25 +1168,25 @@ function OrderDetailModal({
             </div>
 
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center">
-              <div className="p-2.5 bg-white rounded-xl border border-slate-200">
+              <div className="p-2.5 bg-white border border-slate-200 rounded-lg">
                 <span className="text-[10px] text-slate-400 font-bold uppercase block">Khối lượng</span>
                 <span className="font-mono font-bold text-slate-800 text-xs">
                   {pkg.weightKg || meta.weightKg || 1} kg
                 </span>
               </div>
-              <div className="p-2.5 bg-white rounded-xl border border-slate-200">
+              <div className="p-2.5 bg-white border border-slate-200 rounded-lg">
                 <span className="text-[10px] text-slate-400 font-bold uppercase block">Dịch vụ</span>
                 <span className="font-bold text-slate-800 text-xs uppercase">
                   {service.type || 'STANDARD'}
                 </span>
               </div>
-              <div className="p-2.5 bg-white rounded-xl border border-slate-200">
+              <div className="p-2.5 bg-white border border-slate-200 rounded-lg">
                 <span className="text-[10px] text-slate-400 font-bold uppercase block">Thu hộ COD</span>
                 <span className="font-mono font-black text-blue-700 text-xs">
                   {formatVnd(Number(meta.codAmount || pkg.codAmount || 0))}
                 </span>
               </div>
-              <div className="p-2.5 bg-white rounded-xl border border-slate-200">
+              <div className="p-2.5 bg-white border border-slate-200 rounded-lg">
                 <span className="text-[10px] text-slate-400 font-bold uppercase block">Cước vận chuyển</span>
                 <span className="font-mono font-black text-slate-800 text-xs">
                   {isReceiver ? 'Người gửi trả' : formatVnd(Number(meta.shippingFee || meta.estimatedFee || 18000))}
@@ -1062,7 +1195,7 @@ function OrderDetailModal({
             </div>
 
             {isReceiver ? (
-              <div className="p-3 rounded-xl bg-blue-50 border border-blue-200 flex items-center justify-between">
+              <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg flex items-center justify-between">
                 <div>
                   <span className="text-[10px] font-extrabold uppercase text-blue-900 block">
                     Số Tiền Cần Thanh Toán Cho Shipper
@@ -1080,7 +1213,7 @@ function OrderDetailModal({
             ) : null}
 
             {(meta.deliveryNote || meta.notes) && (
-              <div className="p-2.5 bg-amber-50 rounded-xl border border-amber-200 text-amber-900 text-[11px]">
+              <div className="p-2.5 bg-amber-50 border border-amber-200 rounded-lg text-amber-900 text-[11px]">
                 <strong>Ghi chú giao hàng:</strong> {meta.deliveryNote || meta.notes}
               </div>
             )}
@@ -1088,11 +1221,11 @@ function OrderDetailModal({
         </div>
 
         {/* Modal Footer */}
-        <div className="bg-slate-50 p-4 border-t border-slate-100 flex items-center justify-between gap-3">
+        <div className="bg-slate-50 p-4 border-t border-slate-200 rounded-b-2xl flex items-center justify-between gap-3">
           <button
             type="button"
             onClick={() => onPrint(shipment)}
-            className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl border border-slate-300 bg-white text-slate-700 hover:bg-slate-100 font-bold text-xs transition shadow-sm"
+            className="inline-flex items-center gap-1.5 px-4 py-2.5 border border-slate-300 bg-white text-slate-700 hover:bg-slate-100 font-bold text-xs rounded-lg transition shadow-sm"
           >
             <Printer className="h-4 w-4 text-slate-600" />
             <span>In Phiếu Gửi Hàng</span>
@@ -1102,14 +1235,14 @@ function OrderDetailModal({
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2.5 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-100 font-bold text-xs transition"
+              className="px-4 py-2.5 border border-slate-300 text-slate-700 hover:bg-slate-100 font-bold text-xs rounded-lg transition"
             >
               Đóng
             </button>
             <button
               type="button"
               onClick={() => onTrack(shipment.code)}
-              className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs uppercase tracking-wider transition shadow-md shadow-blue-600/20"
+              className="inline-flex items-center gap-1.5 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs uppercase tracking-wider rounded-lg transition shadow-md"
             >
               <span>Xem Lộ Trình GPS</span>
               <ChevronRight className="h-4 w-4" />

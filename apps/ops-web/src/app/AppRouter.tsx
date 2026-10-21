@@ -777,6 +777,12 @@ function DashboardLayout(): React.JSX.Element {
             keywords: 'quan ly chuyen hoan tra hang ve shop',
           },
           {
+            label: 'Đăng ký chuyển hoàn',
+            icon: 'return_block',
+            to: routePaths.returnBlockRegistration,
+            keywords: 'dang ky chuyen hoan tra hang ve shop tao don hoan',
+          },
+          {
             label: 'Radar cảnh báo SLA',
             icon: 'service_proactive',
             to: routePaths.serviceQualityProactiveActionBoard,
@@ -1483,6 +1489,12 @@ function DashboardLayout(): React.JSX.Element {
   );
 }
 
+function AppIndexRedirect(): React.JSX.Element {
+  const session = useAuthStore((state) => state.session);
+  const isHq = resolveOpsActor(session?.user.username, session?.user.roles) === 'HQ_OPS';
+  return <Navigate to={isHq ? routePaths.masterOpsCommandCenter : routePaths.dashboard} replace />;
+}
+
 export function AppRouter(): React.JSX.Element {
   const lazyRoute = (element: React.ReactNode) => (
     <Suspense fallback={<RouteLoadingFallback />}>{element}</Suspense>
@@ -1492,12 +1504,6 @@ export function AppRouter(): React.JSX.Element {
       <OpsModuleRoute title={title}>{element}</OpsModuleRoute>
     </Suspense>
   );
-
-function AppIndexRedirect(): React.JSX.Element {
-  const session = useAuthStore((state) => state.session);
-  const isHq = resolveOpsActor(session?.user.username, session?.user.roles) === 'HQ_OPS';
-  return <Navigate to={isHq ? routePaths.masterOpsCommandCenter : routePaths.dashboard} replace />;
-}
 
   return (
     <BrowserRouter>

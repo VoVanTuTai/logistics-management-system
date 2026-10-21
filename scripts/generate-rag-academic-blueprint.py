@@ -126,7 +126,7 @@ def generate_svg() -> str:
     
     lines.append(f'    <text x="{n1_x + 20}" y="{n1_y + 115}" class="mono" font-size="11.5px" font-weight="700" fill="#1E293B">• 01-chinh-sach-boi-thuong.md (SLA 24h)</text>')
     lines.append(f'    <text x="{n1_x + 20}" y="{n1_y + 140}" class="mono" font-size="11.5px" font-weight="700" fill="#1E293B">• 02-hang-cam-bay-icao.md (Pin Li-ion &gt; 100Wh)</text>')
-    lines.append(f'    <text x="{n1_x + 20}" y="{n1_y + 165}" class="mono" font-size="11.5px" font-weight="700" fill="#1E293B">• 03-cuoc-the-tich-iata.md (DxRxC / 5000)</text>')
+    lines.append(f'    <text x="{n1_x + 20}" y="{n1_y + 165}" class="mono" font-size="11.5px" font-weight="700" fill="#1E293B">• 03-cuoc-the-tich-iata.md (DxRxC / 6000)</text>')
     lines.append(f'    <text x="{n1_x + 20}" y="{n1_y + 190}" class="mono" font-size="11.5px" font-weight="700" fill="#1E293B">• 04-doi-soat-tien-cod.md (Lịch T2/T5 • NĐ 13)</text>')
     lines.append(f'    <text x="{n1_x + 20}" y="{n1_y + 215}" class="mono" font-size="11.5px" font-weight="700" fill="#1E293B">• 07-special-delivery.md (Biên bản bất thường)</text>')
     lines.append(f'    <text x="{n1_x + 20}" y="{n1_y + 242}" class="mono" font-size="10.5px" font-weight="700" fill="#059669">✓ CANONICAL SOURCE OF TRUTH</text>')

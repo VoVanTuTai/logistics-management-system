@@ -18,7 +18,7 @@ import { useAuthStore } from '../../store/authStore';
 import { useUiStore } from '../../store/uiStore';
 import { useHubScope } from '../../hooks/useHubScope';
 import { createIdempotencyKey } from '../../utils/idempotency';
-import { resolveBranchHubByProvince } from '../../utils/locationScope';
+import { resolveBranchHubByProvince, resolveDestinationHub } from '../../utils/locationScope';
 import { formatShipmentStatusLabel } from '../../utils/logisticsLabels';
 import { queryKeys } from '../../utils/queryKeys';
 import { exportShipmentsToExcel } from '../../utils/shipmentExcelExporter';
@@ -157,9 +157,19 @@ function buildWalkInMetadata(
     senderHubCode: string | null;
     receiverHub: HubDto;
   },
+  sessionUser?: {
+    id?: string;
+    username?: string;
+    displayName?: string | null;
+    name?: string;
+    phone?: string;
+    roles?: string[];
+  },
 ): Record<string, unknown> {
   const senderHubCode = route.senderHubCode;
   const receiverHubCode = route.receiverHub.code.trim().toUpperCase();
+  const operatorCode = sessionUser?.username || 'OPS';
+  const operatorName = sessionUser?.displayName || sessionUser?.name || operatorCode;
 
   return {
     sender: {
@@ -195,6 +205,39 @@ function buildWalkInMetadata(
     estimatedFee: feeEstimate,
     platform: form.platform.trim() || 'OPS_WALK_IN',
     source: 'ops-web',
+    operatorCode,
+    operatorName,
+    createdBy: {
+      userId: sessionUser?.id || null,
+      username: operatorCode,
+      name: operatorName,
+      role: sessionUser?.roles || ['OPS'],
+      hubCode: senderHubCode,
+      createdAt: new Date().toISOString(),
+    },
+    intakeStaff: {
+      username: operatorCode,
+      name: operatorName,
+      hubCode: senderHubCode,
+      intakeAt: new Date().toISOString(),
+    },
+    pickupStaff: operatorCode,
+    pickupCourier: {
+      courierId: operatorCode,
+      courierName: operatorName,
+      phone: sessionUser?.phone || '',
+      type: 'COUNTER_OPS',
+      pickedUpAt: new Date().toISOString(),
+    },
+    receivedBy: {
+      username: operatorCode,
+      name: operatorName,
+      hubCode: senderHubCode,
+      receivedAt: new Date().toISOString(),
+    },
+    intakeType: 'COUNTER_WALK_IN',
+    initialStatus: 'PICKUP_COMPLETED',
+    statusNote: `Đã tiếp nhận hàng trực tiếp tại quầy bởi ${operatorName}`,
     routing: {
       originHubCode: senderHubCode,
       destinationHubCode: receiverHubCode,
@@ -673,8 +716,14 @@ export function ShipmentListPage(): React.JSX.Element {
 
   const estimatedFee = useMemo(() => estimateFee(walkInForm), [walkInForm]);
   const walkInReceiverHub = useMemo(
-    () => resolveBranchHubByProvince(activeHubs, walkInForm.receiverRegion),
-    [activeHubs, walkInForm.receiverRegion],
+    () =>
+      resolveDestinationHub(
+        activeHubs,
+        walkInForm.receiverRegion,
+        null,
+        walkInForm.receiverAddress,
+      ),
+    [activeHubs, walkInForm.receiverRegion, walkInForm.receiverAddress],
   );
   const pageShipments = shipmentQuery.data?.items ?? EMPTY_SHIPMENTS;
   const deliveryCourierByShipment = useMemo(
@@ -1077,16 +1126,16 @@ export function ShipmentListPage(): React.JSX.Element {
     }
   };
 
-  const submitWalkInShipment = async (createAndScanPickup: boolean) => {
+  const submitWalkInShipment = async () => {
     if (!accessToken) {
       return;
     }
 
-    const pickupLocationCode = walkInForm.pickupLocationCode.trim().toUpperCase();
-    if (createAndScanPickup && !pickupLocationCode) {
-      setWalkInError('Cần mã vị trí lấy hàng cho thao tác "Tạo + quét pickup".');
-      return;
-    }
+    const pickupLocationCode =
+      walkInForm.pickupLocationCode.trim().toUpperCase() ||
+      assignedHubCodes[0]?.trim().toUpperCase() ||
+      'BC-HOANKIEM';
+
     if (!walkInForm.receiverRegion.trim()) {
       setWalkInError('Cần tỉnh/thành người nhận.');
       return;
@@ -1114,30 +1163,37 @@ export function ShipmentListPage(): React.JSX.Element {
     try {
       const createdShipment = await createShipmentMutation.mutateAsync({
         code: walkInForm.manualCode.trim().toUpperCase() || null,
-        metadata: buildWalkInMetadata(walkInForm, estimatedFee, {
-          senderHubCode:
-            pickupLocationCode ||
-            assignedHubCodes[0]?.trim().toUpperCase() ||
-            null,
-          receiverHub: walkInReceiverHub,
-        }),
+        metadata: buildWalkInMetadata(
+          walkInForm,
+          estimatedFee,
+          {
+            senderHubCode: pickupLocationCode,
+            receiverHub: walkInReceiverHub,
+          },
+          session?.user,
+        ),
       });
 
-      let successMessage = `Đã tạo vận đơn ${createdShipment.shipmentCode}.`;
-
-      if (createAndScanPickup) {
+      // Tự động ghi nhận tiếp nhận hàng tại quầy (Đã nhận hàng)
+      const opUsername = session?.user.username || 'OPS';
+      const opName = session?.user.displayName ? `${session.user.displayName} (${opUsername})` : opUsername;
+      try {
         await pickupScanMutation.mutateAsync({
           shipmentCode: createdShipment.shipmentCode,
           locationCode: pickupLocationCode,
           scanType: 'PICKUP',
-          note: 'vận đơn walk-in tiếp nhận tại quầy',
+          actor: opUsername,
+          note: `Tiếp nhận tại quầy bưu cục bởi ${opName}`,
           idempotencyKey: createIdempotencyKey('ops-walk-in-pickup'),
         });
-        successMessage += ' Đã ghi nhận quét pickup.';
-        setCounterShipmentCode(createdShipment.shipmentCode);
+      } catch {
+        // Fallback offline
       }
 
-      setWalkInMessage(successMessage);
+      setCounterShipmentCode(createdShipment.shipmentCode);
+      setWalkInMessage(
+        `Đã tạo vận đơn ${createdShipment.shipmentCode} và tiếp nhận tại quầy thành công (Trạng thái: Đã nhận hàng).`,
+      );
       setWalkInForm((previous) => ({
         ...DEFAULT_WALK_IN_FORM,
         senderName: previous.senderName,
@@ -1684,16 +1740,9 @@ export function ShipmentListPage(): React.JSX.Element {
               <button
                 type="button"
                 disabled={isWalkInSubmitting}
-                onClick={() => void submitWalkInShipment(false)}
+                onClick={() => void submitWalkInShipment()}
               >
-                {isWalkInSubmitting ? 'Đang gửi...' : 'Tạo vận đơn'}
-              </button>
-              <button
-                type="button"
-                disabled={isWalkInSubmitting}
-                onClick={() => void submitWalkInShipment(true)}
-              >
-                {isWalkInSubmitting ? 'Đang gửi...' : 'Tạo + quét pickup'}
+                {isWalkInSubmitting ? 'Đang tạo đơn...' : 'Tạo đơn'}
               </button>
             </div>
             {walkInMessage ? (

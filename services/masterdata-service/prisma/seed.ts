@@ -1241,7 +1241,7 @@ Người gửi có nghĩa vụ cung cấp đầy đủ, chính xác và trung th
 
 ### 2.2. Trọng lượng quy đổi thể tích (Volumetric Weight)
 Trường hợp bưu gửi có thể tích cồng kềnh, trọng lượng tính cước sẽ được xác định theo công thức chuẩn của Hiệp hội Vận tải Hàng không Quốc tế (IATA) và Bưu chính Quốc gia:
-$$\\text{Trọng lượng quy đổi (kg)} = \\frac{\\text{Dài (cm)} \\times \\text{Rộng (cm)} \\times \\text{Cao (cm)}}{5000}$$
+$$\\text{Trọng lượng quy đổi (kg)} = \\frac{\\text{Dài (cm)} \\times \\text{Rộng (cm)} \\times \\text{Cao (cm)}}{6000}$$
 *Mức cước vận chuyển sẽ áp dụng theo giá trị lớn hơn giữa Trọng lượng thực tế và Trọng lượng quy đổi.*
 
 ### 2.3. Quy chuẩn in và dán nhãn vận đơn

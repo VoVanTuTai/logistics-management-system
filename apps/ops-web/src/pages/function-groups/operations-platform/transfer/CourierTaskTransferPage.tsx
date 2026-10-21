@@ -50,15 +50,15 @@ export function CourierTaskTransferPage(): React.JSX.Element {
   const getStatusBadge = (status: string) => {
     const st = (status || '').toUpperCase();
     if (st === 'OUT_FOR_DELIVERY' || st === 'DELIVERY_DISPATCHED') {
-      return { label: '🚚 Phân công đi giao', bg: '#dbeafe', color: '#1e40af' };
+      return { label: 'Phân công đi giao', bg: '#dbeafe', color: '#1e40af' };
     }
     if (st === 'OUT_FOR_PICKUP' || st === 'ASSIGNED_FOR_PICKUP' || st === 'PICKUP_DISPATCHED') {
-      return { label: '📦 Phân công đi lấy', bg: '#fef3c7', color: '#92400e' };
+      return { label: 'Phân công đi lấy', bg: '#fef3c7', color: '#92400e' };
     }
     if (st === 'IN_TRANSIT' || st === 'DISPATCHED') {
-      return { label: '🔄 Đang luân chuyển / Đi giao', bg: '#e0e7ff', color: '#3730a3' };
+      return { label: 'Đang luân chuyển / Đi giao', bg: '#e0e7ff', color: '#3730a3' };
     }
-    return { label: `⚠️ Không thể chuyển (${st})`, bg: '#fee2e2', color: '#991b1b' };
+    return { label: `Không thể chuyển (${st})`, bg: '#fee2e2', color: '#991b1b' };
   };
 
   // Match shipments by parsed codes
@@ -174,13 +174,13 @@ export function CourierTaskTransferPage(): React.JSX.Element {
 
       {actionMessage && (
         <div style={{ padding: '12px 16px', borderRadius: '10px', backgroundColor: '#dcfce7', border: '1px solid #86efac', color: '#166534', fontWeight: 600, fontSize: '13px', marginBottom: '16px' }}>
-          ✅ {actionMessage}
+          {actionMessage}
         </div>
       )}
 
       {actionError && (
         <div style={{ padding: '12px 16px', borderRadius: '10px', backgroundColor: '#fee2e2', border: '1px solid #fca5a5', color: '#991b1b', fontWeight: 600, fontSize: '13px', marginBottom: '16px' }}>
-          ⚠️ {actionError}
+          {actionError}
         </div>
       )}
 
@@ -389,7 +389,7 @@ export function CourierTaskTransferPage(): React.JSX.Element {
               boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
             }}
           >
-            📤 Tạo Yêu Cầu Chuyển Đơn (Chờ Courier B Chấp Nhận)
+            Tạo Yêu Cầu Chuyển Đơn (Chờ Courier B Chấp Nhận)
           </button>
         </form>
       </div>
@@ -426,17 +426,17 @@ export function CourierTaskTransferPage(): React.JSX.Element {
                   <td style={{ padding: '12px' }}>
                     {req.status === 'PENDING_ACCEPTANCE' && (
                       <span style={{ padding: '3px 10px', borderRadius: '12px', backgroundColor: '#fef3c7', color: '#d97706', fontSize: '12px', fontWeight: 700 }}>
-                        ⏳ Chờ Courier B Chấp Nhận trên Mobile
+                        Chờ Courier B Chấp Nhận trên Mobile
                       </span>
                     )}
                     {req.status === 'ACCEPTED' && (
                       <span style={{ padding: '3px 10px', borderRadius: '12px', backgroundColor: '#dcfce7', color: '#15803d', fontSize: '12px', fontWeight: 700 }}>
-                        ✅ Đã Hoàn Tất Chuyển Đảm Nhận
+                        Đã Hoàn Tất Chuyển Đảm Nhận
                       </span>
                     )}
                     {req.status === 'REJECTED' && (
                       <span style={{ padding: '3px 10px', borderRadius: '12px', backgroundColor: '#fee2e2', color: '#b91c1c', fontSize: '12px', fontWeight: 700 }}>
-                        ❌ Courier B Từ Chối
+                        Courier B Từ Chối
                       </span>
                     )}
                   </td>

@@ -6,6 +6,7 @@ function buildPayload(input: HubScanInput) {
   return {
     shipmentCode: input.shipmentCode,
     locationCode: input.locationCode,
+    actor: input.actor ?? null,
     note: input.note ?? null,
     idempotencyKey: input.idempotencyKey,
   };

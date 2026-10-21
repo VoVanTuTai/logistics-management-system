@@ -21,7 +21,7 @@ interface AuthStoreState {
   isLoading: boolean;
   errorMessage: string | null;
   restoreSession: () => Promise<void>;
-  refreshMobilePermissions: () => Promise<void>;
+  refreshMobilePermissions: (force?: boolean) => Promise<void>;
   getValidAccessToken: () => Promise<string>;
   login: (credentials: LoginFormValues) => Promise<void>;
   logout: () => Promise<void>;
@@ -30,6 +30,7 @@ interface AuthStoreState {
 }
 
 const ACCESS_TOKEN_REFRESH_SKEW_MS = 60_000;
+const MOBILE_PERMISSIONS_TTL_MS = 60_000;
 const COURIER_APP_ALLOWED_ROLES = new Set([
   'SYSTEM_ADMIN',
   'ADMIN',
@@ -47,6 +48,21 @@ const COURIER_APP_ALLOWED_ROLES = new Set([
 ]);
 
 let refreshSessionPromise: Promise<LoginResultDto> | null = null;
+const inFlightPermissionRequests = new Map<string, Promise<LoginResultDto>>();
+let lastRateLimitWarningTime = 0;
+
+function logRateLimitWarningOnce(userId: string, errorMsg: string): void {
+  const now = Date.now();
+  if (now - lastRateLimitWarningTime > 30_000) {
+    lastRateLimitWarningTime = now;
+    console.warn(
+      '[permissions] Rate limited while loading permissions for user',
+      userId,
+      '- using cached permissions. error=',
+      errorMsg,
+    );
+  }
+}
 
 function toErrorMessage(error: unknown, fallback: string): string {
   if (error instanceof Error && error.message.length > 0) {
@@ -71,92 +87,125 @@ function isExpiringAt(value: string | null | undefined, skewMs = 0): boolean {
 
 async function withEffectiveMobilePermissions(
   session: LoginResultDto,
+  force = false,
 ): Promise<LoginResultDto> {
-  try {
-    const effectivePermissions = await authApi.getMobilePermissionEffective(
-      session.tokens.accessToken,
-      session.user.id,
-    );
+  const userId = session.user.id;
 
-    console.info(
-      '[permissions] Loaded effective permissions for user',
-      session.user.id,
-      'actor=',
-      effectivePermissions.actor,
-      'hasOverride=',
-      effectivePermissions.hasOverride,
-      'permissions=',
-      JSON.stringify(effectivePermissions.permissions),
-    );
-
-    return {
-      ...session,
-      user: {
-        ...session.user,
-        mobilePermissionActor: effectivePermissions.actor,
-        mobilePermissions: effectivePermissions.permissions,
-        mobilePermissionsLoadedAt: new Date().toISOString(),
-      },
-    };
-  } catch (error) {
-    const errorMsg = error instanceof Error ? error.message : String(error);
-    const isTokenExpired =
-      (error instanceof ApiClientError && error.status === 401) ||
-      /invalid or expired/i.test(errorMsg) ||
-      /unauthorized/i.test(errorMsg) ||
-      /jwt/i.test(errorMsg);
-
-    // If token expired but refresh token is valid, attempt silent refresh
-    if (
-      isTokenExpired &&
-      session.tokens?.refreshToken &&
-      !isExpiringAt(session.tokens.refreshTokenExpiresAt)
-    ) {
-      try {
-        const refreshed = await authApi.refresh({
-          refreshToken: session.tokens.refreshToken,
-        });
-        assertCourierSession(refreshed);
-        const retryPermissions = await authApi.getMobilePermissionEffective(
-          refreshed.tokens.accessToken,
-          refreshed.user.id,
-        );
-        console.info(
-          '[permissions] Silently refreshed token and loaded permissions for user',
-          session.user.id,
-        );
-        return {
-          ...refreshed,
-          user: {
-            ...refreshed.user,
-            mobilePermissionActor: retryPermissions.actor,
-            mobilePermissions: retryPermissions.permissions,
-            mobilePermissionsLoadedAt: new Date().toISOString(),
-          },
-        };
-      } catch {
-        // Fall through to throw below
-      }
+  // 1. Check TTL cache if not forced
+  if (!force && session.user.mobilePermissionsLoadedAt && session.user.mobilePermissions) {
+    const loadedAt = new Date(session.user.mobilePermissionsLoadedAt).getTime();
+    if (!Number.isNaN(loadedAt) && Date.now() - loadedAt < MOBILE_PERMISSIONS_TTL_MS) {
+      return session;
     }
-
-    if (isTokenExpired) {
-      console.info(
-        '[permissions] Token expired or invalid for user',
-        session.user.id,
-        '- requiring fresh login',
-      );
-      throw error;
-    }
-
-    console.warn(
-      '[permissions] Non-critical error loading permissions for user',
-      session.user.id,
-      'error=',
-      errorMsg,
-    );
-
-    return session;
   }
+
+  // 2. Deduplicate concurrent in-flight requests for the same user
+  const inFlight = inFlightPermissionRequests.get(userId);
+  if (inFlight) {
+    return inFlight;
+  }
+
+  const requestPromise = (async () => {
+    try {
+      const effectivePermissions = await authApi.getMobilePermissionEffective(
+        session.tokens.accessToken,
+        session.user.id,
+      );
+
+      console.info(
+        '[permissions] Loaded effective permissions for user',
+        session.user.id,
+        'actor=',
+        effectivePermissions.actor,
+        'hasOverride=',
+        effectivePermissions.hasOverride,
+        'permissions=',
+        JSON.stringify(effectivePermissions.permissions),
+      );
+
+      return {
+        ...session,
+        user: {
+          ...session.user,
+          mobilePermissionActor: effectivePermissions.actor,
+          mobilePermissions: effectivePermissions.permissions,
+          mobilePermissionsLoadedAt: new Date().toISOString(),
+        },
+      };
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : String(error);
+      const isTokenExpired =
+        (error instanceof ApiClientError && error.status === 401) ||
+        /invalid or expired/i.test(errorMsg) ||
+        /unauthorized/i.test(errorMsg) ||
+        /jwt/i.test(errorMsg);
+
+      // If token expired but refresh token is valid, attempt silent refresh
+      if (
+        isTokenExpired &&
+        session.tokens?.refreshToken &&
+        !isExpiringAt(session.tokens.refreshTokenExpiresAt)
+      ) {
+        try {
+          const refreshed = await authApi.refresh({
+            refreshToken: session.tokens.refreshToken,
+          });
+          assertCourierSession(refreshed);
+          const retryPermissions = await authApi.getMobilePermissionEffective(
+            refreshed.tokens.accessToken,
+            refreshed.user.id,
+          );
+          console.info(
+            '[permissions] Silently refreshed token and loaded permissions for user',
+            session.user.id,
+          );
+          return {
+            ...refreshed,
+            user: {
+              ...refreshed.user,
+              mobilePermissionActor: retryPermissions.actor,
+              mobilePermissions: retryPermissions.permissions,
+              mobilePermissionsLoadedAt: new Date().toISOString(),
+            },
+          };
+        } catch {
+          // Fall through to throw below
+        }
+      }
+
+      if (isTokenExpired) {
+        console.info(
+          '[permissions] Token expired or invalid for user',
+          session.user.id,
+          '- requiring fresh login',
+        );
+        throw error;
+      }
+
+      const isRateLimited =
+        (error instanceof ApiClientError && error.status === 429) ||
+        /too many requests/i.test(errorMsg) ||
+        /rate limit/i.test(errorMsg);
+
+      if (isRateLimited) {
+        logRateLimitWarningOnce(session.user.id, errorMsg);
+      } else {
+        console.warn(
+          '[permissions] Non-critical error loading permissions for user',
+          session.user.id,
+          'error=',
+          errorMsg,
+        );
+      }
+
+      return session;
+    }
+  })().finally(() => {
+    inFlightPermissionRequests.delete(userId);
+  });
+
+  inFlightPermissionRequests.set(userId, requestPromise);
+  return requestPromise;
 }
 
 function assertCourierSession(session: LoginResultDto): void {
@@ -288,7 +337,7 @@ export const useAuthStore = create<AuthStoreState>((set, get) => ({
       });
     }
   },
-  refreshMobilePermissions: async () => {
+  refreshMobilePermissions: async (force = false) => {
     const currentSession = get().session;
 
     if (!currentSession) {
@@ -296,13 +345,16 @@ export const useAuthStore = create<AuthStoreState>((set, get) => ({
     }
 
     const sessionWithPermissions =
-      await withEffectiveMobilePermissions(currentSession);
-    await persistAuthSession(sessionWithPermissions);
-    useAppStore.getState().setSession(sessionWithPermissions);
-    set({
-      status: 'authenticated',
-      session: sessionWithPermissions,
-    });
+      await withEffectiveMobilePermissions(currentSession, force);
+
+    if (sessionWithPermissions !== currentSession) {
+      await persistAuthSession(sessionWithPermissions);
+      useAppStore.getState().setSession(sessionWithPermissions);
+      set({
+        status: 'authenticated',
+        session: sessionWithPermissions,
+      });
+    }
   },
   getValidAccessToken: async () => {
     const currentSession = get().session;

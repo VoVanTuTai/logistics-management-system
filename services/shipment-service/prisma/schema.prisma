@@ -61,6 +61,8 @@ model Shipment {
   changeRequests     ChangeRequest[]
   investigations     InvestigationCase[]
   claims             CompensationClaim[]
+  cskhTickets        CskhTicket[]
+  ratings            CourierRating[]
 
   @@index([createdByUserId])
   @@index([receiverPhone])
@@ -290,5 +292,60 @@ model CompensationClaim {
   @@index([status])
   @@index([responsibleParty])
   @@map("compensation_claims")
+}
+
+model CskhTicket {
+  id                         String               @id @default(cuid())
+  ticketCode                 String               @unique
+  shipmentCode               String
+  customerName               String
+  customerPhone              String
+  customerEmail              String?
+  source                     String               @default("HOTLINE_1900")
+  category                   String               @default("GENERAL_INQUIRY")
+  priority                   String               @default("P3_NORMAL")
+  status                     String               @default("NEW")
+  title                      String
+  description                String
+  assignedHubCode            String?
+  assignedHubName            String?
+  assignedAgent              String?
+  slaDeadline                DateTime?
+  slaLimitHours              Int                  @default(24)
+  isOverdue                  Boolean              @default(false)
+  resolvedAt                 DateTime?
+  closedAt                   DateTime?
+  resolutionSummary          String?
+  notes                      Json?
+  linkedClaimCode            String?
+  createdAt                  DateTime             @default(now())
+  updatedAt                  DateTime             @updatedAt
+
+  shipment                   Shipment             @relation(fields: [shipmentCode], references: [code], onDelete: Cascade)
+
+  @@index([shipmentCode])
+  @@index([customerPhone])
+  @@index([status])
+  @@index([category])
+  @@map("cskh_tickets")
+}
+
+model CourierRating {
+  id                         String               @id @default(cuid())
+  shipmentCode               String               @unique
+  courierId                  String
+  courierName                String?
+  customerPhone              String?
+  rating                     Int                  @default(5)
+  tags                       Json?
+  comment                    String?
+  createdAt                  DateTime             @default(now())
+  updatedAt                  DateTime             @updatedAt
+
+  shipment                   Shipment             @relation(fields: [shipmentCode], references: [code], onDelete: Cascade)
+
+  @@index([shipmentCode])
+  @@index([courierId])
+  @@map("courier_ratings")
 }
 

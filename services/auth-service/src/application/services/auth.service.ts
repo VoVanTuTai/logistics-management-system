@@ -225,7 +225,12 @@ export class AuthService {
       };
     }
 
-    const touchedSession = await this.authSessionRepository.touch(session.id);
+    const accessTtlSeconds = Number(process.env.ACCESS_TOKEN_TTL_SECONDS ?? 86400);
+    const slidingExpiresAt = new Date(Date.now() + accessTtlSeconds * 1000);
+    const touchedSession = await this.authSessionRepository.touch(
+      session.id,
+      slidingExpiresAt,
+    );
     const user = await this.userAccountRepository.findById(touchedSession.userId);
 
     if (!user || user.status !== 'ACTIVE') {
@@ -508,7 +513,9 @@ export class AuthService {
       throw new UnauthorizedException('Access token is invalid or expired.');
     }
 
-    return this.authSessionRepository.touch(session.id);
+    const accessTtlSeconds = Number(process.env.ACCESS_TOKEN_TTL_SECONDS ?? 86400);
+    const slidingExpiresAt = new Date(Date.now() + accessTtlSeconds * 1000);
+    return this.authSessionRepository.touch(session.id, slidingExpiresAt);
   }
 
   private async getUserById(userId: string): Promise<UserAccount> {

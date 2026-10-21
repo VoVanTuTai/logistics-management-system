@@ -4,6 +4,7 @@ export interface HubScanInput {
   shipmentCode: string;
   locationCode: string;
   scanType: HubScanType;
+  actor?: string | null;
   note?: string | null;
   idempotencyKey: string;
 }

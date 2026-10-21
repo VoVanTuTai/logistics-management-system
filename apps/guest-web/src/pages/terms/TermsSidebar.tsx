@@ -21,10 +21,10 @@ export function TermsSidebar({
 }: TermsSidebarProps): React.JSX.Element {
   return (
     <aside className="w-full lg:w-80 shrink-0 sticky top-2 lg:top-4 z-20 self-start">
-      <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-5 space-y-4">
+      <div className="bg-white border border-slate-200 rounded-xl shadow-sm p-5 space-y-4">
         {/* Header */}
         <div className="flex items-center gap-3 pb-3 border-b border-slate-100">
-          <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 shadow-sm">
+          <div className="w-10 h-10 bg-blue-50 text-blue-600 rounded-lg flex items-center justify-center shrink-0 border border-blue-100">
             <BookOpen className="w-5 h-5" />
           </div>
           <div>
@@ -44,7 +44,7 @@ export function TermsSidebar({
             value={searchTerm}
             onChange={(e) => onSearchChange(e.target.value)}
             placeholder="Tìm kiếm quy định..."
-            className="w-full pl-9 pr-3 py-2 bg-slate-50 hover:bg-slate-100/80 focus:bg-white border border-slate-200 rounded-xl text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition shadow-inner"
+            className="w-full pl-9 pr-3 py-2 bg-slate-50 hover:bg-slate-100 focus:bg-white border border-slate-300 rounded-lg text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-600/10 transition"
           />
           <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
         </div>
@@ -58,9 +58,9 @@ export function TermsSidebar({
                 key={policy.id}
                 type="button"
                 onClick={() => onSelectSection(policy.slug)}
-                className={`w-full text-left px-3.5 py-2.5 rounded-xl text-xs font-semibold flex items-start justify-between gap-2 transition group ${
+                className={`w-full text-left px-3.5 py-2.5 text-xs font-semibold rounded-lg flex items-start justify-between gap-2 transition group ${
                   isActive
-                    ? 'bg-blue-600 text-white shadow-md shadow-blue-600/20'
+                    ? 'bg-blue-600 text-white shadow-sm'
                     : 'text-slate-700 hover:bg-slate-50 hover:text-blue-600'
                 }`}
               >
@@ -103,7 +103,7 @@ export function TermsSidebar({
 
         {/* Support Callout */}
         <div className="pt-3 border-t border-slate-100">
-          <div className="p-3 bg-gradient-to-br from-slate-50 to-blue-50/40 rounded-xl border border-blue-100/60 flex items-center gap-3">
+          <div className="p-3 bg-slate-50 border border-slate-200 flex items-center gap-3">
             <ShieldCheck className="w-6 h-6 text-blue-600 shrink-0" />
             <div className="text-[11px]">
               <p className="font-bold text-slate-900">Bảo vệ quyền lợi</p>

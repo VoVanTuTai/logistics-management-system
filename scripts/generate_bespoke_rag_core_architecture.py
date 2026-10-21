@@ -152,7 +152,7 @@ def generate_svg():
     lines.append(f'    <text x="{s3_x+18}" y="{s3_y+92}" font-family="ui-monospace, monospace" font-size="10" font-weight="700" fill="#0F172A">#CLM-02-P1: Điều 4.2 Lập BBBT 24h</text>')
 
     lines.append(f'    <rect x="{s3_x+10}" y="{s3_y+106}" width="{s3_w-20}" height="24" rx="4" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1.0"/>')
-    lines.append(f'    <text x="{s3_x+18}" y="{s3_y+122}" font-family="ui-monospace, monospace" font-size="10" font-weight="600" fill="#475569">#PRC-01-P2: Cước IATA (DxRxC)/5000</text>')
+    lines.append(f'    <text x="{s3_x+18}" y="{s3_y+122}" font-family="ui-monospace, monospace" font-size="10" font-weight="600" fill="#475569">#PRC-01-P2: Cước IATA (DxRxC)/6000</text>')
 
     lines.append(f'    <rect x="{s3_x+10}" y="{s3_y+136}" width="{s3_w-20}" height="24" rx="4" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1.0"/>')
     lines.append(f'    <text x="{s3_x+18}" y="{s3_y+152}" font-family="ui-monospace, monospace" font-size="10" font-weight="600" fill="#475569">#PRO-03-P1: Pin Lithium &gt; 100Wh cấm</text>')

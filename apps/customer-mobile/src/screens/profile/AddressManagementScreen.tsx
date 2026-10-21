@@ -306,7 +306,7 @@ export function AddressManagementScreen({ navigation }: Props): React.JSX.Elemen
               </View>
 
               <PrimaryButton
-                title="💾 Lưu địa chỉ"
+                title="Lưu địa chỉ"
                 onPress={handleSaveForm}
                 size="lg"
                 style={styles.saveSubmitBtn}

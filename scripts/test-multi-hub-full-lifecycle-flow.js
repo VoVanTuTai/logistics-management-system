@@ -234,7 +234,7 @@ async function runDetailedMultiHubFlow() {
         ],
         weightKg: 1.2,
         dimensionsCm: { length: 32, width: 26, height: 14 },
-        volumetricWeightKg: (32 * 26 * 14) / 5000, // 2.33 kg theo chuẩn IATA
+        volumetricWeightKg: (32 * 26 * 14) / 6000, // 1.94 kg theo chuẩn IATA
         declaredValue: 1500000, // Khai giá 1.500.000 VNĐ
         isFragile: true,        // Hàng giá trị cao / dễ tổn hại
         requiresColdStorage: false,

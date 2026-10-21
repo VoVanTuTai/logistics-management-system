@@ -1,5 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 
+import { routePaths } from '../../../../navigation/routes';
 import { ndrClient } from '../../../../features/ndr/ndr.client';
 import type { NdrCaseListItemDto } from '../../../../features/ndr/ndr.types';
 import { returnClient } from '../../../../features/returns/return.client';
@@ -588,7 +590,28 @@ export function ReturnBlockManagementPage(): React.JSX.Element {
       <section className="ops-return-list__panel">
         <header className="ops-return-list__panel-header">
           <h3>Tra cứu danh sách chuyển hoàn & Tiến độ phát lại</h3>
-          <span>{isLoading ? 'Đang tải...' : 'Dữ liệu thời gian thực'}</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <span>{isLoading ? 'Đang tải...' : 'Dữ liệu thời gian thực'}</span>
+            <Link
+              to={routePaths.returnBlockRegistration}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                padding: '6px 14px',
+                borderRadius: '8px',
+                background: '#4f46e5',
+                color: '#ffffff',
+                textDecoration: 'none',
+                fontWeight: 600,
+                fontSize: '13px',
+                boxShadow: '0 1px 2px rgba(0, 0, 0, 0.05)',
+                transition: 'background 0.15s ease',
+              }}
+            >
+              ➕ Đăng ký chuyển hoàn
+            </Link>
+          </div>
         </header>
         <div className="ops-return-list__panel-body">
           <div className="ops-return-list__filters">
