@@ -1,4 +1,5 @@
 import React from 'react';
+import { MapPin } from 'lucide-react';
 
 import type { TrackingTimelineEventDto } from '../../features/tracking/tracking.types';
 import { formatDateTime } from '../../utils/format';
@@ -67,8 +68,9 @@ export function TrackingTimelineTable({
                 </span>
               </td>
               <td style={styles.cell}>
-                <div style={{ fontSize: '12px', color: '#334155' }}>
-                  📍 {event.locationText ?? event.locationCode ?? 'Chưa xác định'}
+                <div style={{ fontSize: '12px', color: '#334155', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <MapPin size={12} style={{ color: '#64748b', flexShrink: 0 }} aria-hidden="true" />
+                  <span>{event.locationText ?? event.locationCode ?? 'Chưa xác định'}</span>
                 </div>
               </td>
               <td style={styles.cell}>

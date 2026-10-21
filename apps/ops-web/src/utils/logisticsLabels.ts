@@ -77,6 +77,7 @@ const SHIPMENT_STATUS_LABELS: LabelMap = {
   SCAN_OUTBOUND: 'Gửi hàng',
   TASK_ASSIGNED: 'Đã phân công giao',
   UPDATED: 'Đã cập nhật',
+  WAITING_PICKUP: 'Chờ lấy hàng',
 };
 
 const TASK_STATUS_LABELS: LabelMap = {

@@ -48,6 +48,27 @@ function newlineToBreaks(value: string): string {
   return escapeHtml(value).replace(/\r?\n/g, '<br />');
 }
 
+export function maskPhoneNumber(phone?: string | null): string {
+  if (!phone) return '';
+  const trimmed = phone.trim();
+  if (!trimmed) return '';
+
+  const hasPlus = trimmed.startsWith('+');
+  const digits = trimmed.replace(/\D/g, '');
+
+  if (digits.length <= 4) {
+    return '***';
+  }
+
+  if (digits.length <= 6) {
+    return `${digits.slice(0, 2)}***${digits.slice(-1)}`;
+  }
+
+  const prefix = digits.slice(0, 4);
+  const suffix = digits.slice(-3);
+  return `${hasPlus ? '+' : ''}${prefix} *** ${suffix}`;
+}
+
 function buildWineGlassSvg(): string {
   return `<svg class="symbol-svg" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M8 22h8" /><path d="M12 15v7" /><path d="M12 15a5 5 0 0 0 5-5c0-2-.5-4-2-8H9c-1.5 4-2 6-2 8a5 5 0 0 0 5 5Z" /><path d="m10 7 2 2-1 3 2 1" /></svg>`;
 }
@@ -507,13 +528,13 @@ function buildLabelHtml(payload: ShippingLabelPrintPayload): string {
         <div class="block">
           <div class="label">Từ (Người gửi)</div>
           <div class="name">${escapeHtml(payload.senderName)}</div>
-          <div class="text">${escapeHtml(payload.senderPhone)}</div>
+          <div class="text">${escapeHtml(maskPhoneNumber(payload.senderPhone))}</div>
           <div class="text">${sender}</div>
         </div>
         <div class="block">
           <div class="label">Đến (Người nhận)</div>
           <div class="name">${escapeHtml(payload.receiverName)}</div>
-          <div class="text">${escapeHtml(payload.receiverPhone)}</div>
+          <div class="text">${escapeHtml(maskPhoneNumber(payload.receiverPhone))}</div>
           <div class="text">${receiver}</div>
         </div>
       </section>

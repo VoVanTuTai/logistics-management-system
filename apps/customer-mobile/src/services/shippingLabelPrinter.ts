@@ -17,6 +17,27 @@ function newlineToBreaks(value: string): string {
   return escapeHtml(value).replace(/\r?\n/g, '<br />');
 }
 
+export function maskPhoneNumber(phone?: string | null): string {
+  if (!phone) return '';
+  const trimmed = phone.trim();
+  if (!trimmed) return '';
+
+  const hasPlus = trimmed.startsWith('+');
+  const digits = trimmed.replace(/\D/g, '');
+
+  if (digits.length <= 4) {
+    return '***';
+  }
+
+  if (digits.length <= 6) {
+    return `${digits.slice(0, 2)}***${digits.slice(-1)}`;
+  }
+
+  const prefix = digits.slice(0, 4);
+  const suffix = digits.slice(-3);
+  return `${hasPlus ? '+' : ''}${prefix} *** ${suffix}`;
+}
+
 function buildQrSvg(value: string): string {
   try {
     const qr = qrcode(0, 'M');
@@ -94,13 +115,13 @@ function resolveHubCodes(order: OrderModel | any): { senderHubCode: string; rece
 export function buildShippingLabelHtml(order: OrderModel | any): string {
   const codeText = escapeHtml(order.code);
   const senderName = escapeHtml(order.sender?.name || 'Merchant');
-  const senderPhone = escapeHtml(order.sender?.phone || '');
+  const senderPhone = escapeHtml(maskPhoneNumber(order.sender?.phone || ''));
   const senderAddress = newlineToBreaks(
     order.sender?.composedAddress || order.sender?.addressDetail || 'N/A',
   );
 
   const receiverName = escapeHtml(order.receiver?.name || 'Khách hàng');
-  const receiverPhone = escapeHtml(order.receiver?.phone || '');
+  const receiverPhone = escapeHtml(maskPhoneNumber(order.receiver?.phone || ''));
   const receiverAddress = newlineToBreaks(
     order.receiver?.composedAddress || order.receiver?.addressDetail || 'N/A',
   );

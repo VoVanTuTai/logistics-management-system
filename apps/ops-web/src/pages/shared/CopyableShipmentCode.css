@@ -1,35 +1,44 @@
-.ops-copy-shipment-code {
+.ops-copy-shipment-code-wrap {
   display: inline-flex;
   align-items: center;
   gap: 6px;
+  line-height: 1.25;
+}
+
+.ops-copy-shipment-code-text {
+  color: var(--ops-primary, #0052cc);
+  font-weight: 700;
+  font-family: ui-monospace, SFMono-Regular, monospace;
+  user-select: text !important;
+  -webkit-user-select: text !important;
+  cursor: text;
+}
+
+.ops-copy-shipment-code-text::selection {
+  background-color: #2563eb;
+  color: #ffffff;
+}
+
+.ops-copy-shipment-code-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   border: 0;
   background: transparent;
-  color: var(--ops-primary);
+  color: #94a3b8;
   cursor: pointer;
-  font: inherit;
-  font-weight: 700;
-  line-height: 1.25;
-  padding: 0;
-  text-align: left;
-}
-
-.ops-copy-shipment-code:hover,
-.ops-copy-shipment-code:focus-visible {
-  color: var(--ops-primary-dark);
-  text-decoration: underline;
-}
-
-.ops-copy-shipment-code:focus-visible {
+  padding: 2px;
   border-radius: 4px;
-  outline: 2px solid #c7d7ff;
-  outline-offset: 2px;
+  user-select: none;
+  -webkit-user-select: none;
+  transition: color 0.15s, background-color 0.15s;
 }
 
-.ops-copy-shipment-code svg {
-  flex: 0 0 auto;
-  opacity: 0.72;
+.ops-copy-shipment-code-btn:hover {
+  color: var(--ops-primary, #0052cc);
+  background-color: #f1f5f9;
 }
 
-.ops-copy-shipment-code[data-copied='true'] {
-  color: #047857;
+.ops-copy-shipment-code-btn[data-copied='true'] {
+  color: #059669;
 }

@@ -23,6 +23,25 @@ import { useAuthStore } from '../../store/authStore';
 import { formatDateTime } from '../../utils/format';
 import { exportShipmentsToExcel } from '../../utils/shipmentExcelExporter';
 import { readLinehaulTrips } from '../function-groups/operations-platform/linehaul/linehaulTrips';
+import {
+  Globe2,
+  MapPin,
+  Download,
+  RefreshCw,
+  Package,
+  CheckCircle2,
+  Users,
+  Truck,
+  AlertTriangle,
+  Wallet,
+  BarChart3,
+  Zap,
+  Layers,
+  Activity,
+  RotateCcw,
+  CheckSquare,
+  Clock,
+} from 'lucide-react';
 import './MasterOpsCommandCenterPage.css';
 
 interface RegionalPerformanceItem {
@@ -396,9 +415,7 @@ export function MasterOpsCommandCenterPage(): React.JSX.Element {
       <header className="ops-hq-header">
         <div className="ops-hq-header__title-wrap">
           <div className="ops-hq-header__badge">
-            <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>
-              public
-            </span>
+            <Globe2 size={14} aria-hidden="true" />
             <span>HQ Master Operations Command Center</span>
           </div>
           <h1 className="ops-hq-header__title">
@@ -441,9 +458,7 @@ export function MasterOpsCommandCenterPage(): React.JSX.Element {
                 boxShadow: '0 2px 8px rgba(2, 132, 199, 0.35)',
               }}
             >
-              <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>
-                map
-              </span>
+              <MapPin size={16} aria-hidden="true" />
               <span>Bản Đồ Phân Vùng Geofence</span>
             </Link>
             <button
@@ -452,9 +467,7 @@ export function MasterOpsCommandCenterPage(): React.JSX.Element {
               onClick={handleExportExcel}
               disabled={isExporting || shipments.length === 0}
             >
-              <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>
-                download
-              </span>
+              <Download size={16} aria-hidden="true" />
               {isExporting ? 'Đang xuất...' : `Xuất Báo Cáo HQ (${shipments.length} VĐ)`}
             </button>
             <button
@@ -463,9 +476,7 @@ export function MasterOpsCommandCenterPage(): React.JSX.Element {
               onClick={handleRefreshData}
               disabled={isDataLoading}
             >
-              <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>
-                refresh
-              </span>
+              <RefreshCw size={16} aria-hidden="true" />
               {isDataLoading ? 'Đang tải...' : 'Làm mới DB'}
             </button>
           </div>
@@ -477,7 +488,7 @@ export function MasterOpsCommandCenterPage(): React.JSX.Element {
         <article className="ops-hq-kpi-card">
           <div className="ops-hq-kpi-card__top">
             <span className="ops-hq-kpi-card__label">Sản Lượng Toàn Quốc</span>
-            <span className="material-symbols-outlined ops-hq-kpi-card__icon">inventory_2</span>
+            <Package size={22} className="ops-hq-kpi-card__icon" aria-hidden="true" />
           </div>
           <div className="ops-hq-kpi-card__value">
             {formatNumber(macroKpi.totalOrders)} <small>đơn từ DB</small>
@@ -490,7 +501,7 @@ export function MasterOpsCommandCenterPage(): React.JSX.Element {
         <article className="ops-hq-kpi-card">
           <div className="ops-hq-kpi-card__top">
             <span className="ops-hq-kpi-card__label">Tỷ Lệ Đạt SLA Hệ Thống</span>
-            <span className="material-symbols-outlined ops-hq-kpi-card__icon">verified</span>
+            <CheckCircle2 size={22} className="ops-hq-kpi-card__icon" aria-hidden="true" />
           </div>
           <div className="ops-hq-kpi-card__value">{macroKpi.avgSla}%</div>
           <div className="ops-hq-kpi-card__sub ops-hq-kpi-card__sub--success">
@@ -501,7 +512,7 @@ export function MasterOpsCommandCenterPage(): React.JSX.Element {
         <article className="ops-hq-kpi-card">
           <div className="ops-hq-kpi-card__top">
             <span className="ops-hq-kpi-card__label">Bưu Tá Trực Tuyến</span>
-            <span className="material-symbols-outlined ops-hq-kpi-card__icon">badge</span>
+            <Users size={22} className="ops-hq-kpi-card__icon" aria-hidden="true" />
           </div>
           <div className="ops-hq-kpi-card__value">
             {formatNumber(macroKpi.totalCouriers)} <small>nhân sự DB</small>
@@ -514,7 +525,7 @@ export function MasterOpsCommandCenterPage(): React.JSX.Element {
         <article className="ops-hq-kpi-card">
           <div className="ops-hq-kpi-card__top">
             <span className="ops-hq-kpi-card__label">Xe Tuyến Trục (Linehaul)</span>
-            <span className="material-symbols-outlined ops-hq-kpi-card__icon">local_shipping</span>
+            <Truck size={22} className="ops-hq-kpi-card__icon" aria-hidden="true" />
           </div>
           <div className="ops-hq-kpi-card__value">
             {macroKpi.totalLinehaul} <small>chuyến manifest</small>
@@ -527,7 +538,7 @@ export function MasterOpsCommandCenterPage(): React.JSX.Element {
         <article className="ops-hq-kpi-card">
           <div className="ops-hq-kpi-card__top">
             <span className="ops-hq-kpi-card__label">Cảnh Báo Điểm Nghẽn</span>
-            <span className="material-symbols-outlined ops-hq-kpi-card__icon">warning</span>
+            <AlertTriangle size={22} className="ops-hq-kpi-card__icon" aria-hidden="true" />
           </div>
           <div className="ops-hq-kpi-card__value">
             {macroKpi.totalBottlenecks} <small>ca NDR</small>
@@ -546,7 +557,7 @@ export function MasterOpsCommandCenterPage(): React.JSX.Element {
         <article className="ops-hq-kpi-card">
           <div className="ops-hq-kpi-card__top">
             <span className="ops-hq-kpi-card__label">Dòng Tiền COD Tạm Giữ</span>
-            <span className="material-symbols-outlined ops-hq-kpi-card__icon">account_balance_wallet</span>
+            <Wallet size={22} className="ops-hq-kpi-card__icon" aria-hidden="true" />
           </div>
           <div className="ops-hq-kpi-card__value" style={{ fontSize: '18px' }}>
             {formatVnd(macroKpi.totalCod)}
@@ -568,7 +579,8 @@ export function MasterOpsCommandCenterPage(): React.JSX.Element {
               className={`ops-hq-tab-btn ${activeTab === 'OVERVIEW' ? 'ops-hq-tab-btn--active' : ''}`}
               onClick={() => setActiveTab('OVERVIEW')}
             >
-              📊 Luồng Đơn & Chỉ Số 3 Miền
+              <BarChart3 size={15} style={{ marginRight: 6, verticalAlign: 'middle' }} aria-hidden="true" />
+              Luồng Đơn & Chỉ Số 3 Miền
             </button>
             <button
               type="button"
@@ -577,7 +589,8 @@ export function MasterOpsCommandCenterPage(): React.JSX.Element {
               className={`ops-hq-tab-btn ${activeTab === 'LINEHAUL' ? 'ops-hq-tab-btn--active' : ''}`}
               onClick={() => setActiveTab('LINEHAUL')}
             >
-              🚛 Giám Sát Tuyến Trục (Linehaul)
+              <Truck size={15} style={{ marginRight: 6, verticalAlign: 'middle' }} aria-hidden="true" />
+              Giám Sát Tuyến Trục (Linehaul)
             </button>
             <button
               type="button"
@@ -586,7 +599,8 @@ export function MasterOpsCommandCenterPage(): React.JSX.Element {
               className={`ops-hq-tab-btn ${activeTab === 'BOTTLENECK' ? 'ops-hq-tab-btn--active' : ''}`}
               onClick={() => setActiveTab('BOTTLENECK')}
             >
-              ⚡ Tồn Kho & Điểm Nghẽn Mùa Sale
+              <Zap size={15} style={{ marginRight: 6, verticalAlign: 'middle' }} aria-hidden="true" />
+              Tồn Kho & Điểm Nghẽn Mùa Sale
             </button>
             <button
               type="button"
@@ -595,14 +609,13 @@ export function MasterOpsCommandCenterPage(): React.JSX.Element {
               className={`ops-hq-tab-btn ${activeTab === 'MODULES' ? 'ops-hq-tab-btn--active' : ''}`}
               onClick={() => setActiveTab('MODULES')}
             >
-              🚀 Phân Hệ Chức Năng HQ
+              <Layers size={15} style={{ marginRight: 6, verticalAlign: 'middle' }} aria-hidden="true" />
+              Phân Hệ Chức Năng HQ
             </button>
           </div>
 
           <div className="ops-hq-tab-sync-info">
-            <span className="material-symbols-outlined" style={{ fontSize: '14px', color: '#16a34a' }}>
-              check_circle
-            </span>
+            <CheckCircle2 size={14} style={{ color: '#16a34a', verticalAlign: 'middle', marginRight: 4 }} aria-hidden="true" />
             Đồng bộ Gateway BFF :3000 • {shipments.length} VĐ trong cơ sở dữ liệu
           </div>
         </header>
@@ -687,8 +700,9 @@ export function MasterOpsCommandCenterPage(): React.JSX.Element {
                     <td>{trip.driverName} ({trip.vehiclePlate})</td>
                     <td style={{ color: '#64748b' }}>{trip.departureTime} ➔ {trip.estimatedArrival}</td>
                     <td>
-                      <span className="ops-hq-badge ops-hq-badge--success">
-                        🔒 {trip.sealStatus}
+                      <span className="ops-hq-badge ops-hq-badge--success" style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                        <CheckCircle2 size={12} aria-hidden="true" />
+                        <span>{trip.sealStatus}</span>
                       </span>
                     </td>
                     <td style={{ fontWeight: 600 }}>{trip.capacityUsagePercent}%</td>
@@ -700,7 +714,7 @@ export function MasterOpsCommandCenterPage(): React.JSX.Element {
                             : 'ops-hq-badge--danger'
                         }`}
                       >
-                        {trip.status === 'ON_SCHEDULE' || trip.status === 'ARRIVED' ? '● Đúng lịch' : '⚠️ Trễ giờ'}
+                        {trip.status === 'ON_SCHEDULE' || trip.status === 'ARRIVED' ? 'Đúng lịch' : 'Trễ giờ'}
                       </span>
                     </td>
                   </tr>
@@ -714,12 +728,10 @@ export function MasterOpsCommandCenterPage(): React.JSX.Element {
         {activeTab === 'BOTTLENECK' && (
           <div className="ops-hq-notice-list">
             <div className="ops-hq-notice-card ops-hq-notice-card--primary">
-              <span className="material-symbols-outlined ops-hq-notice-card__icon" style={{ color: '#2563eb' }}>
-                bolt
-              </span>
+              <Zap size={18} className="ops-hq-notice-card__icon" style={{ color: '#2563eb' }} aria-hidden="true" />
               <div className="ops-hq-notice-card__content">
                 <strong>
-                  ⚡ Kiểm soát tồn kho mùa Sale — {ndrCases.length > 0 ? ndrCases.length : 0} đơn đang trong chu kỳ xử lý chuyển hoàn
+                  Kiểm soát tồn kho mùa Sale — {ndrCases.length > 0 ? ndrCases.length : 0} đơn đang trong chu kỳ xử lý chuyển hoàn
                 </strong>
                 <span>
                   HQ & OPS Vùng có quyền duyệt chuyển hoàn ngay để giải phóng kho lưu bãi bưu cục, bỏ qua chu kỳ 2 ngày phát lại của bưu tá.
@@ -735,9 +747,7 @@ export function MasterOpsCommandCenterPage(): React.JSX.Element {
 
             {ndrCases.slice(0, 3).map((ndr) => (
               <div key={ndr.id} className="ops-hq-notice-card ops-hq-notice-card--danger">
-                <span className="material-symbols-outlined ops-hq-notice-card__icon" style={{ color: '#dc2626' }}>
-                  warning
-                </span>
+                <AlertTriangle size={18} className="ops-hq-notice-card__icon" style={{ color: '#dc2626' }} aria-hidden="true" />
                 <div className="ops-hq-notice-card__content">
                   <strong>Vận đơn {ndr.shipmentCode} — Ca giao thất bại / NDR</strong>
                   <span>
@@ -755,9 +765,7 @@ export function MasterOpsCommandCenterPage(): React.JSX.Element {
 
             {ndrCases.length === 0 && (
               <div className="ops-hq-notice-card ops-hq-notice-card--warning">
-                <span className="material-symbols-outlined ops-hq-notice-card__icon" style={{ color: '#d97706' }}>
-                  check_circle
-                </span>
+                <CheckCircle2 size={18} className="ops-hq-notice-card__icon" style={{ color: '#d97706' }} aria-hidden="true" />
                 <div className="ops-hq-notice-card__content">
                   <strong>Hệ thống hoạt động ổn định — Không có ca nghẽn tồn đọng nghiêm trọng</strong>
                   <span>Tất cả các bưu cục đang xử lý đơn đúng khung giờ SLA quy định.</span>
@@ -772,7 +780,7 @@ export function MasterOpsCommandCenterPage(): React.JSX.Element {
           <div className="ops-hq-modules-grid">
             <Link to={routePaths.opsMetricsReport} className="ops-hq-module-card">
               <div className="ops-hq-module-card__icon">
-                <span className="material-symbols-outlined">analytics</span>
+                <BarChart3 size={20} aria-hidden="true" />
               </div>
               <div>
                 <strong>Báo Cáo Vận Hành</strong>
@@ -782,7 +790,7 @@ export function MasterOpsCommandCenterPage(): React.JSX.Element {
 
             <Link to={routePaths.linehaulTripManagement} className="ops-hq-module-card">
               <div className="ops-hq-module-card__icon">
-                <span className="material-symbols-outlined">local_shipping</span>
+                <Truck size={20} aria-hidden="true" />
               </div>
               <div>
                 <strong>Quản Lý Tuyến Nhanh</strong>
@@ -792,7 +800,7 @@ export function MasterOpsCommandCenterPage(): React.JSX.Element {
 
             <Link to={routePaths.returnBlockManagement} className="ops-hq-module-card">
               <div className="ops-hq-module-card__icon">
-                <span className="material-symbols-outlined">assignment_return</span>
+                <RotateCcw size={20} aria-hidden="true" />
               </div>
               <div>
                 <strong>Quản Lý Chuyển Hoàn</strong>
@@ -802,7 +810,7 @@ export function MasterOpsCommandCenterPage(): React.JSX.Element {
 
             <Link to={routePaths.serviceQualityProactiveActionBoard} className="ops-hq-module-card">
               <div className="ops-hq-module-card__icon">
-                <span className="material-symbols-outlined">assignment_turned_in</span>
+                <CheckSquare size={20} aria-hidden="true" />
               </div>
               <div>
                 <strong>Proactive Board</strong>

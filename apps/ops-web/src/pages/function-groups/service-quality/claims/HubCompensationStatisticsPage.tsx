@@ -28,6 +28,20 @@ import type {
   HubClaimSummary,
   RiskLevel,
 } from '../../../../features/claims/claims.types';
+import {
+  BarChart3,
+  RefreshCw,
+  Download,
+  TrendingDown,
+  DollarSign,
+  Scale,
+  AlertTriangle,
+  Building2,
+  Globe2,
+  ShieldAlert,
+  Target,
+  X,
+} from 'lucide-react';
 import './HubCompensationStatisticsPage.css';
 
 function formatVND(amount: number): string {
@@ -217,7 +231,10 @@ export const HubCompensationStatisticsPage: React.FC = () => {
       {/* Header */}
       <div className="hub-stats-header">
         <div className="hub-stats-title">
-          <h1>📊 Thống Kê Bồi Thường Theo Hub & Báo Cáo Rủi Ro</h1>
+          <h1>
+            <BarChart3 size={24} style={{ marginRight: 8, verticalAlign: 'middle', display: 'inline-block' }} aria-hidden="true" />
+            Thống Kê Bồi Thường Theo Hub & Báo Cáo Rủi Ro
+          </h1>
           <p>
             Giám sát tỷ lệ hỏng vỡ, thất lạc (Loss & Damage Rate), theo dõi chi phí đền bù và thu hồi chế tài theo từng Hub và tuyến vận tải.
           </p>
@@ -236,9 +253,7 @@ export const HubCompensationStatisticsPage: React.FC = () => {
               color: '#334155',
             }}
           >
-            <span className="material-symbols-outlined" style={{ fontSize: '16px', color: '#0284c7' }}>
-              {currentScopeMeta.icon}
-            </span>
+            <Building2 size={16} style={{ color: '#0284c7' }} aria-hidden="true" />
             <span>
               Phạm vi quản trị: <strong style={{ color: '#0f172a' }}>{currentScopeMeta.label}</strong>
             </span>
@@ -265,16 +280,20 @@ export const HubCompensationStatisticsPage: React.FC = () => {
             className="btn-refresh-stats"
             onClick={handleRefresh}
             title="Làm mới dữ liệu từ hệ thống"
+            style={{ display: 'inline-flex', alignItems: 'center' }}
           >
-            🔄 Làm mới
+            <RefreshCw size={14} style={{ marginRight: 6 }} aria-hidden="true" />
+            Làm mới
           </button>
           <button
             type="button"
             className="btn-export-excel"
             onClick={handleExportCSV}
             title="Tải bảng đối soát dạng Excel/CSV"
+            style={{ display: 'inline-flex', alignItems: 'center' }}
           >
-            📥 Xuất Báo Cáo Đối Soát (.csv)
+            <Download size={14} style={{ marginRight: 6 }} aria-hidden="true" />
+            Xuất Báo Cáo Đối Soát (.csv)
           </button>
         </div>
       </div>
@@ -282,7 +301,9 @@ export const HubCompensationStatisticsPage: React.FC = () => {
       {/* KPI Cards */}
       <div className="hub-stats-kpi-grid">
         <div className="hub-kpi-card loss-rate">
-          <div className="kpi-icon-box red">📉</div>
+          <div className="kpi-icon-box red">
+            <TrendingDown size={22} aria-hidden="true" />
+          </div>
           <div className="kpi-details">
             <div className="kpi-label">Tỷ Lệ Hỏng & Mất (Toàn Mạng)</div>
             <div className="kpi-value">{overallKPIs.lossRate}%</div>
@@ -293,7 +314,9 @@ export const HubCompensationStatisticsPage: React.FC = () => {
         </div>
 
         <div className="hub-kpi-card total-cost">
-          <div className="kpi-icon-box amber">💰</div>
+          <div className="kpi-icon-box amber">
+            <DollarSign size={22} aria-hidden="true" />
+          </div>
           <div className="kpi-details">
             <div className="kpi-label">Tổng Chi Phí Đền Bù</div>
             <div className="kpi-value">{formatVND(overallKPIs.totalCost)}</div>
@@ -304,7 +327,9 @@ export const HubCompensationStatisticsPage: React.FC = () => {
         </div>
 
         <div className="hub-kpi-card recovery-rate">
-          <div className="kpi-icon-box green">⚖️</div>
+          <div className="kpi-icon-box green">
+            <Scale size={22} aria-hidden="true" />
+          </div>
           <div className="kpi-details">
             <div className="kpi-label">Tỷ Lệ Thu Hồi Chế Tài</div>
             <div className="kpi-value">{overallKPIs.recoveryRate}%</div>
@@ -313,7 +338,9 @@ export const HubCompensationStatisticsPage: React.FC = () => {
         </div>
 
         <div className="hub-kpi-card critical-hub">
-          <div className="kpi-icon-box purple">⚠️</div>
+          <div className="kpi-icon-box purple">
+            <AlertTriangle size={22} aria-hidden="true" />
+          </div>
           <div className="kpi-details">
             <div className="kpi-label">Hub Rủi Ro Thiệt Hại Cao</div>
             <div className="kpi-value">{overallKPIs.criticalHubCode}</div>
@@ -327,7 +354,10 @@ export const HubCompensationStatisticsPage: React.FC = () => {
         {/* Chart 1: Top 5 Hubs BarChart */}
         <div className="chart-card">
           <div className="chart-header">
-            <h3 className="chart-title">🏢 Top 5 Hubs Thiệt Hại Bồi Thường Cao Nhất</h3>
+            <h3 className="chart-title">
+              <Building2 size={16} style={{ marginRight: 6, verticalAlign: 'middle', display: 'inline-block' }} aria-hidden="true" />
+              Top 5 Hubs Thiệt Hại Bồi Thường Cao Nhất
+            </h3>
             <span className="chart-legend-tag">Đơn vị: Triệu VNĐ</span>
           </div>
           <div style={{ width: '100%', height: 280 }}>
@@ -366,7 +396,10 @@ export const HubCompensationStatisticsPage: React.FC = () => {
         {/* Chart 2: Root Cause Breakdown Donut Chart */}
         <div className="chart-card">
           <div className="chart-header">
-            <h3 className="chart-title">🎯 Phân Bổ Nguyên Nhân Gốc Rễ (Root Cause)</h3>
+            <h3 className="chart-title" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+              <Target size={16} />
+              <span>Phân Bổ Nguyên Nhân Gốc Rễ (Root Cause)</span>
+            </h3>
             <span className="chart-legend-tag">Theo tỷ lệ % sự cố</span>
           </div>
           <div style={{ width: '100%', height: 280 }}>
@@ -630,14 +663,16 @@ export const HubCompensationStatisticsPage: React.FC = () => {
           <div className="hub-detail-modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <h2>
-                🏢 Chi Tiết Rủi Ro & Hồ Sơ Bồi Thường: {selectedHubDetail.hubCode} - {selectedHubDetail.hubName}
+                <Building2 size={20} style={{ marginRight: 8, verticalAlign: 'middle', display: 'inline-block' }} aria-hidden="true" />
+                Chi Tiết Rủi Ro & Hồ Sơ Bồi Thường: {selectedHubDetail.hubCode} - {selectedHubDetail.hubName}
               </h2>
               <button
                 type="button"
                 className="btn-close-modal"
                 onClick={() => setSelectedHubDetail(null)}
+                aria-label="Đóng"
               >
-                ✕
+                <X size={18} aria-hidden="true" />
               </button>
             </div>
 
@@ -672,7 +707,10 @@ export const HubCompensationStatisticsPage: React.FC = () => {
 
               {/* CAPA Recommendations */}
               <div className="capa-box">
-                <h4>🛡️ Khuyến Nghị Biện Pháp Khắc Phục & Phòng Ngừa (CAPA)</h4>
+                <h4>
+                  <ShieldAlert size={16} style={{ marginRight: 6, verticalAlign: 'middle', display: 'inline-block' }} aria-hidden="true" />
+                  Khuyến Nghị Biện Pháp Khắc Phục & Phòng Ngừa (CAPA)
+                </h4>
                 <ul>
                   <li>
                     <strong>Quy chuẩn đóng gói:</strong> Yêu cầu bộ phận tiếp nhận tại quầy bắt buộc chụp ảnh 3 góc trước khi dán tem niêm phong đối với các mặt hàng gốm sứ/dễ vỡ.

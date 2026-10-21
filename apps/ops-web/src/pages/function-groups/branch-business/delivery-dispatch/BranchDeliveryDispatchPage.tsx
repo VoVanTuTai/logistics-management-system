@@ -21,6 +21,23 @@ import { formatShipmentStatusLabel } from '../../../../utils/logisticsLabels';
 import { queryKeys } from '../../../../utils/queryKeys';
 import { CopyableShipmentCode } from '../../../shared/CopyableShipmentCode';
 import { BranchTablePagination } from '../shared/BranchTablePagination';
+import { useResizableColumns } from '../../../../hooks/useResizableColumns';
+import {
+  DEFAULT_OPS_COL_WIDTHS,
+  MIN_OPS_COL_WIDTHS,
+  getOpsStatusBadgeStyle,
+  resolveShipmentStatusLabel,
+  formatCurrency,
+  resolveChargeableWeight,
+  resolveParcelWeight,
+  resolveParcelClassification,
+  resolveServiceTag,
+  resolveFeePayer,
+  resolveInspectionPolicy,
+  ColumnVisibilityPicker,
+  useColumnVisibility,
+  styles as shipmentTableStyles,
+} from '../../../shipments/ShipmentsTable';
 import './BranchDeliveryDispatchPage.css';
 
 interface DeliveryOrderRow {
@@ -89,14 +106,6 @@ function SendIcon(): React.JSX.Element {
       <path d="m12 14 7-9" />
     </svg>
   );
-}
-
-function formatCurrency(value: number | null): string {
-  if (value === null) {
-    return '0 đ';
-  }
-
-  return `${new Intl.NumberFormat('vi-VN').format(value)} đ`;
 }
 
 function normalize(value: string | null | undefined): string {
@@ -377,6 +386,32 @@ export function BranchDeliveryDispatchPage(): React.JSX.Element {
       );
     });
   }, [courierLoad, courierSearch]);
+
+  const { widths, handleMouseDown, resetColumnWidth } = useResizableColumns(
+    'ops_delivery_dispatch_col_widths_v4',
+    DEFAULT_OPS_COL_WIDTHS,
+    MIN_OPS_COL_WIDTHS,
+  );
+
+  const { visibleColumns, toggleColumn, setAllColumns, resetColumns } = useColumnVisibility(
+    'ops_delivery_dispatch_visible_columns_v2',
+  );
+
+  const allVisibleSelected =
+    paginatedOrders.length > 0 &&
+    paginatedOrders.every((order) => selectedShipmentCodes.includes(order.shipment.shipmentCode));
+  const someVisibleSelected =
+    paginatedOrders.some((order) => selectedShipmentCodes.includes(order.shipment.shipmentCode));
+
+  const handleToggleAllVisible = (checked: boolean) => {
+    if (checked) {
+      const pageCodes = paginatedOrders.map((o) => o.shipment.shipmentCode);
+      setSelectedShipmentCodes((current) => Array.from(new Set([...current, ...pageCodes])));
+    } else {
+      const pageCodeSet = new Set(paginatedOrders.map((o) => o.shipment.shipmentCode));
+      setSelectedShipmentCodes((current) => current.filter((c) => !pageCodeSet.has(c)));
+    }
+  };
 
   const toggleOrder = (shipmentCode: string) => {
     setSelectedShipmentCodes((current) =>
@@ -724,78 +759,465 @@ export function BranchDeliveryDispatchPage(): React.JSX.Element {
           {!shipmentsQuery.isLoading && filteredOrders.length === 0 ? (
             <p className="ops-branch-delivery__empty">Không có đơn chờ phát phù hợp bộ lọc.</p>
           ) : null}
-          <div className="ops-branch-delivery__table-wrap">
-            <table>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 6 }}>
+            <ColumnVisibilityPicker
+              visibleColumns={visibleColumns}
+              onToggleColumn={toggleColumn}
+              onSetAllColumns={setAllColumns}
+              onResetColumns={resetColumns}
+            />
+          </div>
+          <div style={shipmentTableStyles.tableShell} className="ops-shipments-table-shell">
+            <table style={shipmentTableStyles.table}>
               <thead>
                 <tr>
-                  <th>Chọn</th>
-                  <th>Mã vận đơn</th>
-                  <th>Người nhận</th>
-                  <th>Địa chỉ giao</th>
-                  <th>Dịch vụ</th>
-                  <th>COD</th>
-                  <th>Thao tác cuối</th>
-                  <th>Trạng thái phát hàng</th>
-                  <th>Courier</th>
-                  <th>Liên lạc</th>
-                  <th>SLA</th>
+                  <th style={{ ...shipmentTableStyles.headerCell, ...shipmentTableStyles.selectCell }}>
+                    <input
+                      type="checkbox"
+                      aria-label="Chọn tất cả đơn đang hiển thị"
+                      checked={allVisibleSelected}
+                      ref={(input) => {
+                        if (input) {
+                          input.indeterminate = someVisibleSelected && !allVisibleSelected;
+                        }
+                      }}
+                      onChange={(event) => handleToggleAllVisible(event.target.checked)}
+                    />
+                  </th>
+                  {visibleColumns.code && (
+                    <th style={{ ...shipmentTableStyles.headerCell, width: widths.code, minWidth: widths.code, maxWidth: widths.code }}>
+                      <span>Mã vận đơn</span>
+                      <span
+                        className="table-col-resizer"
+                        title="Kéo chuột để chỉnh độ rộng (Nhấp đúp để đặt lại)"
+                        onMouseDown={(e) => handleMouseDown('code', e)}
+                        onDoubleClick={() => resetColumnWidth('code')}
+                      />
+                    </th>
+                  )}
+                  {visibleColumns.status && (
+                    <th style={{ ...shipmentTableStyles.headerCell, width: widths.status, minWidth: widths.status, maxWidth: widths.status }}>
+                      <span>Trạng thái</span>
+                      <span
+                        className="table-col-resizer"
+                        title="Kéo chuột để chỉnh độ rộng (Nhấp đúp để đặt lại)"
+                        onMouseDown={(e) => handleMouseDown('status', e)}
+                        onDoubleClick={() => resetColumnWidth('status')}
+                      />
+                    </th>
+                  )}
+                  {visibleColumns.parcelType && (
+                    <th style={{ ...shipmentTableStyles.headerCell, width: widths.parcelType, minWidth: widths.parcelType, maxWidth: widths.parcelType }}>
+                      <span>Loại hàng</span>
+                      <span
+                        className="table-col-resizer"
+                        title="Kéo chuột để chỉnh độ rộng (Nhấp đúp để đặt lại)"
+                        onMouseDown={(e) => handleMouseDown('parcelType', e)}
+                        onDoubleClick={() => resetColumnWidth('parcelType')}
+                      />
+                    </th>
+                  )}
+                  {visibleColumns.chargeableWeight && (
+                    <th style={{ ...shipmentTableStyles.headerCell, width: widths.chargeableWeight, minWidth: widths.chargeableWeight, maxWidth: widths.chargeableWeight }}>
+                      <span>KL tính cước</span>
+                      <span
+                        className="table-col-resizer"
+                        title="Kéo chuột để chỉnh độ rộng (Nhấp đúp để đặt lại)"
+                        onMouseDown={(e) => handleMouseDown('chargeableWeight', e)}
+                        onDoubleClick={() => resetColumnWidth('chargeableWeight')}
+                      />
+                    </th>
+                  )}
+                  {visibleColumns.senderName && (
+                    <th style={{ ...shipmentTableStyles.headerCell, width: widths.senderName, minWidth: widths.senderName, maxWidth: widths.senderName }}>
+                      <span>Người gửi</span>
+                      <span
+                        className="table-col-resizer"
+                        title="Kéo chuột để chỉnh độ rộng (Nhấp đúp để đặt lại)"
+                        onMouseDown={(e) => handleMouseDown('senderName', e)}
+                        onDoubleClick={() => resetColumnWidth('senderName')}
+                      />
+                    </th>
+                  )}
+                  {visibleColumns.senderPhone && (
+                    <th style={{ ...shipmentTableStyles.headerCell, width: widths.senderPhone, minWidth: widths.senderPhone, maxWidth: widths.senderPhone }}>
+                      <span>SĐT gửi</span>
+                      <span
+                        className="table-col-resizer"
+                        title="Kéo chuột để chỉnh độ rộng (Nhấp đúp để đặt lại)"
+                        onMouseDown={(e) => handleMouseDown('senderPhone', e)}
+                        onDoubleClick={() => resetColumnWidth('senderPhone')}
+                      />
+                    </th>
+                  )}
+                  {visibleColumns.senderAddress && (
+                    <th style={{ ...shipmentTableStyles.headerCell, width: widths.senderAddress, minWidth: widths.senderAddress, maxWidth: widths.senderAddress }}>
+                      <span>Địa chỉ gửi</span>
+                      <span
+                        className="table-col-resizer"
+                        title="Kéo chuột để chỉnh độ rộng (Nhấp đúp để đặt lại)"
+                        onMouseDown={(e) => handleMouseDown('senderAddress', e)}
+                        onDoubleClick={() => resetColumnWidth('senderAddress')}
+                      />
+                    </th>
+                  )}
+                  {visibleColumns.receiverName && (
+                    <th style={{ ...shipmentTableStyles.headerCell, width: widths.receiverName, minWidth: widths.receiverName, maxWidth: widths.receiverName }}>
+                      <span>Người nhận</span>
+                      <span
+                        className="table-col-resizer"
+                        title="Kéo chuột để chỉnh độ rộng (Nhấp đúp để đặt lại)"
+                        onMouseDown={(e) => handleMouseDown('receiverName', e)}
+                        onDoubleClick={() => resetColumnWidth('receiverName')}
+                      />
+                    </th>
+                  )}
+                  {visibleColumns.receiverPhone && (
+                    <th style={{ ...shipmentTableStyles.headerCell, width: widths.receiverPhone, minWidth: widths.receiverPhone, maxWidth: widths.receiverPhone }}>
+                      <span>SĐT nhận</span>
+                      <span
+                        className="table-col-resizer"
+                        title="Kéo chuột để chỉnh độ rộng (Nhấp đúp để đặt lại)"
+                        onMouseDown={(e) => handleMouseDown('receiverPhone', e)}
+                        onDoubleClick={() => resetColumnWidth('receiverPhone')}
+                      />
+                    </th>
+                  )}
+                  {visibleColumns.receiverAddress && (
+                    <th style={{ ...shipmentTableStyles.headerCell, width: widths.receiverAddress, minWidth: widths.receiverAddress, maxWidth: widths.receiverAddress }}>
+                      <span>Địa chỉ giao</span>
+                      <span
+                        className="table-col-resizer"
+                        title="Kéo chuột để chỉnh độ rộng (Nhấp đúp để đặt lại)"
+                        onMouseDown={(e) => handleMouseDown('receiverAddress', e)}
+                        onDoubleClick={() => resetColumnWidth('receiverAddress')}
+                      />
+                    </th>
+                  )}
+                  {visibleColumns.cod && (
+                    <th style={{ ...shipmentTableStyles.headerCell, width: widths.cod, minWidth: widths.cod, maxWidth: widths.cod }}>
+                      <span>Tiền COD & Cước</span>
+                      <span
+                        className="table-col-resizer"
+                        title="Kéo chuột để chỉnh độ rộng (Nhấp đúp để đặt lại)"
+                        onMouseDown={(e) => handleMouseDown('cod', e)}
+                        onDoubleClick={() => resetColumnWidth('cod')}
+                      />
+                    </th>
+                  )}
+                  {visibleColumns.routeHub && (
+                    <th style={{ ...shipmentTableStyles.headerCell, width: widths.routeHub, minWidth: widths.routeHub, maxWidth: widths.routeHub }}>
+                      <span>Tuyến phát / Hub</span>
+                      <span
+                        className="table-col-resizer"
+                        title="Kéo chuột để chỉnh độ rộng (Nhấp đúp để đặt lại)"
+                        onMouseDown={(e) => handleMouseDown('routeHub', e)}
+                        onDoubleClick={() => resetColumnWidth('routeHub')}
+                      />
+                    </th>
+                  )}
+                  {visibleColumns.createdAt && (
+                    <th style={{ ...shipmentTableStyles.headerCell, width: widths.createdAt, minWidth: widths.createdAt, maxWidth: widths.createdAt }}>
+                      <span>Ngày giờ tạo</span>
+                      <span
+                        className="table-col-resizer"
+                        title="Kéo chuột để chỉnh độ rộng (Nhấp đúp để đặt lại)"
+                        onMouseDown={(e) => handleMouseDown('createdAt', e)}
+                        onDoubleClick={() => resetColumnWidth('createdAt')}
+                      />
+                    </th>
+                  )}
+                  {visibleColumns.deliveredAt && (
+                    <th style={{ ...shipmentTableStyles.headerCell, width: widths.deliveredAt, minWidth: widths.deliveredAt, maxWidth: widths.deliveredAt }}>
+                      <span>Ngày giờ nhận hàng</span>
+                      <span
+                        className="table-col-resizer"
+                        title="Kéo chuột để chỉnh độ rộng (Nhấp đúp để đặt lại)"
+                        onMouseDown={(e) => handleMouseDown('deliveredAt', e)}
+                        onDoubleClick={() => resetColumnWidth('deliveredAt')}
+                      />
+                    </th>
+                  )}
                 </tr>
               </thead>
               <tbody>
-                {paginatedOrders.map((order) => (
-                  <tr key={order.id}>
-                    <td>
-                      <input
-                        type="checkbox"
-                        checked={selectedShipmentCodes.includes(order.shipment.shipmentCode)}
-                        onChange={() => toggleOrder(order.shipment.shipmentCode)}
-                        aria-label={`Chọn ${order.shipment.shipmentCode}`}
-                      />
-                    </td>
-                    <td>
-                      <CopyableShipmentCode
-                        code={order.shipment.shipmentCode}
-                        className="ops-branch-delivery__code"
-                      />
-                    </td>
-                    <td>
-                      <strong>{order.receiverName}</strong>
-                      <small>{order.receiverPhone}</small>
-                    </td>
-                    <td>
-                      {order.address}
-                      <small>{order.area}</small>
-                    </td>
-                    <td>{order.serviceType}</td>
-                    <td>{order.codAmount}</td>
-                    <td>{order.lastScan}</td>
-                    <td>{order.shipmentStatusLabel}</td>
-                    <td>{order.task?.assignedCourierId ?? 'Chưa bàn giao'}</td>
-                    <td>
-                      {order.task?.assignedCourierId ? (
-                        <Link
-                          className="ops-branch-delivery__chat-link"
-                          to={routePaths.opsChatWithCourier(order.task.assignedCourierId)}
-                        >
-                          Chat
-                        </Link>
-                      ) : (
-                        <span className="ops-branch-delivery__muted">Chưa có</span>
+                {paginatedOrders.map((order) => {
+                  const item = order.shipment;
+                  const isChecked = selectedShipmentCodes.includes(item.shipmentCode);
+                  const assignedCourier = order.task?.assignedCourierId ?? 'Chưa bàn giao';
+                  const isDelivered =
+                    item.currentStatus === 'DELIVERED' || order.task?.status === 'DELIVERED';
+                  const deliveredAt = isDelivered ? order.task?.updatedAt || item.updatedAt : null;
+                  const fullSenderAddress =
+                    item.senderAddress ||
+                    [item.senderWard, item.senderDistrict, item.senderProvince].filter(Boolean).join(', ') ||
+                    '-';
+                  const fullReceiverAddress = item.receiverAddress || item.receiverRegion || order.address || '-';
+                  const statusLabel = resolveShipmentStatusLabel(item);
+
+                  const chargeableWeightInfo = resolveChargeableWeight(item);
+                  const classification = resolveParcelClassification(item);
+                  const service = resolveServiceTag(item);
+                  const feePayer = resolveFeePayer(item);
+                  const inspectionPolicy = resolveInspectionPolicy(item);
+
+                  return (
+                    <tr key={order.id} style={isChecked ? shipmentTableStyles.selectedRow : undefined}>
+                      <td style={{ ...shipmentTableStyles.cell, ...shipmentTableStyles.selectCell }}>
+                        <input
+                          type="checkbox"
+                          aria-label={`Chọn vận đơn ${item.shipmentCode}`}
+                          checked={isChecked}
+                          onChange={() => toggleOrder(item.shipmentCode)}
+                        />
+                      </td>
+
+                      {visibleColumns.code && (
+                        <td style={{ ...shipmentTableStyles.shipmentCodeCell, width: widths.code, maxWidth: widths.code }} className="ops-shipment-code-cell">
+                          <CopyableShipmentCode code={item.shipmentCode} />
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 3 }}>
+                            <span style={shipmentTableStyles.platformBadge}>{service.platformLabel}</span>
+                            <span style={shipmentTableStyles.serviceTag}>{service.serviceLabel}</span>
+                          </div>
+                        </td>
                       )}
-                    </td>
-                    <td>
-                      <span
-                        className={
-                          order.sla === 'urgent'
-                            ? 'ops-branch-delivery__sla ops-branch-delivery__sla--urgent'
-                            : 'ops-branch-delivery__sla'
-                        }
-                      >
-                        {order.sla === 'urgent' ? 'Cần phát sớm' : 'Trong hạn'}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
+
+                      {visibleColumns.status && (
+                        <td style={{ ...shipmentTableStyles.cell, width: widths.status, maxWidth: widths.status }}>
+                          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, whiteSpace: 'nowrap' }}>
+                            <span style={getOpsStatusBadgeStyle(item.currentStatus)}>
+                              {statusLabel}
+                            </span>
+                            {order.sla === 'urgent' ? (
+                              <span
+                                title="Vận đơn cần phát sớm trong ca"
+                                style={{
+                                  display: 'inline-block',
+                                  color: '#b42318',
+                                  backgroundColor: '#fef3f2',
+                                  border: '1px solid #fee4e2',
+                                  padding: '1px 5px',
+                                  borderRadius: 4,
+                                  fontSize: 11,
+                                  fontWeight: 700,
+                                  whiteSpace: 'nowrap',
+                                }}
+                              >
+                                Cần phát sớm
+                              </span>
+                            ) : null}
+                            {item.requiresLabelReprint ? (
+                              <span
+                                title="Vận đơn cần in lại tem mới"
+                                style={shipmentTableStyles.reprintBadge}
+                              >
+                                In lại tem
+                              </span>
+                            ) : null}
+                            {item.isOperationLocked ? (
+                              <span
+                                title="Đơn hàng đang bị khóa thao tác"
+                                style={shipmentTableStyles.lockBadge}
+                              >
+                                Khóa
+                              </span>
+                            ) : null}
+                          </div>
+                        </td>
+                      )}
+
+                      {visibleColumns.parcelType && (
+                        <td style={{ ...shipmentTableStyles.cell, width: widths.parcelType, maxWidth: widths.parcelType }}>
+                          <span style={classification.badgeStyle}>
+                            {classification.label}
+                          </span>
+                        </td>
+                      )}
+
+                      {visibleColumns.chargeableWeight && (
+                        <td style={{ ...shipmentTableStyles.cell, width: widths.chargeableWeight, maxWidth: widths.chargeableWeight }}>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                            <span
+                              title={chargeableWeightInfo.formulaHint}
+                              style={{ fontFamily: 'monospace', fontWeight: 700, fontSize: 13, color: '#0f172a' }}
+                            >
+                              {chargeableWeightInfo.weightText}
+                            </span>
+                            {chargeableWeightInfo.isVolumetric && (
+                              <span
+                                title={chargeableWeightInfo.formulaHint}
+                                style={{
+                                  fontSize: 10,
+                                  color: '#ea580c',
+                                  fontWeight: 700,
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: 2,
+                                  whiteSpace: 'nowrap',
+                                }}
+                              >
+                                📐 Thể tích IATA
+                              </span>
+                            )}
+                          </div>
+                        </td>
+                      )}
+
+                      {visibleColumns.senderName && (
+                        <td style={{ ...shipmentTableStyles.cell, width: widths.senderName, maxWidth: widths.senderName }}>
+                          <div
+                            className="ops-cell-scrollable"
+                            title={item.senderName ?? 'Không có'}
+                            style={{ width: '100%', maxWidth: '100%', fontWeight: 600 }}
+                          >
+                            {item.senderName ?? 'Không có'}
+                          </div>
+                        </td>
+                      )}
+
+                      {visibleColumns.senderPhone && (
+                        <td style={{ ...shipmentTableStyles.cell, width: widths.senderPhone, maxWidth: widths.senderPhone }}>
+                          <span style={{ fontFamily: 'monospace', fontWeight: 600, whiteSpace: 'nowrap' }}>
+                            {item.senderPhone ?? '-'}
+                          </span>
+                        </td>
+                      )}
+
+                      {visibleColumns.senderAddress && (
+                        <td style={{ ...shipmentTableStyles.cell, width: widths.senderAddress, maxWidth: widths.senderAddress }}>
+                          <div
+                            className="ops-cell-scrollable"
+                            title={fullSenderAddress}
+                            style={{
+                              width: '100%',
+                              maxWidth: '100%',
+                              fontSize: 12,
+                              color: '#334155',
+                            }}
+                          >
+                            {fullSenderAddress}
+                          </div>
+                        </td>
+                      )}
+
+                      {visibleColumns.receiverName && (
+                        <td style={{ ...shipmentTableStyles.cell, width: widths.receiverName, maxWidth: widths.receiverName }}>
+                          <div
+                            className="ops-cell-scrollable"
+                            title={item.receiverName ?? order.receiverName ?? 'Không có'}
+                            style={{ width: '100%', maxWidth: '100%', fontWeight: 600 }}
+                          >
+                            {item.receiverName ?? order.receiverName ?? 'Không có'}
+                          </div>
+                        </td>
+                      )}
+
+                      {visibleColumns.receiverPhone && (
+                        <td style={{ ...shipmentTableStyles.cell, width: widths.receiverPhone, maxWidth: widths.receiverPhone }}>
+                          <span style={{ fontFamily: 'monospace', fontWeight: 600, whiteSpace: 'nowrap' }}>
+                            {item.receiverPhone ?? order.receiverPhone ?? '-'}
+                          </span>
+                        </td>
+                      )}
+
+                      {visibleColumns.receiverAddress && (
+                        <td style={{ ...shipmentTableStyles.cell, width: widths.receiverAddress, maxWidth: widths.receiverAddress }}>
+                          <div
+                            className="ops-cell-scrollable"
+                            title={fullReceiverAddress}
+                            style={{
+                              width: '100%',
+                              maxWidth: '100%',
+                              fontSize: 12,
+                              color: '#334155',
+                            }}
+                          >
+                            <div>{fullReceiverAddress}</div>
+                            <div style={shipmentTableStyles.addressSubline} title={`Đồng kiểm: ${inspectionPolicy}${item.deliveryNote ? ` • ${item.deliveryNote}` : ''}`}>
+                              <span style={shipmentTableStyles.inspectionTag}>[{inspectionPolicy}]</span>
+                              {item.deliveryNote ? <span>• {item.deliveryNote}</span> : null}
+                            </div>
+                          </div>
+                        </td>
+                      )}
+
+                      {visibleColumns.cod && (
+                        <td style={{ ...shipmentTableStyles.cell, width: widths.cod, maxWidth: widths.cod }}>
+                          <div style={{ display: 'flex', flexDirection: 'column' }}>
+                            <span style={{ fontWeight: 700, color: item.codAmount ? '#059669' : '#64748b', whiteSpace: 'nowrap' }}>
+                              {formatCurrency(item.codAmount)}
+                            </span>
+                            <div style={shipmentTableStyles.feeSubline}>
+                              <span>Cước: {formatCurrency(item.shippingFee)}</span>
+                              <span style={{ margin: '0 3px', color: '#cbd5e1' }}>•</span>
+                              <span style={{ color: feePayer.isReceiverPay ? '#d97706' : '#64748b', fontWeight: feePayer.isReceiverPay ? 700 : 500 }}>
+                                {feePayer.payerLabel}
+                              </span>
+                            </div>
+                          </div>
+                        </td>
+                      )}
+
+                      {visibleColumns.routeHub && (
+                        <td style={{ ...shipmentTableStyles.cell, width: widths.routeHub, maxWidth: widths.routeHub }}>
+                          <div
+                            className="ops-cell-scrollable"
+                            title={`Hub: ${item.receiverHubCode ?? item.destinationHubCode ?? '-'} | Shipper: ${assignedCourier}`}
+                            style={{
+                              width: '100%',
+                              maxWidth: '100%',
+                              fontSize: 12,
+                            }}
+                          >
+                            <span>Hub: <strong>{item.receiverHubCode ?? item.destinationHubCode ?? '-'}</strong></span>
+                            <span style={{ margin: '0 4px', color: '#94a3b8' }}>•</span>
+                            <span>{assignedCourier}</span>
+                            {order.task?.assignedCourierId ? (
+                              <Link
+                                to={routePaths.opsChatWithCourier(order.task.assignedCourierId)}
+                                style={{
+                                  marginLeft: 6,
+                                  padding: '1px 6px',
+                                  fontSize: 11,
+                                  fontWeight: 700,
+                                  borderRadius: 4,
+                                  backgroundColor: '#eff6ff',
+                                  color: '#1d4ed8',
+                                  border: '1px solid #bfdbfe',
+                                  textDecoration: 'none',
+                                }}
+                              >
+                                Chat
+                              </Link>
+                            ) : null}
+                          </div>
+                        </td>
+                      )}
+
+                      {visibleColumns.createdAt && (
+                        <td style={{ ...shipmentTableStyles.cell, width: widths.createdAt, maxWidth: widths.createdAt }}>
+                          <span style={{ fontSize: 12, color: '#334155', whiteSpace: 'nowrap' }}>
+                            {formatDateTime(item.createdAt)}
+                          </span>
+                        </td>
+                      )}
+
+                      {visibleColumns.deliveredAt && (
+                        <td style={{ ...shipmentTableStyles.cell, width: widths.deliveredAt, maxWidth: widths.deliveredAt }}>
+                          {deliveredAt ? (
+                            <span style={{ fontSize: 12, fontWeight: 600, color: '#16a34a', whiteSpace: 'nowrap' }}>
+                              {formatDateTime(deliveredAt)}
+                            </span>
+                          ) : (
+                            <span style={{ fontSize: 12, color: '#94a3b8', fontStyle: 'italic', whiteSpace: 'nowrap' }}>
+                              {order.lastScan ? order.lastScan.split(' - ')[0] : 'Chưa nhận'}
+                            </span>
+                          )}
+                        </td>
+                      )}
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>

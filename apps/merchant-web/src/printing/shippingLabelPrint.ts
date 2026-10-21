@@ -40,6 +40,27 @@ function newlineToBreaks(value: string): string {
   return escapeHtml(value).replace(/\r?\n/g, '<br />');
 }
 
+export function maskPhoneNumber(phone?: string | null): string {
+  if (!phone) return '';
+  const trimmed = phone.trim();
+  if (!trimmed) return '';
+
+  const hasPlus = trimmed.startsWith('+');
+  const digits = trimmed.replace(/\D/g, '');
+
+  if (digits.length <= 4) {
+    return '***';
+  }
+
+  if (digits.length <= 6) {
+    return `${digits.slice(0, 2)}***${digits.slice(-1)}`;
+  }
+
+  const prefix = digits.slice(0, 4);
+  const suffix = digits.slice(-3);
+  return `${hasPlus ? '+' : ''}${prefix} *** ${suffix}`;
+}
+
 function buildQrSvg(value: string): string {
   try {
     const qr = qrcode(0, 'M');
@@ -76,13 +97,13 @@ function buildSingleSheetMarkup(payload: ShippingLabelPrintPayload): string {
         <div class="block">
           <div class="label">Từ (Người gửi)</div>
           <div class="name">${escapeHtml(payload.senderName)}</div>
-          <div class="text">${escapeHtml(payload.senderPhone)}</div>
+          <div class="text">${escapeHtml(maskPhoneNumber(payload.senderPhone))}</div>
           <div class="text">${sender}</div>
         </div>
         <div class="block">
           <div class="label">Đến (Người nhận)</div>
           <div class="name">${escapeHtml(payload.receiverName)}</div>
-          <div class="text">${escapeHtml(payload.receiverPhone)}</div>
+          <div class="text">${escapeHtml(maskPhoneNumber(payload.receiverPhone))}</div>
           <div class="text">${receiver}</div>
         </div>
       </section>

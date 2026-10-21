@@ -14,6 +14,38 @@ import { formatHubFullAddress } from '../../utils/locationScope';
 import { useHubScope } from '../../hooks/useHubScope';
 import { isShipmentInHubScope } from '../../utils/hubScopeResolver';
 import { AnalyticsDashboardPage } from './analytics/AnalyticsDashboardPage';
+import {
+  Globe2,
+  Store,
+  Navigation,
+  Truck,
+  ShieldAlert,
+  BarChart3,
+  Layers,
+  Database,
+  QrCode,
+  Headphones,
+  Receipt,
+  Server,
+  Building2,
+  MapPin,
+  Shield,
+  Radio,
+  CheckCircle2,
+  Package,
+  AlertTriangle,
+  ArrowRight,
+  Clock,
+  RefreshCw,
+  LocateFixed,
+  ChevronLeft,
+  ChevronRight,
+  TrendingUp,
+  Megaphone,
+  AlertOctagon,
+  FileCheck,
+  FileSearch,
+} from 'lucide-react';
 import './DashboardPage.css';
 
 function normalizeCode(value: string): string {
@@ -45,25 +77,115 @@ type DashboardMenuIcon =
   | 'smart_devices'
   | 'planning_platform';
 
-const MENU_ICON_MAP: Record<DashboardMenuIcon, string> = {
-  hq_operations: 'radar',
-  basic_data: 'dataset',
-  operations_platform: 'two_wheeler',
-  integration_services: 'hub',
-  customer_platform: 'support_agent',
-  branch_business: 'warehouse',
-  finance_settlement: 'payments',
-  capability_platform: 'local_shipping',
-  operations_metrics: 'analytics',
-  service_quality: 'troubleshoot',
-  database: 'database',
-  smart_devices: 'qr_code_scanner',
-  planning_platform: 'alt_route',
-};
-
 function DashboardMenuSymbolIcon({ icon }: { icon: DashboardMenuIcon }): React.JSX.Element {
-  const iconName = MENU_ICON_MAP[icon] ?? 'dashboard';
-  return <span className="material-symbols-outlined">{iconName}</span>;
+  const props = { size: 24, strokeWidth: 1.8, 'aria-hidden': true };
+  switch (icon) {
+    case 'hq_operations':
+      return <Globe2 {...props} />;
+    case 'branch_business':
+      return <Store {...props} />;
+    case 'operations_platform':
+      return <Navigation {...props} />;
+    case 'capability_platform':
+      return <Truck {...props} />;
+    case 'service_quality':
+      return <ShieldAlert {...props} />;
+    case 'operations_metrics':
+      return <BarChart3 {...props} />;
+    case 'planning_platform':
+      return <Layers {...props} />;
+    case 'finance_settlement':
+      return <Receipt {...props} />;
+    case 'smart_devices':
+      return <QrCode {...props} />;
+    case 'customer_platform':
+      return <Headphones {...props} />;
+    case 'database':
+      return <Database {...props} />;
+    case 'integration_services':
+      return <Server {...props} />;
+    default:
+      return <Layers {...props} />;
+  }
+}
+
+function QuickActionIcon({ icon }: { icon?: string }): React.JSX.Element | null {
+  if (!icon) return null;
+  const props = { size: 14, strokeWidth: 1.8, className: 'ops-menu-action-icon', 'aria-hidden': true };
+  switch (icon) {
+    case 'radar':
+      return <Radio {...props} />;
+    case 'map':
+      return <MapPin {...props} />;
+    case 'alarm':
+      return <Clock {...props} />;
+    case 'qr_code_scanner':
+      return <QrCode {...props} />;
+    case 'point_of_sale':
+      return <Receipt {...props} />;
+    case 'fact_check':
+      return <CheckCircle2 {...props} />;
+    case 'near_me':
+    case 'hail':
+    case 'route':
+      return <Navigation {...props} />;
+    case 'commute':
+      return <Truck {...props} />;
+    case 'lock':
+      return <Shield {...props} />;
+    case 'label':
+      return <Layers {...props} />;
+    case 'support_agent':
+      return <Headphones {...props} />;
+    case 'search_insights':
+      return <FileSearch {...props} />;
+    case 'receipt_long':
+      return <Receipt {...props} />;
+    case 'query_stats':
+    case 'bar_chart':
+      return <BarChart3 {...props} />;
+    case 'inventory':
+    case 'inventory_2':
+      return <Package {...props} />;
+    case 'tune':
+      return <Layers {...props} />;
+    case 'swap_horiz':
+      return <RefreshCw {...props} />;
+    case 'travel_explore':
+      return <Globe2 {...props} />;
+    default:
+      return <Package {...props} />;
+  }
+}
+
+function NoticeSymbolIcon({ icon }: { icon: string }): React.JSX.Element {
+  const props = { size: 13, strokeWidth: 1.8, 'aria-hidden': true };
+  switch (icon) {
+    case 'error_outline':
+      return <AlertOctagon {...props} />;
+    case 'local_shipping':
+      return <Truck {...props} />;
+    case 'verified':
+      return <FileCheck {...props} />;
+    case 'assignment_turned_in':
+      return <CheckCircle2 {...props} />;
+    default:
+      return <AlertTriangle {...props} />;
+  }
+}
+
+function HeroTagIcon({ icon }: { icon: string }): React.JSX.Element {
+  const props = { size: 14, strokeWidth: 1.8, 'aria-hidden': true };
+  switch (icon) {
+    case 'radar':
+      return <Radio {...props} />;
+    case 'two_wheeler':
+      return <Navigation {...props} />;
+    case 'local_shipping':
+      return <Truck {...props} />;
+    default:
+      return <Radio {...props} />;
+  }
 }
 
 export function DashboardPage(): React.JSX.Element {
@@ -453,7 +575,7 @@ export function DashboardPage(): React.JSX.Element {
             aria-label="Trang trước"
             onClick={onPrevHero}
           >
-            <span className="material-symbols-outlined" aria-hidden="true">chevron_left</span>
+            <ChevronLeft size={20} aria-hidden="true" />
           </button>
 
           <div className="ops-dashboard__hero-content" key={activeHeroSlide.id}>
@@ -463,7 +585,7 @@ export function DashboardPage(): React.JSX.Element {
                 <span>NEXUS CONTROL TOWER · LIVE</span>
               </span>
               <span className="ops-dashboard__hero-domain-tag">
-                <span className="material-symbols-outlined">{activeHeroSlide.tagIcon}</span>
+                <HeroTagIcon icon={activeHeroSlide.tagIcon} />
                 <span>{activeHeroSlide.tag}</span>
               </span>
             </div>
@@ -474,7 +596,7 @@ export function DashboardPage(): React.JSX.Element {
 
             <div className="ops-dashboard__hero-footer">
               <span className="ops-dashboard__hero-kpi-highlight">
-                <span className="material-symbols-outlined">trending_up</span>
+                <TrendingUp size={15} aria-hidden="true" />
                 <span>{activeHeroSlide.kpiHighlight}</span>
               </span>
 
@@ -502,7 +624,7 @@ export function DashboardPage(): React.JSX.Element {
             aria-label="Trang sau"
             onClick={onNextHero}
           >
-            <span className="material-symbols-outlined" aria-hidden="true">chevron_right</span>
+            <ChevronRight size={20} aria-hidden="true" />
           </button>
         </div>
 
@@ -510,9 +632,7 @@ export function DashboardPage(): React.JSX.Element {
         <div className="ops-dashboard__hero-badge ops-dashboard__hero-badge--detailed" aria-label="Hub đang theo dõi">
           <div className="ops-dashboard__hero-badge-top">
             <span className="ops-dashboard__hero-badge-icon-box">
-              <span className="material-symbols-outlined">
-                {hubScope.hubLevel === 0 ? 'account_balance' : hubScope.hubLevel === 1 ? 'domain' : hubScope.hubLevel === 2 ? 'apartment' : 'warehouse'}
-              </span>
+              {hubScope.hubLevel === 0 ? <Globe2 size={20} /> : <Building2 size={20} />}
             </span>
             <div className="ops-dashboard__hero-badge-title-wrap">
               <small>
@@ -535,28 +655,28 @@ export function DashboardPage(): React.JSX.Element {
 
           {currentHubAddress ? (
             <div className="ops-dashboard__hero-badge-address" title={currentHubAddress}>
-              <span className="material-symbols-outlined">pin_drop</span>
+              <MapPin size={14} aria-hidden="true" />
               <span>{currentHubAddress}</span>
             </div>
           ) : null}
 
           <div className="ops-dashboard__hero-badge-meta">
             <span className="ops-hub-meta-item">
-              <span className="material-symbols-outlined">shield</span>
+              <Shield size={14} aria-hidden="true" />
               <span>{hubScope.scopeLabel}</span>
             </span>
             <span className="ops-hub-meta-item">
-              <span className="material-symbols-outlined">radar</span>
+              <Radio size={14} aria-hidden="true" />
               <span>Bán kính {currentHub?.coverageRadiusKm ?? 5} km</span>
             </span>
             {currentHub?.latitude && currentHub?.longitude ? (
               <span className="ops-hub-meta-item">
-                <span className="material-symbols-outlined">near_me</span>
+                <LocateFixed size={14} aria-hidden="true" />
                 <span>GPS: {currentHub.latitude.toFixed(4)}, {currentHub.longitude.toFixed(4)}</span>
               </span>
             ) : null}
             <span className="ops-status-online">
-              <span className="material-symbols-outlined">check_circle</span>
+              <CheckCircle2 size={14} aria-hidden="true" />
               <span>Trực tuyến</span>
             </span>
           </div>
@@ -567,11 +687,11 @@ export function DashboardPage(): React.JSX.Element {
       <section className="ops-dashboard__command-bar" aria-label="Bảng chỉ huy tác nghiệp">
         <div className="ops-command-meta">
           <span className="ops-shift-live-pill">
-            <span className="material-symbols-outlined ops-shift-icon">schedule</span>
+            <Clock size={14} className="ops-shift-icon" aria-hidden="true" />
             <span>CA TRỰC VẬN HÀNH: CA SÁNG (06:00 - 14:00)</span>
           </span>
           <span className="ops-sync-time">
-            <span className="material-symbols-outlined ops-sync-icon">sync</span>
+            <RefreshCw size={14} className="ops-sync-icon" aria-hidden="true" />
             <span>Cập nhật thời gian thực: {new Date().toLocaleDateString('vi-VN', { weekday: 'long', day: '2-digit', month: '2-digit', year: 'numeric' })}</span>
           </span>
         </div>
@@ -580,7 +700,7 @@ export function DashboardPage(): React.JSX.Element {
         <div className="ops-command-kpis">
           <div className="ops-command-kpi-item">
             <span className="ops-kpi-icon-box ops-kpi-icon-box--inbox">
-              <span className="material-symbols-outlined">move_to_inbox</span>
+              <Package size={20} aria-hidden="true" />
             </span>
             <div className="ops-kpi-body">
               <span className="ops-kpi-num">{metrics.totalShipments.toLocaleString('vi-VN')}</span>
@@ -591,7 +711,7 @@ export function DashboardPage(): React.JSX.Element {
 
           <div className="ops-command-kpi-item">
             <span className="ops-kpi-icon-box ops-kpi-icon-box--linehaul">
-              <span className="material-symbols-outlined">local_shipping</span>
+              <Truck size={20} aria-hidden="true" />
             </span>
             <div className="ops-kpi-body">
               <span className="ops-kpi-num">{metrics.linehaulRate}%</span>
@@ -602,7 +722,7 @@ export function DashboardPage(): React.JSX.Element {
 
           <div className="ops-command-kpi-item">
             <span className="ops-kpi-icon-box ops-kpi-icon-box--sla">
-              <span className="material-symbols-outlined">task_alt</span>
+              <CheckCircle2 size={20} aria-hidden="true" />
             </span>
             <div className="ops-kpi-body">
               <span className="ops-kpi-num">{metrics.successRate}%</span>
@@ -613,7 +733,7 @@ export function DashboardPage(): React.JSX.Element {
 
           <div className="ops-command-kpi-item alert">
             <span className="ops-kpi-icon-box ops-kpi-icon-box--alert">
-              <span className="material-symbols-outlined">warning_amber</span>
+              <AlertTriangle size={20} aria-hidden="true" />
             </span>
             <div className="ops-kpi-body">
               <span className="ops-kpi-num">{metrics.incidentCount}</span>
@@ -658,15 +778,9 @@ export function DashboardPage(): React.JSX.Element {
                   <div className="ops-menu-card__actions">
                     {item.quickLinks.map((link) => (
                       <Link key={link.label} to={link.to} className="ops-menu-action-pill">
-                        {link.icon && (
-                          <span className="material-symbols-outlined ops-menu-action-icon" aria-hidden="true">
-                            {link.icon}
-                          </span>
-                        )}
+                        <QuickActionIcon icon={link.icon} />
                         <span>{link.label}</span>
-                        <span className="material-symbols-outlined ops-menu-action-arrow" aria-hidden="true">
-                          arrow_forward
-                        </span>
+                        <ArrowRight size={13} strokeWidth={2} className="ops-menu-action-arrow" aria-hidden="true" />
                       </Link>
                     ))}
                   </div>
@@ -682,7 +796,7 @@ export function DashboardPage(): React.JSX.Element {
             <header className="ops-card__header">
               <div className="ops-dispatch-header-title">
                 <span className="ops-dispatch-header-icon-box">
-                  <span className="material-symbols-outlined">campaign</span>
+                  <Megaphone size={18} aria-hidden="true" />
                 </span>
                 <h3>Thông báo</h3>
               </div>
@@ -694,7 +808,7 @@ export function DashboardPage(): React.JSX.Element {
                 <li key={item.id} className="ops-notification-item">
                   <div className="ops-notification-header">
                     <span className={`ops-notice-tag ${item.badgeClass}`}>
-                      <span className="material-symbols-outlined">{item.icon}</span>
+                      <NoticeSymbolIcon icon={item.icon} />
                       <span>{item.priorityLabel}</span>
                     </span>
                     <span className="ops-notice-time">{item.time}</span>

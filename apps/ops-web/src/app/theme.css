@@ -921,6 +921,7 @@ th {
   height: 100%;
   display: inline-flex;
   align-items: center;
+  gap: 6px;
   padding: 0 12px;
   color: #64748b;
   border-bottom: 2px solid transparent;
@@ -2153,6 +2154,38 @@ th {
   color: #155e75;
 }
 
+.ops-func-cluster--analytics .ops-func-cluster-icon {
+  background: #ecfeff;
+  color: #0891b2;
+  border: 1px solid #a5f3fc;
+}
+.ops-func-cluster--analytics .ops-func-cluster-header:hover {
+  background: #f0fdfa;
+}
+.ops-func-cluster--analytics .ops-func-cluster-header--active {
+  color: #0e7490;
+}
+.ops-func-cluster--analytics .ops-func-cluster-header--active .ops-func-cluster-badge {
+  background: #cffafe;
+  color: #155e75;
+}
+
+.ops-func-cluster--planning .ops-func-cluster-icon {
+  background: #fdf4ff;
+  color: #a855f7;
+  border: 1px solid #f0abfc;
+}
+.ops-func-cluster--planning .ops-func-cluster-header:hover {
+  background: #faf5ff;
+}
+.ops-func-cluster--planning .ops-func-cluster-header--active {
+  color: #9333ea;
+}
+.ops-func-cluster--planning .ops-func-cluster-header--active .ops-func-cluster-badge {
+  background: #fae8ff;
+  color: #86198f;
+}
+
 .ops-func-cluster-items {
   display: flex;
   flex-direction: column;
@@ -3088,4 +3121,90 @@ th {
 
 .login-copyright-icons .material-symbols-outlined:hover {
   color: var(--stitch-primary);
+}
+
+.ops-cell-scrollable {
+  display: block;
+  overflow-x: auto;
+  white-space: nowrap;
+  user-select: text;
+  -webkit-user-select: text;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.ops-cell-scrollable::selection,
+.ops-cell-scrollable *::selection {
+  background-color: rgba(0, 82, 204, 0.25);
+  color: inherit;
+}
+
+.ops-cell-scrollable::-webkit-scrollbar {
+  height: 2px;
+  background: transparent;
+}
+
+.ops-cell-scrollable::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.ops-cell-scrollable::-webkit-scrollbar-thumb {
+  background: transparent;
+  border-radius: 2px;
+  transition: background-color 0.2s ease;
+}
+
+.ops-cell-scrollable:hover::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.25);
+}
+
+.ops-cell-scrollable::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.5);
+}
+
+.ops-shipments-table-shell::-webkit-scrollbar {
+  height: 5px;
+}
+
+.ops-shipments-table-shell::-webkit-scrollbar-track {
+  background: #f8fafc;
+  border-radius: 4px;
+}
+
+.ops-shipments-table-shell::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+
+.ops-shipments-table-shell::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+.table-col-resizer {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 8px;
+  height: 100%;
+  cursor: col-resize;
+  user-select: none;
+  -webkit-user-select: none;
+  z-index: 2;
+}
+
+.table-col-resizer::after {
+  content: '';
+  position: absolute;
+  right: 2px;
+  top: 25%;
+  bottom: 25%;
+  width: 2px;
+  background-color: transparent;
+  border-radius: 1px;
+  transition: background-color 0.15s ease;
+}
+
+.table-col-resizer:hover::after,
+.table-col-resizer:active::after {
+  background-color: var(--ops-primary, #0052cc);
 }

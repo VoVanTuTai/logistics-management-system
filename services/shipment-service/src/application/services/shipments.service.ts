@@ -19,7 +19,10 @@ import type {
   ShipmentListPage,
   UpdateShipmentInput,
 } from '../../domain/entities/shipment.entity';
-import type { ShipmentConsumedEventType } from '../../domain/entities/shipment-status.entity';
+import type {
+  ShipmentConsumedEventType,
+  ShipmentCurrentStatus,
+} from '../../domain/entities/shipment-status.entity';
 import { ShipmentRepository } from '../../domain/repositories/shipment.repository';
 import { ShipmentStateMachine } from '../../domain/state-machine/shipment-state-machine';
 import { MarketplaceWebhookSenderService } from '../../integrations/marketplace-webhook-sender.service';
@@ -109,15 +112,50 @@ export class ShipmentsService {
     const pickupCoords = extractPickupCoordinates(enrichedMetadata as unknown as JsonValue, pricedInput);
     const deliveryCoords = extractDeliveryCoordinates(enrichedMetadata as unknown as JsonValue, pricedInput);
 
+    const isCounterOrder = isCounterWalkInShipment(
+      enrichedMetadata,
+      pricedInput.createdByType,
+    );
+    const resolvedStatus: ShipmentCurrentStatus =
+      pricedInput.currentStatus ??
+      (isCounterOrder ? 'PICKUP_COMPLETED' : 'CREATED');
+
+    const metaRecord = asJsonRecord(enrichedMetadata);
+    const opCode =
+      metaRecord.operatorCode ||
+      (metaRecord.createdBy as Record<string, unknown> | undefined)?.username ||
+      pricedInput.createdByUserId ||
+      'OPS';
+    const opName =
+      metaRecord.operatorName ||
+      (metaRecord.createdBy as Record<string, unknown> | undefined)?.name ||
+      opCode;
+
+    const finalMetadata: JsonValue = isCounterOrder
+      ? ({
+          ...metaRecord,
+          intakeType: 'COUNTER_WALK_IN',
+          initialStatus: 'PICKUP_COMPLETED',
+          pickupClassification: 'COUNTER_DROP_OFF',
+          skipCourierPickup: true,
+          operatorCode: String(opCode),
+          operatorName: String(opName),
+          statusNote:
+            metaRecord.statusNote ||
+            `Đã tiếp nhận hàng trực tiếp tại quầy bưu cục bởi ${opName}`,
+        } as unknown as JsonValue)
+      : (enrichedMetadata as JsonValue);
+
     const inputWithOwnership: CreateShipmentInput = {
       ...pricedInput,
-      metadata: enrichedMetadata as JsonValue,
+      currentStatus: resolvedStatus,
+      metadata: finalMetadata,
       pickupLatitude: pickupCoords.latitude,
       pickupLongitude: pickupCoords.longitude,
       deliveryLatitude: deliveryCoords.latitude,
       deliveryLongitude: deliveryCoords.longitude,
-      createdByUserId: pricedInput.createdByUserId ?? null,
-      createdByType: pricedInput.createdByType ?? null,
+      createdByUserId: pricedInput.createdByUserId ?? (isCounterOrder ? String(opCode) : null),
+      createdByType: pricedInput.createdByType ?? (isCounterOrder ? 'OPS' : null),
       receiverPhone,
     };
 
@@ -598,6 +636,32 @@ export class ShipmentsService {
 
     return null;
   }
+}
+
+export function isCounterWalkInShipment(
+  metadata: unknown,
+  createdByType?: string | null,
+): boolean {
+  if (!metadata || typeof metadata !== 'object') {
+    return createdByType === 'OPS';
+  }
+  const meta = metadata as Record<string, unknown>;
+  const intakeType = meta.intakeType;
+  const initialStatus = meta.initialStatus;
+  const source = typeof meta.source === 'string' ? meta.source : '';
+  const platform = typeof meta.platform === 'string' ? meta.platform : '';
+  const pickupClassification = meta.pickupClassification;
+
+  return (
+    intakeType === 'COUNTER_WALK_IN' ||
+    initialStatus === 'PICKUP_COMPLETED' ||
+    pickupClassification === 'COUNTER_DROP_OFF' ||
+    meta.pickupType === 'COUNTER' ||
+    meta.skipCourierPickup === true ||
+    createdByType === 'OPS' ||
+    source.startsWith('ops-web') ||
+    platform.startsWith('OPS_')
+  );
 }
 
 function asJsonRecord(value: unknown): Record<string, JsonValue> {

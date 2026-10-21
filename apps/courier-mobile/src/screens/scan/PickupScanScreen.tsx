@@ -151,6 +151,7 @@ function readProcessingHubCode(metadata: ShipmentMetadata | null): string | null
 }
 
 function isHomePickupShipment(metadata: ShipmentMetadata | null): boolean {
+  const intakeType = normalizeOptionalCode(readMetadataString(metadata, ['intakeType']));
   const classification = normalizeOptionalCode(
     readMetadataString(metadata, [
       'pickup.classification',
@@ -160,6 +161,20 @@ function isHomePickupShipment(metadata: ShipmentMetadata | null): boolean {
     ]),
   );
   const source = normalizeOptionalCode(readMetadataString(metadata, ['source']));
+  const platform = normalizeOptionalCode(readMetadataString(metadata, ['platform']));
+  const skipCourierPickup = readMetadataPath(metadata, 'skipCourierPickup') === true;
+
+  if (
+    intakeType === 'COUNTER_WALK_IN' ||
+    classification === 'COUNTER_DROP_OFF' ||
+    classification === 'COUNTER' ||
+    skipCourierPickup ||
+    source?.startsWith('OPS') ||
+    platform?.startsWith('OPS')
+  ) {
+    return false;
+  }
+
   const pickupCode = readMetadataString(metadata, ['pickup.pickupCode', 'pickupCode']);
 
   return (
@@ -198,6 +213,24 @@ function validateShipmentForReceive(
 
   if (status === 'CANCELLED') {
     return `Đơn ${shipmentCode} đã bị hủy trước khi nhận hàng.`;
+  }
+
+  const metadata = shipment.metadata;
+  const isCounterOrder =
+    readMetadataString(metadata, ['intakeType']) === 'COUNTER_WALK_IN' ||
+    readMetadataString(metadata, ['pickupClassification']) === 'COUNTER_DROP_OFF' ||
+    readMetadataString(metadata, ['pickupType']) === 'COUNTER' ||
+    readMetadataString(metadata, ['source'])?.toUpperCase().startsWith('OPS') ||
+    readMetadataString(metadata, ['platform'])?.toUpperCase().startsWith('OPS') ||
+    readMetadataPath(metadata, 'skipCourierPickup') === true ||
+    shipment.createdByType === 'OPS';
+
+  if (isCounterOrder) {
+    const operatorName =
+      readMetadataString(metadata, ['operatorName', 'createdBy.name', 'intakeStaff.name']) ||
+      readMetadataString(metadata, ['operatorCode', 'createdBy.username', 'intakeStaff.username']) ||
+      'nhân viên giao dịch';
+    return `Đơn ${shipmentCode} được tạo tại quầy và đã tiếp nhận trực tiếp bởi ${operatorName}. Bưu tá không cần lấy đơn này.`;
   }
 
   if (input.currentLocation?.lastScanType || RECEIVED_OR_LATER_STATUSES.has(status)) {
@@ -263,7 +296,7 @@ function toErrorMessage(error: unknown): string {
   return error instanceof Error ? error.message : 'Có lỗi xảy ra.';
 }
 
-export function PickupScanScreen({ route }: Props): React.JSX.Element {
+export function PickupScanScreen({ route, navigation }: Props): React.JSX.Element {
   const session = useAppStore((state) => state.session);
   const setGlobalError = useAppStore((state) => state.setGlobalError);
   const getValidAccessToken = useAuthStore((state) => state.getValidAccessToken);
@@ -662,6 +695,11 @@ export function PickupScanScreen({ route }: Props): React.JSX.Element {
         });
       });
       setIsUploading(false);
+      if (route.params?.taskId) {
+        setTimeout(() => {
+          navigation.navigate('MainTabs', { screen: 'Tasks' });
+        }, 600);
+      }
       return;
     }
 
@@ -709,6 +747,11 @@ export function PickupScanScreen({ route }: Props): React.JSX.Element {
     });
 
     setIsUploading(false);
+    if (routeTaskCompleted && route.params?.taskId) {
+      setTimeout(() => {
+        navigation.navigate('MainTabs', { screen: 'Tasks' });
+      }, 800);
+    }
   };
 
   const cameraIsReady = permission?.granted === true;

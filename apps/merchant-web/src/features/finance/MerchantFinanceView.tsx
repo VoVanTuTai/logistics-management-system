@@ -1,10 +1,15 @@
-import React from 'react';
+import React, { useMemo, useState } from 'react';
 import type {
   FinancialLedgerEntry,
   MerchantBankProfile,
   SettlementBatch,
+  ShipmentRow,
 } from '../../types';
 import { formatCurrency, formatDate } from '../../api';
+import {
+  FinanceCardExplanationModal,
+  type FinanceExplanationTab,
+} from './FinanceCardExplanationModal';
 
 export interface FinanceInsightsProps {
   netBalance: number;
@@ -15,6 +20,7 @@ export interface FinanceInsightsProps {
 
 export interface MerchantFinanceViewProps {
   insights: FinanceInsightsProps;
+  shipmentRows?: ShipmentRow[];
   merchantBankProfile: MerchantBankProfile;
   settlementBatches: SettlementBatch[];
   financialLedger: FinancialLedgerEntry[];
@@ -34,8 +40,30 @@ export interface MerchantFinanceViewProps {
   onOpenShipmentDetail: (shipmentCode: string) => void;
 }
 
+function InfoExclamationIcon(): React.JSX.Element {
+  return (
+    <svg
+      width="15"
+      height="15"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.4"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className="finance-info-exclamation-svg"
+      aria-hidden="true"
+    >
+      <circle cx="12" cy="12" r="10" />
+      <line x1="12" y1="8" x2="12" y2="12" />
+      <line x1="12" y1="16" x2="12.01" y2="16" />
+    </svg>
+  );
+}
+
 export function MerchantFinanceView({
   insights,
+  shipmentRows = [],
   merchantBankProfile,
   settlementBatches,
   financialLedger,
@@ -54,6 +82,138 @@ export function MerchantFinanceView({
   onSelectSettlementBatch,
   onOpenShipmentDetail,
 }: MerchantFinanceViewProps): React.JSX.Element {
+  // Current month key (format YYYY-MM)
+  const currentMonthKey = useMemo(() => {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  }, []);
+
+  // Time filter bar state (default is current month)
+  const [selectedMonth, setSelectedMonth] = useState<string>(() => {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  });
+
+  // Beginner-friendly explanation modal state
+  const [isExplanationModalOpen, setIsExplanationModalOpen] = useState<boolean>(false);
+  const [explanationInitialTab, setExplanationInitialTab] = useState<FinanceExplanationTab>('lifecycle');
+
+  const openExplanation = (tab: FinanceExplanationTab) => {
+    setExplanationInitialTab(tab);
+    setIsExplanationModalOpen(true);
+  };
+
+  const getRelativeMonth = (ym: string, delta: number) => {
+    const base = ym === 'all' ? currentMonthKey : ym;
+    const [year, month] = base.split('-').map(Number);
+    const d = new Date(year, month - 1 + delta, 1);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+  };
+
+  const prevMonthKey = useMemo(() => getRelativeMonth(currentMonthKey, -1), [currentMonthKey]);
+
+  const handlePrevMonth = () => {
+    setSelectedMonth((prev) => getRelativeMonth(prev === 'all' ? currentMonthKey : prev, -1));
+  };
+
+  const handleNextMonth = () => {
+    setSelectedMonth((prev) => getRelativeMonth(prev === 'all' ? currentMonthKey : prev, 1));
+  };
+
+  const formatMonthLabel = (ym: string) => {
+    if (ym === 'all') return 'Toàn bộ thời gian';
+    const [year, month] = ym.split('-');
+    return `Tháng ${month}/${year}`;
+  };
+
+  const getDateRangeString = (ym: string) => {
+    if (ym === 'all') return 'Toàn bộ kỳ đối soát từ trước đến nay';
+    const [year, month] = ym.split('-').map(Number);
+    const lastDay = new Date(year, month, 0).getDate();
+    return `01/${String(month).padStart(2, '0')}/${year} – ${String(lastDay).padStart(2, '0')}/${String(month).padStart(2, '0')}/${year}`;
+  };
+
+  // Filter shipments for the selected period
+  const filteredShipments = useMemo(() => {
+    if (!shipmentRows || shipmentRows.length === 0) return [];
+    if (selectedMonth === 'all') return shipmentRows;
+    return shipmentRows.filter((row) => {
+      const raw = row.shipment.createdAt || row.shipment.updatedAt || '';
+      return raw.startsWith(selectedMonth);
+    });
+  }, [shipmentRows, selectedMonth]);
+
+  // Business logic computation:
+  // - COD đang giao: các đơn hàng đang giao trong kỳ (chưa giao, chưa hủy/hoàn)
+  // - Khi đơn giao thành công (DELIVERED):
+  //     + COD đang giao GIẢM
+  //     + COD đã thu TĂNG (+row.codAmount)
+  //     + Cước phát sinh trong kỳ TĂNG (+row.feeEstimate)
+  //     + Số dư ròng khả dụng = COD đã thu - Cước phát sinh trong kỳ
+  const effectiveMetrics = useMemo(() => {
+    if (shipmentRows && shipmentRows.length > 0) {
+      let deliveredCod = 0;
+      let deliveringCod = 0;
+      let incurredFee = 0;
+
+      for (const row of filteredShipments) {
+        const status = String(row.shipment.currentStatus ?? '').toUpperCase();
+        const isDelivered = status === 'DELIVERED';
+        const isCancelled = status === 'CANCELLED';
+        const isReturned = status.includes('RETURN');
+        const isFailed = status.includes('FAIL');
+
+        if (isDelivered) {
+          deliveredCod += row.codAmount || 0;
+          incurredFee += row.feeEstimate || 0;
+        } else if (!isCancelled && !isReturned && !isFailed) {
+          deliveringCod += row.codAmount || 0;
+        } else if (isReturned) {
+          incurredFee += Math.round((row.feeEstimate || 0) * 0.5);
+        }
+      }
+
+      const netBalance = deliveredCod - incurredFee;
+
+      return {
+        netBalance,
+        deliveredCod,
+        deliveringCod,
+        incurredFee,
+        orderCount: filteredShipments.length,
+        hasData: true,
+      };
+    }
+
+    // Fallback if shipmentRows is not yet populated
+    return {
+      netBalance: insights.netBalance,
+      deliveredCod: insights.deliveredCod,
+      deliveringCod: Math.max(0, insights.totalCod - insights.deliveredCod),
+      incurredFee: insights.totalFee,
+      orderCount: 0,
+      hasData: false,
+    };
+  }, [shipmentRows, filteredShipments, insights]);
+
+  // Filter batches and ledger by month
+  const displayBatches = useMemo(() => {
+    if (selectedMonth === 'all') return settlementBatches;
+    return settlementBatches.filter((b) => {
+      const from = b.fromDate || '';
+      const to = b.toDate || '';
+      return from.startsWith(selectedMonth) || to.startsWith(selectedMonth);
+    });
+  }, [settlementBatches, selectedMonth]);
+
+  const displayLedger = useMemo(() => {
+    if (selectedMonth === 'all') return financialLedger;
+    return financialLedger.filter((entry) => {
+      const occurred = entry.occurredAt || '';
+      return occurred.startsWith(selectedMonth);
+    });
+  }, [financialLedger, selectedMonth]);
+
   return (
     <section className="finance-layout">
       {/* Top Header Banner */}
@@ -100,7 +260,7 @@ export function MerchantFinanceView({
           </button>
           <button
             type="button"
-            className={`btn ${insights.netBalance < 0 ? 'btn-danger' : 'btn-primary'}`}
+            className={`btn ${effectiveMetrics.netBalance < 0 ? 'btn-danger' : 'btn-primary'}`}
             onClick={onShowTopupModal}
           >
             <span
@@ -109,7 +269,106 @@ export function MerchantFinanceView({
             >
               qr_code_2
             </span>
-            <span>{insights.netBalance < 0 ? 'Thanh toán nợ cước' : 'Nạp tiền VietQR'}</span>
+            <span>{effectiveMetrics.netBalance < 0 ? 'Thanh toán nợ cước' : 'Nạp tiền VietQR'}</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Modern Time Filter Bar (Thanh thời gian xem báo cáo tài chính) */}
+      <div className="finance-period-bar">
+        <div className="finance-period-bar__left">
+          <div className="finance-period-title-group">
+            <div className="finance-period-icon-wrap">
+              <span className="material-symbols-outlined">date_range</span>
+            </div>
+            <div>
+              <div className="finance-period-label">Kỳ báo cáo tài chính</div>
+              <div className="finance-period-current-text">
+                {formatMonthLabel(selectedMonth)}
+              </div>
+            </div>
+          </div>
+
+          {/* Month Navigator & Picker */}
+          <div className="finance-period-nav">
+            <button
+              type="button"
+              className="finance-nav-btn"
+              onClick={handlePrevMonth}
+              title="Tháng trước"
+              aria-label="Xem báo cáo tháng trước"
+            >
+              <span className="material-symbols-outlined">chevron_left</span>
+            </button>
+
+            <div className="finance-month-input-container" title="Bấm để chọn tháng & năm bất kỳ">
+              <input
+                type="month"
+                className="finance-month-input"
+                value={selectedMonth === 'all' ? currentMonthKey : selectedMonth}
+                onChange={(e) => setSelectedMonth(e.target.value)}
+                aria-label="Chọn tháng và năm xem báo cáo tài chính"
+              />
+              <span className="material-symbols-outlined finance-month-calendar-icon">calendar_month</span>
+            </div>
+
+            <button
+              type="button"
+              className="finance-nav-btn"
+              onClick={handleNextMonth}
+              title="Tháng sau"
+              aria-label="Xem báo cáo tháng sau"
+            >
+              <span className="material-symbols-outlined">chevron_right</span>
+            </button>
+          </div>
+
+          {/* Quick Filter Pills */}
+          <div className="finance-quick-pills">
+            <button
+              type="button"
+              className={`finance-quick-pill ${selectedMonth === currentMonthKey ? 'finance-quick-pill--active' : ''}`}
+              onClick={() => setSelectedMonth(currentMonthKey)}
+            >
+              Tháng này
+            </button>
+            <button
+              type="button"
+              className={`finance-quick-pill ${selectedMonth === prevMonthKey ? 'finance-quick-pill--active' : ''}`}
+              onClick={() => setSelectedMonth(prevMonthKey)}
+            >
+              Tháng trước
+            </button>
+            <button
+              type="button"
+              className={`finance-quick-pill ${selectedMonth === 'all' ? 'finance-quick-pill--active' : ''}`}
+              onClick={() => setSelectedMonth('all')}
+            >
+              Tất cả
+            </button>
+          </div>
+        </div>
+
+        <div className="finance-period-bar__right">
+          <div className="finance-period-meta-badge">
+            <span className="finance-period-pulse-dot" />
+            <span className="finance-period-daterange-text">{getDateRangeString(selectedMonth)}</span>
+            <span className="finance-period-sep">•</span>
+            <span className="finance-period-orders-count">
+              <strong>{effectiveMetrics.orderCount}</strong> đơn trong kỳ
+            </span>
+          </div>
+
+          <button
+            type="button"
+            className="finance-guide-btn"
+            onClick={() => openExplanation('lifecycle')}
+            title="Xem cẩm nang & sơ đồ luồng tiền dành cho người không chuyên"
+          >
+            <span className="finance-guide-btn-icon">
+              <InfoExclamationIcon />
+            </span>
+            <span>Cẩm nang dòng tiền</span>
           </button>
         </div>
       </div>
@@ -119,37 +378,48 @@ export function MerchantFinanceView({
         {/* 1. Số dư ròng khả dụng */}
         <div className="finance-kpi-card">
           <div className="finance-kpi-card__top">
-            <span className="finance-kpi-card__label">Số dư ròng khả dụng</span>
+            <div className="finance-kpi-card__label-wrap">
+              <span className="finance-kpi-card__label">Số dư ròng khả dụng</span>
+              <button
+                type="button"
+                className="finance-kpi-info-btn"
+                onClick={() => openExplanation('netBalance')}
+                title="Bấm để xem giải thích chi tiết: Số dư ròng = COD đã thu - Cước phát sinh"
+                aria-label="Xem giải thích chi tiết Số dư ròng khả dụng"
+              >
+                <InfoExclamationIcon />
+              </button>
+            </div>
             <div
               className={`finance-kpi-card__icon ${
-                insights.netBalance >= 0
+                effectiveMetrics.netBalance >= 0
                   ? 'finance-kpi-card__icon--success'
                   : 'finance-kpi-card__icon--danger'
               }`}
             >
               <span className="material-symbols-outlined">
-                {insights.netBalance >= 0 ? 'account_balance' : 'warning'}
+                {effectiveMetrics.netBalance >= 0 ? 'account_balance' : 'warning'}
               </span>
             </div>
           </div>
           <div
             className="finance-kpi-card__value"
-            style={{ color: insights.netBalance >= 0 ? '#127a56' : '#ba1a1a' }}
+            style={{ color: effectiveMetrics.netBalance >= 0 ? '#127a56' : '#ba1a1a' }}
           >
-            {formatCurrency(insights.netBalance)}
+            {formatCurrency(effectiveMetrics.netBalance)}
           </div>
           <div className="finance-kpi-card__footer">
             <span
               className="material-symbols-outlined"
               style={{
                 fontSize: '15px',
-                color: insights.netBalance >= 0 ? '#127a56' : '#ba1a1a',
+                color: effectiveMetrics.netBalance >= 0 ? '#127a56' : '#ba1a1a',
               }}
             >
-              {insights.netBalance >= 0 ? 'check_circle' : 'error'}
+              {effectiveMetrics.netBalance >= 0 ? 'check_circle' : 'error'}
             </span>
             <span>
-              {insights.netBalance >= 0
+              {effectiveMetrics.netBalance >= 0
                 ? 'Đã cấn trừ cước • Sẵn sàng chi trả'
                 : 'Vượt hạn mức nợ (-500.000đ)'}
             </span>
@@ -159,13 +429,24 @@ export function MerchantFinanceView({
         {/* 2. COD đã thu */}
         <div className="finance-kpi-card">
           <div className="finance-kpi-card__top">
-            <span className="finance-kpi-card__label">COD đã thu (Chờ chi)</span>
+            <div className="finance-kpi-card__label-wrap">
+              <span className="finance-kpi-card__label">COD đã thu (Chờ chi)</span>
+              <button
+                type="button"
+                className="finance-kpi-info-btn"
+                onClick={() => openExplanation('deliveredCod')}
+                title="Bấm để xem giải thích chi tiết COD đã thu"
+                aria-label="Xem giải thích chi tiết COD đã thu"
+              >
+                <InfoExclamationIcon />
+              </button>
+            </div>
             <div className="finance-kpi-card__icon finance-kpi-card__icon--primary">
               <span className="material-symbols-outlined">payments</span>
             </div>
           </div>
           <div className="finance-kpi-card__value" style={{ color: '#0052cc' }}>
-            {formatCurrency(insights.deliveredCod)}
+            {formatCurrency(effectiveMetrics.deliveredCod)}
           </div>
           <div className="finance-kpi-card__footer">
             <span
@@ -181,13 +462,24 @@ export function MerchantFinanceView({
         {/* 3. COD đang giao */}
         <div className="finance-kpi-card">
           <div className="finance-kpi-card__top">
-            <span className="finance-kpi-card__label">COD đang giao (Dự kiến)</span>
+            <div className="finance-kpi-card__label-wrap">
+              <span className="finance-kpi-card__label">COD đang giao (Dự kiến)</span>
+              <button
+                type="button"
+                className="finance-kpi-info-btn"
+                onClick={() => openExplanation('deliveringCod')}
+                title="Bấm để xem giải thích chi tiết COD đang giao"
+                aria-label="Xem giải thích chi tiết COD đang giao"
+              >
+                <InfoExclamationIcon />
+              </button>
+            </div>
             <div className="finance-kpi-card__icon finance-kpi-card__icon--info">
               <span className="material-symbols-outlined">local_shipping</span>
             </div>
           </div>
           <div className="finance-kpi-card__value" style={{ color: '#0059b8' }}>
-            {formatCurrency(Math.max(0, insights.totalCod - insights.deliveredCod))}
+            {formatCurrency(effectiveMetrics.deliveringCod)}
           </div>
           <div className="finance-kpi-card__footer">
             <span
@@ -203,13 +495,24 @@ export function MerchantFinanceView({
         {/* 4. Cước vận chuyển phát sinh */}
         <div className="finance-kpi-card">
           <div className="finance-kpi-card__top">
-            <span className="finance-kpi-card__label">Cước phát sinh trong kỳ</span>
+            <div className="finance-kpi-card__label-wrap">
+              <span className="finance-kpi-card__label">Cước phát sinh trong kỳ</span>
+              <button
+                type="button"
+                className="finance-kpi-info-btn"
+                onClick={() => openExplanation('incurredFee')}
+                title="Bấm để xem giải thích chi tiết Cước phát sinh trong kỳ"
+                aria-label="Xem giải thích chi tiết Cước phát sinh trong kỳ"
+              >
+                <InfoExclamationIcon />
+              </button>
+            </div>
             <div className="finance-kpi-card__icon finance-kpi-card__icon--danger">
               <span className="material-symbols-outlined">receipt_long</span>
             </div>
           </div>
           <div className="finance-kpi-card__value" style={{ color: '#ba1a1a' }}>
-            {formatCurrency(insights.totalFee)}
+            {formatCurrency(effectiveMetrics.incurredFee)}
           </div>
           <div className="finance-kpi-card__footer">
             <span className="material-symbols-outlined" style={{ fontSize: '15px', color: '#7c8aa2' }}>
@@ -244,7 +547,7 @@ export function MerchantFinanceView({
           <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>
             fact_check
           </span>
-          <span>Kỳ đối soát & Bảng kê ({settlementBatches.length})</span>
+          <span>Kỳ đối soát & Bảng kê ({displayBatches.length})</span>
         </button>
         <button
           type="button"
@@ -256,7 +559,7 @@ export function MerchantFinanceView({
           <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>
             history_edu
           </span>
-          <span>Sổ cái biến động số dư ({financialLedger.length})</span>
+          <span>Sổ cái biến động số dư ({displayLedger.length})</span>
         </button>
         <button
           type="button"
@@ -494,13 +797,39 @@ export function MerchantFinanceView({
                 </tr>
               </thead>
               <tbody>
-                {settlementBatches
-                  .filter(
-                    (b) =>
-                      financeBatchStatusFilter === 'ALL' || b.status === financeBatchStatusFilter,
-                  )
-                  .map((batch) => (
-                    <tr key={batch.id}>
+                {displayBatches.length === 0 ? (
+                  <tr>
+                    <td
+                      colSpan={9}
+                      style={{ textAlign: 'center', padding: '36px 16px', color: '#64748b' }}
+                    >
+                      <span
+                        className="material-symbols-outlined"
+                        style={{ fontSize: '32px', color: '#94a3b8', display: 'block', marginBottom: '8px' }}
+                      >
+                        event_busy
+                      </span>
+                      <div>Không có phiên đối soát nào trong {formatMonthLabel(selectedMonth)}</div>
+                      {selectedMonth !== 'all' && (
+                        <button
+                          type="button"
+                          className="btn btn-secondary"
+                          style={{ marginTop: '12px', fontSize: '12px' }}
+                          onClick={() => setSelectedMonth('all')}
+                        >
+                          Xem tất cả các tháng
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                ) :
+                  displayBatches
+                    .filter(
+                      (b) =>
+                        financeBatchStatusFilter === 'ALL' || b.status === financeBatchStatusFilter,
+                    )
+                    .map((batch) => (
+                      <tr key={batch.id}>
                       <td>
                         <span className="code-pill">{batch.code}</span>
                       </td>
@@ -612,6 +941,7 @@ export function MerchantFinanceView({
                 <option value="SHIPPING_FEE">Cước vận chuyển (-)</option>
                 <option value="RETURN_FEE">Cước hoàn hàng (-)</option>
                 <option value="CLAIM_COMPENSATION">Bồi thường khiếu nại (+)</option>
+                <option value="PICKUP_SLA_COMPENSATION">Bồi hoàn lấy trễ SLA (+)</option>
               </select>
               <button type="button" className="btn btn-secondary" onClick={exportAllLedgerCsv}>
                 <span
@@ -639,8 +969,34 @@ export function MerchantFinanceView({
                 </tr>
               </thead>
               <tbody>
-                {financialLedger
-                  .filter((entry) => {
+                {displayLedger.length === 0 ? (
+                  <tr>
+                    <td
+                      colSpan={7}
+                      style={{ textAlign: 'center', padding: '36px 16px', color: '#64748b' }}
+                    >
+                      <span
+                        className="material-symbols-outlined"
+                        style={{ fontSize: '32px', color: '#94a3b8', display: 'block', marginBottom: '8px' }}
+                      >
+                        history_toggle_off
+                      </span>
+                      <div>Không có giao dịch sổ cái nào trong {formatMonthLabel(selectedMonth)}</div>
+                      {selectedMonth !== 'all' && (
+                        <button
+                          type="button"
+                          className="btn btn-secondary"
+                          style={{ marginTop: '12px', fontSize: '12px' }}
+                          onClick={() => setSelectedMonth('all')}
+                        >
+                          Xem tất cả các tháng
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                ) :
+                  displayLedger
+                    .filter((entry) => {
                     if (
                       financeLedgerTypeFilter !== 'ALL' &&
                       entry.type !== financeLedgerTypeFilter
@@ -676,6 +1032,18 @@ export function MerchantFinanceView({
                         ) : entry.type === 'CLAIM_COMPENSATION' ? (
                           <span className="finance-badge finance-badge--paid">
                             Bồi thường sự cố
+                          </span>
+                        ) : entry.type === 'PICKUP_SLA_COMPENSATION' ? (
+                          <span
+                            className="finance-badge"
+                            style={{
+                              backgroundColor: '#ecfdf5',
+                              color: '#047857',
+                              border: '1px solid #a7f3d0',
+                              fontWeight: 700,
+                            }}
+                          >
+                            Bồi hoàn lấy trễ
                           </span>
                         ) : (
                           <span className="finance-badge finance-badge--pending">{entry.type}</span>
@@ -719,17 +1087,6 @@ export function MerchantFinanceView({
                       </td>
                     </tr>
                   ))}
-                {financialLedger.length === 0 ? (
-                  <tr>
-                    <td
-                      colSpan={7}
-                      style={{ textAlign: 'center', padding: '32px' }}
-                      className="muted"
-                    >
-                      Chưa phát sinh giao dịch tài chính nào trong kỳ.
-                    </td>
-                  </tr>
-                ) : null}
               </tbody>
             </table>
           </div>
@@ -923,6 +1280,15 @@ export function MerchantFinanceView({
           </div>
         </div>
       ) : null}
+
+      {/* Beginner-friendly Explanation Modal for Non-specialists */}
+      <FinanceCardExplanationModal
+        isOpen={isExplanationModalOpen}
+        onClose={() => setIsExplanationModalOpen(false)}
+        initialTab={explanationInitialTab}
+        onOpenBankModal={onOpenEditBankModal}
+        onOpenTopupModal={onShowTopupModal}
+      />
     </section>
   );
 }
