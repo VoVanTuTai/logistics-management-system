@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { MapPin } from 'lucide-react';
 
 import { opsApiClient } from '../../services/api/client';
 import { opsEndpoints } from '../../services/api/endpoints';
@@ -193,7 +194,10 @@ export function CourierLocationCard({
   if (loadState === 'idle' || loadState === 'loading') {
     return (
       <article style={styles.card}>
-        <h3 style={styles.heading}>📍 Vị trí GPS gần nhất</h3>
+        <h3 style={styles.heading}>
+          <MapPin size={15} style={{ marginRight: 6, verticalAlign: 'middle', display: 'inline-block', color: '#0284c7' }} aria-hidden="true" />
+          Vị trí GPS gần nhất
+        </h3>
         <p style={styles.loadingText}>Đang tải vị trí...</p>
       </article>
     );
@@ -202,7 +206,10 @@ export function CourierLocationCard({
   if (loadState === 'empty') {
     return (
       <article style={styles.card}>
-        <h3 style={styles.heading}>📍 Vị trí GPS gần nhất</h3>
+        <h3 style={styles.heading}>
+          <MapPin size={15} style={{ marginRight: 6, verticalAlign: 'middle', display: 'inline-block', color: '#0284c7' }} aria-hidden="true" />
+          Vị trí GPS gần nhất
+        </h3>
         <p style={styles.emptyText}>Chưa có dữ liệu GPS cho vận đơn này.</p>
       </article>
     );
@@ -211,7 +218,10 @@ export function CourierLocationCard({
   if (loadState === 'error') {
     return (
       <article style={styles.card}>
-        <h3 style={styles.heading}>📍 Vị trí GPS gần nhất</h3>
+        <h3 style={styles.heading}>
+          <MapPin size={15} style={{ marginRight: 6, verticalAlign: 'middle', display: 'inline-block', color: '#0284c7' }} aria-hidden="true" />
+          Vị trí GPS gần nhất
+        </h3>
         <p style={styles.errorText}>{errorMessage}</p>
         <button type="button" style={styles.retryButton} onClick={() => { void fetchPosition(); void fetchHistory(); }}>
           Thử lại
@@ -227,7 +237,10 @@ export function CourierLocationCard({
   return (
     <article style={styles.card}>
       <div style={styles.headerRow}>
-        <h3 style={styles.heading}>📍 Vị trí GPS gần nhất</h3>
+        <h3 style={styles.heading}>
+          <MapPin size={15} style={{ marginRight: 6, verticalAlign: 'middle', display: 'inline-block', color: '#0284c7' }} aria-hidden="true" />
+          Vị trí GPS gần nhất
+        </h3>
         <span style={styles.liveBadge}>
           <span style={styles.liveDot} />
           LIVE

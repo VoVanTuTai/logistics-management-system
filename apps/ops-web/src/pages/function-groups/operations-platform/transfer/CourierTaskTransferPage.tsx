@@ -1,9 +1,26 @@
 import React, { useMemo, useState } from 'react';
+import { ArrowRightLeft } from 'lucide-react';
 import { useShipmentPageQuery } from '../../../../features/shipments/shipments.api';
 import { useCourierOptionsQuery } from '../../../../features/tasks/tasks.api';
 import { useAuthStore } from '../../../../store/authStore';
 import { useCourierTransferStore, TransferShipmentItem } from '../../../../store/courierTransferStore';
 import { formatDateTime } from '../../../../utils/format';
+import { CopyableShipmentCode } from '../../../shared/CopyableShipmentCode';
+import { useResizableColumns } from '../../../../hooks/useResizableColumns';
+
+const DEFAULT_TRANSFER_COL_WIDTHS = {
+  code: 160,
+  courier: 200,
+  receiver: 260,
+  status: 160,
+};
+
+const MIN_TRANSFER_COL_WIDTHS = {
+  code: 120,
+  courier: 140,
+  receiver: 180,
+  status: 120,
+};
 
 export function CourierTaskTransferPage(): React.JSX.Element {
   const accessToken = useAuthStore((state) => state.session?.tokens.accessToken ?? null);
@@ -21,6 +38,12 @@ export function CourierTaskTransferPage(): React.JSX.Element {
 
   const shipmentQuery = useShipmentPageQuery(accessToken, { limit: 100 });
   const courierOptionsQuery = useCourierOptionsQuery(accessToken);
+
+  const { widths, handleMouseDown, resetColumnWidth } = useResizableColumns(
+    'ops_courier_transfer_col_widths_v2',
+    DEFAULT_TRANSFER_COL_WIDTHS,
+    MIN_TRANSFER_COL_WIDTHS,
+  );
 
   const allShipments = shipmentQuery.data?.items ?? [];
   const courierOptions = courierOptionsQuery.data ?? [];
@@ -157,9 +180,7 @@ export function CourierTaskTransferPage(): React.JSX.Element {
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
-          <span className="material-symbols-outlined" style={{ fontSize: '20px', color: '#38bdf8' }}>
-            move_up
-          </span>
+          <ArrowRightLeft size={18} style={{ color: '#38bdf8' }} />
           <span style={{ fontSize: '12px', fontWeight: 700, color: '#7dd3fc', letterSpacing: '0.5px' }}>
             NỀN TẢNG ĐIỀU HÀNH — QUẢN LÝ CHUYỂN ĐƠN BÀN GIAO
           </span>
@@ -226,21 +247,69 @@ export function CourierTaskTransferPage(): React.JSX.Element {
             </div>
           </div>
 
-          <div style={{ overflowX: 'auto', border: '1px solid #e2e8f0', borderRadius: '8px' }}>
+          <div
+            className="ops-shipments-table-shell"
+            style={{
+              overflowX: 'auto',
+              border: '1px solid #d9def3',
+              borderRadius: '8px',
+              backgroundColor: '#ffffff',
+              boxShadow: '0 1px 3px rgba(0, 0, 0, 0.05)',
+            }}
+          >
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px', textAlign: 'left' }}>
               <thead>
-                <tr style={{ backgroundColor: '#f8fafc', borderBottom: '1px solid #e2e8f0', color: '#475569' }}>
-                  <th style={{ padding: '10px 12px', width: '40px' }}>
+                <tr style={{ backgroundColor: '#f8faff', borderBottom: '1px solid #d9def3', color: '#1f2b6f' }}>
+                  <th style={{ padding: '8px 12px', width: '44px', minWidth: '44px', maxWidth: '44px', textAlign: 'center' }}>
                     <input
                       type="checkbox"
-                      checked={matchedShipments.length > 0 && selectedCodes.length === matchedShipments.length}
+                      aria-label="Chọn tất cả đơn có thể chuyển"
+                      checked={transferableShipments.length > 0 && selectedCodes.length === transferableShipments.length}
+                      ref={(input) => {
+                        if (input) {
+                          input.indeterminate =
+                            selectedCodes.length > 0 && selectedCodes.length < transferableShipments.length;
+                        }
+                      }}
                       onChange={toggleSelectAll}
                     />
                   </th>
-                  <th style={{ padding: '10px 12px', fontWeight: 700 }}>Mã VĐ</th>
-                  <th style={{ padding: '10px 12px', fontWeight: 700 }}>Courier Đảm Nhận</th>
-                  <th style={{ padding: '10px 12px', fontWeight: 700 }}>Người Nhận & Địa Chỉ</th>
-                  <th style={{ padding: '10px 12px', fontWeight: 700 }}>Trạng Thái</th>
+                  <th style={{ width: widths.code, minWidth: widths.code, maxWidth: widths.code, padding: '8px 12px', fontSize: '12px', fontWeight: 800, textTransform: 'uppercase', position: 'relative' }}>
+                    <span>Mã Vận Đơn</span>
+                    <span
+                      className="table-col-resizer"
+                      title="Kéo chuột để chỉnh độ rộng (Nhấp đúp để đặt lại)"
+                      onMouseDown={(e) => handleMouseDown('code', e)}
+                      onDoubleClick={() => resetColumnWidth('code')}
+                    />
+                  </th>
+                  <th style={{ width: widths.courier, minWidth: widths.courier, maxWidth: widths.courier, padding: '8px 12px', fontSize: '12px', fontWeight: 800, textTransform: 'uppercase', position: 'relative' }}>
+                    <span>Courier Đảm Nhận</span>
+                    <span
+                      className="table-col-resizer"
+                      title="Kéo chuột để chỉnh độ rộng (Nhấp đúp để đặt lại)"
+                      onMouseDown={(e) => handleMouseDown('courier', e)}
+                      onDoubleClick={() => resetColumnWidth('courier')}
+                    />
+                  </th>
+                  <th style={{ width: widths.receiver, minWidth: widths.receiver, maxWidth: widths.receiver, padding: '8px 12px', fontSize: '12px', fontWeight: 800, textTransform: 'uppercase', position: 'relative' }}>
+                    <span>Người Nhận & Địa Chỉ</span>
+                    <span
+                      className="table-col-resizer"
+                      title="Kéo chuột để chỉnh độ rộng (Nhấp đúp để đặt lại)"
+                      onMouseDown={(e) => handleMouseDown('receiver', e)}
+                      onDoubleClick={() => resetColumnWidth('receiver')}
+                    />
+                  </th>
+                  <th style={{ width: widths.status, minWidth: widths.status, maxWidth: widths.status, padding: '8px 12px', fontSize: '12px', fontWeight: 800, textTransform: 'uppercase', position: 'relative' }}>
+                    <span>Trạng Thái</span>
+                    <span
+                      className="table-col-resizer"
+                      title="Kéo chuột để chỉnh độ rộng (Nhấp đúp để đặt lại)"
+                      onMouseDown={(e) => handleMouseDown('status', e)}
+                      onDoubleClick={() => resetColumnWidth('status')}
+                    />
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -254,30 +323,41 @@ export function CourierTaskTransferPage(): React.JSX.Element {
                   matchedShipments.map((s) => {
                     const transferable = isTransferableStatus(s.currentStatus);
                     const badge = getStatusBadge(s.currentStatus);
+                    const isSelected = selectedCodes.includes(s.shipmentCode);
                     return (
-                      <tr key={s.shipmentCode} style={{ borderBottom: '1px solid #f1f5f9', opacity: transferable ? 1 : 0.65 }}>
-                        <td style={{ padding: '10px 12px' }}>
+                      <tr
+                        key={s.shipmentCode}
+                        style={{
+                          borderBottom: '1px solid #e7ebf8',
+                          opacity: transferable ? 1 : 0.65,
+                          backgroundColor: isSelected ? '#f3f7ff' : undefined,
+                        }}
+                      >
+                        <td style={{ padding: '6px 12px', textAlign: 'center', width: '44px' }}>
                           <input
                             type="checkbox"
                             disabled={!transferable}
-                            checked={selectedCodes.includes(s.shipmentCode)}
+                            checked={isSelected}
                             onChange={() => toggleSelectCode(s.shipmentCode)}
+                            aria-label={`Chọn ${s.shipmentCode}`}
                           />
                         </td>
-                        <td style={{ padding: '10px 12px', fontWeight: 700, fontFamily: 'monospace', color: '#0f172a' }}>
-                          {s.shipmentCode}
+                        <td style={{ padding: '6px 12px', width: widths.code, maxWidth: widths.code }}>
+                          <CopyableShipmentCode code={s.shipmentCode} />
                         </td>
-                        <td style={{ padding: '10px 12px', color: '#475569' }}>
-                          <span style={{ padding: '2px 8px', borderRadius: '10px', backgroundColor: '#f1f5f9', fontSize: '11px', fontWeight: 600 }}>
+                        <td style={{ padding: '6px 12px', width: widths.courier, maxWidth: widths.courier, color: '#475569' }}>
+                          <span style={{ padding: '2px 8px', borderRadius: '4px', backgroundColor: '#f1f5f9', fontSize: '11px', fontWeight: 600, border: '1px solid #e2e8f0' }}>
                             30000001 (Nguyễn Văn Minh)
                           </span>
                         </td>
-                        <td style={{ padding: '10px 12px' }}>
-                          <div style={{ fontWeight: 600 }}>{s.receiverName ?? 'N/A'}</div>
-                          <div style={{ fontSize: '11px', color: '#64748b' }}>{s.receiverAddress ?? 'N/A'}</div>
+                        <td style={{ padding: '6px 12px', width: widths.receiver, maxWidth: widths.receiver }}>
+                          <div style={{ fontWeight: 700, color: '#0f172a' }}>{s.receiverName ?? 'N/A'}</div>
+                          <div style={{ fontSize: '11px', color: '#64748b', whiteSpace: 'normal', lineHeight: 1.35 }}>
+                            {s.receiverAddress ?? 'N/A'}
+                          </div>
                         </td>
-                        <td style={{ padding: '10px 12px' }}>
-                          <span style={{ padding: '3px 9px', borderRadius: '12px', backgroundColor: badge.bg, color: badge.color, fontSize: '11px', fontWeight: 700 }}>
+                        <td style={{ padding: '6px 12px', width: widths.status, maxWidth: widths.status }}>
+                          <span style={{ padding: '2px 8px', borderRadius: '4px', backgroundColor: badge.bg, color: badge.color, fontSize: '11px', fontWeight: 700, border: '1px solid rgba(0,0,0,0.06)' }}>
                             {badge.label}
                           </span>
                         </td>

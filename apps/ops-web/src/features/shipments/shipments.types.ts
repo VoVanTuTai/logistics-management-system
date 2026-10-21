@@ -68,6 +68,7 @@ export interface ShipmentDetailDto {
 
 export interface CreateShipmentInput {
   code?: string | null;
+  currentStatus?: string | null;
   pickupLatitude?: number | null;
   pickupLongitude?: number | null;
   deliveryLatitude?: number | null;

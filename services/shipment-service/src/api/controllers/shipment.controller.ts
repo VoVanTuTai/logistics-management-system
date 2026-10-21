@@ -216,14 +216,46 @@ function getHeaderList(request: ScopedRequest, name: string): string[] {
 function getAuthenticatedOwnerContext(
   request: ScopedRequest,
   body: CreateShipmentInput,
-): { createdByUserId: string | null; createdByType: 'MERCHANT' | 'CUSTOMER' | null } {
+): { createdByUserId: string | null; createdByType: 'MERCHANT' | 'CUSTOMER' | 'OPS' | null } {
+  const opsUserId = getSingleHeader(request, 'x-ops-user-id');
   const userId =
+    opsUserId ||
     getSingleHeader(request, 'x-user-id') ||
-    getSingleHeader(request, 'x-merchant-id') ||
-    getSingleHeader(request, 'x-ops-user-id');
+    getSingleHeader(request, 'x-merchant-id');
   const roles = getHeaderList(request, 'x-user-roles');
+  const opsRoles = getHeaderList(request, 'x-ops-roles');
+  const allRoles = [...roles, ...opsRoles];
 
-  const createdByType = roles.includes('CUSTOMER') ? 'CUSTOMER' : 'MERCHANT';
+  const metadata = asRecord(body.metadata);
+  const createdBy = asRecord(metadata?.createdBy);
+  const operatorCode =
+    typeof metadata?.operatorCode === 'string'
+      ? metadata.operatorCode.trim()
+      : typeof createdBy?.username === 'string'
+        ? createdBy.username.trim()
+        : null;
+
+  const isOps =
+    Boolean(opsUserId) ||
+    allRoles.includes('OPS') ||
+    allRoles.includes('STAFF') ||
+    allRoles.includes('BRANCH_MANAGER') ||
+    allRoles.includes('ADMIN') ||
+    allRoles.includes('SYSTEM_ADMIN') ||
+    metadata?.intakeType === 'COUNTER_WALK_IN' ||
+    metadata?.pickupClassification === 'COUNTER_DROP_OFF' ||
+    String(metadata?.source || '').startsWith('ops-web') ||
+    String(metadata?.platform || '').startsWith('OPS_') ||
+    Boolean(operatorCode);
+
+  if (isOps) {
+    return {
+      createdByUserId: userId || operatorCode || 'OPS',
+      createdByType: 'OPS',
+    };
+  }
+
+  const createdByType = allRoles.includes('CUSTOMER') ? 'CUSTOMER' : 'MERCHANT';
 
   if (userId) {
     return {
@@ -232,9 +264,7 @@ function getAuthenticatedOwnerContext(
     };
   }
 
-  const metadata = asRecord(body.metadata);
   const merchant = asRecord(metadata?.merchant);
-  const createdBy = asRecord(metadata?.createdBy);
   const sender = asRecord(metadata?.sender);
 
   const fallbackUserId =
@@ -249,7 +279,7 @@ function getAuthenticatedOwnerContext(
             : null;
 
   const isCustomer =
-    roles.includes('CUSTOMER') ||
+    allRoles.includes('CUSTOMER') ||
     metadata?.source === 'customer-mobile' ||
     typeof metadata?.createdByUserId === 'string' ||
     typeof createdBy?.userId === 'string';

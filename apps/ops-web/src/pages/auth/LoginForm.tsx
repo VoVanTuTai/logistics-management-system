@@ -1,6 +1,7 @@
 import React from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
+import { User, Lock, Eye, EyeOff, LogIn } from 'lucide-react';
 
 import { loginSchema, type LoginFormValues } from '../../features/auth/auth.types';
 import {
@@ -63,7 +64,7 @@ export function LoginForm({
           Tên đăng nhập
         </label>
         <div className="login-input-wrapper">
-          <span className="material-symbols-outlined login-input-icon">person</span>
+          <User size={18} className="login-input-icon" />
           <input
             id="username"
             {...form.register('username')}
@@ -82,7 +83,7 @@ export function LoginForm({
           Mật khẩu
         </label>
         <div className="login-input-wrapper">
-          <span className="material-symbols-outlined login-input-icon">lock</span>
+          <Lock size={18} className="login-input-icon" />
           <input
             id="password"
             type={showPassword ? 'text' : 'password'}
@@ -96,9 +97,7 @@ export function LoginForm({
             type="button"
             onClick={() => setShowPassword(!showPassword)}
           >
-            <span className="material-symbols-outlined">
-              {showPassword ? 'visibility_off' : 'visibility'}
-            </span>
+            {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
           </button>
         </div>
         {form.formState.errors.password ? (
@@ -121,7 +120,7 @@ export function LoginForm({
 
       <button type="submit" disabled={isSubmitting} className="login-submit-btn">
         <span>{isSubmitting ? 'Đang đăng nhập...' : 'Đăng nhập'}</span>
-        <span className="material-symbols-outlined">login</span>
+        <LogIn size={18} />
       </button>
     </form>
   );

@@ -11,6 +11,7 @@ import { useAuthStore } from '../../../../store/authStore';
 import { formatDateTime } from '../../../../utils/format';
 import {
   LINEHAUL_TRIP_TYPE_LABELS,
+  mergeTripsWithManifests,
   normalizeTripCode,
   readLinehaulTrips,
 } from './linehaulTrips';
@@ -28,10 +29,12 @@ interface LinehaulMonitorRow {
   manifest: ManifestListItemDto | null;
   hasVehicleLabel: boolean;
   hasSeal: boolean;
+  isReceived: boolean;
   bagCount: number;
   shipmentCount: number;
   vehicleStatusLabel: string;
   sealLabel: string;
+  receiveLabel: string;
 }
 
 function normalizeText(value: string | null | undefined): string {
@@ -47,15 +50,19 @@ function isManifestSealed(manifest: ManifestListItemDto | null): boolean {
 }
 
 function resolveVehicleStatusLabel(trip: LinehaulTrip, hasSeal: boolean): string {
-  if (!trip.printedAt) {
-    return 'Chưa in tem xe';
+  if (trip.receivedAt) {
+    return 'Đã tiếp nhận tại Hub đích';
   }
 
-  if (!hasSeal) {
-    return 'Chưa đóng seal / chưa quét xe đi';
+  if (hasSeal) {
+    return 'Đang vận chuyển (Đã kẹp chì)';
   }
 
-  return 'Đã có seal để đối soát xe đi';
+  if (trip.printedAt) {
+    return 'Sẵn sàng xuất bến (Đã in tem)';
+  }
+
+  return 'Chờ bổ sung tài xế/xe';
 }
 
 function buildManifestLookup(manifests: ManifestListItemDto[]): Map<string, ManifestListItemDto> {
@@ -80,7 +87,7 @@ export function LinehaulTripDataMonitorPage(): React.JSX.Element {
     [session?.user.hubCodes],
   );
   const hubScope = useHubScope();
-  const [trips, setTrips] = useState<LinehaulTrip[]>(readLinehaulTrips);
+  const [localTrips, setLocalTrips] = useState<LinehaulTrip[]>(readLinehaulTrips);
   const [filters, setFilters] = useState<MonitorFilters>({
     hubCode: 'ALL',
     sealStatus: 'ALL',
@@ -89,8 +96,12 @@ export function LinehaulTripDataMonitorPage(): React.JSX.Element {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(25);
 
-  const manifestsQuery = useManifestsQuery(accessToken);
+  const manifestsQuery = useManifestsQuery(accessToken, { refetchInterval: 10000 });
   const manifests = manifestsQuery.data ?? [];
+
+  const trips = useMemo(() => {
+    return mergeTripsWithManifests(manifests, localTrips);
+  }, [manifests, localTrips]);
 
   const effectiveHubCodes = useMemo(() => {
     const list = hubScope.scopedHubCodes.length > 0 ? hubScope.scopedHubCodes : assignedHubCodes;
@@ -104,18 +115,28 @@ export function LinehaulTripDataMonitorPage(): React.JSX.Element {
 
     return trips.map((trip) => {
       const manifest = manifestLookup.get(normalizeTripCode(trip.tripCode)) ?? null;
-      const hasSeal = isManifestSealed(manifest);
+      const hasSeal = Boolean(trip.sealedAt) || isManifestSealed(manifest);
+      const isReceived = Boolean(trip.receivedAt || manifest?.receivedAt);
       const hasVehicleLabel = Boolean(trip.printedAt);
+
+      let receiveLabel = 'Chưa xuất bến';
+      if (isReceived) {
+        receiveLabel = `Đã nhận (${trip.receivedBy || 'Thủ kho'})`;
+      } else if (hasSeal) {
+        receiveLabel = `Đang tới ${trip.destinationHubCode}`;
+      }
 
       return {
         trip,
         manifest,
         hasVehicleLabel,
         hasSeal,
+        isReceived,
         bagCount: manifest ? 1 : 0,
-        shipmentCount: Math.max(0, manifest?.shipmentCount ?? 0),
+        shipmentCount: Math.max(trip.shipmentCount ?? 0, manifest?.shipmentCount ?? 0),
         vehicleStatusLabel: resolveVehicleStatusLabel(trip, hasSeal),
-        sealLabel: hasSeal ? 'Đã đóng seal' : 'Chưa có',
+        sealLabel: hasSeal ? `Đã đóng seal (${trip.sealCode || 'Có seal'})` : 'Chưa có',
+        receiveLabel,
       };
     });
   }, [manifests, trips]);
@@ -215,7 +236,7 @@ export function LinehaulTripDataMonitorPage(): React.JSX.Element {
   };
 
   const refreshData = () => {
-    setTrips(readLinehaulTrips());
+    setLocalTrips(readLinehaulTrips());
     void manifestsQuery.refetch();
   };
 
@@ -345,6 +366,7 @@ export function LinehaulTripDataMonitorPage(): React.JSX.Element {
                 <th>Bao hàng</th>
                 <th>Kiện hàng</th>
                 <th>Manifest</th>
+                <th>Tiếp nhận Hub đích</th>
                 <th>Thời gian</th>
               </tr>
             </thead>
@@ -370,11 +392,13 @@ export function LinehaulTripDataMonitorPage(): React.JSX.Element {
                   <td>
                     <span
                       className={`ops-linehaul-dashboard__badge ${
-                        row.hasSeal
+                        row.isReceived
                           ? 'ops-linehaul-dashboard__badge--arrived'
-                          : row.hasVehicleLabel
-                            ? 'ops-linehaul-dashboard__badge--pending'
-                            : 'ops-linehaul-dashboard__badge--danger'
+                          : row.hasSeal
+                            ? 'ops-linehaul-dashboard__badge--transit'
+                            : row.hasVehicleLabel
+                              ? 'ops-linehaul-dashboard__badge--pending'
+                              : 'ops-linehaul-dashboard__badge--danger'
                       }`}
                     >
                       {row.vehicleStatusLabel}
@@ -399,6 +423,19 @@ export function LinehaulTripDataMonitorPage(): React.JSX.Element {
                     ) : (
                       'Chưa có manifest'
                     )}
+                  </td>
+                  <td>
+                    <span
+                      className={`ops-linehaul-dashboard__badge ${
+                        row.isReceived
+                          ? 'ops-linehaul-dashboard__badge--arrived'
+                          : row.hasSeal
+                            ? 'ops-linehaul-dashboard__badge--pending'
+                            : 'ops-linehaul-dashboard__badge--danger'
+                      }`}
+                    >
+                      {row.receiveLabel}
+                    </span>
                   </td>
                   <td>
                     <div className="ops-linehaul-dashboard__driver-cell">

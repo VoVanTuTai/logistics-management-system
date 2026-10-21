@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 
+import { Headphones, Globe2, Shield, FileText, AlertCircle, CheckCircle2, X } from 'lucide-react';
 import { useLoginMutation } from '../../features/auth/auth.api';
 import { routePaths } from '../../navigation/routes';
 import { useAuthStore } from '../../store/authStore';
@@ -68,7 +69,18 @@ export function LoginPage(): React.JSX.Element {
           <div className="login-hero-overlay" />
           <div className="login-hero-content">
             <div className="login-hero-top">
-              <span className="material-symbols-outlined brand-icon">hub</span>
+              <span className="ops-topbar-logo" style={{ width: '38px', height: '38px', borderRadius: '10px' }} aria-hidden="true">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path
+                    d="M4.5 19.5V4.5L16.5 17.5V4.5"
+                    stroke="#ffffff"
+                    strokeWidth="3.2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                  <circle cx="19.5" cy="5" r="2.2" fill="#93c5fd" />
+                </svg>
+              </span>
               <h1 className="brand-title">NEXUS Ops</h1>
             </div>
             <div className="login-hero-copy">
@@ -93,7 +105,18 @@ export function LoginPage(): React.JSX.Element {
           <div className="login-card-inner">
             <div className="login-brand-header">
               <div className="login-brand-logo">
-                <span className="material-symbols-outlined brand-icon">hub</span>
+                <span className="ops-topbar-logo" style={{ width: '30px', height: '30px', borderRadius: '8px' }} aria-hidden="true">
+                  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path
+                      d="M4.5 19.5V4.5L16.5 17.5V4.5"
+                      stroke="#ffffff"
+                      strokeWidth="3.2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                    <circle cx="19.5" cy="5" r="2.2" fill="#93c5fd" />
+                  </svg>
+                </span>
                 <span className="brand-title">NEXUS Ops</span>
               </div>
               <p className="login-kicker-label">Ops Portal</p>
@@ -115,7 +138,7 @@ export function LoginPage(): React.JSX.Element {
                 Gặp sự cố đăng nhập?
                 <a className="login-footer-support-link" href="#" onClick={(e) => e.preventDefault()}>
                   Liên hệ bộ phận kỹ thuật
-                  <span className="material-symbols-outlined">support_agent</span>
+                  <Headphones size={15} style={{ verticalAlign: 'middle', marginLeft: 4 }} />
                 </a>
               </p>
             </div>
@@ -123,9 +146,9 @@ export function LoginPage(): React.JSX.Element {
             <div className="login-copyright-section">
               <p className="login-copyright-text">© 2026 NEXUS Logistic System. All rights reserved.</p>
               <div className="login-copyright-icons">
-                <span className="material-symbols-outlined">language</span>
-                <span className="material-symbols-outlined">security</span>
-                <span className="material-symbols-outlined">policy</span>
+                <Globe2 size={16} />
+                <Shield size={16} />
+                <FileText size={16} />
               </div>
             </div>
           </div>
@@ -144,7 +167,7 @@ export function LoginPage(): React.JSX.Element {
           >
             <div className="ops-login-error-header">
               <div className="ops-login-error-icon-circle">
-                <span className="material-symbols-outlined">error</span>
+                <AlertCircle size={24} style={{ color: '#ef4444' }} />
               </div>
               <button
                 type="button"
@@ -152,7 +175,7 @@ export function LoginPage(): React.JSX.Element {
                 onClick={clearAuthError}
                 aria-label="Đóng thông báo"
               >
-                ✕
+                <X size={16} />
               </button>
             </div>
 
@@ -173,7 +196,7 @@ export function LoginPage(): React.JSX.Element {
                 autoFocus
               >
                 <span>Đã hiểu & Đăng nhập lại</span>
-                <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>check_circle</span>
+                <CheckCircle2 size={18} />
               </button>
             </div>
           </div>

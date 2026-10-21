@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { Zap, ShieldCheck, AlertTriangle } from 'lucide-react';
 
 import { routePaths } from '../../../../navigation/routes';
 import { ndrClient } from '../../../../features/ndr/ndr.client';
@@ -73,7 +74,7 @@ const retryStageLabels: Record<RetryStage, { label: string; classModifier: strin
     icon: 'hourglass_bottom',
   },
   FAST_TRACK_APPROVED: {
-    label: '⚡ Đã duyệt hoàn gấp (Mùa Sale)',
+    label: 'Đã duyệt hoàn gấp (Mùa Sale)',
     classModifier: 'fast-track',
     icon: 'bolt',
   },
@@ -529,7 +530,7 @@ export function ReturnBlockManagementPage(): React.JSX.Element {
       }
 
       setNotice(
-        `⚡ ĐÃ DUYỆT CHUYỂN HOÀN GẤP MÙA SALE cho vận đơn ${selectedFastTrackOrder.originalCode}. Đã giải phóng kho và hủy lịch phát lại của bưu tá.`,
+        `ĐÃ DUYỆT CHUYỂN HOÀN GẤP MÙA SALE cho vận đơn ${selectedFastTrackOrder.originalCode}. Đã giải phóng kho và hủy lịch phát lại của bưu tá.`,
       );
       setSelectedFastTrackOrder(null);
       setFastTrackCustomNote('');
@@ -554,8 +555,9 @@ export function ReturnBlockManagementPage(): React.JSX.Element {
           <p>
             Quy trình phát lại mặc định <strong>2 ngày liên tiếp (1 lần/ngày)</strong> vào App Courier quen tuyến.
             {canFastTrack ? (
-              <span style={{ color: '#6366f1', fontWeight: 700, marginLeft: '4px' }}>
-                ⭐ Bạn có thẩm quyền <strong>HQ/OPS Khu Vực</strong> để duyệt chuyển hoàn ngay lập tức, giải phóng mặt bằng bưu cục trong mùa Sale.
+              <span style={{ color: '#6366f1', fontWeight: 700, marginLeft: '4px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                <ShieldCheck size={14} style={{ color: '#6366f1' }} />
+                <span>Bạn có thẩm quyền <strong>HQ/OPS Khu Vực</strong> để duyệt chuyển hoàn ngay lập tức, giải phóng mặt bằng bưu cục trong mùa Sale.</span>
               </span>
             ) : (
               <span style={{ color: '#64748b', marginLeft: '4px' }}>
@@ -575,7 +577,10 @@ export function ReturnBlockManagementPage(): React.JSX.Element {
           </span>
           <span style={{ borderColor: '#e9d5ff', background: '#faf5ff' }}>
             <strong style={{ color: '#9333ea' }}>{fastTrackCount}</strong>
-            ⚡ Duyệt gấp (Mùa Sale)
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+              <Zap size={12} style={{ color: '#9333ea' }} />
+              <span>Duyệt gấp (Mùa Sale)</span>
+            </span>
           </span>
           <span style={{ borderColor: '#bbf7d0', background: '#f0fdf4' }}>
             <strong style={{ color: '#16a34a' }}>
@@ -631,9 +636,9 @@ export function ReturnBlockManagementPage(): React.JSX.Element {
                 onChange={(event) => setStageFilter(event.target.value)}
               >
                 <option value="">Tất cả chu kỳ</option>
-                <option value="RETRY_DAY_1">⏳ Đang phát lại Ngày 1/2</option>
-                <option value="RETRY_DAY_2">⏳ Đang phát lại Ngày 2/2</option>
-                <option value="FAST_TRACK_APPROVED">⚡ Đã duyệt hoàn gấp (HQ/Vùng)</option>
+                <option value="RETRY_DAY_1">Đang phát lại Ngày 1/2</option>
+                <option value="RETRY_DAY_2">Đang phát lại Ngày 2/2</option>
+                <option value="FAST_TRACK_APPROVED">Đã duyệt hoàn gấp (HQ/Vùng)</option>
                 <option value="MAX_RETRY_REACHED">Hết 2 ngày phát lại ➔ Chuyển hoàn</option>
                 <option value="COMPLETED">Đã hoàn tất chuyển hoàn</option>
               </select>
@@ -791,8 +796,10 @@ export function ReturnBlockManagementPage(): React.JSX.Element {
                             onClick={() => setSelectedFastTrackOrder(order)}
                             className="ops-return-list__fast-track-btn"
                             title="Duyệt chuyển hoàn ngay lập tức để giải phóng kho mùa Sale"
+                            style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}
                           >
-                            ⚡ Duyệt Hoàn Ngay
+                            <Zap size={13} />
+                            <span>Duyệt Hoàn Ngay</span>
                           </button>
                         ) : null}
 
@@ -858,7 +865,9 @@ export function ReturnBlockManagementPage(): React.JSX.Element {
           <div className="ops-return-modal">
             <header className="ops-return-modal__header">
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span className="ops-return-modal__icon">⚡</span>
+                <span className="ops-return-modal__icon">
+                  <Zap size={18} />
+                </span>
                 <div>
                   <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 800, color: '#1e1b4b' }}>
                     Duyệt Chuyển Hoàn Ngay (Giải Phóng Tồn Kho Mùa Sale)
@@ -956,8 +965,11 @@ export function ReturnBlockManagementPage(): React.JSX.Element {
                 />
               </div>
 
-              <div style={{ padding: '10px 14px', borderRadius: '8px', backgroundColor: '#fef3c7', border: '1px solid #fde68a', fontSize: '12px', color: '#92400e' }}>
-                ⚠️ <strong>Lưu ý:</strong> Khi duyệt, đơn hàng sẽ ngay lập tức được cấp tem chuyển hoàn mới (<code>{selectedFastTrackOrder.newCode}</code>), chuyển sang trạng thái <strong>Sẵn sàng in tem</strong> và tự động hủy bỏ lịch giao lại trên App của Courier.
+              <div style={{ padding: '10px 14px', borderRadius: '8px', backgroundColor: '#fef3c7', border: '1px solid #fde68a', fontSize: '12px', color: '#92400e', display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
+                <AlertTriangle size={16} style={{ color: '#d97706', flexShrink: 0, marginTop: '2px' }} />
+                <div>
+                  <strong>Lưu ý:</strong> Khi duyệt, đơn hàng sẽ ngay lập tức được cấp tem chuyển hoàn mới (<code>{selectedFastTrackOrder.newCode}</code>), chuyển sang trạng thái <strong>Sẵn sàng in tem</strong> và tự động hủy bỏ lịch giao lại trên App của Courier.
+                </div>
               </div>
             </div>
 
@@ -975,8 +987,10 @@ export function ReturnBlockManagementPage(): React.JSX.Element {
                 className="ops-return-modal__confirm-btn"
                 onClick={handleConfirmFastTrack}
                 disabled={isSubmittingFastTrack}
+                style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
               >
-                {isSubmittingFastTrack ? 'Đang duyệt chuyển hoàn...' : '⚡ Xác Nhận Duyệt Hoàn Ngay'}
+                <Zap size={15} />
+                <span>{isSubmittingFastTrack ? 'Đang duyệt chuyển hoàn...' : 'Xác Nhận Duyệt Hoàn Ngay'}</span>
               </button>
             </footer>
           </div>

@@ -1,4 +1,21 @@
 import React, { useState, useEffect, useRef } from 'react';
+import {
+  Building2,
+  MapPin,
+  ChevronDown,
+  ChevronRight,
+  User,
+  Bell,
+  LogOut,
+  CreditCard,
+  Copy,
+  Check,
+  X,
+  BellRing,
+  Truck,
+  QrCode,
+  Shield,
+} from 'lucide-react';
 import type { AuthSessionDto } from '../auth.types';
 import type { HubDto } from '../../masterdata/masterdata.types';
 
@@ -113,17 +130,16 @@ export function OpsUserAccountMenu({
           {operatorName}
         </span>
         {isTopbar && <span className="ops-topbar-role">{roleText}</span>}
-        <span
-          className="material-symbols-outlined ops-user-menu-chevron"
+        <ChevronDown
+          className="ops-user-menu-chevron"
+          size={18}
           style={{
-            fontSize: '18px',
             color: '#64748b',
             transition: 'transform 0.2s ease',
             transform: isDropdownOpen ? 'rotate(180deg)' : 'rotate(0deg)',
           }}
-        >
-          expand_more
-        </span>
+          aria-hidden="true"
+        />
       </button>
 
       {/* Floating Dropdown Menu */}
@@ -159,9 +175,7 @@ export function OpsUserAccountMenu({
 
           {currentOperatorHub && (
             <div className="ops-user-menu-hub-info">
-              <span className="material-symbols-outlined" style={{ fontSize: '15px', color: '#0284c7' }}>
-                apartment
-              </span>
+              <Building2 size={15} style={{ color: '#0284c7', flexShrink: 0 }} aria-hidden="true" />
               <span className="ops-user-menu-hub-text">
                 <strong>{currentOperatorHub.code}</strong> - {currentOperatorHub.name}
               </span>
@@ -180,16 +194,12 @@ export function OpsUserAccountMenu({
               setIsAccountModalOpen(true);
             }}
           >
-            <span className="material-symbols-outlined ops-user-menu-item-icon">
-              account_circle
-            </span>
+            <User size={18} className="ops-user-menu-item-icon" aria-hidden="true" />
             <div className="ops-user-menu-item-content">
               <span className="ops-user-menu-item-title">Thông tin tài khoản</span>
               <span className="ops-user-menu-item-desc">Xem mã nhân viên, bưu cục & phân quyền</span>
             </div>
-            <span className="material-symbols-outlined ops-user-menu-item-arrow">
-              chevron_right
-            </span>
+            <ChevronRight size={16} className="ops-user-menu-item-arrow" aria-hidden="true" />
           </button>
 
           {/* Action: Notifications */}
@@ -202,9 +212,7 @@ export function OpsUserAccountMenu({
               setShowNotificationsModal(true);
             }}
           >
-            <span className="material-symbols-outlined ops-user-menu-item-icon" style={{ color: '#f59e0b' }}>
-              notifications
-            </span>
+            <Bell size={18} className="ops-user-menu-item-icon" style={{ color: '#f59e0b' }} aria-hidden="true" />
             <div className="ops-user-menu-item-content">
               <span className="ops-user-menu-item-title">Thông báo hệ thống</span>
               <span className="ops-user-menu-item-desc">Cảnh báo ca trực & trạng thái vận hành</span>
@@ -225,9 +233,7 @@ export function OpsUserAccountMenu({
               void onLogout();
             }}
           >
-            <span className="material-symbols-outlined ops-user-menu-item-icon">
-              logout
-            </span>
+            <LogOut size={18} className="ops-user-menu-item-icon" aria-hidden="true" />
             <div className="ops-user-menu-item-content">
               <span className="ops-user-menu-item-title">
                 {isLoggingOut ? 'Đang đăng xuất...' : 'Đăng xuất'}
@@ -250,7 +256,7 @@ export function OpsUserAccountMenu({
             <div className="ops-modal-header">
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                 <div className="ops-modal-header-icon-circle">
-                  <span className="material-symbols-outlined">badge</span>
+                  <CreditCard size={18} aria-hidden="true" />
                 </div>
                 <div>
                   <h3 className="ops-modal-title">Thông tin tài khoản nhân viên</h3>
@@ -263,7 +269,7 @@ export function OpsUserAccountMenu({
                 onClick={() => setIsAccountModalOpen(false)}
                 aria-label="Đóng"
               >
-                ✕
+                <X size={16} aria-hidden="true" />
               </button>
             </div>
 
@@ -284,9 +290,11 @@ export function OpsUserAccountMenu({
                       onClick={handleCopyUsername}
                       title="Sao chép mã tài khoản"
                     >
-                      <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>
-                        content_copy
-                      </span>
+                      {copiedText ? (
+                        <Check size={14} style={{ color: '#10b981' }} aria-hidden="true" />
+                      ) : (
+                        <Copy size={14} aria-hidden="true" />
+                      )}
                       {copiedText ? 'Đã chép!' : 'Chép mã'}
                     </button>
                   </div>
@@ -316,9 +324,7 @@ export function OpsUserAccountMenu({
                         borderColor: `${opsTierMeta.badgeColor}40`,
                       }}
                     >
-                      <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>
-                        {opsTierMeta.icon}
-                      </span>
+                      <Shield size={13} style={{ marginRight: 4 }} aria-hidden="true" />
                       {opsTierMeta.badgeLabel}
                     </span>
                   </div>
@@ -342,12 +348,16 @@ export function OpsUserAccountMenu({
                 <div className="ops-profile-field ops-profile-field--full">
                   <label className="ops-profile-label">Bưu cục / Hub trực thuộc</label>
                   <div className="ops-profile-hub-box">
-                    <div className="ops-profile-hub-title">
-                      🏢 <strong>{currentOperatorHub?.code || 'N/A'}</strong> - {currentOperatorHub?.name || 'Tất cả bưu cục hệ thống'}
+                    <div className="ops-profile-hub-title" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <Building2 size={16} style={{ color: '#0284c7', flexShrink: 0 }} aria-hidden="true" />
+                      <span>
+                        <strong>{currentOperatorHub?.code || 'N/A'}</strong> - {currentOperatorHub?.name || 'Tất cả bưu cục hệ thống'}
+                      </span>
                     </div>
                     {currentOperatorHubAddress && (
-                      <div className="ops-profile-hub-address">
-                        📍 {currentOperatorHubAddress}
+                      <div className="ops-profile-hub-address" style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 4 }}>
+                        <MapPin size={13} style={{ color: '#64748b', flexShrink: 0 }} aria-hidden="true" />
+                        <span>{currentOperatorHubAddress}</span>
                       </div>
                     )}
                   </div>
@@ -410,7 +420,7 @@ export function OpsUserAccountMenu({
             <div className="ops-modal-header">
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                 <div className="ops-modal-header-icon-circle" style={{ backgroundColor: '#fef3c7', color: '#d97706' }}>
-                  <span className="material-symbols-outlined">notifications_active</span>
+                  <BellRing size={18} aria-hidden="true" />
                 </div>
                 <div>
                   <h3 className="ops-modal-title">Thông báo hệ thống & Vận hành</h3>
@@ -423,7 +433,7 @@ export function OpsUserAccountMenu({
                 onClick={() => setShowNotificationsModal(false)}
                 aria-label="Đóng"
               >
-                ✕
+                <X size={16} aria-hidden="true" />
               </button>
             </div>
 
@@ -431,7 +441,7 @@ export function OpsUserAccountMenu({
               <div className="ops-notif-list">
                 <div className="ops-notif-item ops-notif-item--unread">
                   <div className="ops-notif-icon-box" style={{ backgroundColor: '#eff6ff', color: '#2563eb' }}>
-                    <span className="material-symbols-outlined">local_shipping</span>
+                    <Truck size={18} aria-hidden="true" />
                   </div>
                   <div className="ops-notif-content">
                     <div className="ops-notif-header">
@@ -446,7 +456,7 @@ export function OpsUserAccountMenu({
 
                 <div className="ops-notif-item">
                   <div className="ops-notif-icon-box" style={{ backgroundColor: '#ecfdf5', color: '#059669' }}>
-                    <span className="material-symbols-outlined">qr_code_scanner</span>
+                    <QrCode size={18} aria-hidden="true" />
                   </div>
                   <div className="ops-notif-content">
                     <div className="ops-notif-header">
@@ -461,7 +471,7 @@ export function OpsUserAccountMenu({
 
                 <div className="ops-notif-item">
                   <div className="ops-notif-icon-box" style={{ backgroundColor: '#fef3c7', color: '#d97706' }}>
-                    <span className="material-symbols-outlined">lock</span>
+                    <Shield size={18} aria-hidden="true" />
                   </div>
                   <div className="ops-notif-content">
                     <div className="ops-notif-header">

@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { Building, Map, Flag, Building2, Globe2, Crosshair } from 'lucide-react';
 import { useHubsQuery } from '../../features/masterdata/masterdata.api';
 import type { HubDto } from '../../features/masterdata/masterdata.types';
 import { useAuthStore } from '../../store/authStore';
@@ -229,7 +230,7 @@ export function HqNetworkGeofenceMapPage(): React.JSX.Element {
           width: 28px; height: 28px; background: #0052cc; border: 3px solid #ffffff;
           border-radius: 50%; box-shadow: 0 2px 10px rgba(0, 82, 204, 0.4);
           display: flex; align-items: center; justify-content: center; color: #ffffff; font-weight: bold; font-size: 14px;
-        ">📦</div>
+        "><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m7.5 4.27 9 5.15"/><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg></div>
       `,
       iconSize: [28, 28],
       iconAnchor: [14, 14],
@@ -237,9 +238,9 @@ export function HqNetworkGeofenceMapPage(): React.JSX.Element {
 
     simMarkerRef.current = L.marker([orderLat, orderLng], { icon: orderIcon }).addTo(mapRef.current);
     simMarkerRef.current.bindPopup(`
-      <div style="font-size:13px; font-weight:bold; color:#0052cc;">📍 Vị trí đơn hàng kiểm tra GPS</div>
+      <div style="font-size:13px; font-weight:bold; color:#0052cc;">Vị trí đơn hàng kiểm tra GPS</div>
       <div style="font-size:12px; color:#5b6b86;">Tọa độ: ${orderLat.toFixed(5)}, ${orderLng.toFixed(5)}</div>
-      <div style="font-size:12px; color:#102548; margin-top:4px;">➡️ Điều phối về: <strong>${hubName}</strong></div>
+      <div style="font-size:12px; color:#102548; margin-top:4px;">Điều phối về: <strong>${hubName}</strong></div>
       <div style="font-size:11px; color:#059669; font-weight:600; margin-top:3px;">✓ Đã khớp vùng khít - Không lọt đơn</div>
     `).openPopup();
 
@@ -340,7 +341,7 @@ export function HqNetworkGeofenceMapPage(): React.JSX.Element {
           dashArray: '4, 4',
         });
         islandPoly.bindTooltip(
-          `<div style="font-weight:bold; color:#ea4335;">🏝️ ${islandNames[idx] || 'Hải đảo Việt Nam'}</div>
+          `<div style="font-weight:bold; color:#ea4335;">${islandNames[idx] || 'Hải đảo Việt Nam'}</div>
            <div style="font-size:10px; color:#cbd5e1;">Chủ quyền thiêng liêng của Tổ quốc Việt Nam</div>`,
           { sticky: true },
         );
@@ -366,7 +367,7 @@ export function HqNetworkGeofenceMapPage(): React.JSX.Element {
         });
 
         regPoly.bindTooltip(
-          `<div style="font-weight:bold; color:${regColor}; font-size:13px;">🗺️ ${reg.name}</div>
+          `<div style="font-weight:bold; color:${regColor}; font-size:13px;">${reg.name}</div>
            <div style="font-size:11px; color:#cbd5e1;">${reg.description}</div>`,
           { sticky: true },
         );
@@ -398,7 +399,7 @@ export function HqNetworkGeofenceMapPage(): React.JSX.Element {
         });
 
         provPoly.bindTooltip(
-          `<div style="font-weight:bold; color:${provColor}; font-size:13px;">📍 ${prov.name}</div>
+          `<div style="font-weight:bold; color:${provColor}; font-size:13px;">${prov.name}</div>
            <div style="font-size:11px; color:#e2e8f0;">Diện tích ước tính: ${prov.areaKm2 ? prov.areaKm2.toLocaleString() : 'N/A'} km²</div>
            <div style="font-size:10px; color:#94a3b8;">${prov.polygon.length} đỉnh tọa độ viền khép kín</div>`,
           { sticky: true },
@@ -575,7 +576,7 @@ export function HqNetworkGeofenceMapPage(): React.JSX.Element {
             className={`hq-map-layer-tab ${coverageLayer === 'ALL_PROVINCES' ? 'active' : ''}`}
             onClick={() => setCoverageLayer('ALL_PROVINCES')}
           >
-            <span>🏙️</span>
+            <Building size={14} />
             <span>100% Tỉnh Thành</span>
           </button>
           <button
@@ -583,7 +584,7 @@ export function HqNetworkGeofenceMapPage(): React.JSX.Element {
             className={`hq-map-layer-tab ${coverageLayer === 'REGIONS' ? 'active' : ''}`}
             onClick={() => setCoverageLayer('REGIONS')}
           >
-            <span>🗺️</span>
+            <Map size={14} />
             <span>3 Vùng Miền</span>
           </button>
           <button
@@ -591,7 +592,7 @@ export function HqNetworkGeofenceMapPage(): React.JSX.Element {
             className={`hq-map-layer-tab ${coverageLayer === 'NATIONAL' ? 'active' : ''}`}
             onClick={() => setCoverageLayer('NATIONAL')}
           >
-            <span>🇻🇳</span>
+            <Flag size={14} />
             <span>Toàn Quốc</span>
           </button>
           <button
@@ -599,7 +600,7 @@ export function HqNetworkGeofenceMapPage(): React.JSX.Element {
             className={`hq-map-layer-tab ${coverageLayer === 'WARD_HUBS' ? 'active' : ''}`}
             onClick={() => setCoverageLayer('WARD_HUBS')}
           >
-            <span>🏬</span>
+            <Building2 size={14} />
             <span>Bưu Cục Phường</span>
           </button>
           <button
@@ -607,7 +608,7 @@ export function HqNetworkGeofenceMapPage(): React.JSX.Element {
             className={`hq-map-layer-tab ${coverageLayer === 'ALL_LAYERS' ? 'active' : ''}`}
             onClick={() => setCoverageLayer('ALL_LAYERS')}
           >
-            <span>🌐</span>
+            <Globe2 size={14} />
             <span>Tất Cả Lớp</span>
           </button>
         </div>
@@ -737,7 +738,7 @@ export function HqNetworkGeofenceMapPage(): React.JSX.Element {
           {/* Floating Order Simulation Widget */}
           <div className="hq-map-simulator-panel">
             <div className="hq-map-simulator-title">
-              <span>🎯</span>
+              <Crosshair size={16} style={{ color: '#0052cc' }} />
               <span>Công Cụ Thử Nghiệm Bắt Đơn GPS (100% Bao Phủ)</span>
             </div>
             <p className="hq-map-simulator-desc">

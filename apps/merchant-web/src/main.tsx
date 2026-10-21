@@ -2,6 +2,22 @@ import React, { FormEvent, useEffect, useMemo, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 
 import './styles.css';
+
+// Automatically handle Vite dynamic import chunk failures when a new production version is deployed
+if (typeof window !== 'undefined') {
+  window.addEventListener('vite:preloadError', (event) => {
+    event.preventDefault();
+    const storageKey = 'merchant_vite_preload_reload';
+    const lastReload = sessionStorage.getItem(storageKey);
+    const now = Date.now();
+
+    if (!lastReload || now - parseInt(lastReload, 10) > 15000) {
+      sessionStorage.setItem(storageKey, String(now));
+      console.warn('[VitePreload] Detected new version deployment. Reloading...');
+      window.location.reload();
+    }
+  });
+}
 import { MerchantLoginForm } from './features/auth/MerchantLoginForm';
 import { MerchantSidebar } from './components/layout/MerchantSidebar';
 import { MerchantHeader } from './components/layout/MerchantHeader';
@@ -547,10 +563,25 @@ function MerchantApp(): React.JSX.Element {
   );
 
   const filteredRows = useMemo(() => {
-    const keyword = listSearch.trim().toLowerCase();
+    const searchTokens = listSearch
+      .split(/[\s,;\n\r\t]+/)
+      .map((tok) => tok.trim().toLowerCase())
+      .filter(Boolean);
+
     return shipmentRows.filter((row) => {
       const created = new Date(row.shipment.createdAt);
-      const textOk = !keyword || row.shipment.code.toLowerCase().includes(keyword) || row.receiverName.toLowerCase().includes(keyword) || row.receiverPhone.toLowerCase().includes(keyword);
+      let textOk = true;
+      if (searchTokens.length === 1) {
+        const keyword = searchTokens[0];
+        textOk =
+          row.shipment.code.toLowerCase().includes(keyword) ||
+          row.receiverName.toLowerCase().includes(keyword) ||
+          row.receiverPhone.toLowerCase().includes(keyword);
+      } else if (searchTokens.length > 1) {
+        const rowCode = row.shipment.code.toLowerCase();
+        textOk = searchTokens.some((tok) => rowCode.includes(tok));
+      }
+
       const statusOk =
         listStatus === 'ALL' ||
         resolveShipmentStatusCode(row.shipment) === listStatus;
@@ -1091,7 +1122,20 @@ function MerchantApp(): React.JSX.Element {
             })
             .join(', ')})`;
 
-    const netBalance = deliveredCod - totalFee;
+    let pickupPenaltyCompensationTotal = 0;
+    shipmentRows.forEach((row) => {
+      const meta = (row.shipment.metadata || {}) as Record<string, unknown>;
+      const isLatePickup =
+        Boolean(meta.isPickupDelayed) ||
+        Boolean(meta.pickupOverdue) ||
+        (row.shipment.currentStatus === 'CREATED' &&
+          Date.now() - new Date(row.shipment.createdAt).getTime() > 14 * 3600 * 1000);
+      if (isLatePickup || meta.pickupSlaPenaltyAmount) {
+        pickupPenaltyCompensationTotal += Number(meta.pickupSlaPenaltyAmount) || 25000;
+      }
+    });
+
+    const netBalance = deliveredCod - totalFee + pickupPenaltyCompensationTotal;
     const isNegativeBalanceLocked = netBalance < -500_000;
 
     return {
@@ -1187,6 +1231,32 @@ function MerchantApp(): React.JSX.Element {
           shipmentCode: claim.shipmentCode,
           amount: Math.abs(claim.approvedCompensationAmount),
           note: `${claim.incidentType} - Đã thẩm định chấp thuận`,
+        });
+      }
+    });
+
+    // 3. Pickup SLA Overdue Compensation (Tự động chế tài & bồi hoàn Shop do lấy hàng trễ)
+    shipmentRows.forEach((row) => {
+      const ship = row.shipment;
+      const meta = (ship.metadata || {}) as Record<string, unknown>;
+      const isLatePickup =
+        Boolean(meta.isPickupDelayed) ||
+        Boolean(meta.pickupOverdue) ||
+        (ship.currentStatus === 'CREATED' &&
+          Date.now() - new Date(ship.createdAt).getTime() > 14 * 3600 * 1000);
+
+      if (isLatePickup || meta.pickupSlaPenaltyAmount) {
+        const penaltyAmount = Number(meta.pickupSlaPenaltyAmount) || 25000;
+        const time = new Date(ship.createdAt).getTime() + 14 * 3600 * 1000;
+        entries.push({
+          id: `SLA-PK-${ship.code}`,
+          timestamp: time,
+          occurredAt: new Date(time).toISOString(),
+          type: 'PICKUP_SLA_COMPENSATION',
+          title: `Bồi hoàn chế tài vi phạm SLA lấy hàng đơn #${ship.code}`,
+          shipmentCode: ship.code,
+          amount: penaltyAmount,
+          note: 'Bưu tá lấy trễ quá hạn cam kết - Tự động khấu trừ tài khoản bưu tá và đền bù vào ví Shop',
         });
       }
     });
@@ -3246,6 +3316,7 @@ function MerchantApp(): React.JSX.Element {
           {activeView === 'finance' ? (
             <MerchantFinanceView
               insights={insights}
+              shipmentRows={shipmentRows}
               merchantBankProfile={merchantBankProfile}
               settlementBatches={settlementBatches}
               financialLedger={financialLedger}

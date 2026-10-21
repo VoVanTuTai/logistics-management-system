@@ -403,12 +403,23 @@ export function DeliveryProofScreen({ navigation, route }: Props): React.JSX.Ele
       }
 
       setTimeout(() => {
-        navigation.goBack();
-      }, 800);
+        if (route.params.taskId) {
+          navigation.navigate('MainTabs', { screen: 'Tasks' });
+        } else {
+          navigation.goBack();
+        }
+      }, 600);
     } catch (error) {
       if (shouldQueueOffline(error)) {
         await enqueueDeliverySuccessOffline(payload);
         setSubmitMessage('Mất mạng: thao tác đã được lưu offline và sẽ tự động upload POD, gửi lại với cùng idempotencyKey.');
+        setTimeout(() => {
+          if (route.params.taskId) {
+            navigation.navigate('MainTabs', { screen: 'Tasks' });
+          } else {
+            navigation.goBack();
+          }
+        }, 800);
       } else {
         const message =
           error instanceof Error ? error.message : 'Ký nhận thất bại.';

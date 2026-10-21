@@ -7,7 +7,7 @@ import type { ShipmentListItemDto } from '../../../../features/shipments/shipmen
 import { getErrorMessage } from '../../../../services/api/errors';
 import { useAuthStore } from '../../../../store/authStore';
 import { formatShipmentStatusLabel } from '../../../../utils/logisticsLabels';
-import { CopyableShipmentCode } from '../../../shared/CopyableShipmentCode';
+import { ShipmentsTable, minutesSince } from '../../../shipments/ShipmentsTable';
 
 import './OperationalDataMonitorPage.css';
 
@@ -37,7 +37,7 @@ interface ShipmentMonitorConfig {
   };
 }
 
-const PAGE_SIZE_OPTIONS = [10, 20, 50] as const;
+const PAGE_SIZE_OPTIONS = [10, 20, 50, 100] as const;
 const DEFAULT_PAGE_SIZE = 20;
 const DATA_LIMIT = 200;
 
@@ -111,15 +111,6 @@ function normalizeCode(value: string | null | undefined): string {
   return (value ?? '').trim().toUpperCase();
 }
 
-function formatDateTime(value: string | null | undefined): string {
-  if (!value) {
-    return '---';
-  }
-
-  const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? '---' : date.toLocaleString('vi-VN');
-}
-
 function toDateKey(value: string | null | undefined): string {
   if (!value) {
     return '';
@@ -134,32 +125,6 @@ function toDateKey(value: string | null | undefined): string {
   const month = String(date.getMonth() + 1).padStart(2, '0');
   const day = String(date.getDate()).padStart(2, '0');
   return `${year}-${month}-${day}`;
-}
-
-function minutesSince(value: string | null | undefined): number | null {
-  if (!value) {
-    return null;
-  }
-
-  const time = new Date(value).getTime();
-  return Number.isNaN(time) ? null : Math.max(0, Math.floor((Date.now() - time) / 60000));
-}
-
-function formatAge(minutes: number | null): string {
-  if (minutes === null) {
-    return '---';
-  }
-
-  if (minutes < 60) {
-    return `${minutes} phút`;
-  }
-
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) {
-    return `${hours} giờ`;
-  }
-
-  return `${Math.floor(hours / 24)} ngày`;
 }
 
 function resolvePrimaryHub(shipment: ShipmentListItemDto, mode: ShipmentMonitorMode): string {
@@ -184,14 +149,6 @@ function resolveOppositeHub(shipment: ShipmentListItemDto, mode: ShipmentMonitor
   }
 
   return normalizeCode(shipment.originHubCode) || normalizeCode(shipment.senderHubCode) || '---';
-}
-
-function resolveOwner(shipment: ShipmentListItemDto, mode: ShipmentMonitorMode): string {
-  if (mode === 'delivery') {
-    return shipment.receiverName || shipment.receiverPhone || shipment.senderName || '---';
-  }
-
-  return shipment.senderName || shipment.senderPhone || shipment.receiverName || 'Hệ thống';
 }
 
 function hasKnownDifferentHub(left: string, right: string): boolean {
@@ -239,10 +196,6 @@ function countUnique(values: string[]): number {
   return new Set(values.map(normalize).filter(Boolean)).size;
 }
 
-function statusClass(status: string): string {
-  return status.toLowerCase().replace(/[^a-z0-9]+/g, '-');
-}
-
 export function ShipmentDataMonitorPage({
   mode,
 }: ShipmentDataMonitorPageProps): React.JSX.Element {
@@ -265,6 +218,9 @@ export function ShipmentDataMonitorPage({
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  // Checkbox selection state
+  const [selectedShipmentCodes, setSelectedShipmentCodes] = useState<string[]>([]);
 
   const effectiveHubCodes = useMemo(() => {
     return hubScope.scopedHubCodes.length > 0 ? hubScope.scopedHubCodes : scopedHubCodes;
@@ -375,6 +331,29 @@ export function ShipmentDataMonitorPage({
     mode === 'delivery'
       ? countUnique(filteredRows.map((shipment) => shipment.receiverPhone || shipment.receiverName || ''))
       : warningRows.length;
+
+  const handleToggleShipment = useCallback((code: string, checked: boolean) => {
+    setSelectedShipmentCodes((prev) =>
+      checked ? Array.from(new Set([...prev, code])) : prev.filter((item) => item !== code),
+    );
+  }, []);
+
+  const handleToggleAllVisible = useCallback((checked: boolean) => {
+    const visibleCodes = pagedRows.map((item) => item.shipmentCode);
+    if (checked) {
+      setSelectedShipmentCodes((prev) => Array.from(new Set([...prev, ...visibleCodes])));
+    } else {
+      setSelectedShipmentCodes((prev) => prev.filter((code) => !visibleCodes.includes(code)));
+    }
+  }, [pagedRows]);
+
+  const handleSelectAllFiltered = useCallback(() => {
+    setSelectedShipmentCodes(filteredRows.map((item) => item.shipmentCode));
+  }, [filteredRows]);
+
+  const handleClearSelected = useCallback(() => {
+    setSelectedShipmentCodes([]);
+  }, []);
 
   return (
     <section className="ops-data-monitor">
@@ -489,83 +468,103 @@ export function ShipmentDataMonitorPage({
 
       {errorMessage ? <p className="ops-data-monitor__error">{errorMessage}</p> : null}
 
-      <section className="ops-data-monitor__table-wrap" aria-busy={isLoading}>
-        {isLoading ? <div className="ops-data-monitor__loading">Đang tải dữ liệu...</div> : null}
-        <table className="ops-data-monitor__table">
-          <thead>
-            <tr>
-              <th>STT</th>
-              <th>Mã vận đơn</th>
-              <th>Cập nhật cuối</th>
-              <th>{config.hubLabel}</th>
-              <th>{config.oppositeHubLabel}</th>
-              <th>{config.ownerLabel}</th>
-              <th>Tuổi xử lý</th>
-              <th>Trạng thái</th>
-              <th>Ghi chú</th>
-            </tr>
-          </thead>
-          <tbody>
-            {pagedRows.map((shipment, index) => {
-              const ageMinutes = minutesSince(shipment.updatedAt);
-              return (
-                <tr key={shipment.id}>
-                  <td>{(currentPage - 1) * pageSize + index + 1}</td>
-                  <td>
-                    <CopyableShipmentCode code={shipment.shipmentCode} className="ops-data-monitor__code" />
-                  </td>
-                  <td>{formatDateTime(shipment.updatedAt)}</td>
-                  <td>{resolvePrimaryHub(shipment, mode)}</td>
-                  <td>{resolveOppositeHub(shipment, mode)}</td>
-                  <td>{resolveOwner(shipment, mode)}</td>
-                  <td className="ops-data-monitor__amount">{formatAge(ageMinutes)}</td>
-                  <td>
-                    <span className={`ops-data-monitor__status ops-data-monitor__status--${statusClass(shipment.currentStatus)}`}>
-                      {formatShipmentStatusLabel(shipment.currentStatus)}
-                    </span>
-                  </td>
-                  <td>{shipment.deliveryNote || (ageMinutes !== null && ageMinutes >= 360 ? 'Cần rà soát vì quá 6 giờ chưa có bước tiếp theo.' : 'Đang theo dõi theo dữ liệu shipment hiện có.')}</td>
-                </tr>
-              );
-            })}
-            {!isLoading && pagedRows.length === 0 ? (
-              <tr>
-                <td colSpan={9}>
-                  <div className="ops-data-monitor__empty">{config.emptyText}</div>
-                </td>
-              </tr>
-            ) : null}
-          </tbody>
-        </table>
-      </section>
+      {/* Unified Table Card ("Nằm gọn trong một thẻ") */}
+      <article className="ops-data-monitor__table-card">
+        {isLoading && <div className="ops-data-monitor__loading">Đang tải dữ liệu...</div>}
+        <ShipmentsTable
+          items={pagedRows}
+          pageOffset={(currentPage - 1) * pageSize}
+          selectedShipmentCodes={selectedShipmentCodes}
+          onToggleShipment={handleToggleShipment}
+          onToggleAllVisible={handleToggleAllVisible}
+          storageKeyPrefix={`ops_monitor_${mode}`}
+          enabledColumns={[
+            'stt',
+            'code',
+            'status',
+            'parcelType',
+            'chargeableWeight',
+            'primaryHub',
+            'oppositeHub',
+            'senderName',
+            'senderPhone',
+            'receiverName',
+            'receiverPhone',
+            'receiverAddress',
+            'cod',
+            'ageMinutes',
+            'updatedAt',
+            'deliveryNote',
+          ]}
+          defaultVisibleColumns={{
+            stt: true,
+            code: true,
+            status: true,
+            parcelType: true,
+            chargeableWeight: true,
+            primaryHub: true,
+            oppositeHub: true,
+            senderName: true,
+            senderPhone: true,
+            senderAddress: false,
+            receiverName: true,
+            receiverPhone: true,
+            receiverAddress: true,
+            cod: true,
+            routeHub: false,
+            ageMinutes: true,
+            createdAt: false,
+            deliveredAt: false,
+            updatedAt: true,
+            deliveryNote: true,
+          }}
+          columnLabelsOverride={{
+            primaryHub: `${config.hubLabel} (Hub nhận)`,
+            oppositeHub: `${config.oppositeHubLabel} (Hub gửi)`,
+            senderName: 'Bên gửi',
+            receiverName: 'Bên nhận',
+            receiverAddress: 'Địa chỉ giao & Đồng kiểm',
+          }}
+          primaryHubResolver={(s) => resolvePrimaryHub(s, mode)}
+          oppositeHubResolver={(s) => resolveOppositeHub(s, mode)}
+          emptyMessage={config.emptyText}
+          showSelectionStrip={true}
+          totalFilteredCount={filteredRows.length}
+          onSelectAllFiltered={handleSelectAllFiltered}
+          onClearSelected={handleClearSelected}
+          containerStyle={{ flex: 1, minHeight: 0 }}
+          tableShellStyle={{ flex: 1, minHeight: 0, marginTop: 4, border: '1px solid #e2e8f0', boxShadow: 'none' }}
+        />
 
-      <footer className="ops-data-monitor__pagination">
-        <span>
-          Hiển thị {filteredRows.length === 0 ? 0 : (currentPage - 1) * pageSize + 1}-
-          {Math.min(filteredRows.length, currentPage * pageSize)} / {filteredRows.length} dòng
-        </span>
-        <label>
-          <span>Số dòng</span>
-          <select value={pageSize} onChange={(event) => setPageSize(Number(event.target.value))}>
-            {PAGE_SIZE_OPTIONS.map((size) => (
-              <option key={size} value={size}>
-                {size}
-              </option>
-            ))}
-          </select>
-        </label>
-        <div>
-          <button type="button" disabled={currentPage <= 1} onClick={() => setPage(currentPage - 1)}>
-            Trước
-          </button>
-          <strong>
-            {currentPage}/{totalPages}
-          </strong>
-          <button type="button" disabled={currentPage >= totalPages} onClick={() => setPage(currentPage + 1)}>
-            Sau
-          </button>
-        </div>
-      </footer>
+        {/* Standard Pagination Footer Docked at Bottom of Card */}
+        <footer className="ops-data-monitor__pagination">
+          <span>
+            Hiển thị {filteredRows.length === 0 ? 0 : (currentPage - 1) * pageSize + 1} -{' '}
+            {Math.min(filteredRows.length, currentPage * pageSize)} / {filteredRows.length} dòng
+          </span>
+          <label>
+            <span>Số dòng/trang</span>
+            <select value={pageSize} onChange={(event) => setPageSize(Number(event.target.value))}>
+              {PAGE_SIZE_OPTIONS.map((size) => (
+                <option key={size} value={size}>
+                  {size} dòng
+                </option>
+              ))}
+            </select>
+          </label>
+          <div>
+            <button type="button" disabled={currentPage <= 1} onClick={() => setPage(currentPage - 1)}>
+              Trước
+            </button>
+            <strong>
+              Trang {currentPage} / {totalPages}
+            </strong>
+            <button type="button" disabled={currentPage >= totalPages} onClick={() => setPage(currentPage + 1)}>
+              Sau
+            </button>
+          </div>
+        </footer>
+      </article>
     </section>
   );
 }

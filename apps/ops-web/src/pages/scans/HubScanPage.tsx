@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { Package, ArrowDownToLine, ArrowUpFromLine } from 'lucide-react';
 
 import {
   useInboundScanMutation,
@@ -264,7 +265,13 @@ export function HubScanPage(): React.JSX.Element {
                   onClick={() => setScanType(type)}
                 >
                   <span className="hub-scan-type-btn__icon">
-                    {type === 'PICKUP' ? '📦' : type === 'INBOUND' ? '📥' : '📤'}
+                    {type === 'PICKUP' ? (
+                      <Package size={15} />
+                    ) : type === 'INBOUND' ? (
+                      <ArrowDownToLine size={15} />
+                    ) : (
+                      <ArrowUpFromLine size={15} />
+                    )}
                   </span>
                   {formatScanTypeLabel(type)}
                 </button>

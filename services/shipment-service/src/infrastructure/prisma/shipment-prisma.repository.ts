@@ -127,7 +127,7 @@ export class ShipmentPrismaRepository extends ShipmentRepository {
       deliveryLatitude: input.deliveryLatitude ?? null,
       deliveryLongitude: input.deliveryLongitude ?? null,
       metadata: (input.metadata ?? null) as unknown as Prisma.InputJsonValue,
-      currentStatus: 'CREATED',
+      currentStatus: input.currentStatus ?? 'CREATED',
     };
 
     try {

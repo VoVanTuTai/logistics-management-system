@@ -38,6 +38,27 @@ function buildQrSvg(value: string): string {
   }
 }
 
+export function maskPhoneNumber(phone?: string | null): string {
+  if (!phone) return '';
+  const trimmed = phone.trim();
+  if (!trimmed) return '';
+
+  const hasPlus = trimmed.startsWith('+');
+  const digits = trimmed.replace(/\D/g, '');
+
+  if (digits.length <= 4) {
+    return '***';
+  }
+
+  if (digits.length <= 6) {
+    return `${digits.slice(0, 2)}***${digits.slice(-1)}`;
+  }
+
+  const prefix = digits.slice(0, 4);
+  const suffix = digits.slice(-3);
+  return `${hasPlus ? '+' : ''}${prefix} *** ${suffix}`;
+}
+
 export function buildShippingLabelHtml(shipment: ShipmentResponse): string {
   const meta = shipment.metadata || {};
   const sender = meta.sender || {};
@@ -47,7 +68,7 @@ export function buildShippingLabelHtml(shipment: ShipmentResponse): string {
 
   const codeText = escapeHtml(shipment.code);
   const senderName = escapeHtml(sender.name || 'Người gửi');
-  const senderPhone = escapeHtml(sender.phone || '');
+  const senderPhone = escapeHtml(maskPhoneNumber(sender.phone || ''));
   const senderAddress = newlineToBreaks(
     sender.address ||
     [sender.addressDetail, sender.ward, sender.district, sender.province].filter(Boolean).join(', ') ||
@@ -55,7 +76,7 @@ export function buildShippingLabelHtml(shipment: ShipmentResponse): string {
   );
 
   const receiverName = escapeHtml(receiver.name || 'Người nhận');
-  const receiverPhone = escapeHtml(receiver.phone || '');
+  const receiverPhone = escapeHtml(maskPhoneNumber(receiver.phone || ''));
   const receiverAddress = newlineToBreaks(
     receiver.address ||
     [receiver.addressDetail, receiver.ward, receiver.district, receiver.province].filter(Boolean).join(', ') ||

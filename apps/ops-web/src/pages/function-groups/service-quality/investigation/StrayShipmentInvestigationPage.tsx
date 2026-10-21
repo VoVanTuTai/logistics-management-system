@@ -14,6 +14,23 @@ import type {
   InvestigationCase,
   InvestigationStatus,
 } from '../../../../features/investigation/investigation.types';
+import {
+  FileSearch,
+  Zap,
+  Scale,
+  Clock,
+  Building2,
+  Package,
+  DollarSign,
+  MapPin,
+  Tag,
+  Shield,
+  AlertTriangle,
+  CheckCircle2,
+  Video,
+  X,
+  Target,
+} from 'lucide-react';
 import './StrayShipmentInvestigationPage.css';
 
 function formatVND(amount: number): string {
@@ -104,7 +121,7 @@ export const StrayShipmentInvestigationPage: React.FC = () => {
   // Action: Trigger Auto Scan for stale shipments
   const handleAutoScan = () => {
     showAlert(
-      '🔍 Hệ thống đã rà soát toàn mạng: Phát hiện thêm 2 vận đơn lưu kho >48h tại Hub Đà Nẵng và Bưu cục Hà Đông. Đã tự động cập nhật nhật ký giám định.',
+      'Hệ thống đã rà soát toàn mạng: Phát hiện thêm 2 vận đơn lưu kho >48h tại Hub Đà Nẵng và Bưu cục Hà Đông. Đã tự động cập nhật nhật ký giám định.',
     );
   };
 
@@ -131,7 +148,7 @@ export const StrayShipmentInvestigationPage: React.FC = () => {
     setCctvUrl('');
     setCctvRange('');
     setCctvNotes('');
-    showAlert('✅ Đã tiếp nhận bằng chứng giải trình & video CCTV. Ban Giám sát đang thẩm định.');
+    showAlert('Đã tiếp nhận bằng chứng giải trình & video CCTV. Ban Giám sát đang thẩm định.');
   };
 
   // Action: Resolve as Found in Warehouse
@@ -154,7 +171,7 @@ export const StrayShipmentInvestigationPage: React.FC = () => {
     setFoundNotes('');
     setFoundOperator('');
     showAlert(
-      `🎉 Xuất sắc! Đã giải cứu đơn hàng ${selectedCase.shipmentCode}. Kiện hàng đã được hoàn kho và xuất tiếp, tiết kiệm ${formatVND(selectedCase.declaredValue)} tiền bồi hoàn!`,
+      `Đã tìm thấy đơn hàng ${selectedCase.shipmentCode}. Kiện hàng đã được hoàn kho và xuất tiếp, tiết kiệm ${formatVND(selectedCase.declaredValue)} tiền bồi hoàn!`,
     );
   };
 
@@ -175,7 +192,7 @@ export const StrayShipmentInvestigationPage: React.FC = () => {
     setIsEscalateModalOpen(false);
     setAdjNotes('');
     showAlert(
-      `⚖️ Đã hoàn tất phán quyết trách nhiệm! Tự động tạo Hồ sơ bồi thường ${createdClaim.claimCode} cho đơn ${createdClaim.shipmentCode}.`,
+      `Đã hoàn tất phán quyết trách nhiệm! Tự động tạo Hồ sơ bồi thường ${createdClaim.claimCode} cho đơn ${createdClaim.shipmentCode}.`,
     );
   };
 
@@ -184,7 +201,7 @@ export const StrayShipmentInvestigationPage: React.FC = () => {
     if (!selectedCase) return;
     const updated = extendHearingDeadline(selectedCase.id, 12);
     setCases(updated);
-    showAlert('⏱️ Đã gia hạn thêm 12 giờ giải trình cho đơn vị theo yêu cầu trích xuất CCTV.');
+    showAlert('Đã gia hạn thêm 12 giờ giải trình cho đơn vị theo yêu cầu trích xuất CCTV.');
   };
 
   const remaining = calculateRemainingHours(selectedCase?.hearingDeadlineAt);
@@ -194,14 +211,18 @@ export const StrayShipmentInvestigationPage: React.FC = () => {
       {/* Header */}
       <div className="investigation-header">
         <div className="investigation-title-box">
-          <h1>🕵️ Trung Tâm Giám Định Đơn Lạc & Phân Tích Vết Quét</h1>
+          <h1>
+            <FileSearch size={22} style={{ marginRight: 8, verticalAlign: 'middle', display: 'inline-block' }} aria-hidden="true" />
+            Trung Tâm Giám Định Đơn Lạc & Phân Tích Vết Quét
+          </h1>
           <p>
             Trợ lý AI đọc và rà soát lịch sử log thao tác, tự động bắt điểm đứt gãy hành trình, đánh giá đơn vị tình nghi và kích hoạt quy trình giải trình 24h trước khi quy trách nhiệm bồi thường.
           </p>
         </div>
         <div className="investigation-actions">
-          <button type="button" className="btn-auto-scan" onClick={handleAutoScan}>
-            ⚡ Quét Đơn Mất Tín Hiệu Toàn Mạng
+          <button type="button" className="btn-auto-scan" onClick={handleAutoScan} style={{ display: 'inline-flex', alignItems: 'center' }}>
+            <Zap size={14} style={{ marginRight: 6 }} aria-hidden="true" />
+            Quét Đơn Mất Tín Hiệu Toàn Mạng
           </button>
         </div>
       </div>
@@ -226,7 +247,9 @@ export const StrayShipmentInvestigationPage: React.FC = () => {
       {/* KPI Banner */}
       <div className="investigation-kpi-grid">
         <div className="inv-kpi-card active-cases">
-          <div className="inv-kpi-icon blue">🔎</div>
+          <div className="inv-kpi-icon blue">
+            <FileSearch size={22} aria-hidden="true" />
+          </div>
           <div className="inv-kpi-info">
             <div className="inv-kpi-label">Tổng Vụ Việc Đang Xử Lý</div>
             <div className="inv-kpi-value">{kpis.total} hồ sơ</div>
@@ -235,7 +258,9 @@ export const StrayShipmentInvestigationPage: React.FC = () => {
         </div>
 
         <div className="inv-kpi-card hearing">
-          <div className="inv-kpi-icon amber">⏳</div>
+          <div className="inv-kpi-icon amber">
+            <Clock size={22} aria-hidden="true" />
+          </div>
           <div className="inv-kpi-info">
             <div className="inv-kpi-label">Đang Mở Giải Trình 24h</div>
             <div className="inv-kpi-value">{kpis.inHearing} vụ việc</div>
@@ -244,7 +269,9 @@ export const StrayShipmentInvestigationPage: React.FC = () => {
         </div>
 
         <div className="inv-kpi-card found-rate">
-          <div className="inv-kpi-icon green">🎯</div>
+          <div className="inv-kpi-icon green">
+            <Target size={22} aria-hidden="true" />
+          </div>
           <div className="inv-kpi-info">
             <div className="inv-kpi-label">Tỷ Lệ Tìm Thấy Hàng (Cứu Đơn)</div>
             <div className="inv-kpi-value">{kpis.foundRate}%</div>
@@ -253,7 +280,9 @@ export const StrayShipmentInvestigationPage: React.FC = () => {
         </div>
 
         <div className="inv-kpi-card escalated">
-          <div className="inv-kpi-icon red">⚖️</div>
+          <div className="inv-kpi-icon red">
+            <Scale size={22} aria-hidden="true" />
+          </div>
           <div className="inv-kpi-info">
             <div className="inv-kpi-label">Đã Chuyển Phán Quyết Bồi Thường</div>
             <div className="inv-kpi-value">{kpis.escalated} hồ sơ</div>
@@ -328,7 +357,8 @@ export const StrayShipmentInvestigationPage: React.FC = () => {
                     </div>
 
                     <div className="inv-item-breakpoint">
-                      ⚠️ {BREAK_POINT_LABELS[item.breakPointType]}
+                      <AlertTriangle size={13} style={{ marginRight: 4, verticalAlign: 'middle', display: 'inline-block' }} aria-hidden="true" />
+                      {BREAK_POINT_LABELS[item.breakPointType]}
                     </div>
                   </div>
                 );
@@ -344,13 +374,23 @@ export const StrayShipmentInvestigationPage: React.FC = () => {
             <div className="workspace-header-bar">
               <div className="ws-case-info">
                 <h2>
-                  🔍 Hồ Sơ Giám Định: {selectedCase.investigationCode} — Mã Đơn:{' '}
+                  <FileSearch size={18} style={{ marginRight: 6, verticalAlign: 'middle', display: 'inline-block' }} aria-hidden="true" />
+                  Hồ Sơ Giám Định: {selectedCase.investigationCode} — Mã Đơn:{' '}
                   <span style={{ color: '#2563eb' }}>{selectedCase.shipmentCode}</span>
                 </h2>
                 <div className="ws-case-meta">
-                  <span>🏢 Tuyến: <strong>{selectedCase.originHubName} ➔ {selectedCase.destinationHubName}</strong></span>
-                  <span>📦 Hàng: <strong>{selectedCase.packageDescription}</strong> ({selectedCase.declaredWeightKg} kg)</span>
-                  <span>💰 Khai giá: <strong style={{ color: '#dc2626' }}>{formatVND(selectedCase.declaredValue)}</strong></span>
+                  <span>
+                    <Building2 size={13} style={{ marginRight: 4, verticalAlign: 'middle', display: 'inline-block' }} aria-hidden="true" />
+                    Tuyến: <strong>{selectedCase.originHubName} ➔ {selectedCase.destinationHubName}</strong>
+                  </span>
+                  <span>
+                    <Package size={13} style={{ marginRight: 4, verticalAlign: 'middle', display: 'inline-block' }} aria-hidden="true" />
+                    Hàng: <strong>{selectedCase.packageDescription}</strong> ({selectedCase.declaredWeightKg} kg)
+                  </span>
+                  <span>
+                    <DollarSign size={13} style={{ marginRight: 4, verticalAlign: 'middle', display: 'inline-block' }} aria-hidden="true" />
+                    Khai giá: <strong style={{ color: '#dc2626' }}>{formatVND(selectedCase.declaredValue)}</strong>
+                  </span>
                 </div>
               </div>
 
@@ -363,7 +403,9 @@ export const StrayShipmentInvestigationPage: React.FC = () => {
             {selectedCase.status === 'IN_HEARING' && (
               <div className="hearing-countdown-banner">
                 <div className="hearing-left">
-                  <span className="hearing-clock-icon">⏰</span>
+                  <span className="hearing-clock-icon">
+                    <Clock size={16} aria-hidden="true" />
+                  </span>
                   <div className="hearing-text">
                     <h4>CỬA SỔ GIẢI TRÌNH &amp; PHẢN BIỆN (24-HOUR DISPUTE HEARING)</h4>
                     <p>
@@ -373,8 +415,9 @@ export const StrayShipmentInvestigationPage: React.FC = () => {
                 </div>
 
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <div className="hearing-countdown-tag">
-                    ⏳ {remaining.text}
+                  <div className="hearing-countdown-tag" style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                    <Clock size={13} aria-hidden="true" />
+                    <span>{remaining.text}</span>
                   </div>
                   <button
                     type="button"
@@ -410,7 +453,7 @@ export const StrayShipmentInvestigationPage: React.FC = () => {
                   color: '#065f46',
                 }}
               >
-                <span style={{ fontSize: '24px' }}>🎉</span>
+                <CheckCircle2 size={24} aria-hidden="true" />
                 <div>
                   <h4 style={{ margin: '0 0 2px 0', fontSize: '14px', fontWeight: 700 }}>
                     ĐÃ GIẢI CỨU ĐƠN HÀNG THÀNH CÔNG!
@@ -436,7 +479,7 @@ export const StrayShipmentInvestigationPage: React.FC = () => {
                   color: '#991b1b',
                 }}
               >
-                <span style={{ fontSize: '24px' }}>⚖️</span>
+                <Scale size={24} aria-hidden="true" />
                 <div>
                   <h4 style={{ margin: '0 0 2px 0', fontSize: '14px', fontWeight: 700 }}>
                     ĐÃ KẾT LUẬN PHÁN QUYẾT &amp; CHUYỂN BỒI THƯỜNG
@@ -450,7 +493,7 @@ export const StrayShipmentInvestigationPage: React.FC = () => {
 
             {/* Preliminary Investigation Report */}
             <div>
-              <h3 className="ws-section-title">📑 Báo Cáo Giám Định Sơ Bộ (AI &amp; Audit Engine)</h3>
+              <h3 className="ws-section-title">Báo Cáo Giám Định Sơ Bộ (AI &amp; Audit Engine)</h3>
               <div className="preliminary-report-box">
                 <div className="report-summary-grid">
                   <div>
@@ -458,7 +501,8 @@ export const StrayShipmentInvestigationPage: React.FC = () => {
                       ĐIỂM ĐỨT GÃY PHÁT HIỆN:
                     </div>
                     <div style={{ fontSize: '14px', fontWeight: 700, color: '#dc2626', marginBottom: '8px' }}>
-                      ⚠️ {BREAK_POINT_LABELS[selectedCase.breakPointType]}
+                      <AlertTriangle size={14} style={{ marginRight: 4, verticalAlign: 'middle', display: 'inline-block' }} aria-hidden="true" />
+                      {BREAK_POINT_LABELS[selectedCase.breakPointType]}
                     </div>
                     <p style={{ margin: 0, fontSize: '13px', color: '#334155', lineHeight: '1.5' }}>
                       {selectedCase.preliminaryReport.breakPointDescription}
@@ -501,7 +545,10 @@ export const StrayShipmentInvestigationPage: React.FC = () => {
 
             {/* Domino Visual Audit Timeline */}
             <div>
-              <h3 className="ws-section-title">⏱️ Chuỗi Vết Quét Thao Tác (Audit Trail Timeline)</h3>
+              <h3 className="ws-section-title">
+                <Clock size={16} style={{ marginRight: 6, verticalAlign: 'middle', display: 'inline-block' }} aria-hidden="true" />
+                Chuỗi Vết Quét Thao Tác (Audit Trail Timeline)
+              </h3>
               <div className="audit-timeline-container">
                 {selectedCase.auditTrail.map((scan) => (
                   <div
@@ -514,22 +561,35 @@ export const StrayShipmentInvestigationPage: React.FC = () => {
                     </div>
 
                     <div className="audit-step-meta">
-                      <span>📍 Địa điểm: <strong>{scan.locationName} ({scan.locationCode})</strong></span>
-                      <span>👤 Nhân sự: <strong>{scan.operator}</strong></span>
+                      <span>
+                        <MapPin size={13} style={{ marginRight: 4, verticalAlign: 'middle', display: 'inline-block' }} aria-hidden="true" />
+                        Địa điểm: <strong>{scan.locationName} ({scan.locationCode})</strong>
+                      </span>
+                      <span>Nhân sự: <strong>{scan.operator}</strong></span>
                       {scan.recordedWeightKg && (
-                        <span>⚖️ Cân nặng: <strong>{scan.recordedWeightKg} kg</strong></span>
+                        <span>
+                          <Scale size={13} style={{ marginRight: 4, verticalAlign: 'middle', display: 'inline-block' }} aria-hidden="true" />
+                          Cân nặng: <strong>{scan.recordedWeightKg} kg</strong>
+                        </span>
                       )}
                       {scan.bagCode && (
-                        <span>🏷️ Mã bao: <strong>{scan.bagCode}</strong></span>
+                        <span>
+                          <Tag size={13} style={{ marginRight: 4, verticalAlign: 'middle', display: 'inline-block' }} aria-hidden="true" />
+                          Mã bao: <strong>{scan.bagCode}</strong>
+                        </span>
                       )}
                       {scan.sealNumber && (
-                        <span>🔒 Kẹp chì: <strong>{scan.sealNumber}</strong></span>
+                        <span>
+                          <Shield size={13} style={{ marginRight: 4, verticalAlign: 'middle', display: 'inline-block' }} aria-hidden="true" />
+                          Kẹp chì: <strong>{scan.sealNumber}</strong>
+                        </span>
                       )}
                     </div>
 
                     {scan.anomalyNote && (
                       <div className="audit-anomaly-tag">
-                        ⚠️ {scan.anomalyNote}
+                        <AlertTriangle size={13} style={{ marginRight: 4, verticalAlign: 'middle', display: 'inline-block' }} aria-hidden="true" />
+                        {scan.anomalyNote}
                       </div>
                     )}
                   </div>
@@ -540,8 +600,9 @@ export const StrayShipmentInvestigationPage: React.FC = () => {
             {/* Dispute & CCTV Evidences */}
             <div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-                <h3 className="ws-section-title" style={{ margin: 0 }}>
-                  📹 Bằng Chứng Phản Biện &amp; Video Camera CCTV ({selectedCase.disputeEvidences.length})
+                <h3 className="ws-section-title" style={{ margin: 0, display: 'inline-flex', alignItems: 'center' }}>
+                  <Video size={16} style={{ marginRight: 6, verticalAlign: 'middle' }} aria-hidden="true" />
+                  Bằng Chứng Phản Biện &amp; Video Camera CCTV ({selectedCase.disputeEvidences.length})
                 </h3>
                 {selectedCase.status === 'IN_HEARING' && (
                   <button
@@ -564,7 +625,7 @@ export const StrayShipmentInvestigationPage: React.FC = () => {
                     <div key={dsp.id} className="evidence-list-item">
                       <div className="evidence-top">
                         <span>
-                          👤 Người nộp: <strong>{dsp.submittedBy}</strong> ({dsp.partyName})
+                          Người nộp: <strong>{dsp.submittedBy}</strong> ({dsp.partyName})
                         </span>
                         <span style={{ color: '#64748b' }}>
                           {new Date(dsp.submittedAt).toLocaleString('vi-VN')}
@@ -572,8 +633,9 @@ export const StrayShipmentInvestigationPage: React.FC = () => {
                       </div>
 
                       {dsp.cctvTimestampRange && (
-                        <div style={{ fontSize: '12px', color: '#b45309', fontWeight: 600 }}>
-                          ⏱️ Khung giờ trích xuất camera: {dsp.cctvTimestampRange}
+                        <div style={{ fontSize: '12px', color: '#b45309', fontWeight: 600, display: 'inline-flex', alignItems: 'center' }}>
+                          <Clock size={13} style={{ marginRight: 4 }} aria-hidden="true" />
+                          Khung giờ trích xuất camera: {dsp.cctvTimestampRange}
                         </div>
                       )}
 
@@ -588,8 +650,10 @@ export const StrayShipmentInvestigationPage: React.FC = () => {
                             target="_blank"
                             rel="noopener noreferrer"
                             className="evidence-link-btn"
+                            style={{ display: 'inline-flex', alignItems: 'center' }}
                           >
-                            🎥 Mở xem Video Camera CCTV bàn dỡ trích xuất ↗
+                            <Video size={13} style={{ marginRight: 5 }} aria-hidden="true" />
+                            Mở xem Video Camera CCTV bàn dỡ trích xuất ↗
                           </a>
                         </div>
                       )}
@@ -607,15 +671,19 @@ export const StrayShipmentInvestigationPage: React.FC = () => {
                     type="button"
                     className="btn-resolve-found"
                     onClick={() => setIsFoundModalOpen(true)}
+                    style={{ display: 'inline-flex', alignItems: 'center' }}
                   >
-                    ✅ Đã Tìm Thấy Hàng Trong Kho (Cứu Đơn)
+                    <CheckCircle2 size={15} style={{ marginRight: 6 }} aria-hidden="true" />
+                    Đã Tìm Thấy Hàng Trong Kho (Cứu Đơn)
                   </button>
                   <button
                     type="button"
                     className="btn-escalate-claim"
                     onClick={() => setIsEscalateModalOpen(true)}
+                    style={{ display: 'inline-flex', alignItems: 'center' }}
                   >
-                    ⚖️ Xác Nhận Phán Quyết &amp; Chuyển Bồi Thường
+                    <Scale size={15} style={{ marginRight: 6 }} aria-hidden="true" />
+                    Xác Nhận Phán Quyết &amp; Chuyển Bồi Thường
                   </button>
                 </>
               )}
@@ -629,13 +697,17 @@ export const StrayShipmentInvestigationPage: React.FC = () => {
         <div className="inv-modal-overlay" onClick={() => setIsCctvModalOpen(false)}>
           <div className="inv-modal-content" onClick={(e) => e.stopPropagation()}>
             <div className="inv-modal-header">
-              <h3>📹 Nộp Bằng Chứng CCTV / Biên Bản Phản Biện</h3>
+              <h3 style={{ display: 'inline-flex', alignItems: 'center' }}>
+                <Video size={18} style={{ marginRight: 6 }} aria-hidden="true" />
+                Nộp Bằng Chứng CCTV / Biên Bản Phản Biện
+              </h3>
               <button
                 type="button"
                 onClick={() => setIsCctvModalOpen(false)}
-                style={{ background: 'none', border: 'none', fontSize: '18px', cursor: 'pointer' }}
+                style={{ background: 'none', border: 'none', fontSize: '18px', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+                aria-label="Đóng"
               >
-                ✕
+                <X size={18} aria-hidden="true" />
               </button>
             </div>
             <form onSubmit={handleSubmitCctv}>
@@ -709,13 +781,17 @@ export const StrayShipmentInvestigationPage: React.FC = () => {
         <div className="inv-modal-overlay" onClick={() => setIsFoundModalOpen(false)}>
           <div className="inv-modal-content" onClick={(e) => e.stopPropagation()}>
             <div className="inv-modal-header">
-              <h3>🎉 Xác Nhận Đã Tìm Thấy Hàng (Hoàn Kho &amp; Cứu Đơn)</h3>
+              <h3 style={{ display: 'inline-flex', alignItems: 'center' }}>
+                <CheckCircle2 size={18} style={{ marginRight: 6 }} aria-hidden="true" />
+                Xác Nhận Đã Tìm Thấy Hàng (Hoàn Kho &amp; Cứu Đơn)
+              </h3>
               <button
                 type="button"
                 onClick={() => setIsFoundModalOpen(false)}
-                style={{ background: 'none', border: 'none', fontSize: '18px', cursor: 'pointer' }}
+                style={{ background: 'none', border: 'none', fontSize: '18px', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+                aria-label="Đóng"
               >
-                ✕
+                <X size={18} aria-hidden="true" />
               </button>
             </div>
             <form onSubmit={handleResolveFound}>
@@ -782,13 +858,17 @@ export const StrayShipmentInvestigationPage: React.FC = () => {
         <div className="inv-modal-overlay" onClick={() => setIsEscalateModalOpen(false)}>
           <div className="inv-modal-content" onClick={(e) => e.stopPropagation()}>
             <div className="inv-modal-header">
-              <h3>⚖️ Xác Nhận Phán Quyết &amp; Chuyển Sang Bồi Thường</h3>
+              <h3 style={{ display: 'inline-flex', alignItems: 'center' }}>
+                <Scale size={18} style={{ marginRight: 6 }} aria-hidden="true" />
+                Xác Nhận Phán Quyết &amp; Chuyển Sang Bồi Thường
+              </h3>
               <button
                 type="button"
                 onClick={() => setIsEscalateModalOpen(false)}
-                style={{ background: 'none', border: 'none', fontSize: '18px', cursor: 'pointer' }}
+                style={{ background: 'none', border: 'none', fontSize: '18px', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+                aria-label="Đóng"
               >
-                ✕
+                <X size={18} aria-hidden="true" />
               </button>
             </div>
             <form onSubmit={handleEscalateClaim}>
