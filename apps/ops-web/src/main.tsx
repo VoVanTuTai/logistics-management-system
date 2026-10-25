@@ -3,6 +3,10 @@ import { createRoot } from 'react-dom/client';
 
 import { BootstrapApp } from './app/bootstrap';
 import './app/theme.css';
+import { initGlobalColumnSelection } from './hooks/useColumnSelection';
+
+// Initialize global column-wise text selection and bulk copying for all ops tables
+initGlobalColumnSelection();
 
 // Automatically handle Vite dynamic import chunk failures when a new production version is deployed
 if (typeof window !== 'undefined') {

@@ -24,7 +24,7 @@ export function useTasksQuery(
     ],
     queryFn: () => tasksClient.list(accessToken, filters),
     enabled: Boolean(accessToken),
-    refetchInterval: options?.refetchInterval ?? 5000,
+    refetchInterval: options?.refetchInterval ?? 15000,
     refetchOnWindowFocus: true,
   });
 }

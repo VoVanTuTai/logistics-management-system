@@ -626,16 +626,18 @@ export function OperationalDataMonitorPage({
               <tr key={`${row.id}-${row.code}`}>
                 <td>{(page - 1) * PAGE_SIZE + index + 1}</td>
                 <td>
-                  {row.isShipmentCode ? (
-                    <CopyableShipmentCode code={row.code} className="ops-data-monitor__code" />
-                  ) : row.codePath ? (
-                    <Link className="ops-data-monitor__code" to={row.codePath}>
-                      {row.code}
-                    </Link>
-                  ) : (
-                    <strong className="ops-data-monitor__code">{row.code}</strong>
-                  )}
-                  {row.codeTo ? <span>{row.codeTo}</span> : null}
+                  <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, whiteSpace: 'nowrap' }}>
+                    {row.isShipmentCode ? (
+                      <CopyableShipmentCode code={row.code} className="ops-data-monitor__code" />
+                    ) : row.codePath ? (
+                      <Link className="ops-data-monitor__code" to={row.codePath}>
+                        {row.code}
+                      </Link>
+                    ) : (
+                      <strong className="ops-data-monitor__code">{row.code}</strong>
+                    )}
+                    {row.codeTo ? <span style={{ color: '#64748b', fontSize: 11 }}>({row.codeTo})</span> : null}
+                  </div>
                 </td>
                 <td>{row.hubCode}</td>
                 <td>{row.oppositeHubCode}</td>
@@ -647,7 +649,9 @@ export function OperationalDataMonitorPage({
                     {row.statusLabel}
                   </span>
                 </td>
-                <td>{row.note}</td>
+                <td style={{ maxWidth: 220, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={row.note}>
+                  {row.note}
+                </td>
               </tr>
             ))}
             {!isLoading && pagedRows.length === 0 ? (

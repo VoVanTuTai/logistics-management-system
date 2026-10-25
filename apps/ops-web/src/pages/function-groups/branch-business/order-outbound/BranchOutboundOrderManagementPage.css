@@ -160,19 +160,30 @@
 .ops-branch-outbound-orders th,
 .ops-branch-outbound-orders td {
   border-bottom: 1px solid #e2e8f0;
-  padding: 10px;
+  padding: 6px 10px;
   color: #475569;
   font-size: 13px;
   text-align: left;
   vertical-align: middle;
+  white-space: nowrap;
+  height: 38px;
+  box-sizing: border-box;
+}
+
+.ops-branch-outbound-orders tbody tr:hover td {
+  background-color: #f8faff;
 }
 
 .ops-branch-outbound-orders th {
   background: #f8fafc;
   color: #334155;
   font-size: 12px;
-  text-transform: none;
-  letter-spacing: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  font-weight: 700;
+  position: sticky;
+  top: 0;
+  z-index: 2;
 }
 
 .ops-branch-outbound-orders__code {

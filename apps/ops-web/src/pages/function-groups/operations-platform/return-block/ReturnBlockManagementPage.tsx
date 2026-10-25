@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { Zap, ShieldCheck, AlertTriangle } from 'lucide-react';
 
 import { routePaths } from '../../../../navigation/routes';
@@ -14,6 +14,7 @@ import { useAuthStore } from '../../../../store/authStore';
 import { formatNdrStatusLabel, formatShipmentStatusLabel } from '../../../../utils/logisticsLabels';
 import { canAccessOpsFeature, resolveOpsActor } from '../../../../features/permissions/opsPermissions';
 import { CopyableShipmentCode } from '../../../shared/CopyableShipmentCode';
+import { ReturnBlockRegistrationPage } from './ReturnBlockRegistrationPage';
 
 import '../data-monitoring/OperationalDataMonitorPage.css';
 import './ReturnBlockManagementPage.css';
@@ -373,6 +374,29 @@ export function ReturnBlockManagementPage(): React.JSX.Element {
   const [fastTrackCustomNote, setFastTrackCustomNote] = useState<string>('');
   const [isSubmittingFastTrack, setIsSubmittingFastTrack] = useState<boolean>(false);
 
+  // Register Modal state (Integrated Registration)
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [isRegisterModalOpen, setIsRegisterModalOpen] = useState(
+    searchParams.get('action') === 'create',
+  );
+
+  useEffect(() => {
+    if (searchParams.get('action') === 'create') {
+      setIsRegisterModalOpen(true);
+    }
+  }, [searchParams]);
+
+  const closeRegisterModal = () => {
+    setIsRegisterModalOpen(false);
+    if (searchParams.get('action') === 'create') {
+      setSearchParams((prev) => {
+        const next = new URLSearchParams(prev);
+        next.delete('action');
+        return next;
+      });
+    }
+  };
+
   const fetchReturnOrders = useCallback(async () => {
     if (!accessToken) {
       setOrders([]);
@@ -597,8 +621,9 @@ export function ReturnBlockManagementPage(): React.JSX.Element {
           <h3>Tra cứu danh sách chuyển hoàn & Tiến độ phát lại</h3>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             <span>{isLoading ? 'Đang tải...' : 'Dữ liệu thời gian thực'}</span>
-            <Link
-              to={routePaths.returnBlockRegistration}
+            <button
+              type="button"
+              onClick={() => setIsRegisterModalOpen(true)}
               style={{
                 display: 'inline-flex',
                 alignItems: 'center',
@@ -607,15 +632,16 @@ export function ReturnBlockManagementPage(): React.JSX.Element {
                 borderRadius: '8px',
                 background: '#4f46e5',
                 color: '#ffffff',
-                textDecoration: 'none',
+                border: 'none',
                 fontWeight: 600,
                 fontSize: '13px',
+                cursor: 'pointer',
                 boxShadow: '0 1px 2px rgba(0, 0, 0, 0.05)',
                 transition: 'background 0.15s ease',
               }}
             >
               ➕ Đăng ký chuyển hoàn
-            </Link>
+            </button>
           </div>
         </header>
         <div className="ops-return-list__panel-body">
@@ -721,40 +747,31 @@ export function ReturnBlockManagementPage(): React.JSX.Element {
                     <td>
                       <strong className="ops-return-list__code">{order.newCode}</strong>
                     </td>
-                    <td>
-                      <div className="ops-return-list__stage-cell">
-                        <span className={`ops-return-list__stage-badge ops-return-list__stage-badge--${stageInfo.classModifier}`}>
-                          {stageInfo.label}
-                        </span>
-                        {order.isFastTrackApproved && order.fastTrackApprovedBy ? (
-                          <small style={{ color: '#7e22ce', fontSize: '11px', fontWeight: 600 }}>
-                            Duyệt bởi: {order.fastTrackApprovedBy}
-                          </small>
-                        ) : isPendingOrRetrying ? (
-                          <small style={{ color: '#64748b', fontSize: '11px' }}>
-                            Phát lại: {order.nextRetryDate}
-                          </small>
+                    <td title={order.isFastTrackApproved && order.fastTrackApprovedBy ? `Duyệt bởi: ${order.fastTrackApprovedBy}` : isPendingOrRetrying ? `Phát lại: ${order.nextRetryDate}` : undefined}>
+                      <span className={`ops-return-list__stage-badge ops-return-list__stage-badge--${stageInfo.classModifier}`}>
+                        {stageInfo.label}
+                      </span>
+                    </td>
+                    <td title={order.assignedCourierPhone ? `SĐT: ${order.assignedCourierPhone}` : undefined}>
+                      <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, whiteSpace: 'nowrap' }}>
+                        <strong>{order.assignedCourierName || 'Courier Tuyến'}</strong>
+                        {order.assignedCourierPhone && order.assignedCourierPhone !== '---' ? (
+                          <span style={{ color: '#64748b', fontSize: 11 }}>({order.assignedCourierPhone})</span>
                         ) : null}
                       </div>
                     </td>
                     <td>
-                      <div className="ops-return-list__courier-cell">
-                        <strong>{order.assignedCourierName || 'Courier Tuyến'}</strong>
-                        <span>{order.assignedCourierPhone || '---'}</span>
-                      </div>
-                    </td>
-                    <td>
-                      <div className="ops-return-list__route-cell">
+                      <div style={{ display: 'inline-flex', alignItems: 'center', gap: 4, whiteSpace: 'nowrap' }}>
                         <strong>{order.returnHubCode}</strong>
-                        <span>{order.returnZoneCode}</span>
+                        {order.returnZoneCode ? <span style={{ color: '#64748b', fontSize: 11 }}>({order.returnZoneCode})</span> : null}
                       </div>
                     </td>
-                    <td>
-                      <div style={{ maxWidth: '220px', fontSize: '12px' }}>
-                        <div style={{ color: '#0f172a', fontWeight: 600, marginBottom: '2px' }}>
+                    <td style={{ maxWidth: 220, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={`${order.reason} (${order.sourceStatus})`}>
+                      <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, maxWidth: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        <span style={{ color: '#0f172a', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                           {order.reason}
-                        </div>
-                        <span style={{ color: '#64748b', fontSize: '11px' }}>{order.sourceStatus}</span>
+                        </span>
+                        <span style={{ color: '#64748b', fontSize: 11, whiteSpace: 'nowrap' }}>({order.sourceStatus})</span>
                       </div>
                     </td>
                     <td>{order.createdAt}</td>
@@ -993,6 +1010,78 @@ export function ReturnBlockManagementPage(): React.JSX.Element {
                 <span>{isSubmittingFastTrack ? 'Đang duyệt chuyển hoàn...' : 'Xác Nhận Duyệt Hoàn Ngay'}</span>
               </button>
             </footer>
+          </div>
+        </div>
+      ) : null}
+
+      {/* Integrated Return Registration Modal */}
+      {isRegisterModalOpen ? (
+        <div
+          role="dialog"
+          aria-modal="true"
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(15, 23, 42, 0.65)',
+            backdropFilter: 'blur(3px)',
+            zIndex: 1200,
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            padding: '24px',
+          }}
+        >
+          <div
+            style={{
+              background: '#ffffff',
+              borderRadius: '12px',
+              maxWidth: '960px',
+              width: '100%',
+              maxHeight: '92vh',
+              overflowY: 'auto',
+              padding: '20px 24px',
+              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+              position: 'relative',
+            }}
+          >
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                marginBottom: '16px',
+                borderBottom: '1px solid #e2e8f0',
+                paddingBottom: '10px',
+              }}
+            >
+              <h3 style={{ fontSize: '18px', fontWeight: 700, margin: 0, color: '#0f172a' }}>
+                ➕ Đăng ký Chuyển hoàn Đơn hàng
+              </h3>
+              <button
+                type="button"
+                onClick={closeRegisterModal}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  fontSize: '22px',
+                  lineHeight: 1,
+                  cursor: 'pointer',
+                  color: '#64748b',
+                  padding: '4px 8px',
+                }}
+                aria-label="Đóng modal đăng ký"
+              >
+                ✕
+              </button>
+            </div>
+            <ReturnBlockRegistrationPage
+              isModal
+              onSuccess={() => {
+                closeRegisterModal();
+                void fetchReturnOrders();
+              }}
+              onClose={closeRegisterModal}
+            />
           </div>
         </div>
       ) : null}

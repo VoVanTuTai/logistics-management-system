@@ -973,56 +973,69 @@ export function BranchDeliveryDispatchPage(): React.JSX.Element {
                       </td>
 
                       {visibleColumns.code && (
-                        <td style={{ ...shipmentTableStyles.shipmentCodeCell, width: widths.code, maxWidth: widths.code }} className="ops-shipment-code-cell">
-                          <CopyableShipmentCode code={item.shipmentCode} />
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 3 }}>
-                            <span style={shipmentTableStyles.platformBadge}>{service.platformLabel}</span>
-                            <span style={shipmentTableStyles.serviceTag}>{service.serviceLabel}</span>
-                          </div>
+                        <td
+                          style={{ ...shipmentTableStyles.shipmentCodeCell, width: widths.code, maxWidth: widths.code }}
+                          className="ops-shipment-code-cell"
+                        >
+                          <span
+                            className="ops-shipment-code-text"
+                            title="Bôi đen kéo chuột để sao chép mã vận đơn"
+                            style={{
+                              fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
+                              fontWeight: 700,
+                              color: 'var(--ops-primary, #0052cc)',
+                              userSelect: 'text',
+                              WebkitUserSelect: 'text',
+                              cursor: 'text',
+                              whiteSpace: 'nowrap',
+                              display: 'inline-block',
+                            }}
+                          >
+                            {item.shipmentCode}
+                          </span>
                         </td>
                       )}
 
                       {visibleColumns.status && (
                         <td style={{ ...shipmentTableStyles.cell, width: widths.status, maxWidth: widths.status }}>
-                          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, whiteSpace: 'nowrap' }}>
-                            <span style={getOpsStatusBadgeStyle(item.currentStatus)}>
-                              {statusLabel}
+                          <span style={getOpsStatusBadgeStyle(item.currentStatus)}>
+                            {statusLabel}
+                          </span>
+                          {order.sla === 'urgent' ? (
+                            <span
+                              title="Vận đơn cần phát sớm trong ca"
+                              style={{
+                                display: 'inline-block',
+                                color: '#b42318',
+                                backgroundColor: '#fef3f2',
+                                border: '1px solid #fee4e2',
+                                padding: '1px 5px',
+                                borderRadius: 4,
+                                fontSize: 11,
+                                fontWeight: 700,
+                                marginLeft: 4,
+                                whiteSpace: 'nowrap',
+                              }}
+                            >
+                              Cần phát sớm
                             </span>
-                            {order.sla === 'urgent' ? (
-                              <span
-                                title="Vận đơn cần phát sớm trong ca"
-                                style={{
-                                  display: 'inline-block',
-                                  color: '#b42318',
-                                  backgroundColor: '#fef3f2',
-                                  border: '1px solid #fee4e2',
-                                  padding: '1px 5px',
-                                  borderRadius: 4,
-                                  fontSize: 11,
-                                  fontWeight: 700,
-                                  whiteSpace: 'nowrap',
-                                }}
-                              >
-                                Cần phát sớm
-                              </span>
-                            ) : null}
-                            {item.requiresLabelReprint ? (
-                              <span
-                                title="Vận đơn cần in lại tem mới"
-                                style={shipmentTableStyles.reprintBadge}
-                              >
-                                In lại tem
-                              </span>
-                            ) : null}
-                            {item.isOperationLocked ? (
-                              <span
-                                title="Đơn hàng đang bị khóa thao tác"
-                                style={shipmentTableStyles.lockBadge}
-                              >
-                                Khóa
-                              </span>
-                            ) : null}
-                          </div>
+                          ) : null}
+                          {item.requiresLabelReprint ? (
+                            <span
+                              title="Vận đơn cần in lại tem mới"
+                              style={{ ...shipmentTableStyles.reprintBadge, marginLeft: 4 }}
+                            >
+                              In lại tem
+                            </span>
+                          ) : null}
+                          {item.isOperationLocked ? (
+                            <span
+                              title="Đơn hàng đang bị khóa thao tác"
+                              style={{ ...shipmentTableStyles.lockBadge, marginLeft: 4 }}
+                            >
+                              Khóa
+                            </span>
+                          ) : null}
                         </td>
                       )}
 
@@ -1036,30 +1049,32 @@ export function BranchDeliveryDispatchPage(): React.JSX.Element {
 
                       {visibleColumns.chargeableWeight && (
                         <td style={{ ...shipmentTableStyles.cell, width: widths.chargeableWeight, maxWidth: widths.chargeableWeight }}>
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                          <span
+                            title={chargeableWeightInfo.formulaHint}
+                            style={{
+                              fontFamily: 'monospace',
+                              fontWeight: 700,
+                              fontSize: 13,
+                              color: chargeableWeightInfo.isVolumetric ? '#ea580c' : '#0f172a',
+                              whiteSpace: 'nowrap',
+                            }}
+                          >
+                            {chargeableWeightInfo.weightText}
+                          </span>
+                          {chargeableWeightInfo.isVolumetric && (
                             <span
                               title={chargeableWeightInfo.formulaHint}
-                              style={{ fontFamily: 'monospace', fontWeight: 700, fontSize: 13, color: '#0f172a' }}
+                              style={{
+                                fontSize: 10,
+                                color: '#ea580c',
+                                fontWeight: 700,
+                                marginLeft: 4,
+                                whiteSpace: 'nowrap',
+                              }}
                             >
-                              {chargeableWeightInfo.weightText}
+                              📐 Thể tích IATA
                             </span>
-                            {chargeableWeightInfo.isVolumetric && (
-                              <span
-                                title={chargeableWeightInfo.formulaHint}
-                                style={{
-                                  fontSize: 10,
-                                  color: '#ea580c',
-                                  fontWeight: 700,
-                                  display: 'inline-flex',
-                                  alignItems: 'center',
-                                  gap: 2,
-                                  whiteSpace: 'nowrap',
-                                }}
-                              >
-                                📐 Thể tích IATA
-                              </span>
-                            )}
-                          </div>
+                          )}
                         </td>
                       )}
 
@@ -1068,7 +1083,7 @@ export function BranchDeliveryDispatchPage(): React.JSX.Element {
                           <div
                             className="ops-cell-scrollable"
                             title={item.senderName ?? 'Không có'}
-                            style={{ width: '100%', maxWidth: '100%', fontWeight: 600 }}
+                            style={{ width: '100%', maxWidth: '100%', fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}
                           >
                             {item.senderName ?? 'Không có'}
                           </div>
@@ -1093,6 +1108,9 @@ export function BranchDeliveryDispatchPage(): React.JSX.Element {
                               maxWidth: '100%',
                               fontSize: 12,
                               color: '#334155',
+                              whiteSpace: 'nowrap',
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
                             }}
                           >
                             {fullSenderAddress}
@@ -1105,7 +1123,7 @@ export function BranchDeliveryDispatchPage(): React.JSX.Element {
                           <div
                             className="ops-cell-scrollable"
                             title={item.receiverName ?? order.receiverName ?? 'Không có'}
-                            style={{ width: '100%', maxWidth: '100%', fontWeight: 600 }}
+                            style={{ width: '100%', maxWidth: '100%', fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}
                           >
                             {item.receiverName ?? order.receiverName ?? 'Không có'}
                           </div>
@@ -1124,37 +1142,30 @@ export function BranchDeliveryDispatchPage(): React.JSX.Element {
                         <td style={{ ...shipmentTableStyles.cell, width: widths.receiverAddress, maxWidth: widths.receiverAddress }}>
                           <div
                             className="ops-cell-scrollable"
-                            title={fullReceiverAddress}
+                            title={`${fullReceiverAddress}${item.deliveryNote ? ` • ${item.deliveryNote}` : ''}`}
                             style={{
                               width: '100%',
                               maxWidth: '100%',
                               fontSize: 12,
                               color: '#334155',
+                              whiteSpace: 'nowrap',
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
                             }}
                           >
-                            <div>{fullReceiverAddress}</div>
-                            <div style={shipmentTableStyles.addressSubline} title={`Đồng kiểm: ${inspectionPolicy}${item.deliveryNote ? ` • ${item.deliveryNote}` : ''}`}>
-                              <span style={shipmentTableStyles.inspectionTag}>[{inspectionPolicy}]</span>
-                              {item.deliveryNote ? <span>• {item.deliveryNote}</span> : null}
-                            </div>
+                            {fullReceiverAddress}
                           </div>
                         </td>
                       )}
 
                       {visibleColumns.cod && (
                         <td style={{ ...shipmentTableStyles.cell, width: widths.cod, maxWidth: widths.cod }}>
-                          <div style={{ display: 'flex', flexDirection: 'column' }}>
-                            <span style={{ fontWeight: 700, color: item.codAmount ? '#059669' : '#64748b', whiteSpace: 'nowrap' }}>
-                              {formatCurrency(item.codAmount)}
-                            </span>
-                            <div style={shipmentTableStyles.feeSubline}>
-                              <span>Cước: {formatCurrency(item.shippingFee)}</span>
-                              <span style={{ margin: '0 3px', color: '#cbd5e1' }}>•</span>
-                              <span style={{ color: feePayer.isReceiverPay ? '#d97706' : '#64748b', fontWeight: feePayer.isReceiverPay ? 700 : 500 }}>
-                                {feePayer.payerLabel}
-                              </span>
-                            </div>
-                          </div>
+                          <span
+                            title={`Cước: ${formatCurrency(item.shippingFee)} • ${feePayer.payerLabel}`}
+                            style={{ fontWeight: 700, color: item.codAmount ? '#059669' : '#64748b', whiteSpace: 'nowrap' }}
+                          >
+                            {formatCurrency(item.codAmount)}
+                          </span>
                         </td>
                       )}
 
@@ -1167,6 +1178,9 @@ export function BranchDeliveryDispatchPage(): React.JSX.Element {
                               width: '100%',
                               maxWidth: '100%',
                               fontSize: 12,
+                              whiteSpace: 'nowrap',
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
                             }}
                           >
                             <span>Hub: <strong>{item.receiverHubCode ?? item.destinationHubCode ?? '-'}</strong></span>

@@ -31,7 +31,15 @@
   border-radius: 4px;
   user-select: none;
   -webkit-user-select: none;
-  transition: color 0.15s, background-color 0.15s;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s, color 0.15s, background-color 0.15s;
+}
+
+.ops-copy-shipment-code-wrap:hover .ops-copy-shipment-code-btn,
+.ops-copy-shipment-code-btn[data-copied='true'] {
+  opacity: 1;
+  pointer-events: auto;
 }
 
 .ops-copy-shipment-code-btn:hover {
