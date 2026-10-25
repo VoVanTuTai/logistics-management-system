@@ -1289,42 +1289,50 @@ export function CustomerOrderDispatchPage(): React.JSX.Element {
                     </td>
 
                     {visibleColumns.code && (
-                      <td style={{ ...shipmentTableStyles.shipmentCodeCell, width: widths.code, maxWidth: widths.code }} className="ops-shipment-code-cell">
-                        {order.shipmentCode && order.shipmentCode !== '-' ? (
-                          <CopyableShipmentCode code={order.shipmentCode} />
-                        ) : (
-                          <span style={{ fontWeight: 700, color: '#1f2b6f' }}>{order.orderCode}</span>
-                        )}
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 3 }}>
-                          <span style={shipmentTableStyles.platformBadge}>{service.platformLabel}</span>
-                          <span style={shipmentTableStyles.serviceTag}>{service.serviceLabel}</span>
-                        </div>
+                      <td
+                        style={{ ...shipmentTableStyles.shipmentCodeCell, width: widths.code, maxWidth: widths.code }}
+                        className="ops-shipment-code-cell"
+                      >
+                        <span
+                          className="ops-shipment-code-text"
+                          title="Bôi đen kéo chuột để sao chép mã"
+                          style={{
+                            fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
+                            fontWeight: 700,
+                            color: 'var(--ops-primary, #0052cc)',
+                            userSelect: 'text',
+                            WebkitUserSelect: 'text',
+                            cursor: 'text',
+                            whiteSpace: 'nowrap',
+                            display: 'inline-block',
+                          }}
+                        >
+                          {order.shipmentCode && order.shipmentCode !== '-' ? order.shipmentCode : order.orderCode}
+                        </span>
                       </td>
                     )}
 
                     {visibleColumns.status && (
                       <td style={{ ...shipmentTableStyles.cell, width: widths.status, maxWidth: widths.status }}>
-                        <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, whiteSpace: 'nowrap' }}>
-                          <span style={statusBadgeStyle}>
-                            {statusBadgeLabel}
+                        <span style={statusBadgeStyle}>
+                          {statusBadgeLabel}
+                        </span>
+                        {shipment?.requiresLabelReprint ? (
+                          <span
+                            title="Vận đơn cần in lại tem mới"
+                            style={{ ...shipmentTableStyles.reprintBadge, marginLeft: 4 }}
+                          >
+                            In lại tem
                           </span>
-                          {shipment?.requiresLabelReprint ? (
-                            <span
-                              title="Vận đơn cần in lại tem mới"
-                              style={shipmentTableStyles.reprintBadge}
-                            >
-                              In lại tem
-                            </span>
-                          ) : null}
-                          {shipment?.isOperationLocked ? (
-                            <span
-                              title="Đơn hàng đang bị khóa thao tác"
-                              style={shipmentTableStyles.lockBadge}
-                            >
-                              Khóa
-                            </span>
-                          ) : null}
-                        </div>
+                        ) : null}
+                        {shipment?.isOperationLocked ? (
+                          <span
+                            title="Đơn hàng đang bị khóa thao tác"
+                            style={{ ...shipmentTableStyles.lockBadge, marginLeft: 4 }}
+                          >
+                            Khóa
+                          </span>
+                        ) : null}
                       </td>
                     )}
 
@@ -1338,30 +1346,32 @@ export function CustomerOrderDispatchPage(): React.JSX.Element {
 
                     {visibleColumns.chargeableWeight && (
                       <td style={{ ...shipmentTableStyles.cell, width: widths.chargeableWeight, maxWidth: widths.chargeableWeight }}>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                        <span
+                          title={chargeableWeightInfo.formulaHint}
+                          style={{
+                            fontFamily: 'monospace',
+                            fontWeight: 700,
+                            fontSize: 13,
+                            color: chargeableWeightInfo.isVolumetric ? '#ea580c' : '#0f172a',
+                            whiteSpace: 'nowrap',
+                          }}
+                        >
+                          {chargeableWeightInfo.weightText}
+                        </span>
+                        {chargeableWeightInfo.isVolumetric && (
                           <span
                             title={chargeableWeightInfo.formulaHint}
-                            style={{ fontFamily: 'monospace', fontWeight: 700, fontSize: 13, color: '#0f172a' }}
+                            style={{
+                              fontSize: 10,
+                              color: '#ea580c',
+                              fontWeight: 700,
+                              marginLeft: 4,
+                              whiteSpace: 'nowrap',
+                            }}
                           >
-                            {chargeableWeightInfo.weightText}
+                            📐 Thể tích IATA
                           </span>
-                          {chargeableWeightInfo.isVolumetric && (
-                            <span
-                              title={chargeableWeightInfo.formulaHint}
-                              style={{
-                                fontSize: 10,
-                                color: '#ea580c',
-                                fontWeight: 700,
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                gap: 2,
-                                whiteSpace: 'nowrap',
-                              }}
-                            >
-                              📐 Thể tích IATA
-                            </span>
-                          )}
-                        </div>
+                        )}
                       </td>
                     )}
 
@@ -1370,7 +1380,7 @@ export function CustomerOrderDispatchPage(): React.JSX.Element {
                         <div
                           className="ops-cell-scrollable"
                           title={shipment?.senderName ?? order.senderName ?? 'Không có'}
-                          style={{ width: '100%', maxWidth: '100%', fontWeight: 600 }}
+                          style={{ width: '100%', maxWidth: '100%', fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}
                         >
                           {shipment?.senderName ?? order.senderName ?? 'Không có'}
                         </div>
@@ -1395,6 +1405,9 @@ export function CustomerOrderDispatchPage(): React.JSX.Element {
                             maxWidth: '100%',
                             fontSize: 12,
                             color: '#334155',
+                            whiteSpace: 'nowrap',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
                           }}
                         >
                           {fullSenderAddress}
@@ -1407,7 +1420,7 @@ export function CustomerOrderDispatchPage(): React.JSX.Element {
                         <div
                           className="ops-cell-scrollable"
                           title={shipment?.receiverName ?? 'Không có'}
-                          style={{ width: '100%', maxWidth: '100%', fontWeight: 600 }}
+                          style={{ width: '100%', maxWidth: '100%', fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}
                         >
                           {shipment?.receiverName ?? 'Không có'}
                         </div>
@@ -1426,37 +1439,30 @@ export function CustomerOrderDispatchPage(): React.JSX.Element {
                       <td style={{ ...shipmentTableStyles.cell, width: widths.receiverAddress, maxWidth: widths.receiverAddress }}>
                         <div
                           className="ops-cell-scrollable"
-                          title={fullReceiverAddress}
+                          title={`${fullReceiverAddress}${order.note ? ` • ${order.note}` : ''}`}
                           style={{
                             width: '100%',
                             maxWidth: '100%',
                             fontSize: 12,
                             color: '#334155',
+                            whiteSpace: 'nowrap',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
                           }}
                         >
-                          <div>{fullReceiverAddress}</div>
-                          <div style={shipmentTableStyles.addressSubline} title={`Đồng kiểm: ${inspectionPolicy}${order.note ? ` • ${order.note}` : ''}`}>
-                            <span style={shipmentTableStyles.inspectionTag}>[{inspectionPolicy}]</span>
-                            {order.note && order.note !== '-' ? <span>• {order.note}</span> : null}
-                          </div>
+                          {fullReceiverAddress}
                         </div>
                       </td>
                     )}
 
                     {visibleColumns.cod && (
                       <td style={{ ...shipmentTableStyles.cell, width: widths.cod, maxWidth: widths.cod }}>
-                        <div style={{ display: 'flex', flexDirection: 'column' }}>
-                          <span style={{ fontWeight: 700, color: shipment?.codAmount ? '#059669' : '#64748b', whiteSpace: 'nowrap' }}>
-                            {formatCurrency(shipment?.codAmount ?? null)}
-                          </span>
-                          <div style={shipmentTableStyles.feeSubline}>
-                            <span>Cước: {formatCurrency(shipment?.shippingFee ?? null)}</span>
-                            <span style={{ margin: '0 3px', color: '#cbd5e1' }}>•</span>
-                            <span style={{ color: feePayer.isReceiverPay ? '#d97706' : '#64748b', fontWeight: feePayer.isReceiverPay ? 700 : 500 }}>
-                              {feePayer.payerLabel}
-                            </span>
-                          </div>
-                        </div>
+                        <span
+                          title={`Cước: ${formatCurrency(shipment?.shippingFee ?? null)} • ${feePayer.payerLabel}`}
+                          style={{ fontWeight: 700, color: shipment?.codAmount ? '#059669' : '#64748b', whiteSpace: 'nowrap' }}
+                        >
+                          {formatCurrency(shipment?.codAmount ?? null)}
+                        </span>
                       </td>
                     )}
 

@@ -9,6 +9,10 @@ const path = require('node:path');
 const ROOT_DIR = __dirname;
 const LOG_DIR = path.join(ROOT_DIR, '.tmp/pm2-logs');
 
+const DB_BASE = process.env.DATABASE_URL_BASE || 'postgresql://postgres:postgres@localhost:15432';
+const dbUrl = (dbName, connectionLimit = 3, poolTimeout = 10) =>
+  `${DB_BASE}/${dbName}?connection_limit=${connectionLimit}&pool_timeout=${poolTimeout}`;
+
 const commonEnv = {
   NODE_ENV: 'production',
   RABBITMQ_URL: 'amqp://guest:guest@localhost:5672',
@@ -26,7 +30,7 @@ module.exports = {
       env: {
         ...commonEnv,
         PORT: 3001,
-        DATABASE_URL: 'postgresql://postgres:postgres@localhost:15432/masterdata_db',
+        DATABASE_URL: dbUrl('masterdata_db', 3),
       },
       max_memory_restart: '180M',
       autorestart: true,
@@ -43,7 +47,15 @@ module.exports = {
       env: {
         ...commonEnv,
         PORT: 3002,
-        DATABASE_URL: 'postgresql://postgres:postgres@localhost:15432/shipment_db',
+        DATABASE_URL: dbUrl('shipment_db', 5),
+        NEXUS_INTEGRATION_WEBHOOK_ENABLED: 'true',
+        NEXUS_INTEGRATION_PARTNER_CODE: 'DT_COMMERCE',
+        NEXUS_INTEGRATION_WEBHOOK_URL: 'https://api.truongam.tech/api/v1/shipments/webhooks/nexus',
+        NEXUS_INTEGRATION_WEBHOOK_PATH: '/api/v1/shipments/webhooks/nexus',
+        NEXUS_INTEGRATION_WEBHOOK_SECRET: 'cdd02926713d53db0a3ed41265a73f6baf8e3a975a64c00b57aeda56ab3c9fe8',
+        NEXUS_INTEGRATION_WEBHOOK_MAX_ATTEMPTS: 3,
+        NEXUS_INTEGRATION_WEBHOOK_RETRY_DELAY_MS: 1000,
+        PUBLIC_TRACKING_PUBLIC_URL: 'https://tracking.nexus-ex.site',
       },
       max_memory_restart: '180M',
       autorestart: true,
@@ -60,7 +72,7 @@ module.exports = {
       env: {
         ...commonEnv,
         PORT: 3003,
-        DATABASE_URL: 'postgresql://postgres:postgres@localhost:15432/pickup_db',
+        DATABASE_URL: dbUrl('pickup_db', 3),
         SHIPMENT_SERVICE_URL: 'http://localhost:3002',
       },
       max_memory_restart: '180M',
@@ -78,7 +90,7 @@ module.exports = {
       env: {
         ...commonEnv,
         PORT: 3004,
-        DATABASE_URL: 'postgresql://postgres:postgres@localhost:15432/dispatch_db',
+        DATABASE_URL: dbUrl('dispatch_db', 3),
         DISPATCH_COURIER_OPTIONS: 'CR001,CR002,CR003',
         PICKUP_SERVICE_URL: 'http://localhost:3003',
         SHIPMENT_SERVICE_URL: 'http://localhost:3002',
@@ -99,7 +111,7 @@ module.exports = {
       env: {
         ...commonEnv,
         PORT: 3005,
-        DATABASE_URL: 'postgresql://postgres:postgres@localhost:15432/manifest_db',
+        DATABASE_URL: dbUrl('manifest_db', 3),
         SHIPMENT_SERVICE_URL: 'http://localhost:3002',
       },
       max_memory_restart: '180M',
@@ -117,7 +129,7 @@ module.exports = {
       env: {
         ...commonEnv,
         PORT: 3006,
-        DATABASE_URL: 'postgresql://postgres:postgres@localhost:15432/scan_db',
+        DATABASE_URL: dbUrl('scan_db', 3),
         SHIPMENT_SERVICE_URL: 'http://localhost:3002',
       },
       max_memory_restart: '180M',
@@ -135,7 +147,7 @@ module.exports = {
       env: {
         ...commonEnv,
         PORT: 3007,
-        DATABASE_URL: 'postgresql://postgres:postgres@localhost:15432/delivery_db',
+        DATABASE_URL: dbUrl('delivery_db', 5),
         SCAN_SERVICE_URL: 'http://localhost:3006',
         SHIPMENT_SERVICE_URL: 'http://localhost:3002',
       },
@@ -154,7 +166,7 @@ module.exports = {
       env: {
         ...commonEnv,
         PORT: 3008,
-        DATABASE_URL: 'postgresql://postgres:postgres@localhost:15432/tracking_db',
+        DATABASE_URL: dbUrl('tracking_db', 3),
       },
       max_memory_restart: '180M',
       autorestart: true,
@@ -171,7 +183,7 @@ module.exports = {
       env: {
         ...commonEnv,
         PORT: 3009,
-        DATABASE_URL: 'postgresql://postgres:postgres@localhost:15432/reporting_db',
+        DATABASE_URL: dbUrl('reporting_db', 3),
         REPORTING_CONSUMER_INTERVAL_MS: 1000,
         REPORTING_CONSUMER_BATCH_SIZE: 20,
       },
@@ -190,7 +202,7 @@ module.exports = {
       env: {
         ...commonEnv,
         PORT: 3010,
-        DATABASE_URL: 'postgresql://postgres:postgres@localhost:15432/auth_db',
+        DATABASE_URL: dbUrl('auth_db', 5),
         ACCESS_TOKEN_TTL_SECONDS: 86400,
         REFRESH_TOKEN_TTL_SECONDS: 2592000,
         MASTERDATA_SERVICE_URL: 'http://localhost:3001',
@@ -210,7 +222,7 @@ module.exports = {
       env: {
         ...commonEnv,
         PORT: 3011,
-        DATABASE_URL: 'postgresql://postgres:postgres@localhost:15432/payment_db',
+        DATABASE_URL: dbUrl('payment_db', 3),
         SHIPMENT_SERVICE_URL: 'http://localhost:3002',
       },
       max_memory_restart: '180M',
@@ -269,9 +281,10 @@ module.exports = {
         GATEWAY_BODY_LIMIT: '1mb',
         GATEWAY_RATE_LIMIT_ENABLED: 'true',
         GATEWAY_RATE_LIMIT_WINDOW_MS: 60000,
-        GATEWAY_RATE_LIMIT_MAX: 120,
-        GATEWAY_RATE_LIMIT_SKIP_PATHS: '/health,/metrics',
-        CHAT_DATABASE_URL: 'postgresql://postgres:postgres@localhost:15432/chat_db',
+        GATEWAY_RATE_LIMIT_MAX: 2400,
+        GATEWAY_RATE_LIMIT_SKIP_PATHS: '/health,/metrics,/locations-realtime,/tasks-realtime,/chat',
+        CHAT_DATABASE_URL: dbUrl('chat_db', 5),
+        CHAT_DATABASE_POOL_MAX: '5',
         CHAT_REDIS_URL: 'redis://localhost:6379',
         CHAT_REDIS_CHANNEL: 'gateway-bff:chat',
         CHAT_WS_TICKET_SECRET: 'nexus_chat_ws_ticket_secret_2026',
@@ -296,6 +309,18 @@ module.exports = {
         S3_SECRET_KEY: 'minioadmin123',
         S3_BUCKET_NAME: 'nexus-pod-images',
         S3_FORCE_PATH_STYLE: 'true',
+        NEXUS_INTEGRATION_AUTH_ENABLED: 'true',
+        NEXUS_INTEGRATION_PARTNER_CODE: 'DT_COMMERCE',
+        NEXUS_INTEGRATION_API_KEY: 'nx_live_2a52ba7928173fc9fd5cf5ffceee2342',
+        NEXUS_INTEGRATION_API_SECRET: 'a3ffe1df53d1a8bfd346a220c794aa5964edc7bd3d4cc357ed6ccfb827357955',
+        NEXUS_INTEGRATION_WEBHOOK_SECRET: 'cdd02926713d53db0a3ed41265a73f6baf8e3a975a64c00b57aeda56ab3c9fe8',
+        NEXUS_INTEGRATION_REQUIRE_SHOP_MAPPING: 'false',
+        NEXUS_INTEGRATION_SHOP_MAPPINGS_JSON: '[]',
+        NEXUS_INTEGRATION_TIMESTAMP_SKEW_MS: 300000,
+        NEXUS_INTEGRATION_NONCE_TTL_MS: 86400000,
+        NEXUS_INTEGRATION_MARKETPLACE_MERCHANT_ID: '41100000',
+        OPS_PUBLIC_URL: 'https://ops.nexus-ex.site',
+        PUBLIC_TRACKING_PUBLIC_URL: 'https://tracking.nexus-ex.site',
       },
       max_memory_restart: '250M',
       autorestart: true,

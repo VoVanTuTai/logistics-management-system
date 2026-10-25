@@ -2142,17 +2142,20 @@ tbody tr:hover {
   background-color: var(--stitch-surface-container-low);
 }
 
-.shipment-code-cell {
-  color: var(--stitch-primary) !important;
+.shipment-code-cell,
+.shipment-code-text {
+  color: var(--stitch-primary, #0059b8) !important;
   font-weight: 700 !important;
   user-select: text !important;
   -webkit-user-select: text !important;
-  cursor: text;
+  cursor: text !important;
 }
 
-.shipment-code-cell::selection {
-  background-color: rgba(224, 90, 0, 0.25);
-  color: #c2410c;
+.shipment-code-cell::selection,
+.shipment-code-cell *::selection,
+.shipment-code-text::selection {
+  background-color: #2563eb !important;
+  color: #ffffff !important;
 }
 
 .shipment-code-link {

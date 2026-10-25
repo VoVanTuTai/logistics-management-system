@@ -421,7 +421,9 @@ export function BranchOutboundOrderManagementPage(): React.JSX.Element {
                   <td>{formatDateTime(row.acceptedDate)}</td>
                   <td>{row.receiverName}</td>
                   <td>{row.receiverPhone}</td>
-                  <td>{row.receiverAddress}</td>
+                  <td style={{ maxWidth: 260, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={row.receiverAddress}>
+                    {row.receiverAddress}
+                  </td>
                   <td>{row.courierId}</td>
                   <td>{row.currentStatus}</td>
                   <td>{row.serviceType}</td>

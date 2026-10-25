@@ -61,6 +61,7 @@ async function bootstrap(): Promise<void> {
   const metrics = new GatewayHttpMetrics();
   const bodyLimit = gatewayBodyLimit();
   const expressApp = app.getHttpAdapter().getInstance();
+  expressApp.set('trust proxy', true);
 
   app.use(metrics.middleware());
   app.use(createRateLimitMiddleware(metrics));

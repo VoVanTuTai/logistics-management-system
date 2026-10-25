@@ -41,7 +41,13 @@
 }
 
 .ops-branch-order-create__panel-header h2 span {
+  font-size: 14px;
+  color: #0f172a;
+}
+
+.ops-branch-order-create__panel-subtitle {
   font-size: 12px;
+  font-weight: 500;
   color: #64748b;
 }
 
@@ -122,6 +128,10 @@
   align-content: start;
   gap: 5px;
   min-width: 0;
+}
+
+.ops-branch-order-create__field--wide {
+  grid-column: span 12;
 }
 
 .ops-branch-order-create__field span {
@@ -550,21 +560,65 @@
   font-style: italic;
 }
 
-/* Insurance Tiers Cards */
+/* ==========================================================================
+   PANEL 4: KHAI GIÁ & CHÍNH SÁCH BẢO HIỂM HÀNG HÓA
+   ========================================================================== */
+.ops-branch-order-create__declared-group {
+  grid-column: span 12;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ops-branch-order-create__preset-chips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 2px;
+}
+
+.ops-branch-order-create__preset-chip {
+  padding: 5px 11px;
+  font-size: 11.5px;
+  font-weight: 600;
+  border-radius: 6px;
+  border: 1px solid #cbd5e1;
+  background: #f8fafc;
+  color: #334155;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.ops-branch-order-create__preset-chip:hover {
+  background: #eff6ff;
+  border-color: #3b82f6;
+  color: #1d4ed8;
+}
+
+.ops-branch-order-create__preset-chip--active {
+  background: #dbeafe;
+  border-color: #2563eb;
+  color: #1d4ed8;
+  font-weight: 700;
+  box-shadow: 0 1px 2px rgba(37, 99, 235, 0.1);
+}
+
 .ops-branch-order-create__insurance-section {
-  grid-column: 1 / -1;
+  grid-column: span 12;
   display: flex;
   flex-direction: column;
   gap: 12px;
+  margin-top: 6px;
 }
 
 .ops-branch-order-create__insurance-cards {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 12px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
 }
 
-@media (max-width: 768px) {
+@media (max-width: 860px) {
   .ops-branch-order-create__insurance-cards {
     grid-template-columns: 1fr;
   }
@@ -573,31 +627,33 @@
 .ops-branch-order-create__tier-card {
   border: 1.5px solid #e2e8f0;
   border-radius: 8px;
-  padding: 12px 14px;
+  padding: 14px 16px;
   background: #ffffff;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px;
   position: relative;
 }
 
 .ops-branch-order-create__tier-card:hover {
   border-color: #93c5fd;
   background: #f8fafc;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.04);
 }
 
 .ops-branch-order-create__tier-card--selected {
   border-color: #2563eb;
-  background: #eff6ff;
-  box-shadow: 0 0 0 1px #2563eb;
+  background: #f0f7ff;
+  box-shadow: 0 0 0 1px #2563eb, 0 4px 12px rgba(37, 99, 235, 0.08);
 }
 
 .ops-branch-order-create__tier-top {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
+  gap: 12px;
 }
 
 .ops-branch-order-create__tier-title {
@@ -607,6 +663,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
+  cursor: pointer;
 }
 
 .ops-branch-order-create__tier-title input[type='radio'] {
@@ -614,31 +671,72 @@
   width: 16px;
   height: 16px;
   cursor: pointer;
+  margin: 0;
+  flex-shrink: 0;
 }
 
-.ops-branch-order-create__tier-price {
-  font-size: 13px;
+.ops-branch-order-create__tier-price-box {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+.ops-branch-order-create__tier-price-badge {
+  font-size: 12.5px;
   font-weight: 800;
+  padding: 3px 8px;
+  border-radius: 5px;
+  background: #eff6ff;
   color: #2563eb;
+  letter-spacing: 0.2px;
 }
 
-.ops-branch-order-create__tier-price--free {
+.ops-branch-order-create__tier-price-badge--free {
+  background: #f0fdf4;
   color: #16a34a;
 }
 
+.ops-branch-order-create__tier-price-formula {
+  font-size: 10.5px;
+  font-weight: 500;
+  color: #64748b;
+  text-align: right;
+  white-space: nowrap;
+}
+
 .ops-branch-order-create__tier-desc {
-  font-size: 11.5px;
+  font-size: 12px;
   color: #475569;
-  line-height: 1.4;
+  line-height: 1.45;
 }
 
 .ops-branch-order-create__tier-policy {
-  font-size: 11px;
-  padding: 4px 8px;
-  border-radius: 4px;
-  background: rgba(0, 0, 0, 0.04);
+  font-size: 11.5px;
+  padding: 8px 12px;
+  border-radius: 6px;
+  background: #f1f5f9;
   color: #334155;
+  line-height: 1.4;
+  border-left: 3px solid #94a3b8;
+}
+
+.ops-branch-order-create__tier-policy--comprehensive {
+  background: #e0f2fe;
+  color: #0369a1;
+  border-left-color: #0284c7;
+}
+
+.ops-branch-order-create__insurance-alert {
+  padding: 9px 12px;
+  border-radius: 6px;
+  background: #fef3c7;
+  border: 1px solid #fde68a;
+  color: #92400e;
+  font-size: 12px;
   font-weight: 500;
+  line-height: 1.4;
 }
 
 /* Detailed Fee Breakdown Table */

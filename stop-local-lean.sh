@@ -4,21 +4,21 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 COMPOSE_INFRA="$ROOT_DIR/infra/dev/docker-compose.yml"
 
-echo "========================================================================"
-echo "🛑 ĐANG DỪNG HỆ THỐNG LEAN PRODUCTION..."
-echo "========================================================================"
+echo "=================================================================================="
+echo "NEXUS LOGISTICS - DUNG HE THONG (LEAN PRODUCTION)"
+echo "=================================================================================="
 
-# 1. Dừng các tiến trình PM2
-echo "[1/2] Dừng tất cả tiến trình Node.js (PM2)..."
+# 1. Dung cac tien trinh PM2
+echo "[1/2] Dung tat ca tien trinh Node.js (PM2)..."
 npx pm2 delete "$ROOT_DIR/ecosystem.config.cjs" 2>/dev/null || npx pm2 kill 2>/dev/null || true
-echo "  ✅ Đã dừng toàn bộ 14 microservices và web server."
+echo "  [OK] Da dung toan bo microservices va web servers."
 
-# 2. Hỏi hoặc tắt hạ tầng Docker
+# 2. Tat ha tang Docker
 echo ""
-echo "[2/2] Dừng các container hạ tầng Docker (Postgres, RabbitMQ, Redis, MinIO)..."
+echo "[2/2] Dung cac container ha tang (Postgres, RabbitMQ, Redis, MinIO)..."
 docker compose -f "$COMPOSE_INFRA" down
 
 echo ""
-echo "========================================================================"
-echo "✅ HỆ THỐNG ĐÃ ĐƯỢC GIẢI PHÓNG HOÀN TOÀN TÀI NGUYÊN (0% RAM/CPU)!"
-echo "========================================================================"
+echo "=================================================================================="
+echo "HE THONG DA DUOC DUNG VA GIAI PHONG HOAN TOAN TAI NGUYEN (0% CPU/RAM)"
+echo "=================================================================================="

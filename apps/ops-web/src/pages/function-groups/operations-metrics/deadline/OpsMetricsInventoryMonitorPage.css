@@ -367,11 +367,18 @@
 .ops-metrics-inventory__table th,
 .ops-metrics-inventory__table td {
   border-bottom: 1px solid #e5eaf2;
-  padding: 12px 14px;
+  padding: 6px 10px;
   color: #475569;
   font-size: 12px;
   text-align: left;
-  vertical-align: top;
+  vertical-align: middle;
+  white-space: nowrap;
+  height: 38px;
+  box-sizing: border-box;
+}
+
+.ops-metrics-inventory__table tbody tr:hover td {
+  background-color: #f8faff;
 }
 
 .ops-metrics-inventory__table th {
@@ -382,6 +389,9 @@
   letter-spacing: 0.04em;
   text-transform: uppercase;
   white-space: nowrap;
+  position: sticky;
+  top: 0;
+  z-index: 2;
 }
 
 .ops-metrics-inventory__code {
@@ -389,6 +399,14 @@
   font-weight: 800;
   font-size: 13px;
   text-decoration: none;
+  user-select: text !important;
+  -webkit-user-select: text !important;
+  cursor: text;
+}
+
+.ops-metrics-inventory__code::selection {
+  background-color: #2563eb !important;
+  color: #ffffff !important;
 }
 
 .ops-metrics-inventory__subtext {
@@ -639,12 +657,14 @@
 .ops-metrics-inventory__courier-table th,
 .ops-metrics-inventory__courier-table td {
   border-bottom: 1px solid #e5eaf2;
-  padding: 10px 14px;
+  padding: 6px 10px;
   color: #475569;
   font-size: 12px;
   text-align: left;
   vertical-align: middle;
   white-space: nowrap;
+  height: 38px;
+  box-sizing: border-box;
 }
 
 .ops-metrics-inventory__courier-table th {

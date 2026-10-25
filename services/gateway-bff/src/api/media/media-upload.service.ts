@@ -31,6 +31,7 @@ export class MediaUploadService {
   async createUploadUrl(
     filename: string,
     contentType?: string,
+    category: string = 'deliveries',
   ): Promise<MediaUploadUrlResponse> {
     if (!filename) {
       throw new HttpException('filename is required', HttpStatus.BAD_REQUEST);
@@ -40,7 +41,8 @@ export class MediaUploadService {
     const datePrefix = new Date().toISOString().substring(0, 10).replace(/-/g, '/');
     const uniqueId = Math.random().toString(36).substring(2, 10);
     const safeFilename = filename.replace(/[^a-zA-Z0-9.\-_]/g, '');
-    const objectKey = `deliveries/${datePrefix}/${uniqueId}_${safeFilename || 'pod.jpg'}`;
+    const cleanCategory = category.replace(/[^a-zA-Z0-9\-_]/g, '') || 'deliveries';
+    const objectKey = `${cleanCategory}/${datePrefix}/${uniqueId}_${safeFilename || 'file.jpg'}`;
     const resolvedContentType = contentType || 'application/octet-stream';
 
     try {

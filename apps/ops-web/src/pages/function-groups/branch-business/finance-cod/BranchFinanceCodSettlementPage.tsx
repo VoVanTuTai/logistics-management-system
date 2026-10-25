@@ -1,4 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { DollarSign, FileSpreadsheet } from 'lucide-react';
+import { BranchFinanceReconcilePage } from '../finance-reconcile/BranchFinanceReconcilePage';
 
 import { useHubsQuery } from '../../../../features/masterdata/masterdata.api';
 import {
@@ -228,6 +230,26 @@ function getStatusTone(status: CodCollectionStatus | CodSettlementBatchDto['stat
 
 
 export function BranchFinanceCodSettlementPage(): React.JSX.Element {
+  const [currentTab, setCurrentTab] = useState<string>(() => {
+    try {
+      const p = new URLSearchParams(window.location.search);
+      return p.get('tab') === 'reconcile' ? 'reconcile' : 'cod';
+    } catch {
+      return 'cod';
+    }
+  });
+
+  const handleSwitchTab = (tab: string) => {
+    setCurrentTab(tab);
+    try {
+      const url = new URL(window.location.href);
+      url.searchParams.set('tab', tab);
+      window.history.replaceState(null, '', url.toString());
+    } catch {
+      // ignore
+    }
+  };
+
   const session = useAuthStore((state) => state.session);
   const accessToken = session?.tokens.accessToken ?? null;
   const assignedHubCodes = useMemo(
@@ -828,7 +850,31 @@ export function BranchFinanceCodSettlementPage(): React.JSX.Element {
 
   return (
     <section className="ops-branch-cod">
-      <header className="ops-branch-cod__header">
+      {/* Unified Tab Navigation Bar */}
+      <div className="ops-unified-sub-tabs" role="tablist">
+        <button
+          type="button"
+          className={`ops-unified-sub-tab-btn ${currentTab === 'cod' ? 'ops-unified-sub-tab-btn--active' : ''}`}
+          onClick={() => handleSwitchTab('cod')}
+        >
+          <DollarSign size={15} />
+          <span>Quyết toán Thu hộ COD</span>
+        </button>
+        <button
+          type="button"
+          className={`ops-unified-sub-tab-btn ${currentTab === 'reconcile' ? 'ops-unified-sub-tab-btn--active' : ''}`}
+          onClick={() => handleSwitchTab('reconcile')}
+        >
+          <FileSpreadsheet size={15} />
+          <span>Đối soát Công nợ Bưu cục</span>
+        </button>
+      </div>
+
+      {currentTab === 'reconcile' ? (
+        <BranchFinanceReconcilePage />
+      ) : (
+        <>
+          <header className="ops-branch-cod__header">
         <div>
           <small>BRANCH_FINANCE_COD_SETTLEMENT</small>
           <h2>Quyết toán thu hộ</h2>
@@ -1313,7 +1359,8 @@ export function BranchFinanceCodSettlementPage(): React.JSX.Element {
             {batch.qrUrl ? <img src={batch.qrUrl} alt={`QR quyết toán ${batch.settlementCode}`} /> : null}
           </section>
         ))}
-
+        </>
+      )}
 
     </section>
   );

@@ -27,8 +27,14 @@ interface MetricSample {
 
 const DEFAULT_BODY_LIMIT = '1mb';
 const DEFAULT_RATE_LIMIT_WINDOW_MS = 60_000;
-const DEFAULT_RATE_LIMIT_MAX = 120;
-const DEFAULT_RATE_LIMIT_SKIP_PATHS = ['/health', '/metrics'];
+const DEFAULT_RATE_LIMIT_MAX = 2400;
+const DEFAULT_RATE_LIMIT_SKIP_PATHS = [
+  '/health',
+  '/metrics',
+  '/locations-realtime',
+  '/tasks-realtime',
+  '/chat',
+];
 
 export function gatewayBodyLimit(): string {
   return process.env.GATEWAY_BODY_LIMIT?.trim() || DEFAULT_BODY_LIMIT;
@@ -226,10 +232,30 @@ function parseSkipPaths(value: string | undefined): string[] {
 }
 
 function shouldSkipRateLimit(path: string, skipPaths: string[]): boolean {
-  return skipPaths.some((skipPath) => path === skipPath || path.startsWith(`${skipPath}/`));
+  const strippedPath = path.startsWith('/api/') ? path.slice(4) : path;
+  return skipPaths.some(
+    (skipPath) =>
+      path === skipPath ||
+      path.startsWith(`${skipPath}/`) ||
+      strippedPath === skipPath ||
+      strippedPath.startsWith(`${skipPath}/`),
+  );
 }
 
 function clientIdentifier(request: Request): string {
+  const authHeader = request.headers.authorization;
+  if (typeof authHeader === 'string' && authHeader.startsWith('Bearer ')) {
+    const token = authHeader.slice(7).trim();
+    if (token) {
+      return `auth:${token.slice(-32)}`;
+    }
+  }
+
+  const partnerCode = request.headers['x-nexus-partner-code'];
+  if (typeof partnerCode === 'string' && partnerCode.trim()) {
+    return `partner:${partnerCode.trim()}`;
+  }
+
   const forwardedFor = request.headers['x-forwarded-for'];
   const forwardedHeader = Array.isArray(forwardedFor) ? forwardedFor[0] : forwardedFor;
   const forwardedIp = forwardedHeader?.split(',')[0]?.trim();

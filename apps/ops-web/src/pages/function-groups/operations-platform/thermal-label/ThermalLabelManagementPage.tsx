@@ -1,10 +1,12 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { ArrowRight, Filter, Package, Search } from 'lucide-react';
+import { useSearchParams } from 'react-router-dom';
+import { ArrowRight, Filter, Package, Search, Printer, ListFilter } from 'lucide-react';
 
 import { useManifestsQuery } from '../../../../features/manifests/manifests.hooks';
 import { useHubScope } from '../../../../hooks/useHubScope';
 import { useAuthStore } from '../../../../store/authStore';
 import { formatManifestStatusLabel } from '../../../../utils/logisticsLabels';
+import { ThermalLabelPrintPage } from './ThermalLabelPrintPage';
 import '../data-monitoring/OperationalDataMonitorPage.css';
 import './ThermalLabelManagementPage.css';
 
@@ -26,6 +28,21 @@ export function ThermalLabelManagementPage(): React.JSX.Element {
   const [pageSize, setPageSize] = useState(25);
   const [searchCode, setSearchCode] = useState('');
   const [directionFilter, setDirectionFilter] = useState<BagDirectionFilter>('ALL');
+
+  const [searchParams, setSearchParams] = useSearchParams();
+  const currentTab = searchParams.get('tab') === 'print' ? 'print' : 'management';
+
+  const setTab = (tab: 'management' | 'print') => {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      if (tab === 'print') {
+        next.set('tab', 'print');
+      } else {
+        next.delete('tab');
+      }
+      return next;
+    });
+  };
 
   const effectiveHubCodes = useMemo(() => {
     const list = hubScope.scopedHubCodes.length > 0 ? hubScope.scopedHubCodes : assignedHubCodes;
@@ -142,11 +159,10 @@ export function ThermalLabelManagementPage(): React.JSX.Element {
       <header className="ops-thermal-management__header">
         <div className="ops-thermal-management__header-row">
           <div>
-            <small>THERMAL_LABEL_MANAGEMENT</small>
-            <h2>Quản lý tem bao</h2>
+            <small>LINEHAUL_THERMAL_BAG_SYSTEM</small>
+            <h2>Quản lý & In tem bao tải</h2>
             <p>
-              Màn hình tra cứu và theo dõi bao tải bưu phẩm. Mặc định chỉ tải các bao đi/đến
-              trong phạm vi Hub quản lý để tránh quá tải danh sách.
+              Trung tâm thống nhất tra cứu, quản lý và tạo in ấn tem bao tải bưu phẩm trung chuyển tuyến xe.
             </p>
           </div>
           <div className="ops-thermal-management__hub-badge">
@@ -159,7 +175,61 @@ export function ThermalLabelManagementPage(): React.JSX.Element {
             </span>
           </div>
         </div>
+
+        <div style={{ display: 'flex', gap: '8px', marginTop: '14px', borderBottom: '1px solid #e2e8f0' }}>
+          <button
+            type="button"
+            onClick={() => setTab('management')}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              padding: '8px 16px',
+              fontSize: '13px',
+              fontWeight: currentTab === 'management' ? 700 : 500,
+              color: currentTab === 'management' ? '#1d4ed8' : '#64748b',
+              background: currentTab === 'management' ? '#eff6ff' : 'transparent',
+              border: currentTab === 'management' ? '1px solid #bfdbfe' : '1px solid transparent',
+              borderRadius: '6px 6px 0 0',
+              cursor: 'pointer',
+              marginBottom: '-1px',
+              borderBottomColor: currentTab === 'management' ? '#ffffff' : 'transparent',
+            }}
+          >
+            <ListFilter size={15} />
+            <span>Danh sách tem bao tải</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setTab('print')}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              padding: '8px 16px',
+              fontSize: '13px',
+              fontWeight: currentTab === 'print' ? 700 : 500,
+              color: currentTab === 'print' ? '#1d4ed8' : '#64748b',
+              background: currentTab === 'print' ? '#eff6ff' : 'transparent',
+              border: currentTab === 'print' ? '1px solid #bfdbfe' : '1px solid transparent',
+              borderRadius: '6px 6px 0 0',
+              cursor: 'pointer',
+              marginBottom: '-1px',
+              borderBottomColor: currentTab === 'print' ? '#ffffff' : 'transparent',
+            }}
+          >
+            <Printer size={15} />
+            <span>Tạo & In tem bao tải mới</span>
+          </button>
+        </div>
       </header>
+
+      {currentTab === 'print' ? (
+        <div style={{ marginTop: '16px' }}>
+          <ThermalLabelPrintPage />
+        </div>
+      ) : (
+        <>
 
       {/* Toolbar lọc theo phạm vi và tra cứu mã bao */}
       <section className="ops-thermal-management__toolbar">
@@ -341,6 +411,8 @@ export function ThermalLabelManagementPage(): React.JSX.Element {
           </button>
         </div>
       </footer>
+        </>
+      )}
     </section>
   );
 }

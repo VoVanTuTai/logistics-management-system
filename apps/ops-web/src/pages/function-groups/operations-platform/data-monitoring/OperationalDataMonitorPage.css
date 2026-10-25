@@ -234,6 +234,61 @@
   overflow: auto;
 }
 
+.ops-data-monitor__table-wrap {
+  overflow: auto;
+  flex: 1;
+  min-height: 0;
+  background: #ffffff;
+}
+
+.ops-data-monitor__table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.ops-data-monitor__table th,
+.ops-data-monitor__table td {
+  border-bottom: 1px solid #e2e8f0;
+  padding: 6px 10px;
+  color: #475569;
+  font-size: 12.5px;
+  text-align: left;
+  vertical-align: middle;
+  white-space: nowrap;
+  height: 38px;
+  box-sizing: border-box;
+}
+
+.ops-data-monitor__table tbody tr:hover td {
+  background-color: #f8faff;
+}
+
+.ops-data-monitor__table th {
+  background: #f8fafc;
+  color: #334155;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+
+.ops-data-monitor__code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-weight: 700;
+  color: var(--ops-primary, #0284c7);
+  user-select: text !important;
+  -webkit-user-select: text !important;
+  cursor: text;
+}
+
+.ops-data-monitor__code::selection {
+  background-color: #2563eb !important;
+  color: #ffffff !important;
+}
+
 .ops-data-monitor__loading {
   position: absolute;
   inset: 0;
@@ -326,4 +381,415 @@
   .ops-data-monitor__pagination button {
     width: 100%;
   }
+}
+
+/* ==================================================================== */
+/* INBOUND ARRIVAL STREAMLINED MONITORING (SEGMENTED PILLS & SOP MODAL) */
+/* ==================================================================== */
+
+/* Sleek Single-Line Inbound Reconciliation Pill Strip */
+.ops-inbound-reconcile-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  padding: 2px 0;
+  flex-shrink: 0;
+}
+
+.ops-inbound-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 32px;
+  padding: 0 12px;
+  border-radius: 6px;
+  border: 1px solid #cbd5e1;
+  background: #ffffff;
+  color: #334155;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  user-select: none;
+}
+
+.ops-inbound-pill:hover {
+  border-color: #94a3b8;
+  background: #f8fafc;
+}
+
+.ops-inbound-pill.is-active {
+  background: #eff6ff;
+  border-color: var(--ops-primary, #0052cc);
+  color: var(--ops-primary, #0052cc);
+  box-shadow: 0 0 0 1px var(--ops-primary, #0052cc);
+}
+
+.ops-inbound-pill__badge {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 12px;
+  font-weight: 800;
+  padding: 1px 7px;
+  border-radius: 10px;
+  background: #f1f5f9;
+  color: #475569;
+}
+
+.ops-inbound-pill.is-active .ops-inbound-pill__badge {
+  background: var(--ops-primary, #0052cc);
+  color: #ffffff;
+}
+
+/* Red Highlight for Missed Inbound Scan */
+.ops-inbound-pill--danger {
+  border-color: #fecaca;
+  background: #fff8f8;
+}
+
+.ops-inbound-pill--danger .ops-inbound-pill__badge {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.ops-inbound-pill--danger.is-active {
+  background: #fef2f2;
+  border-color: #dc2626;
+  color: #b91c1c;
+  box-shadow: 0 0 0 1px #dc2626;
+}
+
+.ops-inbound-pill--danger.is-active .ops-inbound-pill__badge {
+  background: #dc2626;
+  color: #ffffff;
+}
+
+/* Amber Highlight for Stale/Missed Delivery Dispatch */
+.ops-inbound-pill--amber {
+  border-color: #fed7aa;
+  background: #fffbf5;
+}
+
+.ops-inbound-pill--amber .ops-inbound-pill__badge {
+  background: #ffedd5;
+  color: #d97706;
+}
+
+.ops-inbound-pill--amber.is-active {
+  background: #fff7ed;
+  border-color: #d97706;
+  color: #b45309;
+  box-shadow: 0 0 0 1px #d97706;
+}
+
+.ops-inbound-pill--amber.is-active .ops-inbound-pill__badge {
+  background: #d97706;
+  color: #ffffff;
+}
+
+/* Operational Alert & Quick Action Strip */
+.ops-inbound-quick-strip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  flex-shrink: 0;
+  animation: opsFadeIn 0.15s ease-out;
+}
+
+@keyframes opsFadeIn {
+  from { opacity: 0; transform: translateY(-3px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.ops-inbound-quick-strip--danger {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #991b1b;
+}
+
+.ops-inbound-quick-strip--amber {
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  color: #92400e;
+}
+
+.ops-inbound-quick-strip__actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.ops-inbound-quick-strip__btn {
+  height: 26px;
+  padding: 0 10px;
+  border-radius: 4px;
+  font-size: 11.5px;
+  font-weight: 700;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.ops-inbound-quick-strip--danger .ops-inbound-quick-strip__btn--primary {
+  background: #dc2626;
+  color: #ffffff;
+}
+
+.ops-inbound-quick-strip--danger .ops-inbound-quick-strip__btn--primary:hover {
+  background: #b91c1c;
+}
+
+.ops-inbound-quick-strip--danger .ops-inbound-quick-strip__btn--secondary {
+  background: #ffffff;
+  border-color: #fca5a5;
+  color: #991b1b;
+}
+
+.ops-inbound-quick-strip--danger .ops-inbound-quick-strip__btn--secondary:hover {
+  background: #fee2e2;
+}
+
+.ops-inbound-quick-strip--amber .ops-inbound-quick-strip__btn--primary {
+  background: #d97706;
+  color: #ffffff;
+}
+
+.ops-inbound-quick-strip--amber .ops-inbound-quick-strip__btn--primary:hover {
+  background: #b45309;
+}
+
+/* ==================================================================== */
+/* SLIDE-OVER SHIPMENT INSPECTION & ACTION DRAWER                       */
+/* ==================================================================== */
+
+.ops-shipment-drawer-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.35);
+  backdrop-filter: blur(1.5px);
+  z-index: 9999;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.ops-shipment-drawer {
+  background: #ffffff;
+  width: 100%;
+  max-width: 580px;
+  height: 100%;
+  box-shadow: -8px 0 24px rgba(0, 0, 0, 0.15);
+  display: flex;
+  flex-direction: column;
+  animation: opsDrawerSlideIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  overflow: hidden;
+}
+
+@keyframes opsDrawerSlideIn {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+
+.ops-shipment-drawer__header {
+  padding: 14px 18px;
+  border-bottom: 1px solid #e2e8f0;
+  background: #f8fafc;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.ops-shipment-drawer__code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--ops-primary, #0052cc);
+  user-select: text;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ops-shipment-drawer__close-btn {
+  background: transparent;
+  border: 0;
+  font-size: 22px;
+  color: #64748b;
+  cursor: pointer;
+  line-height: 1;
+  padding: 2px 6px;
+}
+
+.ops-shipment-drawer__close-btn:hover {
+  color: #0f172a;
+}
+
+.ops-shipment-drawer__body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.ops-shipment-drawer__card {
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #ffffff;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ops-shipment-drawer__card-title {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 800;
+  color: #334155;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.ops-shipment-drawer__grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px 14px;
+  font-size: 12.5px;
+}
+
+.ops-shipment-drawer__item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.ops-shipment-drawer__item-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #64748b;
+}
+
+.ops-shipment-drawer__item-value {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: #0f172a;
+  word-break: break-word;
+}
+
+.ops-shipment-drawer__item-value--mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+/* Timeline scan log */
+.ops-shipment-drawer__timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.ops-shipment-drawer__timeline-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 12px;
+}
+
+.ops-shipment-drawer__timeline-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--ops-primary, #0052cc);
+  margin-top: 4px;
+  flex-shrink: 0;
+}
+
+.ops-shipment-drawer__footer {
+  padding: 12px 18px;
+  border-top: 1px solid #e2e8f0;
+  background: #f8fafc;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.ops-shipment-drawer__footer button {
+  height: 34px;
+  padding: 0 14px;
+  border-radius: 6px;
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.ops-shipment-drawer__btn--primary {
+  background: var(--ops-primary, #0052cc);
+  color: #ffffff;
+  border: 0;
+}
+
+.ops-shipment-drawer__btn--primary:hover {
+  background: var(--ops-primary-dark, #0040a8);
+}
+
+.ops-shipment-drawer__btn--secondary {
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  color: #334155;
+}
+
+.ops-shipment-drawer__btn--secondary:hover {
+  background: #f1f5f9;
+  border-color: #94a3b8;
+}
+
+.ops-shipment-drawer__btn--danger {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #dc2626;
+}
+
+.ops-shipment-drawer__btn--danger:hover {
+  background: #fee2e2;
+  border-color: #f87171;
+}
+
+/* Operational Feedback Toast */
+.ops-action-toast {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #0f172a;
+  color: #ffffff;
+  padding: 9px 18px;
+  border-radius: 20px;
+  font-size: 12.5px;
+  font-weight: 700;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+  z-index: 10001;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  animation: opsToastUp 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes opsToastUp {
+  from { opacity: 0; transform: translate(-50%, 10px); }
+  to { opacity: 1; transform: translate(-50%, 0); }
 }

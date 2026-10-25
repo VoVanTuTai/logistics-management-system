@@ -334,7 +334,7 @@ start_service() {
     echo 'export DOMAIN_EVENTS_EXCHANGE="${DOMAIN_EVENTS_EXCHANGE:-domain.events}"'
     echo 'export PRICING_SERVICE_URL="${PRICING_SERVICE_URL:-http://localhost:3012}"'
     if [[ -n "$db_name" ]]; then
-      printf 'export DATABASE_URL=%q\n' "postgresql://postgres:postgres@localhost:15432/$db_name"
+      printf 'export DATABASE_URL=%q\n' "postgresql://postgres:postgres@localhost:15432/$db_name?connection_limit=5&pool_timeout=10"
       echo 'if [[ -f prisma/schema.prisma ]]; then'
       echo '  node node_modules/prisma/build/index.js generate --schema prisma/schema.prisma'
       echo '  node node_modules/prisma/build/index.js db push --schema prisma/schema.prisma'
