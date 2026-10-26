@@ -1,4 +1,5 @@
 import React from 'react';
+import { Download, FolderX, CheckCircle2, Trash2 } from 'lucide-react';
 import { useDownloadCenterStore } from '../../store/downloadCenterStore';
 import { formatDateTime } from '../../utils/format';
 
@@ -44,9 +45,7 @@ export function DownloadCenterPage(): React.JSX.Element {
               marginBottom: '8px',
             }}
           >
-            <span className="material-symbols-outlined" style={{ fontSize: '16px', color: '#60a5fa' }}>
-              download
-            </span>
+            <Download size={15} style={{ color: '#60a5fa' }} />
             <span style={{ fontSize: '12px', fontWeight: 700, color: '#93c5fd' }}>
               EXPORT TASK MONITOR
             </span>
@@ -104,9 +103,7 @@ export function DownloadCenterPage(): React.JSX.Element {
 
         {tasks.length === 0 ? (
           <div style={{ padding: '48px', textAlign: 'center', color: '#64748b' }}>
-            <span className="material-symbols-outlined" style={{ fontSize: '48px', color: '#cbd5e1', marginBottom: '8px' }}>
-              folder_off
-            </span>
+            <FolderX size={44} style={{ color: '#cbd5e1', marginBottom: '8px' }} />
             <p style={{ margin: 0, fontSize: '14px' }}>Chưa có tiến trình xuất file nào.</p>
           </div>
         ) : (
@@ -162,9 +159,7 @@ export function DownloadCenterPage(): React.JSX.Element {
                           color: '#15803d',
                         }}
                       >
-                        <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>
-                          check_circle
-                        </span>
+                        <CheckCircle2 size={13} />
                         Hoàn thành
                       </span>
                     </td>
@@ -190,9 +185,7 @@ export function DownloadCenterPage(): React.JSX.Element {
                               gap: '4px',
                             }}
                           >
-                            <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>
-                              download
-                            </span>
+                            <Download size={13} />
                             Tải Lại
                           </a>
                         )}
@@ -208,9 +201,7 @@ export function DownloadCenterPage(): React.JSX.Element {
                             cursor: 'pointer',
                           }}
                         >
-                          <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>
-                            delete
-                          </span>
+                          <Trash2 size={16} />
                         </button>
                       </div>
                     </td>

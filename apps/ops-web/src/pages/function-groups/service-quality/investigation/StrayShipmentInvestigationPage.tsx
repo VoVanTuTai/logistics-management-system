@@ -1,4 +1,25 @@
 import React, { useMemo, useState } from 'react';
+import {
+  AlertTriangle,
+  Building2,
+  CheckCircle2,
+  Clock,
+  DollarSign,
+  Download,
+  ExternalLink,
+  Eye,
+  FileSearch,
+  Filter,
+  MapPin,
+  Package,
+  Scale,
+  Shield,
+  Tag,
+  Target,
+  Video,
+  X,
+  Zap,
+} from 'lucide-react';
 
 import {
   BREAK_POINT_LABELS,
@@ -11,9 +32,16 @@ import {
   writeInvestigations,
 } from '../../../../features/investigation/investigation.data';
 import type {
+  BreakPointType,
+  DisputeEvidence,
   InvestigationCase,
   InvestigationStatus,
 } from '../../../../features/investigation/investigation.types';
+import { normalizeMinioMediaUrl } from '../../../../utils/minioUtils';
+import {
+  exportInvestigationsToExcel,
+  StrayShipmentInvestigationTable,
+} from './StrayShipmentInvestigationTable';
 import './StrayShipmentInvestigationPage.css';
 
 function formatVND(amount: number): string {
@@ -35,13 +63,23 @@ export const StrayShipmentInvestigationPage: React.FC = () => {
     const list = readInvestigations();
     return list.length > 0 ? list[0].id : '';
   });
+
+  // Drawer state: Open on initial mount to display first case inspection details
+  const [isDrawerOpen, setIsDrawerOpen] = useState<boolean>(true);
+
+  // Filters state
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
+  const [priorityFilter, setPriorityFilter] = useState<string>('ALL');
+  const [breakPointFilter, setBreakPointFilter] = useState<string>('ALL');
 
   // Modals state
   const [isCctvModalOpen, setIsCctvModalOpen] = useState(false);
   const [isFoundModalOpen, setIsFoundModalOpen] = useState(false);
   const [isEscalateModalOpen, setIsEscalateModalOpen] = useState(false);
+
+  // Video lightbox preview modal state
+  const [videoPreviewUrl, setVideoPreviewUrl] = useState<string | null>(null);
 
   // Form states for CCTV Modal
   const [cctvSubBy, setCctvSubBy] = useState('');
@@ -92,19 +130,27 @@ export const StrayShipmentInvestigationPage: React.FC = () => {
         item.packageDescription.toLowerCase().includes(q);
 
       const matchStatus = statusFilter === 'ALL' || item.status === statusFilter;
+      const matchPriority = priorityFilter === 'ALL' || item.priority === priorityFilter;
+      const matchBreakPoint = breakPointFilter === 'ALL' || item.breakPointType === breakPointFilter;
 
-      return matchQuery && matchStatus;
+      return matchQuery && matchStatus && matchPriority && matchBreakPoint;
     });
-  }, [cases, searchQuery, statusFilter]);
+  }, [cases, searchQuery, statusFilter, priorityFilter, breakPointFilter]);
 
   const selectedCase = useMemo(() => {
     return cases.find((c) => c.id === selectedCaseId) || cases[0];
   }, [cases, selectedCaseId]);
 
+  // Action: Select case and open drawer
+  const handleSelectCase = (caseItem: InvestigationCase) => {
+    setSelectedCaseId(caseItem.id);
+    setIsDrawerOpen(true);
+  };
+
   // Action: Trigger Auto Scan for stale shipments
   const handleAutoScan = () => {
     showAlert(
-      '🔍 Hệ thống đã rà soát toàn mạng: Phát hiện thêm 2 vận đơn lưu kho >48h tại Hub Đà Nẵng và Bưu cục Hà Đông. Đã tự động cập nhật nhật ký giám định.',
+      'Hệ thống AI đã rà soát toàn mạng: Phát hiện thêm 2 vận đơn lưu kho >48h tại Hub Đà Nẵng và Bưu cục Hà Đông. Đã tự động cập nhật nhật ký giám định.',
     );
   };
 
@@ -131,7 +177,7 @@ export const StrayShipmentInvestigationPage: React.FC = () => {
     setCctvUrl('');
     setCctvRange('');
     setCctvNotes('');
-    showAlert('✅ Đã tiếp nhận bằng chứng giải trình & video CCTV. Ban Giám sát đang thẩm định.');
+    showAlert('Đã tiếp nhận bằng chứng giải trình & video CCTV. Ban Giám sát đang thẩm định.');
   };
 
   // Action: Resolve as Found in Warehouse
@@ -154,7 +200,7 @@ export const StrayShipmentInvestigationPage: React.FC = () => {
     setFoundNotes('');
     setFoundOperator('');
     showAlert(
-      `🎉 Xuất sắc! Đã giải cứu đơn hàng ${selectedCase.shipmentCode}. Kiện hàng đã được hoàn kho và xuất tiếp, tiết kiệm ${formatVND(selectedCase.declaredValue)} tiền bồi hoàn!`,
+      `Đã tìm thấy đơn hàng ${selectedCase.shipmentCode}. Kiện hàng đã được hoàn kho và xuất tiếp, tiết kiệm ${formatVND(selectedCase.declaredValue)} tiền bồi hoàn!`,
     );
   };
 
@@ -175,7 +221,7 @@ export const StrayShipmentInvestigationPage: React.FC = () => {
     setIsEscalateModalOpen(false);
     setAdjNotes('');
     showAlert(
-      `⚖️ Đã hoàn tất phán quyết trách nhiệm! Tự động tạo Hồ sơ bồi thường ${createdClaim.claimCode} cho đơn ${createdClaim.shipmentCode}.`,
+      `Đã hoàn tất phán quyết trách nhiệm! Tự động tạo Hồ sơ bồi thường ${createdClaim.claimCode} cho đơn ${createdClaim.shipmentCode}.`,
     );
   };
 
@@ -184,7 +230,7 @@ export const StrayShipmentInvestigationPage: React.FC = () => {
     if (!selectedCase) return;
     const updated = extendHearingDeadline(selectedCase.id, 12);
     setCases(updated);
-    showAlert('⏱️ Đã gia hạn thêm 12 giờ giải trình cho đơn vị theo yêu cầu trích xuất CCTV.');
+    showAlert('Đã gia hạn thêm 12 giờ giải trình cho đơn vị theo yêu cầu trích xuất CCTV.');
   };
 
   const remaining = calculateRemainingHours(selectedCase?.hearingDeadlineAt);
@@ -194,14 +240,29 @@ export const StrayShipmentInvestigationPage: React.FC = () => {
       {/* Header */}
       <div className="investigation-header">
         <div className="investigation-title-box">
-          <h1>🕵️ Trung Tâm Giám Định Đơn Lạc & Phân Tích Vết Quét</h1>
+          <h1>
+            <FileSearch
+              size={22}
+              style={{ marginRight: 8, verticalAlign: 'middle', display: 'inline-block' }}
+              aria-hidden="true"
+            />
+            Trung Tâm Giám Định Đơn Lạc &amp; Phân Tích Vết Quét
+          </h1>
           <p>
-            Trợ lý AI đọc và rà soát lịch sử log thao tác, tự động bắt điểm đứt gãy hành trình, đánh giá đơn vị tình nghi và kích hoạt quy trình giải trình 24h trước khi quy trách nhiệm bồi thường.
+            Trợ lý AI đọc và rà soát lịch sử log thao tác, tự động bắt điểm đứt gãy hành trình, đánh
+            giá đơn vị tình nghi và kích hoạt quy trình giải trình 24h trước khi quy trách nhiệm bồi
+            thường.
           </p>
         </div>
         <div className="investigation-actions">
-          <button type="button" className="btn-auto-scan" onClick={handleAutoScan}>
-            ⚡ Quét Đơn Mất Tín Hiệu Toàn Mạng
+          <button
+            type="button"
+            className="btn-auto-scan"
+            onClick={handleAutoScan}
+            style={{ display: 'inline-flex', alignItems: 'center' }}
+          >
+            <Zap size={14} style={{ marginRight: 6 }} aria-hidden="true" />
+            Quét Đơn Mất Tín Hiệu Toàn Mạng
           </button>
         </div>
       </div>
@@ -226,7 +287,9 @@ export const StrayShipmentInvestigationPage: React.FC = () => {
       {/* KPI Banner */}
       <div className="investigation-kpi-grid">
         <div className="inv-kpi-card active-cases">
-          <div className="inv-kpi-icon blue">🔎</div>
+          <div className="inv-kpi-icon blue">
+            <FileSearch size={22} aria-hidden="true" />
+          </div>
           <div className="inv-kpi-info">
             <div className="inv-kpi-label">Tổng Vụ Việc Đang Xử Lý</div>
             <div className="inv-kpi-value">{kpis.total} hồ sơ</div>
@@ -235,7 +298,9 @@ export const StrayShipmentInvestigationPage: React.FC = () => {
         </div>
 
         <div className="inv-kpi-card hearing">
-          <div className="inv-kpi-icon amber">⏳</div>
+          <div className="inv-kpi-icon amber">
+            <Clock size={22} aria-hidden="true" />
+          </div>
           <div className="inv-kpi-info">
             <div className="inv-kpi-label">Đang Mở Giải Trình 24h</div>
             <div className="inv-kpi-value">{kpis.inHearing} vụ việc</div>
@@ -244,7 +309,9 @@ export const StrayShipmentInvestigationPage: React.FC = () => {
         </div>
 
         <div className="inv-kpi-card found-rate">
-          <div className="inv-kpi-icon green">🎯</div>
+          <div className="inv-kpi-icon green">
+            <Target size={22} aria-hidden="true" />
+          </div>
           <div className="inv-kpi-info">
             <div className="inv-kpi-label">Tỷ Lệ Tìm Thấy Hàng (Cứu Đơn)</div>
             <div className="inv-kpi-value">{kpis.foundRate}%</div>
@@ -253,7 +320,9 @@ export const StrayShipmentInvestigationPage: React.FC = () => {
         </div>
 
         <div className="inv-kpi-card escalated">
-          <div className="inv-kpi-icon red">⚖️</div>
+          <div className="inv-kpi-icon red">
+            <Scale size={22} aria-hidden="true" />
+          </div>
           <div className="inv-kpi-info">
             <div className="inv-kpi-label">Đã Chuyển Phán Quyết Bồi Thường</div>
             <div className="inv-kpi-value">{kpis.escalated} hồ sơ</div>
@@ -262,380 +331,668 @@ export const StrayShipmentInvestigationPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Master-Detail Workbench */}
-      <div className="investigation-workbench-grid">
-        {/* Left Column: Master List */}
-        <div className="investigation-list-panel">
-          <div className="panel-header-sticky">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span style={{ fontWeight: 700, fontSize: '14px', color: '#0f172a' }}>
-                Danh Sách Hồ Sơ Giám Định ({filteredCases.length})
-              </span>
-            </div>
-
-            <div className="search-and-status-row">
-              <input
-                type="text"
-                className="inv-search-input"
-                placeholder="Tìm mã hồ sơ, mã đơn, khách hàng..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-              <select
-                className="inv-filter-select"
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-              >
-                <option value="ALL">Tất cả</option>
-                <option value="IN_HEARING">Chờ giải trình</option>
-                <option value="PRELIMINARY_REPORT">Báo cáo sơ bộ</option>
-                <option value="RESOLVED_FOUND">Đã tìm thấy</option>
-                <option value="ESCALATED_TO_CLAIM">Chuyển bồi thường</option>
-              </select>
-            </div>
-          </div>
-
-          <div className="investigation-items-scroll">
-            {filteredCases.length === 0 ? (
-              <p style={{ textAlign: 'center', padding: '24px', color: '#94a3b8', fontSize: '13px' }}>
-                Không tìm thấy hồ sơ nào phù hợp.
-              </p>
-            ) : (
-              filteredCases.map((item) => {
-                const isSelected = item.id === selectedCase?.id;
-                return (
-                  <div
-                    key={item.id}
-                    className={`inv-item-card ${isSelected ? 'selected' : ''}`}
-                    onClick={() => setSelectedCaseId(item.id)}
-                  >
-                    <div className="inv-item-top">
-                      <span className="inv-code">{item.investigationCode}</span>
-                      <span className={`badge-status ${item.status}`}>
-                        {INVESTIGATION_STATUS_LABELS[item.status]}
-                      </span>
-                    </div>
-
-                    <div className="inv-item-shipment">
-                      <strong style={{ color: '#2563eb' }}>{item.shipmentCode}</strong>
-                      <span style={{ color: '#b91c1c', fontWeight: 600 }}>
-                        {formatVND(item.declaredValue)}
-                      </span>
-                    </div>
-
-                    <div className="inv-item-route">
-                      {item.originHubCode} ➔ {item.destinationHubCode} | {item.customerName}
-                    </div>
-
-                    <div className="inv-item-breakpoint">
-                      ⚠️ {BREAK_POINT_LABELS[item.breakPointType]}
-                    </div>
-                  </div>
-                );
-              })
-            )}
-          </div>
+      {/* Filter and Search Bar */}
+      <div className="stray-filter-bar">
+        <div className="stray-filter-group stray-filter-search">
+          <input
+            type="text"
+            className="stray-search-input"
+            placeholder="Tìm mã hồ sơ, mã đơn, khách hàng..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
         </div>
 
-        {/* Right Column: Detail Workspace */}
-        {selectedCase ? (
-          <div className="investigation-workspace">
-            {/* Header bar */}
-            <div className="workspace-header-bar">
-              <div className="ws-case-info">
+        <div className="stray-filter-group">
+          <label>Trạng thái:</label>
+          <select
+            className="stray-select-input"
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+          >
+            <option value="ALL">Tất cả trạng thái</option>
+            <option value="IN_HEARING">Chờ giải trình (24h)</option>
+            <option value="PRELIMINARY_REPORT">Báo cáo sơ bộ</option>
+            <option value="RESOLVED_FOUND">Đã tìm thấy (Hoàn kho)</option>
+            <option value="ESCALATED_TO_CLAIM">Chuyển bồi thường</option>
+          </select>
+        </div>
+
+        <div className="stray-filter-group">
+          <label>Mức độ:</label>
+          <select
+            className="stray-select-input"
+            value={priorityFilter}
+            onChange={(e) => setPriorityFilter(e.target.value)}
+          >
+            <option value="ALL">Tất cả mức độ</option>
+            <option value="CRITICAL">Khẩn cấp (CRITICAL)</option>
+            <option value="HIGH">Cao (HIGH)</option>
+            <option value="NORMAL">Bình thường (NORMAL)</option>
+          </select>
+        </div>
+
+        <div className="stray-filter-group">
+          <label>Điểm đứt gãy:</label>
+          <select
+            className="stray-select-input"
+            value={breakPointFilter}
+            onChange={(e) => setBreakPointFilter(e.target.value)}
+          >
+            <option value="ALL">Tất cả điểm đứt gãy</option>
+            <option value="WAREHOUSE_STALE_LOSS">Tồn kho mất tích tại Hub (&gt;48h)</option>
+            <option value="LINEHAUL_IN_TRANSIT_LOSS">Thất lạc trên xe tuyến (Hụt cân / Đứt seal)</option>
+            <option value="MISROUTED_SORTING">Phân loại nhầm luồng / Sai tuyến đích</option>
+            <option value="LAST_MILE_UNACCOUNTED">Mất tích sau khi xuất giao bưu tá</option>
+          </select>
+        </div>
+
+        {(searchQuery || statusFilter !== 'ALL' || priorityFilter !== 'ALL' || breakPointFilter !== 'ALL') && (
+          <button
+            type="button"
+            className="stray-btn-reset-filters"
+            onClick={() => {
+              setSearchQuery('');
+              setStatusFilter('ALL');
+              setPriorityFilter('ALL');
+              setBreakPointFilter('ALL');
+            }}
+          >
+            Đặt lại lọc
+          </button>
+        )}
+      </div>
+
+      {/* High-Density Standardized Table */}
+      <StrayShipmentInvestigationTable
+        items={filteredCases}
+        selectedCaseId={selectedCase?.id}
+        onSelectCase={handleSelectCase}
+        onExportExcel={() => exportInvestigationsToExcel(filteredCases)}
+      />
+
+      {/* Slide-Over Inspection Drawer */}
+      {isDrawerOpen && selectedCase && (
+        <div className="stray-drawer-backdrop" onClick={() => setIsDrawerOpen(false)}>
+          <div className="stray-drawer-panel" onClick={(e) => e.stopPropagation()}>
+            {/* Drawer Header */}
+            <div className="stray-drawer-header">
+              <div className="stray-drawer-header-info">
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                  <span className="stray-drawer-case-code">Hồ sơ: {selectedCase.investigationCode}</span>
+                  <span className={`stray-status-badge stray-status--${selectedCase.status}`}>
+                    {INVESTIGATION_STATUS_LABELS[selectedCase.status]}
+                  </span>
+                  {selectedCase.priority === 'CRITICAL' && (
+                    <span className="stray-priority-badge stray-priority--critical">KHẨN CẤP</span>
+                  )}
+                </div>
                 <h2>
-                  🔍 Hồ Sơ Giám Định: {selectedCase.investigationCode} — Mã Đơn:{' '}
-                  <span style={{ color: '#2563eb' }}>{selectedCase.shipmentCode}</span>
-                </h2>
-                <div className="ws-case-meta">
-                  <span>🏢 Tuyến: <strong>{selectedCase.originHubName} ➔ {selectedCase.destinationHubName}</strong></span>
-                  <span>📦 Hàng: <strong>{selectedCase.packageDescription}</strong> ({selectedCase.declaredWeightKg} kg)</span>
-                  <span>💰 Khai giá: <strong style={{ color: '#dc2626' }}>{formatVND(selectedCase.declaredValue)}</strong></span>
-                </div>
-              </div>
-
-              <span className={`badge-status ${selectedCase.status}`} style={{ fontSize: '13px', padding: '6px 12px' }}>
-                {INVESTIGATION_STATUS_LABELS[selectedCase.status]}
-              </span>
-            </div>
-
-            {/* 24-Hour Hearing Banner (when IN_HEARING) */}
-            {selectedCase.status === 'IN_HEARING' && (
-              <div className="hearing-countdown-banner">
-                <div className="hearing-left">
-                  <span className="hearing-clock-icon">⏰</span>
-                  <div className="hearing-text">
-                    <h4>CỬA SỔ GIẢI TRÌNH &amp; PHẢN BIỆN (24-HOUR DISPUTE HEARING)</h4>
-                    <p>
-                      Đang cho phép đơn vị bị tình nghi (<strong>{selectedCase.preliminaryReport.suspectPartyName}</strong>) trích xuất video camera CCTV hoặc nộp biên bản bàn giao phản biện trước khi phán quyết chính thức.
-                    </p>
-                  </div>
-                </div>
-
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <div className="hearing-countdown-tag">
-                    ⏳ {remaining.text}
-                  </div>
-                  <button
-                    type="button"
-                    onClick={handleExtendDeadline}
+                  Vận đơn:{' '}
+                  <span
                     style={{
-                      background: '#ffffff',
-                      border: '1px solid #cbd5e1',
-                      padding: '6px 10px',
-                      borderRadius: '6px',
-                      fontSize: '12px',
-                      fontWeight: 600,
-                      cursor: 'pointer',
+                      fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
+                      color: 'var(--ops-primary, #0052cc)',
+                      fontWeight: 700,
+                      userSelect: 'text',
+                      WebkitUserSelect: 'text',
+                      cursor: 'text',
                     }}
-                    title="Gia hạn thêm 12h trích xuất CCTV"
                   >
-                    +12h
-                  </button>
+                    {selectedCase.shipmentCode}
+                  </span>
+                </h2>
+                <div className="stray-drawer-header-meta">
+                  <span>
+                    <Building2 size={13} style={{ marginRight: 4, verticalAlign: 'middle', display: 'inline-block' }} aria-hidden="true" />
+                    Tuyến: <strong>{selectedCase.originHubName} ➔ {selectedCase.destinationHubName}</strong>
+                  </span>
+                  <span>
+                    <Package size={13} style={{ marginRight: 4, verticalAlign: 'middle', display: 'inline-block' }} aria-hidden="true" />
+                    Hàng: <strong>{selectedCase.packageDescription}</strong> ({selectedCase.declaredWeightKg} kg)
+                  </span>
+                  <span>
+                    <DollarSign size={13} style={{ marginRight: 4, verticalAlign: 'middle', display: 'inline-block' }} aria-hidden="true" />
+                    Khai giá: <strong style={{ color: '#dc2626' }}>{formatVND(selectedCase.declaredValue)}</strong>
+                  </span>
                 </div>
               </div>
-            )}
-
-            {/* Success Banner if Resolved Found */}
-            {selectedCase.status === 'RESOLVED_FOUND' && (
-              <div
-                style={{
-                  background: '#ecfdf5',
-                  border: '1px solid #a7f3d0',
-                  borderRadius: '10px',
-                  padding: '14px 18px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '12px',
-                  color: '#065f46',
-                }}
+              <button
+                type="button"
+                className="stray-drawer-close-btn"
+                onClick={() => setIsDrawerOpen(false)}
+                title="Đóng bảng chi tiết"
+                aria-label="Đóng bảng chi tiết"
               >
-                <span style={{ fontSize: '24px' }}>🎉</span>
-                <div>
-                  <h4 style={{ margin: '0 0 2px 0', fontSize: '14px', fontWeight: 700 }}>
-                    ĐÃ GIẢI CỨU ĐƠN HÀNG THÀNH CÔNG!
-                  </h4>
-                  <p style={{ margin: 0, fontSize: '12.5px' }}>
-                    Vị trí tìm thấy: <strong>{selectedCase.foundLocation}</strong>. Đã bàn giao tiếp tục vận chuyển, bảo toàn 100% giá trị hàng hóa mà không phát sinh bồi thường.
-                  </p>
-                </div>
-              </div>
-            )}
+                <X size={20} aria-hidden="true" />
+              </button>
+            </div>
 
-            {/* Escalated Banner if Claim was created */}
-            {selectedCase.status === 'ESCALATED_TO_CLAIM' && (
-              <div
-                style={{
-                  background: '#fef2f2',
-                  border: '1px solid #fecaca',
-                  borderRadius: '10px',
-                  padding: '14px 18px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '12px',
-                  color: '#991b1b',
-                }}
-              >
-                <span style={{ fontSize: '24px' }}>⚖️</span>
-                <div>
-                  <h4 style={{ margin: '0 0 2px 0', fontSize: '14px', fontWeight: 700 }}>
-                    ĐÃ KẾT LUẬN PHÁN QUYẾT &amp; CHUYỂN BỒI THƯỜNG
-                  </h4>
-                  <p style={{ margin: 0, fontSize: '12.5px' }}>
-                    Hồ sơ bồi thường liên kết: <strong>{selectedCase.linkedClaimCode}</strong>. Đơn vị phải chịu chế tài: <strong>{selectedCase.preliminaryReport.suspectPartyName}</strong> (100%).
-                  </p>
-                </div>
-              </div>
-            )}
+            {/* Drawer Body */}
+            <div className="stray-drawer-body">
+              {/* 24-Hour Hearing Banner (when IN_HEARING) */}
+              {selectedCase.status === 'IN_HEARING' && (
+                <div className="hearing-countdown-banner">
+                  <div className="hearing-left">
+                    <span className="hearing-clock-icon">
+                      <Clock size={16} aria-hidden="true" />
+                    </span>
+                    <div className="hearing-text">
+                      <h4>CỬA SỔ GIẢI TRÌNH &amp; PHẢN BIỆN (24-HOUR DISPUTE HEARING)</h4>
+                      <p>
+                        Đang cho phép đơn vị bị tình nghi (
+                        <strong>{selectedCase.preliminaryReport.suspectPartyName}</strong>) trích xuất
+                        video camera CCTV hoặc nộp biên bản bàn giao phản biện trước khi phán quyết chính
+                        thức.
+                      </p>
+                    </div>
+                  </div>
 
-            {/* Preliminary Investigation Report */}
-            <div>
-              <h3 className="ws-section-title">📑 Báo Cáo Giám Định Sơ Bộ (AI &amp; Audit Engine)</h3>
-              <div className="preliminary-report-box">
-                <div className="report-summary-grid">
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <div
+                      className="hearing-countdown-tag"
+                      style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}
+                    >
+                      <Clock size={13} aria-hidden="true" />
+                      <span>{remaining.text}</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleExtendDeadline}
+                      className="stray-btn-extend-deadline"
+                      title="Gia hạn thêm 12h trích xuất CCTV"
+                    >
+                      +12h
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Success Banner if Resolved Found */}
+              {selectedCase.status === 'RESOLVED_FOUND' && (
+                <div
+                  style={{
+                    background: '#ecfdf5',
+                    border: '1px solid #a7f3d0',
+                    borderRadius: '10px',
+                    padding: '14px 18px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '12px',
+                    color: '#065f46',
+                  }}
+                >
+                  <CheckCircle2 size={24} aria-hidden="true" />
                   <div>
-                    <div style={{ fontSize: '13px', color: '#64748b', marginBottom: '4px' }}>
-                      ĐIỂM ĐỨT GÃY PHÁT HIỆN:
-                    </div>
-                    <div style={{ fontSize: '14px', fontWeight: 700, color: '#dc2626', marginBottom: '8px' }}>
-                      ⚠️ {BREAK_POINT_LABELS[selectedCase.breakPointType]}
-                    </div>
-                    <p style={{ margin: 0, fontSize: '13px', color: '#334155', lineHeight: '1.5' }}>
-                      {selectedCase.preliminaryReport.breakPointDescription}
+                    <h4 style={{ margin: '0 0 2px 0', fontSize: '14px', fontWeight: 700 }}>
+                      ĐÃ GIẢI CỨU ĐƠN HÀNG THÀNH CÔNG!
+                    </h4>
+                    <p style={{ margin: 0, fontSize: '12.5px' }}>
+                      Vị trí tìm thấy: <strong>{selectedCase.foundLocation}</strong>. Đã bàn giao tiếp tục
+                      vận chuyển, bảo toàn 100% giá trị hàng hóa mà không phát sinh bồi thường.
                     </p>
                   </div>
+                </div>
+              )}
 
-                  <div className="report-suspect-card">
-                    <div style={{ fontSize: '11.5px', color: '#64748b', fontWeight: 600 }}>
-                      ĐƠN VỊ TÌNH NGHI SỐ 1
-                    </div>
-                    <div style={{ fontSize: '14px', fontWeight: 700, color: '#0f172a', margin: '4px 0' }}>
-                      {selectedCase.preliminaryReport.suspectPartyName}
-                    </div>
-                    <div style={{ fontSize: '12px', color: '#64748b' }}>
-                      Độ tin cậy: <strong style={{ color: '#ef4444' }}>{selectedCase.preliminaryReport.confidenceScorePercent}%</strong>
-                    </div>
-                    <div className="confidence-meter">
-                      <div className="confidence-bar-bg">
-                        <div
-                          className="confidence-bar-fill"
-                          style={{ width: `${selectedCase.preliminaryReport.confidenceScorePercent}%` }}
+              {/* Escalated Banner if Claim was created */}
+              {selectedCase.status === 'ESCALATED_TO_CLAIM' && (
+                <div
+                  style={{
+                    background: '#fef2f2',
+                    border: '1px solid #fecaca',
+                    borderRadius: '10px',
+                    padding: '14px 18px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '12px',
+                    color: '#991b1b',
+                  }}
+                >
+                  <Scale size={24} aria-hidden="true" />
+                  <div>
+                    <h4 style={{ margin: '0 0 2px 0', fontSize: '14px', fontWeight: 700 }}>
+                      ĐÃ KẾT LUẬN PHÁN QUYẾT &amp; CHUYỂN BỒI THƯỜNG
+                    </h4>
+                    <p style={{ margin: 0, fontSize: '12.5px' }}>
+                      Hồ sơ bồi thường liên kết: <strong>{selectedCase.linkedClaimCode}</strong>. Đơn
+                      vị phải chịu chế tài:{' '}
+                      <strong>{selectedCase.preliminaryReport.suspectPartyName}</strong> (100%).
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Section 1: Preliminary Investigation Report */}
+              <div className="stray-drawer-section">
+                <h3 className="ws-section-title">Báo Cáo Giám Định Sơ Bộ (AI &amp; Audit Engine)</h3>
+                <div className="preliminary-report-box">
+                  <div className="report-summary-grid">
+                    <div>
+                      <div style={{ fontSize: '13px', color: '#64748b', marginBottom: '4px' }}>
+                        ĐIỂM ĐỨT GÃY PHÁT HIỆN:
+                      </div>
+                      <div
+                        style={{
+                          fontSize: '14px',
+                          fontWeight: 700,
+                          color: '#dc2626',
+                          marginBottom: '8px',
+                        }}
+                      >
+                        <AlertTriangle
+                          size={14}
+                          style={{
+                            marginRight: 4,
+                            verticalAlign: 'middle',
+                            display: 'inline-block',
+                          }}
+                          aria-hidden="true"
                         />
+                        {BREAK_POINT_LABELS[selectedCase.breakPointType]}
                       </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div style={{ borderTop: '1px solid #e2e8f0', paddingTop: '10px' }}>
-                  <div style={{ fontSize: '12.5px', fontWeight: 600, color: '#475569', marginBottom: '6px' }}>
-                    Căn cứ và chứng cứ phân tích:
-                  </div>
-                  <ul className="supporting-list">
-                    {selectedCase.preliminaryReport.supportingEvidences.map((ev, i) => (
-                      <li key={i}>{ev}</li>
-                    ))}
-                  </ul>
-                </div>
-              </div>
-            </div>
-
-            {/* Domino Visual Audit Timeline */}
-            <div>
-              <h3 className="ws-section-title">⏱️ Chuỗi Vết Quét Thao Tác (Audit Trail Timeline)</h3>
-              <div className="audit-timeline-container">
-                {selectedCase.auditTrail.map((scan) => (
-                  <div
-                    key={scan.id}
-                    className={`audit-step-node ${scan.isBreakPoint ? 'is-break-point' : ''}`}
-                  >
-                    <div className="audit-step-top">
-                      <span className="audit-step-action">{scan.action}</span>
-                      <span className="audit-step-time">{new Date(scan.timestamp).toLocaleString('vi-VN')}</span>
+                      <p style={{ margin: 0, fontSize: '13px', color: '#334155', lineHeight: '1.5' }}>
+                        {selectedCase.preliminaryReport.breakPointDescription}
+                      </p>
                     </div>
 
-                    <div className="audit-step-meta">
-                      <span>📍 Địa điểm: <strong>{scan.locationName} ({scan.locationCode})</strong></span>
-                      <span>👤 Nhân sự: <strong>{scan.operator}</strong></span>
-                      {scan.recordedWeightKg && (
-                        <span>⚖️ Cân nặng: <strong>{scan.recordedWeightKg} kg</strong></span>
-                      )}
-                      {scan.bagCode && (
-                        <span>🏷️ Mã bao: <strong>{scan.bagCode}</strong></span>
-                      )}
-                      {scan.sealNumber && (
-                        <span>🔒 Kẹp chì: <strong>{scan.sealNumber}</strong></span>
-                      )}
-                    </div>
-
-                    {scan.anomalyNote && (
-                      <div className="audit-anomaly-tag">
-                        ⚠️ {scan.anomalyNote}
+                    <div className="report-suspect-card">
+                      <div style={{ fontSize: '11.5px', color: '#64748b', fontWeight: 600 }}>
+                        ĐƠN VỊ TÌNH NGHI SỐ 1
                       </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Dispute & CCTV Evidences */}
-            <div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-                <h3 className="ws-section-title" style={{ margin: 0 }}>
-                  📹 Bằng Chứng Phản Biện &amp; Video Camera CCTV ({selectedCase.disputeEvidences.length})
-                </h3>
-                {selectedCase.status === 'IN_HEARING' && (
-                  <button
-                    type="button"
-                    className="btn-submit-cctv"
-                    onClick={() => setIsCctvModalOpen(true)}
-                  >
-                    + Nộp Video CCTV / Biên Bản Phản Biện
-                  </button>
-                )}
-              </div>
-
-              {selectedCase.disputeEvidences.length === 0 ? (
-                <div style={{ background: '#f8fafc', padding: '16px', borderRadius: '8px', border: '1px solid #e2e8f0', color: '#64748b', fontSize: '13px' }}>
-                  Chưa có bằng chứng phản biện từ phía đơn vị. Đang đợi nộp trong thời hạn giải trình.
-                </div>
-              ) : (
-                <div className="dispute-evidence-section">
-                  {selectedCase.disputeEvidences.map((dsp) => (
-                    <div key={dsp.id} className="evidence-list-item">
-                      <div className="evidence-top">
-                        <span>
-                          👤 Người nộp: <strong>{dsp.submittedBy}</strong> ({dsp.partyName})
-                        </span>
-                        <span style={{ color: '#64748b' }}>
-                          {new Date(dsp.submittedAt).toLocaleString('vi-VN')}
-                        </span>
+                      <div
+                        style={{
+                          fontSize: '14px',
+                          fontWeight: 700,
+                          color: '#0f172a',
+                          margin: '4px 0',
+                        }}
+                      >
+                        {selectedCase.preliminaryReport.suspectPartyName}
                       </div>
-
-                      {dsp.cctvTimestampRange && (
-                        <div style={{ fontSize: '12px', color: '#b45309', fontWeight: 600 }}>
-                          ⏱️ Khung giờ trích xuất camera: {dsp.cctvTimestampRange}
+                      <div style={{ fontSize: '12px', color: '#64748b' }}>
+                        Độ tin cậy:{' '}
+                        <strong style={{ color: '#ef4444' }}>
+                          {selectedCase.preliminaryReport.confidenceScorePercent}%
+                        </strong>
+                      </div>
+                      <div className="confidence-meter">
+                        <div className="confidence-bar-bg">
+                          <div
+                            className="confidence-bar-fill"
+                            style={{
+                              width: `${selectedCase.preliminaryReport.confidenceScorePercent}%`,
+                            }}
+                          />
                         </div>
-                      )}
+                      </div>
+                    </div>
+                  </div>
 
-                      <div style={{ fontSize: '13px', color: '#334155' }}>
-                        &quot;{dsp.notes}&quot;
+                  <div style={{ borderTop: '1px solid #e2e8f0', paddingTop: '10px' }}>
+                    <div
+                      style={{
+                        fontSize: '12.5px',
+                        fontWeight: 600,
+                        color: '#475569',
+                        marginBottom: '6px',
+                      }}
+                    >
+                      Căn cứ và chứng cứ phân tích:
+                    </div>
+                    <ul className="supporting-list">
+                      {selectedCase.preliminaryReport.supportingEvidences.map((ev, i) => (
+                        <li key={i}>{ev}</li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              </div>
+
+              {/* Section 2: Domino Visual Audit Timeline */}
+              <div className="stray-drawer-section">
+                <h3 className="ws-section-title">
+                  <Clock
+                    size={16}
+                    style={{ marginRight: 6, verticalAlign: 'middle', display: 'inline-block' }}
+                    aria-hidden="true"
+                  />
+                  Chuỗi Vết Quét Thao Tác (Audit Trail Timeline)
+                </h3>
+                <div className="audit-timeline-container">
+                  {selectedCase.auditTrail.map((scan) => (
+                    <div
+                      key={scan.id}
+                      className={`audit-step-node ${scan.isBreakPoint ? 'is-break-point' : ''}`}
+                    >
+                      <div className="audit-step-top">
+                        <span className="audit-step-action">{scan.action}</span>
+                        <span className="audit-step-time">
+                          {new Date(scan.timestamp).toLocaleString('vi-VN')}
+                        </span>
                       </div>
 
-                      {dsp.cctvVideoUrl && (
-                        <div>
-                          <a
-                            href={dsp.cctvVideoUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="evidence-link-btn"
-                          >
-                            🎥 Mở xem Video Camera CCTV bàn dỡ trích xuất ↗
-                          </a>
+                      <div className="audit-step-meta">
+                        <span>
+                          <MapPin
+                            size={13}
+                            style={{
+                              marginRight: 4,
+                              verticalAlign: 'middle',
+                              display: 'inline-block',
+                            }}
+                            aria-hidden="true"
+                          />
+                          Địa điểm: <strong>{scan.locationName} ({scan.locationCode})</strong>
+                        </span>
+                        <span>
+                          Nhân sự: <strong>{scan.operator}</strong>
+                        </span>
+                        {scan.recordedWeightKg && (
+                          <span>
+                            <Scale
+                              size={13}
+                              style={{
+                                marginRight: 4,
+                                verticalAlign: 'middle',
+                                display: 'inline-block',
+                              }}
+                              aria-hidden="true"
+                            />
+                            Cân nặng: <strong>{scan.recordedWeightKg} kg</strong>
+                          </span>
+                        )}
+                        {scan.bagCode && (
+                          <span>
+                            <Tag
+                              size={13}
+                              style={{
+                                marginRight: 4,
+                                verticalAlign: 'middle',
+                                display: 'inline-block',
+                              }}
+                              aria-hidden="true"
+                            />
+                            Mã bao: <strong>{scan.bagCode}</strong>
+                          </span>
+                        )}
+                        {scan.sealNumber && (
+                          <span>
+                            <Shield
+                              size={13}
+                              style={{
+                                marginRight: 4,
+                                verticalAlign: 'middle',
+                                display: 'inline-block',
+                              }}
+                              aria-hidden="true"
+                            />
+                            Kẹp chì: <strong>{scan.sealNumber}</strong>
+                          </span>
+                        )}
+                      </div>
+
+                      {scan.anomalyNote && (
+                        <div className="audit-anomaly-tag">
+                          <AlertTriangle
+                            size={13}
+                            style={{
+                              marginRight: 4,
+                              verticalAlign: 'middle',
+                              display: 'inline-block',
+                            }}
+                            aria-hidden="true"
+                          />
+                          {scan.anomalyNote}
                         </div>
                       )}
                     </div>
                   ))}
                 </div>
-              )}
+              </div>
+
+              {/* Section 3: Dispute & CCTV Evidences */}
+              <div className="stray-drawer-section">
+                <div
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    marginBottom: '10px',
+                  }}
+                >
+                  <h3
+                    className="ws-section-title"
+                    style={{ margin: 0, display: 'inline-flex', alignItems: 'center' }}
+                  >
+                    <Video
+                      size={16}
+                      style={{ marginRight: 6, verticalAlign: 'middle' }}
+                      aria-hidden="true"
+                    />
+                    Bằng Chứng Phản Biện &amp; Video Camera CCTV (
+                    {selectedCase.disputeEvidences.length})
+                  </h3>
+                  {selectedCase.status === 'IN_HEARING' && (
+                    <button
+                      type="button"
+                      className="btn-submit-cctv"
+                      onClick={() => setIsCctvModalOpen(true)}
+                    >
+                      + Nộp Video CCTV / Biên Bản Phản Biện
+                    </button>
+                  )}
+                </div>
+
+                {selectedCase.disputeEvidences.length === 0 ? (
+                  <div
+                    style={{
+                      background: '#f8fafc',
+                      padding: '16px',
+                      borderRadius: '8px',
+                      border: '1px solid #e2e8f0',
+                      color: '#64748b',
+                      fontSize: '13px',
+                    }}
+                  >
+                    Chưa có bằng chứng phản biện từ phía đơn vị. Đang đợi nộp trong thời hạn giải trình.
+                  </div>
+                ) : (
+                  <div className="dispute-evidence-section">
+                    {selectedCase.disputeEvidences.map((dsp) => {
+                      const isMinioOrVideo =
+                        dsp.cctvVideoUrl &&
+                        (dsp.cctvVideoUrl.includes('minio') ||
+                          dsp.cctvVideoUrl.endsWith('.mp4') ||
+                          dsp.cctvVideoUrl.endsWith('.webm'));
+
+                      return (
+                        <div key={dsp.id} className="evidence-list-item">
+                          <div className="evidence-top">
+                            <span>
+                              Người nộp: <strong>{dsp.submittedBy}</strong> ({dsp.partyName})
+                            </span>
+                            <span style={{ color: '#64748b' }}>
+                              {new Date(dsp.submittedAt).toLocaleString('vi-VN')}
+                            </span>
+                          </div>
+
+                          {dsp.cctvTimestampRange && (
+                            <div
+                              style={{
+                                fontSize: '12px',
+                                color: '#b45309',
+                                fontWeight: 600,
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                              }}
+                            >
+                              <Clock size={13} style={{ marginRight: 4 }} aria-hidden="true" />
+                              Khung giờ trích xuất camera: {dsp.cctvTimestampRange}
+                            </div>
+                          )}
+
+                          <div style={{ fontSize: '13px', color: '#334155' }}>
+                            &quot;{dsp.notes}&quot;
+                          </div>
+
+                          {dsp.cctvVideoUrl && (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              {isMinioOrVideo ? (
+                                <button
+                                  type="button"
+                                  className="evidence-link-btn"
+                                  onClick={() => setVideoPreviewUrl(normalizeMinioMediaUrl(dsp.cctvVideoUrl!))}
+                                  style={{ display: 'inline-flex', alignItems: 'center', cursor: 'pointer' }}
+                                >
+                                  <Video size={13} style={{ marginRight: 5 }} aria-hidden="true" />
+                                  Xem Video Camera CCTV trích xuất (MinIO S3) ▶
+                                </button>
+                              ) : (
+                                <a
+                                  href={dsp.cctvVideoUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="evidence-link-btn"
+                                  style={{ display: 'inline-flex', alignItems: 'center' }}
+                                >
+                                  <Video size={13} style={{ marginRight: 5 }} aria-hidden="true" />
+                                  Mở xem Video Camera CCTV bàn dỡ trích xuất ↗
+                                </a>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
             </div>
 
-            {/* Action Bar */}
-            <div className="ws-action-bar">
-              {selectedCase.status !== 'RESOLVED_FOUND' && selectedCase.status !== 'ESCALATED_TO_CLAIM' && (
-                <>
-                  <button
-                    type="button"
-                    className="btn-resolve-found"
-                    onClick={() => setIsFoundModalOpen(true)}
-                  >
-                    ✅ Đã Tìm Thấy Hàng Trong Kho (Cứu Đơn)
-                  </button>
-                  <button
-                    type="button"
-                    className="btn-escalate-claim"
-                    onClick={() => setIsEscalateModalOpen(true)}
-                  >
-                    ⚖️ Xác Nhận Phán Quyết &amp; Chuyển Bồi Thường
-                  </button>
-                </>
-              )}
+            {/* Drawer Footer / Action Bar */}
+            <div className="stray-drawer-footer">
+              <div className="stray-drawer-footer-actions">
+                {selectedCase.status !== 'RESOLVED_FOUND' &&
+                  selectedCase.status !== 'ESCALATED_TO_CLAIM' && (
+                    <>
+                      <button
+                        type="button"
+                        className="btn-resolve-found"
+                        onClick={() => setIsFoundModalOpen(true)}
+                        style={{ display: 'inline-flex', alignItems: 'center' }}
+                      >
+                        <CheckCircle2 size={15} style={{ marginRight: 6 }} aria-hidden="true" />
+                        Đã Tìm Thấy Hàng Trong Kho (Cứu Đơn)
+                      </button>
+                      <button
+                        type="button"
+                        className="btn-escalate-claim"
+                        onClick={() => setIsEscalateModalOpen(true)}
+                        style={{ display: 'inline-flex', alignItems: 'center' }}
+                      >
+                        <Scale size={15} style={{ marginRight: 6 }} aria-hidden="true" />
+                        Xác Nhận Phán Quyết &amp; Chuyển Bồi Thường
+                      </button>
+                    </>
+                  )}
+                <button
+                  type="button"
+                  className="btn-submit-cctv"
+                  onClick={() => setIsDrawerOpen(false)}
+                >
+                  Đóng
+                </button>
+              </div>
             </div>
           </div>
-        ) : null}
-      </div>
+        </div>
+      )}
+
+      {/* Video Lightbox Modal for MinIO Video Playback */}
+      {videoPreviewUrl && (
+        <div className="inv-modal-overlay" onClick={() => setVideoPreviewUrl(null)}>
+          <div
+            className="inv-modal-content"
+            style={{ maxWidth: '850px' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="inv-modal-header">
+              <h3 style={{ display: 'inline-flex', alignItems: 'center' }}>
+                <Video size={18} style={{ marginRight: 6 }} aria-hidden="true" />
+                Trích Xuất Video Camera CCTV Bàn Dỡ (MinIO S3 Storage)
+              </h3>
+              <button
+                type="button"
+                onClick={() => setVideoPreviewUrl(null)}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  fontSize: '18px',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                }}
+                aria-label="Đóng"
+              >
+                <X size={18} aria-hidden="true" />
+              </button>
+            </div>
+            <div className="inv-modal-body" style={{ padding: '0', background: '#000000', display: 'flex', justifyContent: 'center' }}>
+              <video
+                src={videoPreviewUrl}
+                controls
+                autoPlay
+                style={{ width: '100%', maxHeight: '70vh', outline: 'none' }}
+              />
+            </div>
+            <div className="inv-modal-footer">
+              <a
+                href={videoPreviewUrl}
+                download
+                target="_blank"
+                rel="noopener noreferrer"
+                className="btn-auto-scan"
+                style={{ textDecoration: 'none' }}
+              >
+                <Download size={14} style={{ marginRight: 6 }} aria-hidden="true" />
+                Tải Video Gốc Từ MinIO
+              </a>
+              <button
+                type="button"
+                className="btn-submit-cctv"
+                onClick={() => setVideoPreviewUrl(null)}
+              >
+                Đóng Trình Xem
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* MODAL 1: Submit CCTV / Dispute Evidence */}
       {isCctvModalOpen && (
         <div className="inv-modal-overlay" onClick={() => setIsCctvModalOpen(false)}>
           <div className="inv-modal-content" onClick={(e) => e.stopPropagation()}>
             <div className="inv-modal-header">
-              <h3>📹 Nộp Bằng Chứng CCTV / Biên Bản Phản Biện</h3>
+              <h3 style={{ display: 'inline-flex', alignItems: 'center' }}>
+                <Video size={18} style={{ marginRight: 6 }} aria-hidden="true" />
+                Nộp Bằng Chứng CCTV / Biên Bản Phản Biện
+              </h3>
               <button
                 type="button"
                 onClick={() => setIsCctvModalOpen(false)}
-                style={{ background: 'none', border: 'none', fontSize: '18px', cursor: 'pointer' }}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  fontSize: '18px',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                }}
+                aria-label="Đóng"
               >
-                ✕
+                <X size={18} aria-hidden="true" />
               </button>
             </div>
             <form onSubmit={handleSubmitCctv}>
@@ -657,10 +1014,13 @@ export const StrayShipmentInvestigationPage: React.FC = () => {
                   <input
                     type="url"
                     className="inv-form-input"
-                    placeholder="https://drive.google.com/file/d/... hoặc link nội bộ"
+                    placeholder="https://minio.nexus-ex.site/... hoặc https://drive.google.com/..."
                     value={cctvUrl}
                     onChange={(e) => setCctvUrl(e.target.value)}
                   />
+                  <small style={{ color: '#64748b', marginTop: 4, display: 'block', fontSize: '11.5px' }}>
+                    * Hỗ trợ link video MinIO S3 Object Storage hoặc Google Drive bàn dỡ.
+                  </small>
                 </div>
 
                 <div className="inv-form-group">
@@ -709,19 +1069,39 @@ export const StrayShipmentInvestigationPage: React.FC = () => {
         <div className="inv-modal-overlay" onClick={() => setIsFoundModalOpen(false)}>
           <div className="inv-modal-content" onClick={(e) => e.stopPropagation()}>
             <div className="inv-modal-header">
-              <h3>🎉 Xác Nhận Đã Tìm Thấy Hàng (Hoàn Kho &amp; Cứu Đơn)</h3>
+              <h3 style={{ display: 'inline-flex', alignItems: 'center' }}>
+                <CheckCircle2 size={18} style={{ marginRight: 6 }} aria-hidden="true" />
+                Xác Nhận Đã Tìm Thấy Hàng (Hoàn Kho &amp; Cứu Đơn)
+              </h3>
               <button
                 type="button"
                 onClick={() => setIsFoundModalOpen(false)}
-                style={{ background: 'none', border: 'none', fontSize: '18px', cursor: 'pointer' }}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  fontSize: '18px',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                }}
+                aria-label="Đóng"
               >
-                ✕
+                <X size={18} aria-hidden="true" />
               </button>
             </div>
             <form onSubmit={handleResolveFound}>
               <div className="inv-modal-body">
-                <div style={{ background: '#ecfdf5', padding: '12px', borderRadius: '6px', fontSize: '13px', color: '#065f46' }}>
-                  Xác nhận tìm thấy hàng sẽ đóng hồ sơ điều tra, hủy cảnh báo bồi thường và hoàn trả hàng về luồng phát bình thường.
+                <div
+                  style={{
+                    background: '#ecfdf5',
+                    padding: '12px',
+                    borderRadius: '6px',
+                    fontSize: '13px',
+                    color: '#065f46',
+                  }}
+                >
+                  Xác nhận tìm thấy hàng sẽ đóng hồ sơ điều tra, hủy cảnh báo bồi thường và hoàn trả hàng
+                  về luồng phát bình thường.
                 </div>
 
                 <div className="inv-form-group">
@@ -782,19 +1162,44 @@ export const StrayShipmentInvestigationPage: React.FC = () => {
         <div className="inv-modal-overlay" onClick={() => setIsEscalateModalOpen(false)}>
           <div className="inv-modal-content" onClick={(e) => e.stopPropagation()}>
             <div className="inv-modal-header">
-              <h3>⚖️ Xác Nhận Phán Quyết &amp; Chuyển Sang Bồi Thường</h3>
+              <h3 style={{ display: 'inline-flex', alignItems: 'center' }}>
+                <Scale size={18} style={{ marginRight: 6 }} aria-hidden="true" />
+                Xác Nhận Phán Quyết &amp; Chuyển Sang Bồi Thường
+              </h3>
               <button
                 type="button"
                 onClick={() => setIsEscalateModalOpen(false)}
-                style={{ background: 'none', border: 'none', fontSize: '18px', cursor: 'pointer' }}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  fontSize: '18px',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                }}
+                aria-label="Đóng"
               >
-                ✕
+                <X size={18} aria-hidden="true" />
               </button>
             </div>
             <form onSubmit={handleEscalateClaim}>
               <div className="inv-modal-body">
-                <div style={{ background: '#fef2f2', padding: '12px', borderRadius: '6px', fontSize: '13px', color: '#991b1b' }}>
-                  Hệ thống sẽ tạo tự động một <strong>Hồ sơ Bồi thường (Compensation Claim)</strong> mới, gán trách nhiệm 100% cho <strong>{selectedCase?.preliminaryReport.suspectPartyName}</strong> với số tiền phạt <strong>{formatVND(selectedCase?.preliminaryReport.suggestedCompensationAmount || 0)}</strong>.
+                <div
+                  style={{
+                    background: '#fef2f2',
+                    padding: '12px',
+                    borderRadius: '6px',
+                    fontSize: '13px',
+                    color: '#991b1b',
+                  }}
+                >
+                  Hệ thống sẽ tạo tự động một <strong>Hồ sơ Bồi thường (Compensation Claim)</strong> mới,
+                  gán trách nhiệm 100% cho{' '}
+                  <strong>{selectedCase?.preliminaryReport.suspectPartyName}</strong> với số tiền phạt{' '}
+                  <strong>
+                    {formatVND(selectedCase?.preliminaryReport.suggestedCompensationAmount || 0)}
+                  </strong>
+                  .
                 </div>
 
                 <div className="inv-form-group">

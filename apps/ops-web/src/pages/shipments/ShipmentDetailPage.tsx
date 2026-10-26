@@ -17,7 +17,7 @@ import { routePaths } from '../../navigation/routes';
 import { getErrorMessage } from '../../services/api/errors';
 import { useAuthStore } from '../../store/authStore';
 import { formatDateTime } from '../../utils/format';
-import { formatShipmentStatusLabel } from '../../utils/logisticsLabels';
+import { formatInspectionPolicyLabel, formatShipmentStatusLabel } from '../../utils/logisticsLabels';
 
 export function ShipmentDetailPage(): React.JSX.Element {
   const { shipmentId = '' } = useParams();
@@ -69,6 +69,9 @@ export function ShipmentDetailPage(): React.JSX.Element {
       <h2>Chi tiết vận đơn</h2>
       <p>Mã vận đơn: {detailQuery.data.shipmentCode}</p>
       <p>Trạng thái hiện tại: {formatShipmentStatusLabel(detailQuery.data.currentStatus)}</p>
+      <p>Chính sách đồng kiểm: <strong>{formatInspectionPolicyLabel(detailQuery.data.metadata?.inspectionPolicy)}</strong></p>
+      <p>Tiền thu hộ COD: {typeof detailQuery.data.codAmount === 'number' ? `${detailQuery.data.codAmount.toLocaleString('vi-VN')} đ` : '0 đ'}</p>
+      <p>Cước phí: {typeof detailQuery.data.shippingFee === 'number' ? `${detailQuery.data.shippingFee.toLocaleString('vi-VN')} đ` : '0 đ'}</p>
       <p>Vị trí hiện tại: {detailQuery.data.currentLocation ?? 'Không có'}</p>
       <p>Cập nhật lúc: {formatDateTime(detailQuery.data.updatedAt)}</p>
 

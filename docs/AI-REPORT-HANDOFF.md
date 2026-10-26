@@ -24,12 +24,13 @@ Không cần gửi toàn bộ source code ngay từ đầu. Chỉ gửi source t
 ```text
 Bạn là trợ lý kỹ thuật hỗ trợ tôi viết báo cáo cho hệ thống Nexus Express System.
 
-Hệ thống của tôi là một nền tảng quản lý logistics/chuyển phát nhanh theo kiến trúc microservices, gồm frontend web, mobile courier app, gateway BFF, nhiều backend domain services, PostgreSQL database-per-service, RabbitMQ event-driven communication, tracking/reporting read models, COD settlement và pricing.
+Hệ thống của tôi là một nền tảng quản lý logistics/chuyển phát nhanh theo kiến trúc 15 microservices, gồm 6 ứng dụng client (4 Web React/Vite + 2 Mobile Expo/React Native), gateway BFF, 15 backend domain services, PostgreSQL database-per-service, RabbitMQ event-driven communication, tracking/reporting read models, động cơ định giá đa nền tảng IATA V/6000, trợ lý AI Logistics RAG với Google Gemini & OpenAI, COD settlement và quản lý chuyến xe trung chuyển Linehaul.
 
 Trước khi viết, hãy đọc kỹ các tài liệu tôi gửi, ưu tiên theo thứ tự:
-1. docs/AI-REPORT-HANDOFF.md
-2. docs/PROJECT-OVERVIEW.md
-3. Các tài liệu architecture/runbook/contracts/source code mà tôi gửi thêm
+1. README.md (Báo cáo tổng quan dự án & sơ đồ kiến trúc chuẩn)
+2. docs/PROJECT-OVERVIEW.md (Bức tranh kỹ thuật chi tiết 15 microservices)
+3. docs/architecture/ai-chatbot-service-architecture.md
+4. Các tài liệu business-sop/runbook/contracts/source code mà tôi gửi thêm
 
 Nguyên tắc bắt buộc:
 - Không tự bịa service, database, event, API hoặc trạng thái nếu tài liệu không nói rõ.
@@ -39,7 +40,14 @@ Nguyên tắc bắt buộc:
   - scan-service sở hữu scan event/current location.
   - tracking-service và reporting-service chỉ là read model/projection từ events.
   - payment-service là source of truth cho COD settlement.
-  - pricing-service tính phí/quote, không có database riêng.
+  - pricing-service tính phí/quote chuẩn hóa toàn hệ thống (bản NEXUS_RATES_2026_05), không có database riêng.
+  - chatbot-service là microservice AI chuyên biệt (Port 3013), tích hợp Hybrid RAG + 5 Dynamic Tools + SSE streaming.
+  - linehaul-service quản lý chuyến xe tải trung chuyển liên tỉnh giữa các Hub (Port 3014).
+- 4 trụ cột nghiệp vụ cốt lõi:
+  1. Động cơ định giá chuẩn hóa IATA V/6000, 3 vùng cước (Nội tỉnh / Trục chính / Liên tỉnh), tự động bóc tách tiền tố hành chính.
+  2. Phân tầng khách hàng 3 cấp (Guest, Standard SME, VIP Enterprise) và chính sách cước hoàn tự động (Return Fee SOP).
+  3. Tiếp nhận hàng dễ vỡ & quy trình bảo hiểm bồi thường 100% (Điều 25 Luật Bưu chính).
+  4. Mạng lưới Hub 4 cấp (Mega Hub -> Regional Hub -> Provincial Hub -> Local Station) và điều phối Linehaul.
 - Viết bằng tiếng Việt học thuật, dễ hiểu, phù hợp báo cáo tốt nghiệp/kỹ thuật.
 - Khi viết từng chương, hãy nêu rõ phạm vi, mục tiêu, thành phần, luồng xử lý, dữ liệu vào/ra, ưu điểm thiết kế và giới hạn nếu có.
 - Nếu thiếu thông tin, hãy hỏi lại hoặc ghi rõ "cần đối chiếu thêm source/tài liệu", không suy đoán chắc chắn.
@@ -54,26 +62,29 @@ AI cần hiểu hệ thống theo 6 lớp, từ tổng quan đến chi tiết:
 
 | Lớp | Cần hiểu | Tài liệu/source nên đọc |
 | --- | --- | --- |
-| Bối cảnh nghiệp vụ | Logistics last-mile, merchant, ops, courier, hub, shipment, COD, tracking | `docs/PROJECT-OVERVIEW.md`, `docs/order-lifecycle-report.md` |
-| Kiến trúc | Microservices, gateway BFF, event-driven, database-per-service, read model | `docs/PROJECT-OVERVIEW.md`, `docs/architecture/` |
-| Service ownership | Service nào sở hữu dữ liệu nào, service nào chỉ là projection | `docs/PROJECT-OVERVIEW.md`, `docs/architecture/data-ownership.md` |
-| Event flow | Event publish/consume, RabbitMQ exchange, outbox pattern | `docs/PROJECT-OVERVIEW.md`, `docs/architecture/events.md`, `contracts/events/` |
-| API/client | Frontend gọi gateway, gateway route sang service | `contracts/openapi/`, `services/gateway-bff/`, app README |
+| Bối cảnh nghiệp vụ | Logistics last-mile, hub-and-spoke, 3-tier customer, return SOP, fragile goods Điều 25 | `docs/PROJECT-OVERVIEW.md`, `docs/business-sop/` |
+| Kiến trúc | 15 Microservices, gateway BFF, event-driven, database-per-service, read model | `docs/PROJECT-OVERVIEW.md`, `docs/architecture/` |
+| AI & Trợ lý thông minh | Hybrid RAG, 768-dim Vector Embeddings, 5 Dynamic Tools, Fallback LLM | `docs/architecture/ai-chatbot-service-architecture.md`, `docs/knowledge-base/` |
+| Service ownership | Service nào sở hữu dữ liệu nào, service nào chỉ là projection | `docs/PROJECT-OVERVIEW.md`, `docs/architecture/system-design-summary.md` |
+| Event flow | Event publish/consume, RabbitMQ exchange, outbox pattern | `docs/PROJECT-OVERVIEW.md`, `contracts/events/` |
+| API/client | 6 client apps gọi gateway, gateway route sang 15 services | `contracts/openapi/`, `services/gateway-bff/` |
 | Triển khai/kiểm thử | Docker Compose, env vars, db prepare, seed, build/test | `docs/runbook/`, package scripts từng app/service |
 
 ## Những điểm không được hiểu sai
 
 | Chủ đề | Cách hiểu đúng |
 | --- | --- |
-| Gateway | `gateway-bff` là entry point cho web/mobile client, proxy đến domain services; không phải owner của nghiệp vụ shipment/pickup/delivery. |
+| Gateway | `gateway-bff` là entry point duy nhất cho 6 client apps, proxy đến 15 domain services; không phải owner của nghiệp vụ shipment/pickup/delivery. |
 | Auth | `auth-service` quản lý user/session/token. Gateway auth hiện thiên về perimeter check tùy cấu hình. |
 | Shipment status | `shipment-service` là service quyết định trạng thái nghiệp vụ chính của vận đơn. |
 | Current location | `scan-service` là source of truth cho scan event và vị trí hiện tại. |
 | Tracking | `tracking-service` dựng timeline/current view từ event, không quyết định trạng thái gốc. |
 | Reporting | `reporting-service` aggregate KPI/read model từ event, không xử lý nghiệp vụ write-side. |
-| COD | `payment-service` quản lý COD record, settlement batch, payment webhook và remittance. |
-| Pricing | `pricing-service` tính quote/rate; shipment lưu snapshot pricing khi tạo đơn. |
-| Database | Local dev dùng một PostgreSQL container nhưng vẫn theo nguyên tắc database-per-service. |
+| COD | `payment-service` quản lý COD record, settlement batch, payment webhook SePay và remittance. |
+| Pricing | `pricing-service` tính quote/rate chuẩn hóa toàn hệ thống theo công thức IATA $V/6000$ và 3 vùng; shipment lưu snapshot pricing khi tạo đơn. |
+| AI Chatbot | `chatbot-service` (:3013) là microservice độc lập, chạy RAG + 5 tools động; không trực tiếp sửa DB mà gọi qua Gateway/services. |
+| Linehaul | `linehaul-service` (:3014) quản lý chuyến xe tải trung chuyển liên tỉnh hub-to-hub và cấp tem niêm phong xe `XT`. |
+| Database | Local dev dùng một PostgreSQL container nhưng vẫn theo nguyên tắc database-per-service tuyệt đối. |
 | Monorepo | Repo không có root `package.json`; mỗi app/service có package script riêng. |
 
 ## Dàn ý báo cáo đề xuất
@@ -81,76 +92,69 @@ AI cần hiểu hệ thống theo 6 lớp, từ tổng quan đến chi tiết:
 ### Chương 1 - Tổng quan đề tài
 
 - Lý do chọn đề tài.
-- Bài toán quản lý logistics/chuyển phát nhanh.
+- Bài toán quản lý logistics/chuyển phát nhanh bưu chính đa kênh.
 - Mục tiêu hệ thống.
-- Phạm vi chức năng.
-- Đối tượng sử dụng.
+- Phạm vi chức năng: 15 microservices và 6 client applications.
+- Đối tượng sử dụng: Admin, Ops, Merchant, Courier, Khách hàng cá nhân C-End.
 - Ý nghĩa thực tiễn và ý nghĩa kỹ thuật.
 
 ### Chương 2 - Cơ sở lý thuyết và công nghệ
 
-- Kiến trúc microservices.
-- API Gateway/BFF.
-- Event-driven architecture.
-- Database-per-service.
-- Outbox pattern.
-- Idempotency.
-- Read model/CQRS mức ứng dụng.
-- Tổng quan NestJS, React, Expo, Prisma, PostgreSQL, RabbitMQ, Docker Compose.
+- Kiến trúc microservices và API Gateway/BFF.
+- Event-driven architecture và Message Broker (RabbitMQ topic exchange).
+- Database-per-service, Transactional Outbox Pattern, Idempotency.
+- Read model/CQRS-lite phân tách đọc/ghi.
+- Kiến trúc Hybrid RAG (Retrieval-Augmented Generation), Vector Embeddings và Dynamic Function Calling.
+- Tổng quan NestJS 10, React 18, Expo 54 / React Native 0.81, Prisma, PostgreSQL 16, Docker Compose.
 
 ### Chương 3 - Phân tích yêu cầu hệ thống
 
-- Yêu cầu chức năng theo nhóm người dùng: admin, ops, merchant, courier, public tracking.
-- Yêu cầu phi chức năng: mở rộng, bảo trì, tin cậy, đồng bộ bất đồng bộ, kiểm soát trùng lặp, theo dõi vận đơn.
-- Phân rã miền nghiệp vụ.
-- Luồng nghiệp vụ chính: tạo đơn, pickup, hub/manifest, delivery, NDR/return, COD, tracking/reporting.
+- Yêu cầu chức năng theo 5 nhóm người dùng trên 6 client applications.
+- 4 quy chuẩn nghiệp vụ bưu chính cốt lõi:
+  1. Định giá chuẩn hóa đa nền tảng theo quy tắc hàng không IATA $V/6000$.
+  2. Phân tầng khách hàng 3 cấp và cước hoàn tự động (Reverse Logistics).
+  3. Tiếp nhận hàng dễ vỡ & quy trình bảo hiểm bồi thường 100% (Điều 25 Luật Bưu chính).
+  4. Mạng lưới Hub 4 cấp và điều phối xe tải Linehaul.
+- Yêu cầu phi chức năng: độ trễ thấp, streaming phản hồi từ AI, kiểm soát trùng lặp quét mã (Idempotency), hỗ trợ ngoại tuyến (Offline queue trên mobile).
 
 ### Chương 4 - Thiết kế kiến trúc hệ thống
 
-- Sơ đồ tổng quan client -> gateway -> services -> database/RabbitMQ.
-- Vai trò từng frontend app.
-- Vai trò từng backend service.
-- Data ownership.
-- Gateway routing.
-- Event-driven flow.
-- Outbox và idempotency.
-- Lý do chọn microservices thay vì monolithic.
+- Sơ đồ tổng thể 6 client apps -> Gateway BFF -> 15 domain services -> PostgreSQL / RabbitMQ.
+- Phân định ranh giới thẩm quyền dữ liệu (Data Ownership).
+- Kiến trúc phân hệ AI Chatbot RAG (`@NEXUS/chatbot-service` :3013).
+- Cơ chế Outbox Relay và định tuyến sự kiện qua RabbitMQ topic exchange `domain.events`.
+- So sánh ưu điểm vượt trội của kiến trúc Microservices so với Monolithic.
 
-### Chương 5 - Thiết kế dữ liệu và service
+### Chương 5 - Thiết kế dữ liệu và các microservices
 
-- Database-per-service.
-- Các model chính của từng service.
-- Quan hệ logic giữa dữ liệu qua event, không qua join trực tiếp cross-database.
-- Thiết kế shipment state machine.
-- Thiết kế scan/current location.
-- Thiết kế tracking timeline.
-- Thiết kế reporting projection.
-- Thiết kế COD settlement.
+- Database-per-service: Cấu trúc 11 database PostgreSQL độc lập và schema Prisma tương ứng.
+- Thiết kế máy trạng thái vận đơn (`shipment-service`).
+- Thiết kế lịch sử quét mã và định vị vật lý (`scan-service`).
+- Thiết kế dòng tiền COD và gom phiên đối soát tự động (`payment-service`).
+- Thiết kế lược đồ đọc tốc độ cao (`tracking-service` & `reporting-service`).
+- Thiết kế cơ sở dữ liệu Vector Index tri thức logistics cho AI Assistant.
 
-### Chương 6 - Thiết kế và hiện thực giao diện
+### Chương 6 - Thiết kế và hiện thực giao diện (6 Client Apps)
 
-- `admin-web`: quản trị user/master data/config.
-- `ops-web`: vận hành shipment/pickup/task/manifest/scan/NDR/COD.
-- `merchant-web`: tạo đơn, pickup, tracking, in vận đơn.
-- `courier-mobile`: task, scan, POD/OTP, offline retry.
-- `public-tracking`: tra cứu vận đơn công khai.
-- Cách frontend gọi gateway và xử lý loading/empty/error/success states.
+- `admin-web`: Quản trị tài khoản, phân quyền RBAC, danh mục Hub 4 cấp, bảng vùng cước.
+- `ops-web`: Vận hành trung tâm khai thác, duyệt pickup, gán việc shipper, manifest, scan, NDR, đối soát COD.
+- `merchant-web`: Tạo đơn hàng loạt, in phiếu bưu chính A6/A7, quản lý lịch sử đơn và nhận tiền COD.
+- `courier-mobile`: Nhiệm vụ lấy/giao, quét mã barcode, chụp ảnh POD, nhập OTP, lưu trữ offline queue.
+- `customer-mobile`: Ứng dụng di động cho khách gửi lẻ, ước tính cước, theo dõi đơn, trò chuyện nổi với AI.
+- `guest-web`: Cổng tra cứu công khai, ước tính cước IATA, tạo đơn khách vãng lai, trò chuyện cùng trợ lý AI.
 
 ### Chương 7 - Triển khai và kiểm thử
 
-- Môi trường local dev.
-- Docker Compose infrastructure.
-- Cách prepare database và seed.
-- Build/typecheck/smoke/e2e/mobile testing.
-- Các test hoặc kiểm tra đã có trong repo.
-- Các giới hạn hiện tại khi kiểm thử.
+- Môi trường phát triển cục bộ với Docker Compose.
+- Chiến lược migration và seed dữ liệu chuẩn cho từng service.
+- Kiểm thử tích hợp, kiểm thử khói (Smoke Test), kiểm thử E2E và kiểm thử di động (Maestro).
+- Đánh giá hiệu năng gọi đồng thời và cơ chế chống trùng quét mã.
 
 ### Chương 8 - Đánh giá và hướng phát triển
 
-- Kết quả đạt được.
-- Ưu điểm kiến trúc.
-- Hạn chế hiện tại.
-- Hướng phát triển: production auth/permission, observability, versioned migrations, stronger owner checks, monitoring, CI/CD, scale workers, improve event retry/DLQ dashboard.
+- Tổng kết kết quả đạt được: vận hành trơn tru 15 microservices và 6 client apps.
+- Ưu điểm kiến trúc: phân tách bounded context rõ ràng, độ tin cậy cao, AI hỗ trợ tức thì, định giá đồng nhất 100%.
+- Hạn chế hiện tại và hướng phát triển: mở rộng microservice tối ưu tuyến đường giao hàng thông minh (Route Optimization), tích hợp IoT cảm biến nhiệt độ/va đập trong thùng xe Linehaul, mở rộng đa cổng thanh toán quốc tế, nâng cấp observability (OpenTelemetry & Grafana).
 
 ## Checklist khi AI viết từng phần báo cáo
 

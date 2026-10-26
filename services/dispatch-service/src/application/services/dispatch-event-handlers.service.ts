@@ -32,6 +32,32 @@ export class DispatchEventHandlersService {
   constructor(private readonly tasksService: TasksService) {}
 
   async handleShipmentCreated(payload: ShipmentCreatedPayload): Promise<void> {
+    const shipment = this.readObject(payload.data?.shipment);
+    const metadata = this.readObject(shipment?.metadata);
+    const createdByType = this.readString(shipment?.createdByType);
+    const currentStatus = this.readString(shipment?.currentStatus);
+    const intakeType = this.readString(metadata?.intakeType);
+    const pickupClassification = this.readString(metadata?.pickupClassification);
+    const source = this.readString(metadata?.source) ?? '';
+    const platform = this.readString(metadata?.platform) ?? '';
+    const skipCourierPickup = metadata?.skipCourierPickup === true;
+
+    const isCounterOrder =
+      intakeType === 'COUNTER_WALK_IN' ||
+      pickupClassification === 'COUNTER_DROP_OFF' ||
+      metadata?.pickupType === 'COUNTER' ||
+      skipCourierPickup ||
+      createdByType === 'OPS' ||
+      currentStatus === 'PICKUP_COMPLETED' ||
+      source.startsWith('ops-web') ||
+      platform.startsWith('OPS_');
+
+    if (isCounterOrder) {
+      // Đơn hàng tạo tại quầy từ OPS-Web đã tiếp nhận trực tiếp tại quầy bưu cục.
+      // Không tạo/bắn task PICKUP cho Courier App!
+      return;
+    }
+
     await this.tasksService.createTaskFromPickupApproved({
       shipment_code: payload.shipment_code ?? null,
       note: this.readString(payload.data?.note),

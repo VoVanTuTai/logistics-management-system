@@ -1,3 +1,5 @@
+import { opsApiClient } from '../../services/api/client';
+import { opsEndpoints } from '../../services/api/endpoints';
 import type {
   CskhInternalNote,
   CskhSummaryStats,
@@ -23,7 +25,7 @@ export const CSKH_STATUS_LABELS: Record<CskhTicketStatus, { label: string; badge
   IN_PROGRESS: { label: 'Đang xử lý', badgeClass: 'bg-amber-100 text-amber-800 border-amber-200' },
   WAITING_CUSTOMER: { label: 'Chờ khách phản hồi', badgeClass: 'bg-purple-100 text-purple-800 border-purple-200' },
   ESCALATED_CLAIMS: { label: 'Đã chuyển Bồi thường CLM', badgeClass: 'bg-red-100 text-red-800 border-red-200' },
-  RESOLVED: { label: 'Đã giải quyết', badgeClass: 'bg-emerald-100 text-emerald-800 border-emerald-200' },
+  RESOLVED: { label: 'Đã xử lý & Đóng', badgeClass: 'bg-emerald-100 text-emerald-800 border-emerald-200' },
   CLOSED: { label: 'Đã đóng hoàn tất', badgeClass: 'bg-slate-100 text-slate-700 border-slate-200' },
 };
 
@@ -63,6 +65,20 @@ const INITIAL_MOCK_TICKETS: CskhTicket[] = [
     slaDeadline: new Date(Date.now() + 2 * 3600 * 1000).toISOString(),
     slaLimitHours: 4,
     isOverdue: false,
+    attachments: [
+      {
+        id: 'att_004',
+        type: 'IMAGE',
+        url: 'https://minio.nexus-ex.site/nexus-pod-images/cskh-evidence/TCK-202609-001/ve_may_bay_chuyen_13h_nguyen_van_hung.jpg',
+        thumbnailUrl: 'https://images.unsplash.com/photo-1436491865332-7a61a109cc05?w=300&auto=format&fit=crop&q=80',
+        fileName: 've_may_bay_chuyen_13h_nguyen_van_hung.jpg',
+        fileSizeBytes: 1120000,
+        uploadedAt: new Date(Date.now() - 2 * 3600 * 1000).toISOString(),
+        uploadedBy: 'Nguyễn Văn Hùng (AI Chatbot)',
+        minioBucket: 'nexus-pod-images',
+        minioKey: 'cskh-evidence/TCK-202609-001/ve_may_bay_chuyen_13h_nguyen_van_hung.jpg',
+      },
+    ],
     notes: [
       {
         id: 'n1',
@@ -102,6 +118,44 @@ const INITIAL_MOCK_TICKETS: CskhTicket[] = [
     isOverdue: false,
     claimCode: 'CLM-202609-001',
     incidentDamageNote: 'Thùng ngoài nứt rách góc đáy do va đập trong quá trình bốc dỡ tại băng chuyền phân loại Hub Tân Bình.',
+    attachments: [
+      {
+        id: 'att_001',
+        type: 'IMAGE',
+        url: 'https://minio.nexus-ex.site/nexus-pod-images/cskh-evidence/TCK-202609-002/anh_chup_mop_rach_thung_ngoai.jpg',
+        thumbnailUrl: 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=300&auto=format&fit=crop&q=80',
+        fileName: 'anh_chup_mop_rach_thung_ngoai.jpg',
+        fileSizeBytes: 2450000,
+        uploadedAt: new Date(Date.now() - 14 * 3600 * 1000).toISOString(),
+        uploadedBy: 'Khách hàng (Người nhận)',
+        minioBucket: 'nexus-pod-images',
+        minioKey: 'cskh-evidence/TCK-202609-002/anh_chup_mop_rach_thung_ngoai.jpg',
+      },
+      {
+        id: 'att_002',
+        type: 'IMAGE',
+        url: 'https://minio.nexus-ex.site/nexus-pod-images/cskh-evidence/TCK-202609-002/bien_ban_dong_kiem_co_chu_ky_shipper.jpg',
+        thumbnailUrl: 'https://images.unsplash.com/photo-1578749556568-bc2c40e68b61?w=300&auto=format&fit=crop&q=80',
+        fileName: 'bien_ban_dong_kiem_co_chu_ky_shipper.jpg',
+        fileSizeBytes: 1820000,
+        uploadedAt: new Date(Date.now() - 13 * 3600 * 1000).toISOString(),
+        uploadedBy: 'Shipper Lê Văn Bằng',
+        minioBucket: 'nexus-pod-images',
+        minioKey: 'cskh-evidence/TCK-202609-002/bien_ban_dong_kiem_co_chu_ky_shipper.jpg',
+      },
+      {
+        id: 'att_003',
+        type: 'VIDEO',
+        url: 'https://minio.nexus-ex.site/nexus-pod-images/cskh-evidence/TCK-202609-002/video_unboxing_dong_kiem_tai_nha.mp4',
+        thumbnailUrl: 'https://images.unsplash.com/photo-1607344645866-009c320c5ab8?w=300&auto=format&fit=crop&q=80',
+        fileName: 'video_unboxing_dong_kiem_tai_nha.mp4',
+        fileSizeBytes: 14500000,
+        uploadedAt: new Date(Date.now() - 13 * 3600 * 1000).toISOString(),
+        uploadedBy: 'Khách hàng (Người nhận)',
+        minioBucket: 'nexus-pod-images',
+        minioKey: 'cskh-evidence/TCK-202609-002/video_unboxing_dong_kiem_tai_nha.mp4',
+      },
+    ],
     notes: [
       {
         id: 'n3',
@@ -212,7 +266,22 @@ export function readCskhTickets(): CskhTicket[] {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(INITIAL_MOCK_TICKETS));
       return INITIAL_MOCK_TICKETS;
     }
-    return JSON.parse(raw);
+    const parsed: CskhTicket[] = JSON.parse(raw);
+    let changed = false;
+    const merged = parsed.map((ticket) => {
+      if (!ticket.attachments || !ticket.attachments[0]?.minioBucket) {
+        const init = INITIAL_MOCK_TICKETS.find((m) => m.id === ticket.id);
+        if (init?.attachments) {
+          changed = true;
+          return { ...ticket, attachments: init.attachments };
+        }
+      }
+      return ticket;
+    });
+    if (changed) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(merged));
+    }
+    return merged;
   } catch {
     return INITIAL_MOCK_TICKETS;
   }
@@ -227,12 +296,33 @@ export function saveCskhTickets(tickets: CskhTicket[]): void {
 }
 
 export async function fetchCskhTicketsApi(): Promise<CskhTicket[]> {
-  await new Promise((r) => setTimeout(r, 120));
+  try {
+    const items = await opsApiClient.request<CskhTicket[]>(opsEndpoints.cskh.list);
+    if (Array.isArray(items) && items.length > 0) {
+      saveCskhTickets(items);
+      return items;
+    }
+  } catch (err) {
+    console.warn('[cskhApi] fetchCskhTickets failed, using local cache fallback', err);
+  }
   return readCskhTickets();
 }
 
 export async function createCskhTicketApi(input: Partial<CskhTicket>): Promise<CskhTicket> {
-  await new Promise((r) => setTimeout(r, 150));
+  try {
+    const created = await opsApiClient.request<CskhTicket>(opsEndpoints.cskh.create, {
+      method: 'POST',
+      body: input,
+    });
+    if (created && created.id) {
+      const current = readCskhTickets();
+      saveCskhTickets([created, ...current]);
+      return created;
+    }
+  } catch (err) {
+    console.warn('[cskhApi] createCskhTicket failed, falling back to local storage', err);
+  }
+
   const current = readCskhTickets();
   const nextNum = current.length + 1;
   const ticketCode = `TCK-202609-${String(nextNum).padStart(3, '0')}`;
@@ -281,7 +371,24 @@ export async function updateCskhTicketStatusApi(
   newStatus: CskhTicketStatus,
   resolutionNote?: string
 ): Promise<CskhTicket> {
-  await new Promise((r) => setTimeout(r, 120));
+  try {
+    const updated = await opsApiClient.request<CskhTicket>(opsEndpoints.cskh.updateStatus(ticketId), {
+      method: 'PATCH',
+      body: { status: newStatus, resolutionNote },
+    });
+    if (updated && updated.id) {
+      const current = readCskhTickets();
+      const idx = current.findIndex((t) => t.id === ticketId);
+      if (idx !== -1) {
+        current[idx] = updated;
+        saveCskhTickets(current);
+      }
+      return updated;
+    }
+  } catch (err) {
+    console.warn('[cskhApi] updateCskhTicketStatus failed, falling back to local', err);
+  }
+
   const current = readCskhTickets();
   const index = current.findIndex((t) => t.id === ticketId);
   if (index === -1) throw new Error('Ticket not found');
@@ -291,6 +398,7 @@ export async function updateCskhTicketStatusApi(
 
   if (newStatus === 'RESOLVED') {
     ticket.resolvedAt = nowStr;
+    ticket.closedAt = nowStr;
     if (resolutionNote) ticket.resolutionSummary = resolutionNote;
   } else if (newStatus === 'CLOSED') {
     ticket.closedAt = nowStr;
@@ -315,7 +423,24 @@ export async function updateCskhTicketStatusApi(
 }
 
 export async function addCskhInternalNoteApi(ticketId: string, content: string): Promise<CskhTicket> {
-  await new Promise((r) => setTimeout(r, 80));
+  try {
+    const updated = await opsApiClient.request<CskhTicket>(opsEndpoints.cskh.addNote(ticketId), {
+      method: 'POST',
+      body: { content, author: 'CSKH Operator', authorRole: 'CSKH Operator' },
+    });
+    if (updated && updated.id) {
+      const current = readCskhTickets();
+      const idx = current.findIndex((t) => t.id === ticketId);
+      if (idx !== -1) {
+        current[idx] = updated;
+        saveCskhTickets(current);
+      }
+      return updated;
+    }
+  } catch (err) {
+    console.warn('[cskhApi] addCskhInternalNote failed, falling back to local', err);
+  }
+
   const current = readCskhTickets();
   const index = current.findIndex((t) => t.id === ticketId);
   if (index === -1) throw new Error('Ticket not found');
@@ -333,6 +458,51 @@ export async function addCskhInternalNoteApi(ticketId: string, content: string):
   current[index] = ticket;
   saveCskhTickets(current);
   return ticket;
+}
+
+export async function escalateCskhTicketToClaimApi(
+  ticketId: string,
+  claimData?: {
+    requestedAmount?: number;
+    declaredValue?: number;
+    damageDescription?: string;
+  }
+): Promise<{ ticket: CskhTicket; claim?: any }> {
+  try {
+    const res = await opsApiClient.request<{ ticket: CskhTicket; claim: any }>(
+      opsEndpoints.cskh.escalateClaim(ticketId),
+      {
+        method: 'POST',
+        body: claimData || {},
+      }
+    );
+    if (res && res.ticket) {
+      const current = readCskhTickets();
+      const idx = current.findIndex((t) => t.id === ticketId);
+      if (idx !== -1) {
+        current[idx] = res.ticket;
+        saveCskhTickets(current);
+      }
+      return res;
+    }
+  } catch (err) {
+    console.warn('[cskhApi] escalateClaim failed, falling back to local', err);
+  }
+
+  // Fallback
+  const current = readCskhTickets();
+  const index = current.findIndex((t) => t.id === ticketId);
+  if (index === -1) throw new Error('Ticket not found');
+
+  const claimCode = `CLM-202610-${Math.floor(100 + Math.random() * 900)}`;
+  const ticket = {
+    ...current[index],
+    status: 'ESCALATED_CLAIMS' as CskhTicketStatus,
+    claimCode,
+  };
+  current[index] = ticket;
+  saveCskhTickets(current);
+  return { ticket, claim: { claimCode, liabilityStage: 'REPORTED' } };
 }
 
 export function computeCskhStats(tickets: CskhTicket[]): CskhSummaryStats {

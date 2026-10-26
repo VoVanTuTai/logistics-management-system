@@ -5,6 +5,6 @@ import { AiAssistantController } from './ai-assistant.controller';
 @Module({
   controllers: [AiAssistantController],
   providers: [ServiceRegistryClient],
-  exports: [AiAssistantController],
 })
 export class AiAssistantModule {}
+

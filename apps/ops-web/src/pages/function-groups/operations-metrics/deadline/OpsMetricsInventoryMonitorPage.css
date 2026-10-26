@@ -3,6 +3,7 @@
   display: grid;
   gap: 14px;
   color: #334155;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
 }
 
 .ops-metrics-inventory__header {
@@ -10,9 +11,10 @@
   justify-content: space-between;
   gap: 16px;
   border: 1px solid #dbe3ef;
-  border-radius: 10px;
+  border-radius: 12px;
   background: #ffffff;
-  padding: 14px;
+  padding: 16px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
 }
 
 .ops-metrics-inventory__header small {
@@ -24,44 +26,53 @@
 
 .ops-metrics-inventory__header h2 {
   margin: 6px 0 4px;
-  color: #1e293b;
+  color: #0f172a;
   font-size: 22px;
+  font-weight: 800;
 }
 
 .ops-metrics-inventory__header p {
   margin: 0;
-  max-width: 760px;
+  max-width: 820px;
   color: #64748b;
   font-size: 13px;
-  line-height: 1.45;
+  line-height: 1.5;
 }
 
 .ops-metrics-inventory__header button,
 .ops-metrics-inventory__pagination button {
-  min-height: 34px;
+  min-height: 36px;
   border: 1px solid #cbd5e1;
   border-radius: 8px;
   background: #ffffff;
-  color: var(--ops-primary);
-  padding: 0 12px;
+  color: var(--ops-primary, #0284c7);
+  padding: 0 14px;
   font-size: 13px;
   font-weight: 800;
+  cursor: pointer;
+  transition: all 0.15s ease-in-out;
+}
+
+.ops-metrics-inventory__header button:hover,
+.ops-metrics-inventory__pagination button:hover:not(:disabled) {
+  border-color: #93c5fd;
+  background: #eff6ff;
 }
 
 .ops-metrics-inventory__header-actions {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
 }
 
 .ops-metrics-inventory__scope {
-  min-width: 180px;
+  min-width: 190px;
   display: grid;
   gap: 4px;
   border: 1px solid #bfdbfe;
   border-radius: 8px;
-  background: #eff6ff;
-  padding: 8px 10px;
+  background: #f0f7ff;
+  padding: 8px 12px;
 }
 
 .ops-metrics-inventory__scope span {
@@ -71,23 +82,32 @@
 }
 
 .ops-metrics-inventory__scope strong {
-  color: var(--ops-primary);
+  color: var(--ops-primary, #0284c7);
   font-size: 13px;
+  font-weight: 800;
 }
 
+/* KPI Summary Cards */
 .ops-metrics-inventory__summary {
   display: grid;
   grid-template-columns: repeat(6, minmax(130px, 1fr));
-  gap: 10px;
+  gap: 12px;
 }
 
 .ops-metrics-inventory__summary article {
   display: grid;
   gap: 6px;
-  border: 1px solid #d8e0ec;
-  border-radius: 10px;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
   background: #ffffff;
-  padding: 12px;
+  padding: 14px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.ops-metrics-inventory__summary article:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.06);
 }
 
 .ops-metrics-inventory__summary span {
@@ -99,41 +119,152 @@
 .ops-metrics-inventory__summary small {
   color: #64748b;
   font-size: 11px;
-  font-weight: 800;
+  font-weight: 700;
+  line-height: 1.35;
 }
 
 .ops-metrics-inventory__summary strong {
-  color: var(--ops-primary);
-  font-size: 25px;
-  line-height: 1;
+  color: var(--ops-primary, #0284c7);
+  font-size: 26px;
+  font-weight: 900;
+  line-height: 1.1;
 }
 
 .ops-metrics-inventory__summary article[data-tone='success'] strong {
-  color: #15803d;
+  color: #16a34a;
 }
 
 .ops-metrics-inventory__summary article[data-tone='warning'] strong {
-  color: #b45309;
+  color: #d97706;
+}
+
+.ops-metrics-inventory__summary article[data-tone='info'] strong {
+  color: #6366f1;
 }
 
 .ops-metrics-inventory__summary article[data-tone='danger'] strong {
-  color: #b91c1c;
+  color: #dc2626;
 }
 
+.ops-metrics-inventory__summary article[data-tone='alarm'] strong {
+  color: #991b1b;
+}
+
+/* Dedicated 22:00 Shift Closing Banner */
+.ops-metrics-inventory__closing-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  border: 1px solid #fed7aa;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+  padding: 14px 18px;
+  box-shadow: 0 2px 4px rgba(245, 158, 11, 0.08);
+}
+
+.ops-metrics-inventory__closing-banner-content {
+  display: grid;
+  gap: 6px;
+}
+
+.ops-metrics-inventory__closing-banner-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.ops-metrics-inventory__closing-badge {
+  display: inline-flex;
+  align-items: center;
+  height: 22px;
+  border: 1px solid #d97706;
+  border-radius: 999px;
+  background: #b45309;
+  color: #ffffff;
+  padding: 0 10px;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.ops-metrics-inventory__closing-banner h4 {
+  margin: 0;
+  color: #92400e;
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.ops-metrics-inventory__closing-banner p {
+  margin: 0;
+  color: #78350f;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.ops-metrics-inventory__closing-banner-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.ops-metrics-inventory__btn-quick-filter {
+  min-height: 36px;
+  border: 1px solid #dc2626;
+  border-radius: 8px;
+  background: #dc2626;
+  color: #ffffff;
+  padding: 0 16px;
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: 0 1px 2px rgba(220, 38, 38, 0.2);
+  transition: all 0.15s ease-in-out;
+}
+
+.ops-metrics-inventory__btn-quick-filter:hover {
+  background: #b91c1c;
+  border-color: #b91c1c;
+}
+
+.ops-metrics-inventory__btn-export {
+  min-height: 36px;
+  border: 1px solid #b45309;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #92400e;
+  padding: 0 14px;
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: all 0.15s ease-in-out;
+}
+
+.ops-metrics-inventory__btn-export:hover {
+  background: #fef3c7;
+}
+
+/* Multi-dimensional Filters */
 .ops-metrics-inventory__filters {
   display: grid;
-  grid-template-columns: 150px 150px 170px 190px minmax(220px, 1fr);
-  gap: 10px;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 12px;
   border: 1px solid #dbe3ef;
-  border-radius: 10px;
+  border-radius: 12px;
   background: #ffffff;
-  padding: 12px;
+  padding: 14px;
 }
 
 .ops-metrics-inventory__filters label {
   display: grid;
   gap: 6px;
   min-width: 0;
+}
+
+.ops-metrics-inventory__filter-full {
+  grid-column: span 6;
 }
 
 .ops-metrics-inventory__filters span {
@@ -153,36 +284,47 @@
   color: #334155;
   padding: 0 10px;
   font-size: 13px;
+  outline: none;
+  transition: border-color 0.15s ease;
 }
 
+.ops-metrics-inventory__filters input:focus,
+.ops-metrics-inventory__filters select:focus {
+  border-color: var(--ops-primary, #0284c7);
+  box-shadow: 0 0 0 2px rgba(2, 132, 199, 0.15);
+}
+
+/* Panels */
 .ops-metrics-inventory__panel,
 .ops-metrics-inventory__courier-panel {
   border: 1px solid #dbe3ef;
-  border-radius: 10px;
+  border-radius: 12px;
   background: #ffffff;
   overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
 }
 
 .ops-metrics-inventory__panel-head {
-  min-height: 50px;
+  min-height: 52px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
   border-bottom: 1px solid #e2e8f0;
   background: #f8fafc;
-  padding: 0 12px;
+  padding: 10px 16px;
 }
 
 .ops-metrics-inventory__panel-head h3 {
   margin: 0;
-  color: #1e293b;
+  color: #0f172a;
   font-size: 15px;
+  font-weight: 800;
 }
 
 .ops-metrics-inventory__panel-head span {
-  color: var(--ops-primary);
-  font-size: 12px;
+  color: var(--ops-primary, #0284c7);
+  font-size: 13px;
   font-weight: 800;
 }
 
@@ -191,7 +333,7 @@
   margin-top: 3px;
   color: #64748b;
   font-size: 12px;
-  font-weight: 800;
+  font-weight: 600;
 }
 
 .ops-metrics-inventory__ghost-button {
@@ -199,10 +341,11 @@
   border: 1px solid #cbd5e1;
   border-radius: 8px;
   background: #ffffff;
-  color: var(--ops-primary);
-  padding: 0 10px;
+  color: var(--ops-primary, #0284c7);
+  padding: 0 12px;
   font-size: 12px;
-  font-weight: 900;
+  font-weight: 800;
+  cursor: pointer;
 }
 
 .ops-metrics-inventory__ghost-button:hover {
@@ -210,42 +353,131 @@
   background: #eff6ff;
 }
 
+/* Tables */
 .ops-metrics-inventory__table-wrap {
-  overflow: auto;
+  overflow-x: auto;
 }
 
 .ops-metrics-inventory__table {
   width: 100%;
-  min-width: 1180px;
+  min-width: 1280px;
   border-collapse: collapse;
 }
 
 .ops-metrics-inventory__table th,
 .ops-metrics-inventory__table td {
   border-bottom: 1px solid #e5eaf2;
-  padding: 10px 12px;
+  padding: 6px 10px;
   color: #475569;
   font-size: 12px;
   text-align: left;
-  vertical-align: top;
+  vertical-align: middle;
+  white-space: nowrap;
+  height: 38px;
+  box-sizing: border-box;
+}
+
+.ops-metrics-inventory__table tbody tr:hover td {
+  background-color: #f8faff;
 }
 
 .ops-metrics-inventory__table th {
   background: #f8fafc;
-  color: #334155;
+  color: #1e293b;
   font-size: 11px;
   font-weight: 800;
   letter-spacing: 0.04em;
   text-transform: uppercase;
   white-space: nowrap;
+  position: sticky;
+  top: 0;
+  z-index: 2;
 }
 
 .ops-metrics-inventory__code {
-  color: var(--ops-primary);
+  color: var(--ops-primary, #0284c7);
   font-weight: 800;
+  font-size: 13px;
   text-decoration: none;
+  user-select: text !important;
+  -webkit-user-select: text !important;
+  cursor: text;
 }
 
+.ops-metrics-inventory__code::selection {
+  background-color: #2563eb !important;
+  color: #ffffff !important;
+}
+
+.ops-metrics-inventory__subtext {
+  color: #64748b;
+  font-size: 11px;
+  margin-top: 3px;
+}
+
+.ops-metrics-inventory__subtext-block {
+  display: block;
+  color: #64748b;
+  font-size: 11px;
+  margin-top: 3px;
+  line-height: 1.35;
+}
+
+.ops-metrics-inventory__cod-tag {
+  display: inline-block;
+  margin-top: 4px;
+  border: 1px solid #fde68a;
+  border-radius: 4px;
+  background: #fffbeb;
+  color: #92400e;
+  padding: 1px 6px;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+/* Aging Badges */
+.ops-metrics-inventory__aging-badge {
+  display: inline-flex;
+  align-items: center;
+  height: 24px;
+  border-radius: 6px;
+  padding: 0 8px;
+  font-size: 12px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.ops-metrics-inventory__aging-badge--under24 {
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  color: #15803d;
+}
+
+.ops-metrics-inventory__aging-badge--24to48 {
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  color: #1d4ed8;
+}
+
+.ops-metrics-inventory__aging-badge--48to72 {
+  background: #fff7ed;
+  border: 1px solid #fed7aa;
+  color: #c2410c;
+}
+
+.ops-metrics-inventory__aging-badge--over72 {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #b91c1c;
+  animation: pulse-soft 2s infinite ease-in-out;
+}
+
+@keyframes pulse-soft {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.85; }
+}
+
+/* Audit Result Badges */
 .ops-metrics-inventory__badge {
   display: inline-flex;
   min-height: 24px;
@@ -253,21 +485,21 @@
   border: 1px solid #bfdbfe;
   border-radius: 999px;
   background: #eff6ff;
-  color: var(--ops-primary);
-  padding: 0 8px;
+  color: var(--ops-primary, #0284c7);
+  padding: 0 10px;
   font-size: 11px;
   font-weight: 800;
   white-space: nowrap;
 }
 
 .ops-metrics-inventory__badge--danger {
-  border-color: #fecaca;
+  border-color: #fca5a5;
   background: #fef2f2;
   color: #b91c1c;
 }
 
 .ops-metrics-inventory__badge--success {
-  border-color: #bbf7d0;
+  border-color: #86efac;
   background: #f0fdf4;
   color: #15803d;
 }
@@ -278,26 +510,161 @@
   color: #b45309;
 }
 
+/* Role Badges */
+.ops-metrics-inventory__role-badge {
+  display: inline-flex;
+  align-items: center;
+  height: 20px;
+  border-radius: 4px;
+  padding: 0 6px;
+  font-size: 11px;
+  font-weight: 800;
+  margin-bottom: 4px;
+}
+
+.ops-metrics-inventory__role-badge--courier {
+  background: #fff7ed;
+  border: 1px solid #fdba74;
+  color: #9a3412;
+}
+
+.ops-metrics-inventory__role-badge--ops {
+  background: #f5f3ff;
+  border: 1px solid #ddd6fe;
+  color: #5b21b6;
+}
+
+.ops-metrics-inventory__role-badge--inbound {
+  background: #ecfeff;
+  border: 1px solid #a5f3fc;
+  color: #0e7490;
+}
+
+.ops-metrics-inventory__actor-name {
+  display: block;
+  color: #0f172a;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.ops-metrics-inventory__actor-id {
+  display: block;
+  color: #64748b;
+  font-size: 11px;
+}
+
+.ops-metrics-inventory__phone-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 4px;
+  color: #0284c7;
+  font-size: 11px;
+  font-weight: 800;
+  text-decoration: none;
+  background: #f0f9ff;
+  padding: 2px 6px;
+  border-radius: 4px;
+  border: 1px solid #bae6fd;
+}
+
+.ops-metrics-inventory__phone-link:hover {
+  text-decoration: underline;
+  background: #e0f2fe;
+}
+
+.ops-metrics-inventory__action-title {
+  display: block;
+  color: #1e293b;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.ops-metrics-inventory__action-detail {
+  margin: 4px 0 0;
+  color: #475569;
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.ops-metrics-inventory__ndr-link {
+  display: inline-block;
+  margin-top: 4px;
+  color: #dc2626;
+  font-size: 11px;
+  font-weight: 800;
+  text-decoration: underline;
+}
+
+/* SOP Callout Boxes for 22:00 Closing Checklist */
+.ops-metrics-inventory__sop-callout {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 11px;
+  line-height: 1.45;
+  max-width: 320px;
+}
+
+.ops-metrics-inventory__sop-callout--courier {
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  color: #854d0e;
+}
+
+.ops-metrics-inventory__sop-callout--warehouse {
+  background: #f8fafc;
+  border: 1px solid #cbd5e1;
+  color: #334155;
+}
+
+.ops-metrics-inventory__sop-icon {
+  font-size: 14px;
+  line-height: 1;
+}
+
+.ops-metrics-inventory__sop-callout p {
+  margin: 0;
+  font-weight: 600;
+}
+
+.ops-metrics-inventory__status-tag {
+  display: inline-block;
+  margin-top: 4px;
+  border: 1px solid #cbd5e1;
+  border-radius: 4px;
+  background: #f1f5f9;
+  color: #334155;
+  padding: 1px 6px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+/* Courier Table */
 .ops-metrics-inventory__courier-list {
-  max-height: 292px;
-  overflow: auto;
+  max-height: 290px;
+  overflow-y: auto;
 }
 
 .ops-metrics-inventory__courier-table {
   width: 100%;
-  min-width: 760px;
+  min-width: 860px;
   border-collapse: collapse;
 }
 
 .ops-metrics-inventory__courier-table th,
 .ops-metrics-inventory__courier-table td {
   border-bottom: 1px solid #e5eaf2;
-  padding: 9px 12px;
+  padding: 6px 10px;
   color: #475569;
   font-size: 12px;
   text-align: left;
   vertical-align: middle;
   white-space: nowrap;
+  height: 38px;
+  box-sizing: border-box;
 }
 
 .ops-metrics-inventory__courier-table th {
@@ -305,7 +672,7 @@
   top: 0;
   z-index: 1;
   background: #ffffff;
-  color: #334155;
+  color: #1e293b;
   font-size: 11px;
   font-weight: 900;
   letter-spacing: 0.04em;
@@ -314,6 +681,7 @@
 
 .ops-metrics-inventory__courier-table tr {
   cursor: pointer;
+  transition: background-color 0.15s ease;
 }
 
 .ops-metrics-inventory__courier-table tbody tr:hover,
@@ -322,11 +690,11 @@
 }
 
 .ops-metrics-inventory__courier-row--active td:first-child {
-  box-shadow: inset 3px 0 0 #f59e0b;
+  box-shadow: inset 4px 0 0 #f59e0b;
 }
 
 .ops-metrics-inventory__courier-row--clear {
-  background: #fbfefc;
+  background: #fafdfc;
 }
 
 .ops-metrics-inventory__courier-row--clear td {
@@ -334,22 +702,22 @@
 }
 
 .ops-metrics-inventory__courier-table td:first-child {
-  min-width: 240px;
+  min-width: 220px;
   white-space: normal;
 }
 
 .ops-metrics-inventory__courier-table td:first-child strong {
   display: block;
-  color: #1e293b;
+  color: #0f172a;
   font-size: 13px;
+  font-weight: 800;
 }
 
 .ops-metrics-inventory__courier-table td:first-child small {
   display: block;
-  margin-top: 3px;
+  margin-top: 2px;
   color: #64748b;
   font-size: 11px;
-  font-weight: 800;
 }
 
 .ops-metrics-inventory__courier-count {
@@ -371,7 +739,8 @@
 
 .ops-metrics-inventory__courier-count--danger {
   background: #fef2f2;
-  color: #b91c1c;
+  color: #dc2626;
+  border: 1px solid #fecaca;
 }
 
 .ops-metrics-inventory__courier-count--clear {
@@ -379,42 +748,16 @@
   color: #15803d;
 }
 
-.ops-metrics-inventory__table small {
-  color: #64748b;
-  font-size: 11px;
-  font-weight: 700;
-}
-
-.ops-metrics-inventory__empty,
-.ops-metrics-inventory__error {
-  margin: 0;
-  color: #64748b;
-  font-size: 13px;
-  line-height: 1.45;
-}
-
-.ops-metrics-inventory__empty {
-  padding: 12px;
-}
-
-.ops-metrics-inventory__error {
-  border: 1px solid #fecaca;
-  border-radius: 10px;
-  background: #fef2f2;
-  color: #991b1b;
-  padding: 10px 12px;
-  font-weight: 800;
-}
-
+/* Pagination & States */
 .ops-metrics-inventory__pagination {
-  min-height: 48px;
+  min-height: 52px;
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  gap: 12px;
+  gap: 14px;
   border-top: 1px solid #e2e8f0;
   background: #ffffff;
-  padding: 8px 12px;
+  padding: 8px 16px;
 }
 
 .ops-metrics-inventory__pagination > span,
@@ -434,29 +777,65 @@
 
 .ops-metrics-inventory__pagination select,
 .ops-metrics-inventory__pagination button {
-  height: 30px;
+  height: 32px;
 }
 
 .ops-metrics-inventory__pagination button:disabled {
   cursor: not-allowed;
-  opacity: 0.48;
+  opacity: 0.45;
 }
 
-@media (max-width: 1180px) {
-  .ops-metrics-inventory {
-    min-width: 960px;
-  }
+.ops-metrics-inventory__empty,
+.ops-metrics-inventory__error {
+  margin: 0;
+  color: #64748b;
+  font-size: 13px;
+  line-height: 1.45;
+  padding: 16px;
+}
 
+.ops-metrics-inventory__error {
+  border: 1px solid #fecaca;
+  border-radius: 10px;
+  background: #fef2f2;
+  color: #991b1b;
+  font-weight: 800;
+}
+
+.text-danger {
+  color: #dc2626 !important;
+  font-weight: 700;
+}
+
+.text-warning {
+  color: #d97706 !important;
+  font-weight: 700;
+}
+
+.text-muted {
+  color: #94a3b8;
+}
+
+@media (max-width: 1280px) {
   .ops-metrics-inventory__filters {
-    grid-template-columns: repeat(2, minmax(180px, 1fr));
+    grid-template-columns: repeat(3, 1fr);
   }
 
-  .ops-metrics-inventory__header {
+  .ops-metrics-inventory__filter-full {
+    grid-column: span 3;
+  }
+
+  .ops-metrics-inventory__summary {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .ops-metrics-inventory__closing-banner {
+    flex-direction: column;
     align-items: flex-start;
   }
 
-  .ops-metrics-inventory__header-actions {
-    align-items: stretch;
-    flex-direction: column;
+  .ops-metrics-inventory__closing-banner-actions {
+    width: 100%;
+    justify-content: flex-start;
   }
 }

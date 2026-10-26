@@ -149,6 +149,23 @@ export function CodStatsScreen({ navigation }: Props): React.JSX.Element {
   // Cash that courier still holds and needs to remit
   const cashNeedRemit = cashCollected;
 
+  const overdueCashRecords = React.useMemo(() => {
+    const today = new Date();
+    const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime();
+    return cashRecords.filter((r) => {
+      if (r.status !== 'COLLECTED') return false;
+      const recordDate = new Date(r.collectedAt || r.createdAt);
+      return !Number.isNaN(recordDate.getTime()) && recordDate.getTime() < todayStart;
+    });
+  }, [cashRecords]);
+
+  const overdueCashAmount = React.useMemo(() => {
+    return overdueCashRecords.reduce(
+      (sum, r) => sum + (r.collectedAmount ?? r.codAmount ?? 0),
+      0,
+    );
+  }, [overdueCashRecords]);
+
   // VietQR for remitting cash
   const qrMemo = activeBatch ? activeBatch.transferMemo : '';
   const qrUrl = activeBatch ? activeBatch.qrUrl : null;
@@ -201,6 +218,19 @@ export function CodStatsScreen({ navigation }: Props): React.JSX.Element {
           <View style={s.loadingBlock}>
             <ActivityIndicator size="large" color={theme.colors.primary} />
             <Text style={s.loadingText}>Đang tải thống kê...</Text>
+          </View>
+        ) : null}
+
+        {/* ── Overdue COD Lock Banner ─────────────────── */}
+        {overdueCashAmount > 0 ? (
+          <View style={s.overdueAlertBox}>
+            <View style={s.overdueAlertHeader}>
+              <Ionicons name="lock-closed" size={20} color="#DC2626" />
+              <Text style={s.overdueAlertTitle}>TÀI KHOẢN ĐANG BỊ KHÓA DO NỢ COD QUA NGÀY</Text>
+            </View>
+            <Text style={s.overdueAlertMessage}>
+              Cuối ngày trước bạn chưa đóng COD. Bạn đang nợ {formatVnd(overdueCashAmount)} ({overdueCashRecords.length} đơn). Hãy nộp tiền ngay qua mã VietQR bên dưới hoặc nộp trực tiếp tại két Hub để hệ thống tự động mở khóa tài khoản!
+            </Text>
           </View>
         ) : null}
 
@@ -765,5 +795,31 @@ const s = StyleSheet.create({
   emptyText: {
     ...theme.typography.body.md,
     color: theme.colors.textMuted,
+  },
+  overdueAlertBox: {
+    backgroundColor: '#FEF2F2',
+    borderWidth: 1.5,
+    borderColor: '#DC2626',
+    borderRadius: theme.radius.lg,
+    padding: theme.spacing.md,
+    gap: theme.spacing.xs,
+    marginBottom: theme.spacing.md,
+    ...theme.shadow.card,
+  },
+  overdueAlertHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  overdueAlertTitle: {
+    fontSize: 13,
+    fontWeight: '900',
+    color: '#991B1B',
+    flex: 1,
+  },
+  overdueAlertMessage: {
+    fontSize: 13,
+    color: '#7F1D1D',
+    lineHeight: 18,
   },
 });

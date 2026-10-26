@@ -1,6 +1,6 @@
 # delivery-service
 
-`delivery-service` quan ly delivery attempt, success/fail, POD, OTP, NDR va return flow o muc skeleton.
+`delivery-service` quan ly delivery attempt, success/fail, POD, NDR va return flow o muc skeleton.
 
 ## Scope
 
@@ -31,4 +31,4 @@
 - Khong co logic reporting/tracking trong service nay, tracking se consume event tu event bus
 - Khong co validation nghiep vu chi tiet
 - `task.assigned` da duoc wire RabbitMQ consumer de ingest event giao task vao delivery-service
-- OTP va POD duoc the hien trong flow delivery, khong mo them API group ngoai pham vi yeu cau
+- POD duoc the hien trong flow delivery, khong mo them API group ngoai pham vi yeu cau

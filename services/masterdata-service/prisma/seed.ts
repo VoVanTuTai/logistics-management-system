@@ -1241,7 +1241,7 @@ Người gửi có nghĩa vụ cung cấp đầy đủ, chính xác và trung th
 
 ### 2.2. Trọng lượng quy đổi thể tích (Volumetric Weight)
 Trường hợp bưu gửi có thể tích cồng kềnh, trọng lượng tính cước sẽ được xác định theo công thức chuẩn của Hiệp hội Vận tải Hàng không Quốc tế (IATA) và Bưu chính Quốc gia:
-$$\\text{Trọng lượng quy đổi (kg)} = \\frac{\\text{Dài (cm)} \\times \\text{Rộng (cm)} \\times \\text{Cao (cm)}}{5000}$$
+$$\\text{Trọng lượng quy đổi (kg)} = \\frac{\\text{Dài (cm)} \\times \\text{Rộng (cm)} \\times \\text{Cao (cm)}}{6000}$$
 *Mức cước vận chuyển sẽ áp dụng theo giá trị lớn hơn giữa Trọng lượng thực tế và Trọng lượng quy đổi.*
 
 ### 2.3. Quy chuẩn in và dán nhãn vận đơn
@@ -1558,6 +1558,50 @@ NEXUS không chịu trách nhiệm bồi thường thiệt hại trong các trư
   console.log(`Đã seed thành công ${policies.length} văn bản Điều khoản & Chính sách dịch vụ chuẩn logistics.`);
 }
 
+async function seedCustomerProfiles() {
+  const customers = [
+    {
+      id: 'cust-0909000001',
+      userId: '0909000001',
+      fullName: 'Nguyễn Văn Khách',
+      phone: '0909000001',
+      email: 'khach_hanoi@nexus.vn',
+      defaultAddress: 'Số 12 Tràng Tiền, Hoàn Kiếm, Hà Nội',
+    },
+    {
+      id: 'cust-0909000002',
+      userId: '0909000002',
+      fullName: 'Trần Thị Khách',
+      phone: '0909000002',
+      email: 'khach_hcm@nexus.vn',
+      defaultAddress: 'Số 88 Lê Lợi, Bến Thành, Quận 1, TP. Hồ Chí Minh',
+    },
+    {
+      id: 'cust-0909000003',
+      userId: '0909000003',
+      fullName: 'Lê Hoàng Khách',
+      phone: '0909000003',
+      email: 'khach_danang@nexus.vn',
+      defaultAddress: 'Số 45 Bạch Đằng, Thạch Thang, Hải Châu, Đà Nẵng',
+    },
+  ];
+
+  for (const customer of customers) {
+    await prisma.customerProfile.upsert({
+      where: { userId: customer.userId },
+      create: customer,
+      update: {
+        fullName: customer.fullName,
+        phone: customer.phone,
+        email: customer.email,
+        defaultAddress: customer.defaultAddress,
+      },
+    });
+  }
+
+  console.log(`Đã seed thành công ${customers.length} hồ sơ Khách hàng cá nhân demo.`);
+}
+
 async function main() {
   const provinces = await loadVietnamProvinces();
 
@@ -1567,6 +1611,7 @@ async function main() {
   await seedNdrReasons();
   await seedConfigs(provinces);
   await seedMerchantProfiles(provinces);
+  await seedCustomerProfiles();
   await seedCourierAreaAssignments();
   await seedPolicies();
   await seedAuditLogs(provinces);

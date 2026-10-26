@@ -24,13 +24,15 @@ import { PromoBanner } from './components/PromoBanner';
 import { RateCalculatorCard } from './components/RateCalculatorCard';
 import { RecentOrdersSection } from './components/RecentOrdersSection';
 import { NewsAndHighlightsSection } from './components/NewsAndHighlightsSection';
+import { FloatingAiChatModal } from '../../components/FloatingAiChatModal';
+import { NotificationModal } from '../../components/NotificationModal';
 
 type Props = CompositeScreenProps<
   BottomTabScreenProps<MainTabParamList, 'HomeTab'>,
   NativeStackScreenProps<RootStackParamList>
 >;
 
-function mapShipmentToOrderModel(s: ShipmentResponse): OrderModel {
+function mapShipmentToOrderModel(s: ShipmentResponse, targetCategory: 'SENT' | 'RECEIVED' = 'SENT'): OrderModel {
   const meta = (s.metadata as Record<string, any>) || {};
   const sender = meta.sender || {};
   const receiver = meta.receiver || {};
@@ -49,7 +51,7 @@ function mapShipmentToOrderModel(s: ShipmentResponse): OrderModel {
   return {
     id: s.id,
     code: s.code,
-    category: 'SENT',
+    category: targetCategory,
     orderType: 'REGULAR',
     sender: {
       name: sender.name || 'Người gửi',
@@ -81,7 +83,7 @@ function mapShipmentToOrderModel(s: ShipmentResponse): OrderModel {
           meta.shippingFee ||
           meta.service?.fee ||
           meta.pricing?.totalFee
-      ) || 22000,
+      ) || 18000,
     status: (s.currentStatus as ShipmentStatus) || 'CREATED',
     createdAt: s.createdAt,
     updatedAt: s.updatedAt,
@@ -94,22 +96,37 @@ export function HomeScreen({ navigation }: Props): React.JSX.Element {
   const user = session?.user;
 
   const [recentOrders, setRecentOrders] = useState<OrderModel[]>([]);
+  const [receivedShipments, setReceivedShipments] = useState<ShipmentResponse[]>([]);
   const [loadingOrders, setLoadingOrders] = useState<boolean>(false);
   const [refreshing, setRefreshing] = useState<boolean>(false);
+  const [isChatOpen, setIsChatOpen] = useState<boolean>(false);
+  const [showNotifModal, setShowNotifModal] = useState<boolean>(false);
 
   const fetchRecentShipments = async (showLoading = true) => {
     const token = authStore.getAccessToken();
-    const user = authStore.getUser();
+    const currentUser = authStore.getUser();
     if (!token) return;
 
     if (showLoading) setLoadingOrders(true);
     try {
-      const response = await shipmentApi.getShipments(token, { limit: 5, userId: user?.id });
-      const rawItems: ShipmentResponse[] = Array.isArray(response)
-        ? response
-        : response.items || [];
+      const [sentRes, recRes] = await Promise.allSettled([
+        shipmentApi.getShipments(token, { limit: 5, userId: currentUser?.id }),
+        shipmentApi.getReceivedShipments(token, { limit: 10, phone: currentUser?.phone }),
+      ]);
 
-      setRecentOrders(rawItems.map(mapShipmentToOrderModel));
+      if (sentRes.status === 'fulfilled') {
+        const rawItems: ShipmentResponse[] = Array.isArray(sentRes.value)
+          ? sentRes.value
+          : sentRes.value?.items || [];
+        setRecentOrders(rawItems.map((s) => mapShipmentToOrderModel(s, 'SENT')));
+      }
+
+      if (recRes.status === 'fulfilled') {
+        const rawRec: ShipmentResponse[] = Array.isArray(recRes.value)
+          ? recRes.value
+          : recRes.value?.items || [];
+        setReceivedShipments(rawRec);
+      }
     } catch {
       setRecentOrders([]);
     } finally {
@@ -174,7 +191,8 @@ export function HomeScreen({ navigation }: Props): React.JSX.Element {
         {/* A. HEADER & HERO WITH SEARCH CARD */}
         <HomeHeader
           userName={user?.displayName || user?.username || 'Khách hàng'}
-          onPressNotification={() => {}}
+          notificationCount={receivedShipments.length}
+          onPressNotification={() => setShowNotifModal(true)}
           onPressSearch={handleTracking}
           onPressCreateOrder={handleCreateOrder}
         />
@@ -206,17 +224,40 @@ export function HomeScreen({ navigation }: Props): React.JSX.Element {
         <NewsAndHighlightsSection onPressCreateOrder={handleCreateOrder} />
       </ScrollView>
 
-      {/* FLOATING CTA BUTTON */}
+      {/* FLOATING LOGISTICS DISPATCH CTA BUTTON */}
       <View style={styles.floatingContainer}>
+        {!isChatOpen && (
+          <View style={styles.floatingTag}>
+            <View style={styles.pulsingDot} />
+            <Text style={styles.floatingTagText}>Tổng Đài Bưu Cục</Text>
+          </View>
+        )}
         <TouchableOpacity
-          activeOpacity={0.9}
+          activeOpacity={0.88}
           style={styles.floatingBtn}
-          onPress={handleCreateOrder}
+          onPress={() => setIsChatOpen(true)}
         >
-          <Ionicons name="add-circle" size={22} color={colors.surface} />
-          <Text style={styles.floatingBtnText}>Tạo đơn hàng</Text>
+          <Ionicons name="headset" size={18} color="#FFFFFF" />
+          <Text style={styles.floatingBtnText}>Điều Phối Bưu Cục</Text>
         </TouchableOpacity>
       </View>
+
+      {/* AI CHATBOT POPUP MODAL */}
+      <FloatingAiChatModal
+        visible={isChatOpen}
+        onClose={() => setIsChatOpen(false)}
+      />
+
+      {/* NOTIFICATION MODAL (RECEIVED SHIPMENTS & COURIER ALERT) */}
+      <NotificationModal
+        visible={showNotifModal}
+        onClose={() => setShowNotifModal(false)}
+        receivedShipments={receivedShipments}
+        onSelectShipment={(s) => {
+          const ord = mapShipmentToOrderModel(s, 'RECEIVED');
+          navigation.navigate('OrderDetail', { order: ord });
+        }}
+      />
     </View>
   );
 }
@@ -233,22 +274,61 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: 20,
     right: 16,
+    alignItems: 'flex-end',
+    gap: 6,
+  },
+  floatingTag: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 9,
+    paddingVertical: 4,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    gap: 5,
+    ...shadows.sm,
+  },
+  pulsingDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#10B981',
+  },
+  floatingTagText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#334155',
   },
   floatingBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.primary,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.sm + 2,
-    borderRadius: 30,
+    backgroundColor: '#1D4ED8',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 28,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.3)',
+    borderColor: 'rgba(255, 255, 255, 0.35)',
     ...shadows.lg,
+  },
+  sparkleBadge: {
+    position: 'absolute',
+    top: -4,
+    right: -4,
+    backgroundColor: '#F59E0B',
+    borderRadius: 10,
+    width: 16,
+    height: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  sparkleBadgeText: {
+    fontSize: 9,
   },
   floatingBtnText: {
     fontSize: 13,
     fontWeight: '800',
-    color: colors.surface,
+    color: '#FFFFFF',
     marginLeft: 6,
   },
 });

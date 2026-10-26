@@ -38,6 +38,27 @@ function buildQrSvg(value: string): string {
   }
 }
 
+export function maskPhoneNumber(phone?: string | null): string {
+  if (!phone) return '';
+  const trimmed = phone.trim();
+  if (!trimmed) return '';
+
+  const hasPlus = trimmed.startsWith('+');
+  const digits = trimmed.replace(/\D/g, '');
+
+  if (digits.length <= 4) {
+    return '***';
+  }
+
+  if (digits.length <= 6) {
+    return `${digits.slice(0, 2)}***${digits.slice(-1)}`;
+  }
+
+  const prefix = digits.slice(0, 4);
+  const suffix = digits.slice(-3);
+  return `${hasPlus ? '+' : ''}${prefix} *** ${suffix}`;
+}
+
 export function buildShippingLabelHtml(shipment: ShipmentResponse): string {
   const meta = shipment.metadata || {};
   const sender = meta.sender || {};
@@ -47,7 +68,7 @@ export function buildShippingLabelHtml(shipment: ShipmentResponse): string {
 
   const codeText = escapeHtml(shipment.code);
   const senderName = escapeHtml(sender.name || 'Người gửi');
-  const senderPhone = escapeHtml(sender.phone || '');
+  const senderPhone = escapeHtml(maskPhoneNumber(sender.phone || ''));
   const senderAddress = newlineToBreaks(
     sender.address ||
     [sender.addressDetail, sender.ward, sender.district, sender.province].filter(Boolean).join(', ') ||
@@ -55,7 +76,7 @@ export function buildShippingLabelHtml(shipment: ShipmentResponse): string {
   );
 
   const receiverName = escapeHtml(receiver.name || 'Người nhận');
-  const receiverPhone = escapeHtml(receiver.phone || '');
+  const receiverPhone = escapeHtml(maskPhoneNumber(receiver.phone || ''));
   const receiverAddress = newlineToBreaks(
     receiver.address ||
     [receiver.addressDetail, receiver.ward, receiver.district, receiver.province].filter(Boolean).join(', ') ||
@@ -123,7 +144,7 @@ export function buildShippingLabelHtml(shipment: ShipmentResponse): string {
       .brand { display: flex; flex-direction: column; gap: 0.5mm; }
       .brand-title { font-size: 3.4mm; font-weight: 900; letter-spacing: 0.3px; text-transform: uppercase; color: #1e3a8a; line-height: 1.1; }
       .service { font-size: 4mm; font-weight: 800; color: #0f172a; line-height: 1.1; }
-      .badge-type { font-size: 2.2mm; font-weight: 800; background: #e0e7ff; color: #3730a3; padding: 0.8mm 1.5mm; border-radius: 1mm; width: fit-content; text-transform: uppercase; margin-top: 0.5mm; }
+      .badge-type { font-size: 2.2mm; font-weight: 800; background: #e0e7ff; color: #3730a3; padding: 0.8mm 1.5mm; border-radius: 0px; width: fit-content; text-transform: uppercase; margin-top: 0.5mm; }
       .barcode-wrap { text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.5mm; }
       .barcode {
         width: 96%;

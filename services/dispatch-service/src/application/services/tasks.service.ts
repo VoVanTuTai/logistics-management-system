@@ -234,15 +234,38 @@ export class TasksService {
     return task;
   }
 
-  private readonly pickupTaskCreationPromises = new Map<string, Promise<Task>>();
+  private readonly pickupTaskCreationPromises = new Map<string, Promise<Task | null>>();
 
   async createTaskFromPickupApproved(payload: {
     pickup_request_id?: string | null;
     shipment_code?: string | null;
     note?: string | null;
-  }): Promise<Task> {
+  }): Promise<Task | null> {
     const pickupRequestId = payload.pickup_request_id?.trim() ?? null;
     const shipmentCode = payload.shipment_code?.trim()?.toUpperCase() ?? null;
+
+    if (shipmentCode) {
+      try {
+        const shipment = await this.fetchServiceJson(
+          'SHIPMENT_SERVICE_URL',
+          `shipments/${encodeURIComponent(shipmentCode)}`,
+        );
+        if (shipment && isCounterOrderShipment(shipment)) {
+          const existingPickupTasks = await this.taskRepository.list({
+            shipmentCode,
+            taskType: 'PICKUP',
+          });
+          for (const task of existingPickupTasks) {
+            if (task.status !== 'CANCELLED' && task.status !== 'COMPLETED') {
+              await this.taskRepository.updateStatus(task.id, { status: 'CANCELLED' });
+            }
+          }
+          return null;
+        }
+      } catch {
+        // Fallback if shipment service is offline
+      }
+    }
 
     if (shipmentCode && this.pickupTaskCreationPromises.has(shipmentCode)) {
       await this.pickupTaskCreationPromises.get(shipmentCode)?.catch(() => undefined);
@@ -554,6 +577,11 @@ export class TasksService {
     );
 
     if (!shipment) {
+      return null;
+    }
+
+    if (isCounterOrderShipment(shipment)) {
+      await this.taskRepository.updateStatus(taskId, { status: 'CANCELLED' });
       return null;
     }
 
@@ -1351,4 +1379,31 @@ function isPointInPolygon(
   }
 
   return inside;
+}
+
+function isCounterOrderShipment(shipment: unknown): boolean {
+  if (!shipment || typeof shipment !== 'object') {
+    return false;
+  }
+  const s = shipment as Record<string, unknown>;
+  const meta = asRecord(s.metadata);
+  const createdByType = normalizeNonEmptyString(s.createdByType);
+  const currentStatus = normalizeNonEmptyString(s.currentStatus);
+  const intakeType = normalizeNonEmptyString(meta?.intakeType);
+  const pickupClassification = normalizeNonEmptyString(meta?.pickupClassification);
+  const pickupType = normalizeNonEmptyString(meta?.pickupType);
+  const source = normalizeNonEmptyString(meta?.source) ?? '';
+  const platform = normalizeNonEmptyString(meta?.platform) ?? '';
+  const skipCourierPickup = meta?.skipCourierPickup === true;
+
+  return (
+    intakeType === 'COUNTER_WALK_IN' ||
+    pickupClassification === 'COUNTER_DROP_OFF' ||
+    pickupType === 'COUNTER' ||
+    skipCourierPickup ||
+    createdByType === 'OPS' ||
+    currentStatus === 'PICKUP_COMPLETED' ||
+    source.startsWith('ops-web') ||
+    platform.startsWith('OPS_')
+  );
 }

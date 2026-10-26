@@ -6,7 +6,11 @@ export type CourierLiabilityStatus =
   | 'SETTLED' // Đã tất toán hoàn tất
   | 'APPEAL_REJECTED'; // Kháng cáo bị bác bỏ
 
-export type CourierLiabilityIncidentType = 'DAMAGED' | 'LOST_IN_TRANSIT';
+export type CourierLiabilityIncidentType =
+  | 'DAMAGED'
+  | 'LOST_IN_TRANSIT'
+  | 'PICKUP_OVERDUE'
+  | 'SLA_BREACH';
 
 export interface CourierLiabilityEvidencePhoto {
   id: string;

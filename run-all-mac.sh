@@ -334,7 +334,7 @@ start_service() {
     echo 'export DOMAIN_EVENTS_EXCHANGE="${DOMAIN_EVENTS_EXCHANGE:-domain.events}"'
     echo 'export PRICING_SERVICE_URL="${PRICING_SERVICE_URL:-http://localhost:3012}"'
     if [[ -n "$db_name" ]]; then
-      printf 'export DATABASE_URL=%q\n' "postgresql://postgres:postgres@localhost:15432/$db_name"
+      printf 'export DATABASE_URL=%q\n' "postgresql://postgres:postgres@localhost:15432/$db_name?connection_limit=5&pool_timeout=10"
       echo 'if [[ -f prisma/schema.prisma ]]; then'
       echo '  node node_modules/prisma/build/index.js generate --schema prisma/schema.prisma'
       echo '  node node_modules/prisma/build/index.js db push --schema prisma/schema.prisma'
@@ -368,37 +368,39 @@ start_web_app() {
 }
 
 start_mobile_app() {
-  local dir="$ROOT_DIR/apps/courier-mobile"
+  local name="${1:-courier-mobile}"
+  local rel_dir="${2:-apps/courier-mobile}"
+  local default_port="${3:-8081}"
+  local dir="$ROOT_DIR/$rel_dir"
   local host_mode="lan"
   local log_id
   local runner
-  local out_log="$LOG_DIR/courier-mobile.out.log"
-  local err_log="$LOG_DIR/courier-mobile.err.log"
+  local out_log="$LOG_DIR/$name.out.log"
+  local err_log="$LOG_DIR/$name.err.log"
   local terminal_command
 
   if [[ "$MOBILE_MODE" == "emulator" ]]; then
     host_mode="localhost"
   fi
 
-  install_deps_if_needed "$dir" "courier-mobile"
-  stop_port 8081
+  install_deps_if_needed "$dir" "$name"
 
   log_id="$(date +%Y%m%d-%H%M%S)"
-  runner="$LOG_DIR/courier-mobile-$log_id.mac-run.sh"
+  runner="$LOG_DIR/$name-$log_id.mac-run.sh"
 
   {
     echo '#!/usr/bin/env bash'
     echo 'set -euo pipefail'
     printf 'exec > >(tee -a %q) 2> >(tee -a %q >&2)\n' "$out_log" "$err_log"
-    printf 'printf "\\033]0;%s\\007"\n' "courier-mobile Expo"
-    printf 'echo $$ > %q\n' "$PID_DIR/courier-mobile.pid"
+    printf 'printf "\\033]0;%s\\007"\n' "$name Expo"
+    printf 'echo $$ > %q\n' "$PID_DIR/$name.pid"
     printf 'cd %q\n' "$dir"
     printf 'export EXPO_PUBLIC_GATEWAY_BASE_URL=%q\n' "$MOBILE_GATEWAY_URL"
     printf 'export EXPO_PUBLIC_GATEWAY_FALLBACK_BASE_URLS=%q\n' "$MOBILE_GATEWAY_URL,http://10.0.2.2:3000,http://localhost:3000,http://127.0.0.1:3000"
     printf 'echo "[expo] gateway=%s"\n' "$MOBILE_GATEWAY_URL"
-    printf 'echo "[expo] host=%s port=8081"\n' "$host_mode"
+    printf 'echo "[expo] host=%s default_port=%s (auto-switch if in use)"\n' "$host_mode" "$default_port"
     echo 'echo "[expo] QR will appear below. Scan it with Expo Go."'
-    printf 'exec npm run start -- --host %q --port 8081 --clear\n' "$host_mode"
+    printf 'exec npm run start -- --host %q --clear\n' "$host_mode"
   } > "$runner"
   chmod +x "$runner"
 
@@ -409,11 +411,11 @@ start_mobile_app() {
       -e 'activate' \
       -e "do script \"$terminal_command\"" \
       -e 'end tell' >/dev/null
-    echo "[start] courier-mobile Terminal opened port=8081 mode=$MOBILE_MODE logs=$out_log"
+    echo "[start] $name Terminal opened (port=$default_port+, mode=$MOBILE_MODE, logs=$out_log)"
   else
     nohup "$runner" >/dev/null 2>&1 < /dev/null &
-    echo "$!" > "$PID_DIR/courier-mobile.pid"
-    echo "[start] courier-mobile pid=$(cat "$PID_DIR/courier-mobile.pid") port=8081 mode=$MOBILE_MODE logs=$out_log"
+    echo "$!" > "$PID_DIR/$name.pid"
+    echo "[start] $name pid=$(cat "$PID_DIR/$name.pid") (port=$default_port+, mode=$MOBILE_MODE, logs=$out_log)"
     echo "[hint] Set EXPO_TERMINAL=1 on macOS to show the Expo QR in Terminal."
   fi
 }
@@ -431,6 +433,8 @@ fi
 set_env_value "$ROOT_DIR/apps/courier-mobile/.env" EXPO_PUBLIC_GATEWAY_BASE_URL "$MOBILE_GATEWAY_URL"
 set_env_value "$ROOT_DIR/apps/courier-mobile/.env" EXPO_PUBLIC_GATEWAY_FALLBACK_BASE_URLS "http://$LAN_IP:3000,http://10.0.2.2:3000,http://localhost:3000,http://127.0.0.1:3000"
 set_env_value "$ROOT_DIR/apps/courier-mobile/.env" EXPO_PUBLIC_COURIER_ID "30002015"
+set_env_value "$ROOT_DIR/apps/customer-mobile/.env" EXPO_PUBLIC_GATEWAY_BASE_URL "$MOBILE_GATEWAY_URL"
+set_env_value "$ROOT_DIR/apps/customer-mobile/.env" EXPO_PUBLIC_GATEWAY_FALLBACK_BASE_URLS "$MOBILE_GATEWAY_URL,http://10.0.2.2:3000,http://localhost:3000,http://127.0.0.1:3000"
 set_env_value "$ROOT_DIR/services/gateway-bff/.env" S3_ENDPOINT "$S3_ENDPOINT"
 set_env_value "$ROOT_DIR/services/gateway-bff/.env" AUTH_SERVICE_URL "http://localhost:3010"
 set_env_value "$ROOT_DIR/services/gateway-bff/.env" DELIVERY_SERVICE_URL "http://localhost:3007"
@@ -498,13 +502,16 @@ start_web_app ops-web apps/ops-web 5173
 start_web_app merchant-web apps/merchant-web 5174
 start_web_app admin-web apps/admin-web 5175
 start_web_app guest-web apps/guest-web 5177
-start_mobile_app
+start_service chatbot-service services/chatbot-service 3013
+start_mobile_app courier-mobile apps/courier-mobile 8081
+start_mobile_app customer-mobile apps/customer-mobile 8082
 
 echo "[wait] UI ports"
 wait_port ops-web 5173 30
 wait_port merchant-web 5174 30
 wait_port admin-web 5175 30
 wait_port guest-web 5177 30
+wait_port chatbot-service 3013 30
 
 echo
 echo "=== OPEN URLS ==="
@@ -514,6 +521,8 @@ echo "merchant-web:    http://localhost:5174"
 echo "ops-web:         http://localhost:5173"
 echo "admin-web:       http://localhost:5175"
 echo "customer-web:    http://localhost:5177"
-echo "courier-mobile:  http://localhost:8081"
+echo "courier-mobile:  http://localhost:8081 (auto-switch if in use)"
+echo "customer-mobile: http://localhost:8082 (auto-switch if in use)"
+echo "chatbot-service: http://localhost:3013"
 echo
 echo "Demo login: merchant 41100001 / password"

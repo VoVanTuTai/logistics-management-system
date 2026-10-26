@@ -7,7 +7,7 @@ import type { AuthTokens } from '../../domain/entities/auth-session.entity';
 @Injectable()
 export class OpaqueTokenService {
   issueTokens(now = new Date()): AuthTokens {
-    const accessTtlSeconds = Number(process.env.ACCESS_TOKEN_TTL_SECONDS ?? 900);
+    const accessTtlSeconds = Number(process.env.ACCESS_TOKEN_TTL_SECONDS ?? 86400);
     const refreshTtlSeconds = Number(
       process.env.REFRESH_TOKEN_TTL_SECONDS ?? 2592000,
     );

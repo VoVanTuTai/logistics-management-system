@@ -290,23 +290,40 @@ async function ensureTask(token, shipmentCode, taskType, noteText) {
 }
 
 async function assignTask(token, task, courierId, hubCode, label) {
-  const { data } = await request(`/ops/dispatch/tasks/${task.id}/assign`, {
-    method: 'POST',
-    token,
-    body: {
-      courierId,
-      hubCode,
-      note: note('task-assign', `task=${task.taskCode}|courier=${courierId}`),
-    },
-  });
+  const activeAssignment = task.assignments?.find((item) => !item.unassignedAt);
+  let data = task;
 
-  const activeAssignment = data.assignments?.find((item) => !item.unassignedAt);
-  assert(activeAssignment?.courierId === courierId, `Task ${task.taskCode} chua gan cho ${courierId}.`);
+  if (!activeAssignment) {
+    const res = await request(`/ops/dispatch/tasks/${task.id}/assign`, {
+      method: 'POST',
+      token,
+      body: {
+        courierId,
+        hubCode,
+        note: note('task-assign', `task=${task.taskCode}|courier=${courierId}`),
+      },
+    });
+    data = res.data;
+  } else if (activeAssignment.courierId !== courierId) {
+    const res = await request(`/ops/dispatch/tasks/${task.id}/reassign`, {
+      method: 'POST',
+      token,
+      body: {
+        courierId,
+        hubCode,
+        note: note('task-reassign', `task=${task.taskCode}|courier=${courierId}`),
+      },
+    });
+    data = res.data;
+  }
+
+  const finalAssignment = data.assignments?.find((item) => !item.unassignedAt) || activeAssignment;
+  assert(finalAssignment?.courierId === courierId, `Task ${task.taskCode} chua gan cho ${courierId}.`);
   addReport(label, {
     taskCode: data.taskCode,
     taskType: data.taskType,
     status: data.status,
-    courierId: activeAssignment?.courierId,
+    courierId: finalAssignment?.courierId,
   });
 
   return data;

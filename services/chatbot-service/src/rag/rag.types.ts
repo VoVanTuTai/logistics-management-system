@@ -30,6 +30,22 @@ export interface Citation {
   snippet: string;
 }
 
+export interface ShipmentCardDto {
+  code: string;
+  status: string;
+  statusText: string;
+  itemName?: string;
+  receiverCity?: string;
+  receiverName?: string;
+  codAmount?: number;
+  createdAt?: string;
+}
+
+export interface ActionChipDto {
+  label: string;
+  query: string;
+}
+
 export interface ChatResponseDto {
   conversationId: string;
   question: string;
@@ -37,4 +53,6 @@ export interface ChatResponseDto {
   citations: Citation[];
   toolsUsed: string[];
   latencyMs: number;
+  shipmentCards?: ShipmentCardDto[];
+  actionChips?: ActionChipDto[];
 }

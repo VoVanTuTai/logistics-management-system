@@ -104,22 +104,54 @@ function readMetadataString(
   return null;
 }
 
-function readProcessingHubCode(metadata: ShipmentMetadata | null): string | null {
-  return normalizeOptionalCode(
-    readMetadataString(metadata, [
+function collectShipmentReceiveHubCodes(
+  shipment: ShipmentDto,
+  currentLocation: CurrentLocationDto | null,
+): string[] {
+  const candidates = [
+    currentLocation?.locationCode,
+    readMetadataString(shipment.metadata, [
+      'currentHubCode',
+      'location.current',
+      'location.hubCode',
+      'hub.code',
+      'hub.currentCode',
+    ]),
+    readMetadataString(shipment.metadata, [
       'sender.hubCode',
       'routing.originHubCode',
       'originHubCode',
       'senderHubCode',
       'pickup.hubCode',
       'pickup.originHubCode',
+    ]),
+  ];
+
+  return Array.from(
+    new Set(candidates.map((value) => normalizeOptionalCode(value)).filter(Boolean)),
+  ) as string[];
+}
+
+function readProcessingHubCode(metadata: ShipmentMetadata | null): string | null {
+  return normalizeOptionalCode(
+    readMetadataString(metadata, [
+      'currentHubCode',
+      'location.current',
       'location.hubCode',
       'hub.code',
+      'hub.currentCode',
+      'sender.hubCode',
+      'routing.originHubCode',
+      'originHubCode',
+      'senderHubCode',
+      'pickup.hubCode',
+      'pickup.originHubCode',
     ]),
   );
 }
 
 function isHomePickupShipment(metadata: ShipmentMetadata | null): boolean {
+  const intakeType = normalizeOptionalCode(readMetadataString(metadata, ['intakeType']));
   const classification = normalizeOptionalCode(
     readMetadataString(metadata, [
       'pickup.classification',
@@ -129,13 +161,29 @@ function isHomePickupShipment(metadata: ShipmentMetadata | null): boolean {
     ]),
   );
   const source = normalizeOptionalCode(readMetadataString(metadata, ['source']));
+  const platform = normalizeOptionalCode(readMetadataString(metadata, ['platform']));
+  const skipCourierPickup = readMetadataPath(metadata, 'skipCourierPickup') === true;
+
+  if (
+    intakeType === 'COUNTER_WALK_IN' ||
+    classification === 'COUNTER_DROP_OFF' ||
+    classification === 'COUNTER' ||
+    skipCourierPickup ||
+    source?.startsWith('OPS') ||
+    platform?.startsWith('OPS')
+  ) {
+    return false;
+  }
+
   const pickupCode = readMetadataString(metadata, ['pickup.pickupCode', 'pickupCode']);
 
   return (
     classification === 'HOME_PICKUP' ||
     classification === 'PICKUP_AT_HOME' ||
     classification === 'LAY_HANG_TAI_NHA' ||
+    classification === 'PICKUP' ||
     source === 'MERCHANT-WEB' ||
+    source === 'CUSTOMER-MOBILE' ||
     Boolean(pickupCode)
   );
 }
@@ -146,7 +194,7 @@ function hasAssignedPickupTask(tasks: TaskDto[], shipmentCode: string): boolean 
   return tasks.some(
     (task) =>
       task.taskType === 'PICKUP' &&
-      task.status === 'ASSIGNED' &&
+      (task.status === 'ASSIGNED' || task.status === 'CREATED') &&
       task.shipmentCode &&
       normalizeCode(task.shipmentCode) === normalizedShipmentCode,
   );
@@ -167,18 +215,41 @@ function validateShipmentForReceive(
     return `Đơn ${shipmentCode} đã bị hủy trước khi nhận hàng.`;
   }
 
+  const metadata = shipment.metadata;
+  const isCounterOrder =
+    readMetadataString(metadata, ['intakeType']) === 'COUNTER_WALK_IN' ||
+    readMetadataString(metadata, ['pickupClassification']) === 'COUNTER_DROP_OFF' ||
+    readMetadataString(metadata, ['pickupType']) === 'COUNTER' ||
+    readMetadataString(metadata, ['source'])?.toUpperCase().startsWith('OPS') ||
+    readMetadataString(metadata, ['platform'])?.toUpperCase().startsWith('OPS') ||
+    readMetadataPath(metadata, 'skipCourierPickup') === true ||
+    shipment.createdByType === 'OPS';
+
+  if (isCounterOrder) {
+    const operatorName =
+      readMetadataString(metadata, ['operatorName', 'createdBy.name', 'intakeStaff.name']) ||
+      readMetadataString(metadata, ['operatorCode', 'createdBy.username', 'intakeStaff.username']) ||
+      'nhân viên giao dịch';
+    return `Đơn ${shipmentCode} được tạo tại quầy và đã tiếp nhận trực tiếp bởi ${operatorName}. Bưu tá không cần lấy đơn này.`;
+  }
+
   if (input.currentLocation?.lastScanType || RECEIVED_OR_LATER_STATUSES.has(status)) {
     return `Đơn ${shipmentCode} đã có trạng thái đã nhận hàng (${shipment.currentStatus}).`;
   }
 
   const isAssignedToThisCourier = hasAssignedPickupTask(input.assignedPickupTasks, shipmentCode);
 
+  const receiveHubCodes = collectShipmentReceiveHubCodes(shipment, input.currentLocation);
+  const hasMatchingHub =
+    input.assignedHubCodes.length === 0 ||
+    receiveHubCodes.length === 0 ||
+    receiveHubCodes.some((code) => input.assignedHubCodes.includes(code));
+
   const processingHubCode = readProcessingHubCode(shipment.metadata);
   if (
     !isAssignedToThisCourier &&
-    processingHubCode &&
-    input.assignedHubCodes.length > 0 &&
-    !input.assignedHubCodes.includes(processingHubCode)
+    !hasMatchingHub &&
+    processingHubCode
   ) {
     return `Đơn ${shipmentCode} thuộc hub xử lý ${processingHubCode}, không thuộc hub của tài khoản này.`;
   }
@@ -225,7 +296,7 @@ function toErrorMessage(error: unknown): string {
   return error instanceof Error ? error.message : 'Có lỗi xảy ra.';
 }
 
-export function PickupScanScreen({ route }: Props): React.JSX.Element {
+export function PickupScanScreen({ route, navigation }: Props): React.JSX.Element {
   const session = useAppStore((state) => state.session);
   const setGlobalError = useAppStore((state) => state.setGlobalError);
   const getValidAccessToken = useAuthStore((state) => state.getValidAccessToken);
@@ -624,6 +695,11 @@ export function PickupScanScreen({ route }: Props): React.JSX.Element {
         });
       });
       setIsUploading(false);
+      if (route.params?.taskId) {
+        setTimeout(() => {
+          navigation.navigate('MainTabs', { screen: 'Tasks' });
+        }, 600);
+      }
       return;
     }
 
@@ -671,6 +747,11 @@ export function PickupScanScreen({ route }: Props): React.JSX.Element {
     });
 
     setIsUploading(false);
+    if (routeTaskCompleted && route.params?.taskId) {
+      setTimeout(() => {
+        navigation.navigate('MainTabs', { screen: 'Tasks' });
+      }, 800);
+    }
   };
 
   const cameraIsReady = permission?.granted === true;

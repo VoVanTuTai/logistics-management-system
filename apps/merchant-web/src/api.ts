@@ -277,6 +277,7 @@ export function buildShipmentMetadata(
     },
     codAmount: asNumber(form.codAmount, 0),
     deliveryNote: form.deliveryNote.trim() || null,
+    inspectionPolicy: form.inspectionPolicy ?? 'VIEW_ONLY',
     estimatedFee,
     routing: {
       originHubCode: form.senderHubCode.trim() || null,
@@ -383,6 +384,13 @@ export function extractShipmentRow(shipment: ShipmentResponse): ShipmentRow {
   const deliveryNote =
     asString(metadata.deliveryNote) || asString(metadata.note) || '-';
 
+  const pricing = asRecord(metadata.pricing);
+  const pricingBreakdown = Array.isArray(pricing?.breakdown)
+    ? (pricing.breakdown as Array<{ code: string; label: string; amount: number; basis?: string }>)
+    : undefined;
+  const chargeableWeightKg = asNumber(pricing?.chargeableWeightKg, 0) || undefined;
+  const pricingZone = asString(pricing?.zone) || undefined;
+
   return {
     shipment,
     senderName,
@@ -406,22 +414,25 @@ export function extractShipmentRow(shipment: ShipmentResponse): ShipmentRow {
     codAmount,
     feeEstimate,
     deliveryNote,
+    pricingBreakdown,
+    chargeableWeightKg,
+    pricingZone,
   };
 }
 
 export function statusClass(status: string): string {
-  if (status === 'CREATED' || status === 'UPDATED') {
+  if (status === 'CREATED' || status === 'UPDATED' || status === 'WAITING_PICKUP') {
     return 'status status-created';
   }
-  if (status === 'DELIVERED' || status === 'COMPLETED') {
+  if (status === 'DELIVERED' || status === 'COMPLETED' || status === 'RETURN_COMPLETED') {
     return 'status status-done';
   }
   if (
     status === 'DELIVERY_FAILED' ||
     status === 'RETURN_STARTED' ||
-    status === 'RETURN_COMPLETED' ||
     status === 'CANCELLED' ||
-    status === 'NDR_CREATED'
+    status === 'NDR_CREATED' ||
+    status === 'EXCEPTION'
   ) {
     return 'status status-fail';
   }

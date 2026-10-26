@@ -32,6 +32,7 @@ export interface ShippingLabelPrintPayload {
   insuranceTier?: string;
   declaredValueText?: string;
   insuranceFeeText?: string;
+  inspectionPolicy?: string;
 }
 
 function escapeHtml(value: string): string {
@@ -45,6 +46,27 @@ function escapeHtml(value: string): string {
 
 function newlineToBreaks(value: string): string {
   return escapeHtml(value).replace(/\r?\n/g, '<br />');
+}
+
+export function maskPhoneNumber(phone?: string | null): string {
+  if (!phone) return '';
+  const trimmed = phone.trim();
+  if (!trimmed) return '';
+
+  const hasPlus = trimmed.startsWith('+');
+  const digits = trimmed.replace(/\D/g, '');
+
+  if (digits.length <= 4) {
+    return '***';
+  }
+
+  if (digits.length <= 6) {
+    return `${digits.slice(0, 2)}***${digits.slice(-1)}`;
+  }
+
+  const prefix = digits.slice(0, 4);
+  const suffix = digits.slice(-3);
+  return `${hasPlus ? '+' : ''}${prefix} *** ${suffix}`;
 }
 
 function buildWineGlassSvg(): string {
@@ -67,12 +89,25 @@ function buildQrSvg(value: string): string {
   }
 }
 
+function resolveInspectionPolicyDisplay(policy?: string): { text: string; bg: string; color: string } {
+  switch (policy) {
+    case 'VIEW_ONLY':
+      return { text: 'CHO XEM HÀNG - KHÔNG CHO THỬ', bg: '#eff6ff', color: '#1d4ed8' };
+    case 'TRY_ON':
+      return { text: 'CHO THỬ HÀNG / CẮM ĐIỆN KIỂM TRA', bg: '#f0fdf4', color: '#15803d' };
+    case 'NONE':
+    default:
+      return { text: 'KHÔNG CHO XEM HÀNG (CẤM ĐỒNG KIỂM)', bg: '#fef2f2', color: '#b91c1c' };
+  }
+}
+
 function buildLabelHtml(payload: ShippingLabelPrintPayload): string {
   const codeText = escapeHtml(payload.shipmentCode);
   const sender = newlineToBreaks(payload.senderAddress);
   const receiver = newlineToBreaks(payload.receiverAddress);
   const sortCode = newlineToBreaks(payload.sortCode);
   const deliveryInstruction = newlineToBreaks(payload.deliveryInstruction);
+  const inspectionInfo = resolveInspectionPolicyDisplay(payload.inspectionPolicy);
   const qr = buildQrSvg(payload.qrValue || payload.shipmentCode);
 
   return `<!doctype html>
@@ -493,13 +528,13 @@ function buildLabelHtml(payload: ShippingLabelPrintPayload): string {
         <div class="block">
           <div class="label">Từ (Người gửi)</div>
           <div class="name">${escapeHtml(payload.senderName)}</div>
-          <div class="text">${escapeHtml(payload.senderPhone)}</div>
+          <div class="text">${escapeHtml(maskPhoneNumber(payload.senderPhone))}</div>
           <div class="text">${sender}</div>
         </div>
         <div class="block">
           <div class="label">Đến (Người nhận)</div>
           <div class="name">${escapeHtml(payload.receiverName)}</div>
-          <div class="text">${escapeHtml(payload.receiverPhone)}</div>
+          <div class="text">${escapeHtml(maskPhoneNumber(payload.receiverPhone))}</div>
           <div class="text">${receiver}</div>
         </div>
       </section>
@@ -555,6 +590,10 @@ function buildLabelHtml(payload: ShippingLabelPrintPayload): string {
         <div class="block">
           <div class="label">Tiền thu người nhận</div>
           <div class="cod-value">${escapeHtml(payload.codAmountText)}</div>
+          <div class="label">Chỉ dẫn đồng kiểm</div>
+          <div style="margin: 1mm 0 1.5mm 0; padding: 1.2mm; border: 1.2px solid ${inspectionInfo.color}; background: ${inspectionInfo.bg}; color: ${inspectionInfo.color}; font-weight: 800; font-size: 7.2pt; text-align: center; border-radius: 1mm;">
+            ${escapeHtml(inspectionInfo.text)}
+          </div>
           <div class="label">Chỉ dẫn giao hàng</div>
           <div class="text">${deliveryInstruction}</div>
         </div>

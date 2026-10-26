@@ -29,7 +29,59 @@ import {
   isShipmentInHubScope,
   groupShipmentsByChildHubs,
 } from '../../../utils/hubScopeResolver';
+import {
+  BarChart3,
+  Clock,
+  Filter,
+  Globe2,
+  Building,
+  Building2,
+  Warehouse,
+  CreditCard,
+  Package,
+  Truck,
+  CheckCircle2,
+  AlertTriangle,
+  ArrowRight,
+} from 'lucide-react';
 import './AnalyticsDashboard.css';
+
+function AnalyticsIcon({ name, size = 18 }: { name: string; size?: number }) {
+  switch (name) {
+    case 'analytics':
+      return <BarChart3 size={size} />;
+    case 'schedule':
+    case 'alarm':
+      return <Clock size={size} />;
+    case 'filter_alt':
+      return <Filter size={size} />;
+    case 'public':
+      return <Globe2 size={size} />;
+    case 'apartment':
+      return <Building2 size={size} />;
+    case 'domain':
+      return <Building size={size} />;
+    case 'location_city':
+      return <Building size={size} />;
+    case 'warehouse':
+      return <Warehouse size={size} />;
+    case 'payments':
+      return <CreditCard size={size} />;
+    case 'inventory_2':
+      return <Package size={size} />;
+    case 'two_wheeler':
+    case 'local_shipping':
+      return <Truck size={size} />;
+    case 'task_alt':
+      return <CheckCircle2 size={size} />;
+    case 'warning_amber':
+      return <AlertTriangle size={size} />;
+    case 'arrow_forward':
+      return <ArrowRight size={size} />;
+    default:
+      return <Package size={size} />;
+  }
+}
 
 const NDR_COLORS = ['var(--ops-primary)', '#0ea5e9', '#10b981', '#f59e0b', '#ef4444'];
 
@@ -340,7 +392,7 @@ export function AnalyticsDashboardPage(): React.JSX.Element {
         <div>
           <h1 className="analytics-dash__title">
             <span className="analytics-dash__title-icon">
-              <span className="material-symbols-outlined">analytics</span>
+              <AnalyticsIcon name="analytics" size={20} />
             </span>
             {hubScope.hubLevel === 0
               ? 'Bảng phân tích vận hành toàn hệ thống'
@@ -361,7 +413,7 @@ export function AnalyticsDashboardPage(): React.JSX.Element {
           </p>
         </div>
         <span className="analytics-dash__date-badge">
-          <span className="material-symbols-outlined" style={{ fontSize: '15px' }}>schedule</span>
+          <AnalyticsIcon name="schedule" size={14} />
           <span>Dữ liệu thời gian thực · {new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}</span>
         </span>
       </header>
@@ -369,7 +421,7 @@ export function AnalyticsDashboardPage(): React.JSX.Element {
       {/* Scope Switcher Toolbar */}
       <div className="analytics-dash__scope-tabs" role="tablist" aria-label="Phạm vi vận hành">
         <span className="analytics-dash__scope-label">
-          <span className="material-symbols-outlined">filter_alt</span>
+          <AnalyticsIcon name="filter_alt" size={14} />
           <span>Phạm vi ({hubScope.scopeLabel}):</span>
         </span>
         <button
@@ -379,9 +431,10 @@ export function AnalyticsDashboardPage(): React.JSX.Element {
           onClick={() => setSelectedScope('ALL')}
           className={`analytics-scope-tab ${selectedScope === 'ALL' ? 'analytics-scope-tab--active' : ''}`}
         >
-          <span className="material-symbols-outlined">
-            {hubScope.hubLevel === 0 ? 'public' : hubScope.hubLevel === 1 ? 'domain' : hubScope.hubLevel === 2 ? 'apartment' : 'warehouse'}
-          </span>
+          <AnalyticsIcon
+            name={hubScope.hubLevel === 0 ? 'public' : hubScope.hubLevel === 1 ? 'domain' : hubScope.hubLevel === 2 ? 'apartment' : 'warehouse'}
+            size={14}
+          />
           <span>
             {hubScope.hubLevel === 0
               ? `Toàn Quốc (${rawShipments.length} đơn)`
@@ -402,7 +455,7 @@ export function AnalyticsDashboardPage(): React.JSX.Element {
               onClick={() => setSelectedScope('NORTH')}
               className={`analytics-scope-tab ${selectedScope === 'NORTH' ? 'analytics-scope-tab--active' : ''}`}
             >
-              <span className="material-symbols-outlined">apartment</span>
+              <AnalyticsIcon name="apartment" size={14} />
               <span>Hub Miền Bắc (001N001 · {regionalBreakdown.north.count} đơn)</span>
             </button>
             <button
@@ -412,7 +465,7 @@ export function AnalyticsDashboardPage(): React.JSX.Element {
               onClick={() => setSelectedScope('CENTRAL')}
               className={`analytics-scope-tab ${selectedScope === 'CENTRAL' ? 'analytics-scope-tab--active' : ''}`}
             >
-              <span className="material-symbols-outlined">domain</span>
+              <AnalyticsIcon name="domain" size={14} />
               <span>Hub Miền Trung (002C001 · {regionalBreakdown.central.count} đơn)</span>
             </button>
             <button
@@ -422,7 +475,7 @@ export function AnalyticsDashboardPage(): React.JSX.Element {
               onClick={() => setSelectedScope('SOUTH')}
               className={`analytics-scope-tab ${selectedScope === 'SOUTH' ? 'analytics-scope-tab--active' : ''}`}
             >
-              <span className="material-symbols-outlined">location_city</span>
+              <AnalyticsIcon name="location_city" size={14} />
               <span>Hub Miền Nam (003S001 · {regionalBreakdown.south.count} đơn)</span>
             </button>
           </>
@@ -438,9 +491,7 @@ export function AnalyticsDashboardPage(): React.JSX.Element {
                 onClick={() => setSelectedScope(child.code)}
                 className={`analytics-scope-tab ${selectedScope === child.code ? 'analytics-scope-tab--active' : ''}`}
               >
-                <span className="material-symbols-outlined">
-                  {child.level === 2 ? 'apartment' : 'warehouse'}
-                </span>
+                <AnalyticsIcon name={child.level === 2 ? 'apartment' : 'warehouse'} size={14} />
                 <span>{child.name} ({count} đơn)</span>
               </button>
             );
@@ -455,7 +506,7 @@ export function AnalyticsDashboardPage(): React.JSX.Element {
             <div className="analytics-region-card analytics-region-card--north">
               <div className="analytics-region-card__header">
                 <span className="analytics-region-card__icon-box">
-                  <span className="material-symbols-outlined">apartment</span>
+                  <AnalyticsIcon name="apartment" size={18} />
                 </span>
                 <div className="analytics-region-card__tag">Zone 001 · Miền Bắc</div>
               </div>
@@ -471,7 +522,7 @@ export function AnalyticsDashboardPage(): React.JSX.Element {
             <div className="analytics-region-card analytics-region-card--central">
               <div className="analytics-region-card__header">
                 <span className="analytics-region-card__icon-box">
-                  <span className="material-symbols-outlined">domain</span>
+                  <AnalyticsIcon name="domain" size={18} />
                 </span>
                 <div className="analytics-region-card__tag">Zone 002 · Miền Trung</div>
               </div>
@@ -487,7 +538,7 @@ export function AnalyticsDashboardPage(): React.JSX.Element {
             <div className="analytics-region-card analytics-region-card--south">
               <div className="analytics-region-card__header">
                 <span className="analytics-region-card__icon-box">
-                  <span className="material-symbols-outlined">location_city</span>
+                  <AnalyticsIcon name="location_city" size={18} />
                 </span>
                 <div className="analytics-region-card__tag">Zone 003 · Miền Nam</div>
               </div>
@@ -505,9 +556,7 @@ export function AnalyticsDashboardPage(): React.JSX.Element {
             <div key={b.hubCode} className="analytics-region-card analytics-region-card--north">
               <div className="analytics-region-card__header">
                 <span className="analytics-region-card__icon-box">
-                  <span className="material-symbols-outlined">
-                    {b.level === 2 ? 'apartment' : 'warehouse'}
-                  </span>
+                  <AnalyticsIcon name={b.level === 2 ? 'apartment' : 'warehouse'} size={18} />
                 </span>
                 <div className="analytics-region-card__tag">
                   {b.level === 2 ? 'Bưu cục Tỉnh' : 'Bưu cục Phường'} · {b.hubCode}
@@ -526,7 +575,7 @@ export function AnalyticsDashboardPage(): React.JSX.Element {
           <div className="analytics-region-card analytics-region-card--north">
             <div className="analytics-region-card__header">
               <span className="analytics-region-card__icon-box">
-                <span className="material-symbols-outlined">warehouse</span>
+                <AnalyticsIcon name="warehouse" size={18} />
               </span>
               <div className="analytics-region-card__tag">
                 Bưu cục cơ sở · {hubScope.primaryHub?.code ?? hubScope.scopedHubCodes[0] ?? 'N/A'}
@@ -547,7 +596,7 @@ export function AnalyticsDashboardPage(): React.JSX.Element {
         <div className="analytics-region-card analytics-region-card--cod">
           <div className="analytics-region-card__header">
             <span className="analytics-region-card__icon-box">
-              <span className="material-symbols-outlined">payments</span>
+              <AnalyticsIcon name="payments" size={18} />
             </span>
             <div className="analytics-region-card__tag">Tài Chính & Đối Soát</div>
           </div>
@@ -573,7 +622,7 @@ export function AnalyticsDashboardPage(): React.JSX.Element {
             <div className="analytics-kpi-card__top">
               <span className="analytics-kpi-card__label">{kpi.label}</span>
               <span className="analytics-kpi-card__icon-box">
-                <span className="material-symbols-outlined">{kpi.icon}</span>
+                <AnalyticsIcon name={kpi.icon} size={18} />
               </span>
             </div>
             <div className="analytics-kpi-card__value-row">
@@ -583,7 +632,7 @@ export function AnalyticsDashboardPage(): React.JSX.Element {
             <span className="analytics-kpi-card__description">{kpi.description}</span>
             <span className="analytics-kpi-card__action">
               <span>Mở chức năng</span>
-              <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>arrow_forward</span>
+              <AnalyticsIcon name="arrow_forward" size={14} />
             </span>
           </Link>
         ))}
@@ -606,7 +655,7 @@ export function AnalyticsDashboardPage(): React.JSX.Element {
             >
               <div className="analytics-support-card__top">
                 <span className="analytics-support-card__icon-box">
-                  <span className="material-symbols-outlined">{action.icon}</span>
+                  <AnalyticsIcon name={action.icon} size={18} />
                 </span>
                 <span className="analytics-support-card__meta">{action.meta}</span>
               </div>

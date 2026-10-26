@@ -7,26 +7,27 @@ import {
   Building2,
   CheckCircle2,
   Clock,
+  Download,
   ExternalLink,
+  Eye,
   FileText,
-  Filter,
+  Film,
   Headphones,
-  Mail,
-  MapPin,
+  Image as ImageIcon,
   MessageSquare,
-  Phone,
+  Paperclip,
   PhoneCall,
-  Plus,
+  Play,
   RefreshCw,
+  RotateCcw,
   Search,
   Send,
   ShieldAlert,
   Smartphone,
   Store,
-  Truck,
   User,
-  UserX,
   X,
+  Zap,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
@@ -37,19 +38,19 @@ import {
   CSKH_STATUS_LABELS,
   addCskhInternalNoteApi,
   computeCskhStats,
-  createCskhTicketApi,
+  escalateCskhTicketToClaimApi,
   fetchCskhTicketsApi,
   updateCskhTicketStatusApi,
 } from '../../../../features/cskh/cskh.data';
 import type {
   CskhTicket,
-  CskhTicketCategory,
-  CskhTicketPriority,
-  CskhTicketSource,
   CskhTicketStatus,
+  TicketAttachment,
 } from '../../../../features/cskh/cskh.types';
 import { routePaths } from '../../../../navigation/routes';
+import { normalizeMinioMediaUrl } from '../../../../utils/minioUtils';
 import { CopyableShipmentCode } from '../../../shared/CopyableShipmentCode';
+import { CustomerServiceTicketsTable } from './CustomerServiceTicketsTable';
 import './CustomerServiceTicketsPage.css';
 
 function formatDateTime(dateStr?: string | null): string {
@@ -65,37 +66,21 @@ function formatDateTime(dateStr?: string | null): string {
   });
 }
 
-function getSlaRemainingInfo(deadlineStr: string, isClosed: boolean): {
-  text: string;
-  isOverdue: boolean;
-  isUrgent: boolean;
-} {
-  if (isClosed) {
-    return { text: 'Đã hoàn tất', isOverdue: false, isUrgent: false };
-  }
-
-  const now = Date.now();
-  const deadline = new Date(deadlineStr).getTime();
-  const diffMs = deadline - now;
-
-  if (diffMs <= 0) {
-    const overdueMinutes = Math.abs(Math.floor(diffMs / 60000));
-    const hours = Math.floor(overdueMinutes / 60);
-    const mins = overdueMinutes % 60;
-    const timeStr = hours > 0 ? `${hours}h ${mins}m` : `${mins} phút`;
-    return { text: `Quá hạn ${timeStr}`, isOverdue: true, isUrgent: true };
-  }
-
-  const remainingMinutes = Math.floor(diffMs / 60000);
-  const hours = Math.floor(remainingMinutes / 60);
-  const mins = remainingMinutes % 60;
-
-  if (hours < 2) {
-    return { text: `Còn ${hours > 0 ? `${hours}h ` : ''}${mins}m`, isOverdue: false, isUrgent: true };
-  }
-
-  return { text: `Còn ${hours}h ${mins}m`, isOverdue: false, isUrgent: false };
+function formatFileSize(bytes?: number): string {
+  if (!bytes) return '';
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
+
+// Quick resolution templates for 1-click filling
+const QUICK_RESOLUTIONS = [
+  'Đã liên hệ bưu tá phụ trách ưu tiên phát hàng gấp trong ca.',
+  'Đã liên hệ với người nhận và thống nhất hẹn lại thời gian giao.',
+  'Đã cập nhật lại thông tin địa chỉ / số điện thoại mới cho bưu tá.',
+  'Đã giải thích chi tiết quy chuẩn bưu chính và khách hàng đồng thuận.',
+  'Đã rà soát kho bưu cục, tìm thấy hàng và xuất chuyến phát bổ sung.',
+];
 
 export function CustomerServiceTicketsPage(): React.JSX.Element {
   const navigate = useNavigate();
@@ -104,6 +89,7 @@ export function CustomerServiceTicketsPage(): React.JSX.Element {
   const [tickets, setTickets] = useState<CskhTicket[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [selectedTicket, setSelectedTicket] = useState<CskhTicket | null>(null);
+  const [previewMedia, setPreviewMedia] = useState<TicketAttachment | null>(null);
 
   // Filters
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -112,40 +98,16 @@ export function CustomerServiceTicketsPage(): React.JSX.Element {
   const [selectedHub, setSelectedHub] = useState<string>('ALL');
   const [activeCategoryTab, setActiveCategoryTab] = useState<string>('ALL');
 
+  // Quick note dialog
+  const [quickNoteTicket, setQuickNoteTicket] = useState<CskhTicket | null>(null);
+  const [quickNoteText, setQuickNoteText] = useState<string>('');
+  const [isSubmittingQuickNote, setIsSubmittingQuickNote] = useState<boolean>(false);
+
   // Drawer / Note input
   const [newNoteText, setNewNoteText] = useState<string>('');
   const [isSubmittingNote, setIsSubmittingNote] = useState<boolean>(false);
   const [resolutionInput, setResolutionInput] = useState<string>('');
-
-  // Create Ticket Modal
-  const [isCreateModalOpen, setIsCreateModalOpen] = useState<boolean>(false);
-  const [newTicketForm, setNewTicketForm] = useState<{
-    shipmentCode: string;
-    customerName: string;
-    customerPhone: string;
-    customerEmail: string;
-    source: CskhTicketSource;
-    category: CskhTicketCategory;
-    priority: CskhTicketPriority;
-    assignedHubCode: string;
-    assignedHubName: string;
-    title: string;
-    description: string;
-    slaLimitHours: number;
-  }>({
-    shipmentCode: '',
-    customerName: '',
-    customerPhone: '',
-    customerEmail: '',
-    source: 'HOTLINE_1900',
-    category: 'GENERAL_INQUIRY',
-    priority: 'P3_NORMAL',
-    assignedHubCode: 'HUB_TAN_BINH',
-    assignedHubName: 'Hub Tân Bình (TP.HCM)',
-    title: '',
-    description: '',
-    slaLimitHours: 24,
-  });
+  const [isResolving, setIsResolving] = useState<boolean>(false);
 
   const loadTickets = async () => {
     setIsLoading(true);
@@ -179,16 +141,59 @@ export function CustomerServiceTicketsPage(): React.JSX.Element {
     return Array.from(set);
   }, [tickets]);
 
-  // Filtered tickets
+  // Operational Counts for Intervention Tabs
+  const urgentCount = useMemo(() => {
+    return tickets.filter(
+      (t) =>
+        (t.status === 'NEW' || t.status === 'IN_PROGRESS') &&
+        (t.priority === 'P1_CRITICAL' ||
+          t.priority === 'P2_HIGH' ||
+          t.isOverdue ||
+          t.category === 'DAMAGE_COMPLAINT'),
+    ).length;
+  }, [tickets]);
+
+  const aiHandoverCount = useMemo(() => {
+    return tickets.filter((t) => t.category === 'AI_HANDOVER' || t.source === 'AI_CHATBOT').length;
+  }, [tickets]);
+
+  const waitingCustomerCount = useMemo(() => {
+    return tickets.filter((t) => t.status === 'WAITING_CUSTOMER').length;
+  }, [tickets]);
+
+  const resolvedCount = useMemo(() => {
+    return tickets.filter((t) => t.status === 'RESOLVED' || t.status === 'CLOSED').length;
+  }, [tickets]);
+
+  // Filtered tickets based on intervention workflow
   const filteredTickets = useMemo(() => {
     return tickets.filter((t) => {
-      // Category tab
-      if (activeCategoryTab !== 'ALL' && t.category !== activeCategoryTab) {
-        return false;
+      // Workflow & Intervention Tabs
+      if (activeCategoryTab === 'AI_HANDOVER') {
+        if (t.category !== 'AI_HANDOVER' && t.source !== 'AI_CHATBOT') {
+          return false;
+        }
+      } else if (activeCategoryTab === 'HUMAN_ACTION') {
+        const isUrgent =
+          (t.status === 'NEW' || t.status === 'IN_PROGRESS') &&
+          (t.priority === 'P1_CRITICAL' ||
+            t.priority === 'P2_HIGH' ||
+            t.isOverdue ||
+            t.category === 'DAMAGE_COMPLAINT');
+        if (!isUrgent) return false;
+      } else if (activeCategoryTab === 'WAITING_CUSTOMER') {
+        if (t.status !== 'WAITING_CUSTOMER') return false;
+      } else if (activeCategoryTab === 'RESOLVED') {
+        if (t.status !== 'RESOLVED' && t.status !== 'CLOSED') return false;
       }
+
       // Status
-      if (selectedStatus !== 'ALL' && t.status !== selectedStatus) {
-        return false;
+      if (selectedStatus !== 'ALL') {
+        if (selectedStatus === 'RESOLVED') {
+          if (t.status !== 'RESOLVED' && t.status !== 'CLOSED') return false;
+        } else if (t.status !== selectedStatus) {
+          return false;
+        }
       }
       // Priority
       if (selectedPriority !== 'ALL' && t.priority !== selectedPriority) {
@@ -198,7 +203,7 @@ export function CustomerServiceTicketsPage(): React.JSX.Element {
       if (selectedHub !== 'ALL' && t.assignedHubName !== selectedHub) {
         return false;
       }
-      // Search query
+      // Search query across all fields
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase();
         const matchCode = t.ticketCode.toLowerCase().includes(q);
@@ -206,7 +211,9 @@ export function CustomerServiceTicketsPage(): React.JSX.Element {
         const matchCustomer = t.customerName.toLowerCase().includes(q);
         const matchPhone = t.customerPhone.includes(q);
         const matchTitle = t.title.toLowerCase().includes(q);
-        if (!matchCode && !matchShipment && !matchCustomer && !matchPhone && !matchTitle) {
+        const matchDesc = t.description?.toLowerCase().includes(q);
+        const matchHub = t.assignedHubName?.toLowerCase().includes(q);
+        if (!matchCode && !matchShipment && !matchCustomer && !matchPhone && !matchTitle && !matchDesc && !matchHub) {
           return false;
         }
       }
@@ -214,7 +221,7 @@ export function CustomerServiceTicketsPage(): React.JSX.Element {
     });
   }, [tickets, activeCategoryTab, selectedStatus, selectedPriority, selectedHub, searchQuery]);
 
-  // Handle Note Submission
+  // Handle Note Submission from Drawer
   const handleAddNote = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedTicket || !newNoteText.trim()) return;
@@ -225,29 +232,107 @@ export function CustomerServiceTicketsPage(): React.JSX.Element {
       setSelectedTicket(updated);
       setTickets((prev) => prev.map((t) => (t.id === updated.id ? updated : t)));
       setNewNoteText('');
-    } catch (err) {
+    } catch {
       alert('Không thể lưu ghi chú. Vui lòng thử lại!');
     } finally {
       setIsSubmittingNote(false);
     }
   };
 
-  // Handle Status Update
-  const handleStatusChange = async (newStatus: CskhTicketStatus) => {
-    if (!selectedTicket) return;
+  // Quick Add Note
+  const handleQuickAddNoteSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!quickNoteTicket || !quickNoteText.trim()) return;
 
-    let note = resolutionInput.trim();
-    if (newStatus === 'RESOLVED' && !note) {
-      note = 'Đã giải quyết yêu cầu hỗ trợ và thông báo tới khách hàng thành công.';
+    setIsSubmittingQuickNote(true);
+    try {
+      const updated = await addCskhInternalNoteApi(quickNoteTicket.id, quickNoteText.trim());
+      setTickets((prev) => prev.map((t) => (t.id === updated.id ? updated : t)));
+      if (selectedTicket?.id === updated.id) {
+        setSelectedTicket(updated);
+      }
+      setQuickNoteTicket(null);
+      setQuickNoteText('');
+    } catch {
+      alert('Không thể lưu ghi chú nhanh. Vui lòng thử lại!');
+    } finally {
+      setIsSubmittingQuickNote(false);
+    }
+  };
+
+  // Batch Update Status
+  const handleBatchUpdateStatus = async (ticketIds: string[], targetStatus: CskhTicketStatus) => {
+    try {
+      await Promise.all(
+        ticketIds.map((id) =>
+          updateCskhTicketStatusApi(
+            id,
+            targetStatus,
+            targetStatus === 'RESOLVED'
+              ? 'Xử lý và đóng phiếu hàng loạt thành công.'
+              : `Cập nhật trạng thái sang [${CSKH_STATUS_LABELS[targetStatus].label}]`
+          )
+        )
+      );
+      await loadTickets();
+    } catch {
+      alert('Có lỗi xảy ra khi cập nhật trạng thái hàng loạt. Vui lòng thử lại!');
+    }
+  };
+
+  // Streamlined 1-Click Resolution & Close Ticket
+  const handleResolveAndClose = async (customNote?: string) => {
+    if (!selectedTicket) return;
+    const finalResolution = (customNote || resolutionInput).trim();
+    if (!finalResolution) {
+      alert('Vui lòng nhập hoặc chọn phương án xử lý trước khi đóng phiếu.');
+      return;
     }
 
+    setIsResolving(true);
     try {
-      const updated = await updateCskhTicketStatusApi(selectedTicket.id, newStatus, note || undefined);
+      const updated = await updateCskhTicketStatusApi(
+        selectedTicket.id,
+        'RESOLVED',
+        finalResolution
+      );
       setSelectedTicket(updated);
       setTickets((prev) => prev.map((t) => (t.id === updated.id ? updated : t)));
       setResolutionInput('');
-    } catch (err) {
+    } catch {
+      alert('Không thể hoàn tất đóng phiếu. Vui lòng thử lại!');
+    } finally {
+      setIsResolving(false);
+    }
+  };
+
+  // Handle Waiting Customer (when additional info is needed)
+  const handleWaitCustomer = async () => {
+    if (!selectedTicket) return;
+    try {
+      const note = resolutionInput.trim() || 'Đang liên hệ khách hàng để bổ sung thông tin chứng từ.';
+      const updated = await updateCskhTicketStatusApi(selectedTicket.id, 'WAITING_CUSTOMER', note);
+      setSelectedTicket(updated);
+      setTickets((prev) => prev.map((t) => (t.id === updated.id ? updated : t)));
+      setResolutionInput('');
+    } catch {
       alert('Không thể cập nhật trạng thái. Vui lòng thử lại!');
+    }
+  };
+
+  // Quick Reopen ticket if needed
+  const handleReopenTicket = async () => {
+    if (!selectedTicket) return;
+    try {
+      const updated = await updateCskhTicketStatusApi(
+        selectedTicket.id,
+        'IN_PROGRESS',
+        'Mở lại phiếu để tiếp tục phối hợp xử lý theo yêu cầu mới của khách.'
+      );
+      setSelectedTicket(updated);
+      setTickets((prev) => prev.map((t) => (t.id === updated.id ? updated : t)));
+    } catch {
+      alert('Không thể mở lại phiếu. Vui lòng thử lại!');
     }
   };
 
@@ -255,102 +340,68 @@ export function CustomerServiceTicketsPage(): React.JSX.Element {
   const handleEscalateToClaims = async () => {
     if (!selectedTicket) return;
     const confirmEscalate = window.confirm(
-      `Bạn có chắc chắn muốn chuyển Ticket [${selectedTicket.ticketCode}] thành Hồ sơ Bồi thường Khiếu nại (Claims)?\n\nHồ sơ sẽ được chuyển đến Bộ phận Pháp chế & Phân định rủi ro để thẩm định giá trị tổn thất.`
+      `Bạn có chắc chắn muốn chuyển Ticket [${selectedTicket.ticketCode}] thành Hồ sơ Bồi thường Khiếu nại (Claims)?\n\nHệ thống sẽ tự động tạo một Hồ sơ Bồi thường (CompensationClaim) trên cơ sở dữ liệu tập trung liên kết hai chiều với Ticket này và chuyển sang Ban Giám Định Bồi Thường.`
     );
     if (!confirmEscalate) return;
 
-    const generatedClaimCode = selectedTicket.claimCode || `CLM-202609-${Math.floor(100 + Math.random() * 900)}`;
-    const escalationNote = `Chuyển giao hồ sơ khiếu nại bể vỡ/hư hỏng sang Bộ phận Bồi thường CLM với mã tham chiếu: ${generatedClaimCode}`;
-
     try {
-      const updated = await updateCskhTicketStatusApi(selectedTicket.id, 'ESCALATED_CLAIMS', escalationNote);
-      updated.claimCode = generatedClaimCode;
-      setSelectedTicket(updated);
-      setTickets((prev) => prev.map((t) => (t.id === updated.id ? updated : t)));
-      alert(`Đã khởi tạo chuyển giao thành công sang Hồ sơ Đền bù: ${generatedClaimCode}`);
-    } catch (err) {
+      const res = await escalateCskhTicketToClaimApi(selectedTicket.id, {
+        damageDescription: selectedTicket.description,
+      });
+      setSelectedTicket(res.ticket);
+      setTickets((prev) => prev.map((t) => (t.id === res.ticket.id ? res.ticket : t)));
+      alert(
+        `Đã khởi tạo thành công Hồ sơ Bồi thường [${res.ticket.claimCode || res.claim?.claimCode}] trên hệ thống CompensationClaim!`
+      );
+    } catch {
       alert('Không thể chuyển tiếp sang CLM. Vui lòng thử lại!');
     }
   };
 
-  // Handle Ticket Creation
-  const handleCreateTicket = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newTicketForm.shipmentCode.trim() || !newTicketForm.customerName.trim() || !newTicketForm.title.trim()) {
-      alert('Vui lòng điền đầy đủ các thông tin bắt buộc (*)!');
-      return;
-    }
-
-    try {
-      const created = await createCskhTicketApi(newTicketForm);
-      setTickets((prev) => [created, ...prev]);
-      setIsCreateModalOpen(false);
-      setSelectedTicket(created);
-      // Reset form
-      setNewTicketForm({
-        shipmentCode: '',
-        customerName: '',
-        customerPhone: '',
-        customerEmail: '',
-        source: 'HOTLINE_1900',
-        category: 'GENERAL_INQUIRY',
-        priority: 'P3_NORMAL',
-        assignedHubCode: 'HUB_TAN_BINH',
-        assignedHubName: 'Hub Tân Bình (TP.HCM)',
-        title: '',
-        description: '',
-        slaLimitHours: 24,
-      });
-    } catch (err) {
-      alert('Lỗi khi tạo Ticket mới. Vui lòng thử lại!');
-    }
-  };
+  const isSelectedClosed = selectedTicket
+    ? selectedTicket.status === 'RESOLVED' || selectedTicket.status === 'CLOSED'
+    : false;
 
   return (
     <div className="cskh-page-container">
-      {/* Header */}
+      {/* Header Compact */}
       <div className="cskh-page-header">
         <div className="cskh-header-title">
           <h1>
-            <Headphones className="text-blue-600" size={26} />
+            <Headphones className="text-blue-600" size={22} />
             Trung tâm CSKH & Khiếu nại Vận hành
           </h1>
           <p>
-            Tiếp nhận xử lý sự cố giao nhận, đổi địa chỉ, giục giao khẩn cấp, tiếp nhận từ AI Chatbot và chuyển giao
-            hồ sơ bồi thường CLM (Cam kết SLA 24h - 48h)
+            Hộp thư tiếp nhận và xử lý tập trung khiếu nại đổ về tự động từ AI Chatbot, Ứng dụng Khách hàng, Cổng Shop Merchant và Tổng đài Hotline 1900.
           </p>
         </div>
 
         <div className="cskh-header-actions">
+          <div className="cskh-inbound-live-badge" title="Cổng tiếp nhận khiếu nại tự động đa kênh">
+            <span className="cskh-live-dot" />
+            <span>Tiếp nhận tự động đa kênh</span>
+          </div>
+
           <button
             type="button"
             className="cskh-btn-secondary"
             onClick={loadTickets}
             disabled={isLoading}
-            title="Làm mới danh sách"
+            title="Đồng bộ danh sách khiếu nại mới"
           >
-            <RefreshCw size={15} className={isLoading ? 'animate-spin' : ''} />
+            <RefreshCw size={14} className={isLoading ? 'animate-spin' : ''} />
             Làm mới
-          </button>
-
-          <button
-            type="button"
-            className="cskh-btn-primary"
-            onClick={() => setIsCreateModalOpen(true)}
-          >
-            <Plus size={16} />
-            Tiếp nhận Ticket mới
           </button>
         </div>
       </div>
 
-      {/* KPI Metric Cards */}
+      {/* KPI Metric Strip (Compact Cards) */}
       <div className="cskh-metrics-grid">
         <div className="cskh-metric-card">
           <div className="cskh-metric-header">
             <span className="cskh-metric-label">Tổng Ticket tiếp nhận</span>
             <div className="cskh-metric-icon-wrap bg-blue-50 text-blue-600">
-              <FileText size={18} />
+              <FileText size={15} />
             </div>
           </div>
           <div className="cskh-metric-value">{stats.totalToday}</div>
@@ -361,18 +412,18 @@ export function CustomerServiceTicketsPage(): React.JSX.Element {
           <div className="cskh-metric-header">
             <span className="cskh-metric-label">Đang phối hợp xử lý</span>
             <div className="cskh-metric-icon-wrap bg-amber-50 text-amber-600">
-              <Clock size={18} />
+              <Clock size={15} />
             </div>
           </div>
           <div className="cskh-metric-value text-amber-600">{stats.inProgress}</div>
           <div className="cskh-metric-subtext">Cần bưu cục/shipper phản hồi</div>
         </div>
 
-        <div className="cskh-metric-card">
+        <div className="cskh-metric-card" style={{ borderColor: stats.criticalP1 > 0 ? '#fecaca' : undefined }}>
           <div className="cskh-metric-header">
-            <span className="cskh-metric-label">P1 Khẩn cấp / Quá hạn</span>
+            <span className="cskh-metric-label text-rose-700">P1 Khẩn cấp / Quá hạn</span>
             <div className="cskh-metric-icon-wrap bg-rose-50 text-rose-600">
-              <AlertTriangle size={18} />
+              <AlertTriangle size={15} />
             </div>
           </div>
           <div className="cskh-metric-value text-rose-600">{stats.criticalP1}</div>
@@ -383,7 +434,7 @@ export function CustomerServiceTicketsPage(): React.JSX.Element {
           <div className="cskh-metric-header">
             <span className="cskh-metric-label">AI Chatbot Handover</span>
             <div className="cskh-metric-icon-wrap bg-indigo-50 text-indigo-600">
-              <Bot size={18} />
+              <Bot size={15} />
             </div>
           </div>
           <div className="cskh-metric-value text-indigo-600">{stats.aiHandoverCount}</div>
@@ -394,7 +445,7 @@ export function CustomerServiceTicketsPage(): React.JSX.Element {
           <div className="cskh-metric-header">
             <span className="cskh-metric-label">Đạt SLA chuẩn (&lt; 24h-48h)</span>
             <div className="cskh-metric-icon-wrap bg-emerald-50 text-emerald-600">
-              <CheckCircle2 size={18} />
+              <CheckCircle2 size={15} />
             </div>
           </div>
           <div className="cskh-metric-value text-emerald-600">{stats.slaComplianceRate}%</div>
@@ -405,7 +456,7 @@ export function CustomerServiceTicketsPage(): React.JSX.Element {
           <div className="cskh-metric-header">
             <span className="cskh-metric-label">Phản hồi trung bình</span>
             <div className="cskh-metric-icon-wrap bg-sky-50 text-sky-600">
-              <PhoneCall size={18} />
+              <PhoneCall size={15} />
             </div>
           </div>
           <div className="cskh-metric-value">{stats.avgResponseMinutes} ph</div>
@@ -413,11 +464,71 @@ export function CustomerServiceTicketsPage(): React.JSX.Element {
         </div>
       </div>
 
-      {/* Filter & Search Toolbar */}
+      {/* Filter & Search Toolbar Card */}
       <div className="cskh-toolbar-card">
+        {/* Workflow & Intervention Tabs */}
+        <div className="cskh-category-tabs">
+          <button
+            type="button"
+            className={`cskh-tab-btn ${activeCategoryTab === 'ALL' ? 'active' : ''}`}
+            onClick={() => setActiveCategoryTab('ALL')}
+          >
+            Tất cả <span className="cskh-tab-count">{tickets.length}</span>
+          </button>
+          <button
+            type="button"
+            className={`cskh-tab-btn ${activeCategoryTab === 'HUMAN_ACTION' ? 'active' : ''}`}
+            onClick={() => setActiveCategoryTab('HUMAN_ACTION')}
+            title="Các yêu cầu khẩn cấp P1/P2 hoặc sự cố vượt ngoài quyền tự động của Chatbot AI"
+          >
+            <AlertTriangle size={13} className="text-rose-500" />
+            Cần nhân viên can thiệp gấp{' '}
+            <span className="cskh-tab-count" style={{ color: '#b91c1c', background: '#fee2e2' }}>
+              {urgentCount}
+            </span>
+          </button>
+          <button
+            type="button"
+            className={`cskh-tab-btn ${activeCategoryTab === 'AI_HANDOVER' ? 'active' : ''}`}
+            onClick={() => setActiveCategoryTab('AI_HANDOVER')}
+            title="Khách hàng yêu cầu gặp trực tiếp người thật từ Chatbot AI"
+          >
+            <Bot size={13} className="text-indigo-600" />
+            AI Chatbot Handover{' '}
+            <span className="cskh-tab-count" style={{ color: '#4338ca', background: '#e0e7ff' }}>
+              {aiHandoverCount}
+            </span>
+          </button>
+          <button
+            type="button"
+            className={`cskh-tab-btn ${activeCategoryTab === 'WAITING_CUSTOMER' ? 'active' : ''}`}
+            onClick={() => setActiveCategoryTab('WAITING_CUSTOMER')}
+            title="Đang chờ khách phản hồi hoặc bổ sung thông tin"
+          >
+            <Clock size={13} />
+            Chờ khách phản hồi{' '}
+            <span className="cskh-tab-count">
+              {waitingCustomerCount}
+            </span>
+          </button>
+          <button
+            type="button"
+            className={`cskh-tab-btn ${activeCategoryTab === 'RESOLVED' ? 'active' : ''}`}
+            onClick={() => setActiveCategoryTab('RESOLVED')}
+            title="Các yêu cầu đã được xử lý và đóng phiếu hoàn tất"
+          >
+            <CheckCircle2 size={13} className="text-emerald-600" />
+            Đã xử lý & Đóng phiếu{' '}
+            <span className="cskh-tab-count">
+              {resolvedCount}
+            </span>
+          </button>
+        </div>
+
+        {/* Search & Dropdowns */}
         <div className="cskh-search-row">
           <div className="cskh-search-input-wrap">
-            <Search size={16} />
+            <Search size={14} className="search-icon" />
             <input
               type="text"
               className="cskh-search-input"
@@ -425,6 +536,16 @@ export function CustomerServiceTicketsPage(): React.JSX.Element {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
+            {searchQuery && (
+              <button
+                type="button"
+                className="cskh-clear-search-btn"
+                onClick={() => setSearchQuery('')}
+                title="Xóa tìm kiếm"
+              >
+                <X size={14} />
+              </button>
+            )}
           </div>
 
           <div className="cskh-filter-selects">
@@ -434,12 +555,11 @@ export function CustomerServiceTicketsPage(): React.JSX.Element {
               onChange={(e) => setSelectedStatus(e.target.value)}
             >
               <option value="ALL">-- Tất cả Trạng thái --</option>
-              <option value="NEW">Mới tiếp nhận</option>
+              <option value="NEW">Mới tiếp nhận (Chưa xử lý)</option>
               <option value="IN_PROGRESS">Đang xử lý</option>
               <option value="WAITING_CUSTOMER">Chờ khách phản hồi</option>
               <option value="ESCALATED_CLAIMS">Đã chuyển Bồi thường CLM</option>
-              <option value="RESOLVED">Đã giải quyết</option>
-              <option value="CLOSED">Đã đóng hoàn tất</option>
+              <option value="RESOLVED">Đã xử lý & Đóng phiếu</option>
             </select>
 
             <select
@@ -467,232 +587,100 @@ export function CustomerServiceTicketsPage(): React.JSX.Element {
             </select>
           </div>
         </div>
-
-        {/* Category Tabs */}
-        <div className="cskh-category-tabs">
-          <button
-            type="button"
-            className={`cskh-tab-btn ${activeCategoryTab === 'ALL' ? 'active' : ''}`}
-            onClick={() => setActiveCategoryTab('ALL')}
-          >
-            Tất cả ({tickets.length})
-          </button>
-          <button
-            type="button"
-            className={`cskh-tab-btn ${activeCategoryTab === 'AI_HANDOVER' ? 'active' : ''}`}
-            onClick={() => setActiveCategoryTab('AI_HANDOVER')}
-          >
-            <Bot size={14} />
-            AI Chatbot Handover ({tickets.filter((t) => t.category === 'AI_HANDOVER').length})
-          </button>
-          <button
-            type="button"
-            className={`cskh-tab-btn ${activeCategoryTab === 'DELIVERY_EXPEDITE' ? 'active' : ''}`}
-            onClick={() => setActiveCategoryTab('DELIVERY_EXPEDITE')}
-          >
-            <Truck size={14} />
-            Giục giao gấp ({tickets.filter((t) => t.category === 'DELIVERY_EXPEDITE').length})
-          </button>
-          <button
-            type="button"
-            className={`cskh-tab-btn ${activeCategoryTab === 'ADDRESS_CHANGE' ? 'active' : ''}`}
-            onClick={() => setActiveCategoryTab('ADDRESS_CHANGE')}
-          >
-            <MapPin size={14} />
-            Đổi địa chỉ / SĐT ({tickets.filter((t) => t.category === 'ADDRESS_CHANGE').length})
-          </button>
-          <button
-            type="button"
-            className={`cskh-tab-btn ${activeCategoryTab === 'DAMAGE_COMPLAINT' ? 'active' : ''}`}
-            onClick={() => setActiveCategoryTab('DAMAGE_COMPLAINT')}
-          >
-            <AlertTriangle size={14} />
-            Khiếu nại bể vỡ ({tickets.filter((t) => t.category === 'DAMAGE_COMPLAINT').length})
-          </button>
-          <button
-            type="button"
-            className={`cskh-tab-btn ${activeCategoryTab === 'COURIER_ATTITUDE' ? 'active' : ''}`}
-            onClick={() => setActiveCategoryTab('COURIER_ATTITUDE')}
-          >
-            <UserX size={14} />
-            Thái độ bưu tá ({tickets.filter((t) => t.category === 'COURIER_ATTITUDE').length})
-          </button>
-          <button
-            type="button"
-            className={`cskh-tab-btn ${activeCategoryTab === 'COD_DISCREPANCY' ? 'active' : ''}`}
-            onClick={() => setActiveCategoryTab('COD_DISCREPANCY')}
-          >
-            Khiếu nại COD ({tickets.filter((t) => t.category === 'COD_DISCREPANCY').length})
-          </button>
-        </div>
       </div>
 
-      {/* Tickets Table */}
-      <div className="cskh-table-card">
-        <div className="cskh-table-wrap">
-          <table className="cskh-table">
-            <thead>
-              <tr>
-                <th>Mã Ticket & Nguồn</th>
-                <th>Mã vận đơn</th>
-                <th>Khách hàng / SĐT</th>
-                <th>Phân loại & Tiêu đề</th>
-                <th>Mức độ ưu tiên</th>
-                <th>Bưu cục & CSKH</th>
-                <th>Thời hạn SLA</th>
-                <th>Trạng thái</th>
-                <th style={{ textAlign: 'right' }}>Hành động</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredTickets.length === 0 ? (
-                <tr>
-                  <td colSpan={9} style={{ textAlign: 'center', padding: '48px 16px', color: '#94a3b8' }}>
-                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
-                      <FileText size={32} className="text-slate-300" />
-                      <span>Không tìm thấy Ticket khiếu nại nào phù hợp với điều kiện lọc.</span>
-                    </div>
-                  </td>
-                </tr>
-              ) : (
-                filteredTickets.map((t) => {
-                  const isClosed = t.status === 'CLOSED' || t.status === 'RESOLVED';
-                  const slaInfo = getSlaRemainingInfo(t.slaDeadline, isClosed);
-                  const cat = CSKH_CATEGORY_LABELS[t.category] || CSKH_CATEGORY_LABELS.GENERAL_INQUIRY;
-                  const priority = CSKH_PRIORITY_LABELS[t.priority];
-                  const status = CSKH_STATUS_LABELS[t.status];
-                  const source = CSKH_SOURCE_LABELS[t.source];
+      {/* Modernized Space-Optimized CSKH Tickets Table */}
+      <CustomerServiceTicketsTable
+        tickets={filteredTickets}
+        selectedTicket={selectedTicket}
+        onSelectTicket={(ticket) => setSelectedTicket(ticket)}
+        onQuickAddNote={(ticket) => {
+          setQuickNoteTicket(ticket);
+          setQuickNoteText('');
+        }}
+        onBatchUpdateStatus={handleBatchUpdateStatus}
+        isLoading={isLoading}
+      />
 
-                  return (
-                    <tr
-                      key={t.id}
-                      style={{ cursor: 'pointer' }}
-                      onClick={() => setSelectedTicket(t)}
-                    >
-                      <td>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
-                          <span className="cskh-ticket-code">{t.ticketCode}</span>
-                          <span
-                            style={{
-                              fontSize: '11px',
-                              color: '#64748b',
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              gap: '4px',
-                            }}
-                          >
-                            {t.source === 'AI_CHATBOT' ? (
-                              <Bot size={12} className="text-indigo-600" />
-                            ) : t.source === 'HOTLINE_1900' ? (
-                              <PhoneCall size={12} className="text-blue-600" />
-                            ) : (
-                              <Store size={12} className="text-emerald-600" />
-                            )}
-                            {source.label}
-                          </span>
-                        </div>
-                      </td>
+      {/* Quick Add Note Modal */}
+      {quickNoteTicket && (
+        <div className="cskh-drawer-backdrop" onClick={() => setQuickNoteTicket(null)}>
+          <div
+            style={{
+              backgroundColor: '#ffffff',
+              borderRadius: '12px',
+              maxWidth: '480px',
+              width: '90%',
+              margin: 'auto',
+              boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.15)',
+              overflow: 'hidden',
+              display: 'flex',
+              flexDirection: 'column',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="cskh-drawer-header">
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <MessageSquare size={18} className="text-blue-600" />
+                <span style={{ fontSize: '15px', fontWeight: 700, color: '#0f172a' }}>
+                  Ghi chú nhanh cho [{quickNoteTicket.ticketCode}]
+                </span>
+              </div>
+              <button
+                type="button"
+                className="cskh-btn-secondary"
+                style={{ padding: '4px', borderRadius: '50%' }}
+                onClick={() => setQuickNoteTicket(null)}
+              >
+                <X size={15} />
+              </button>
+            </div>
 
-                      <td>
-                        <CopyableShipmentCode code={t.shipmentCode} />
-                      </td>
+            <form onSubmit={handleQuickAddNoteSubmit}>
+              <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                <div style={{ fontSize: '12px', color: '#64748b' }}>
+                  Khách hàng: <strong>{quickNoteTicket.customerName}</strong> ({quickNoteTicket.customerPhone})
+                  {' • '}Vận đơn: <strong>{quickNoteTicket.shipmentCode}</strong>
+                </div>
+                <textarea
+                  rows={3}
+                  required
+                  autoFocus
+                  className="cskh-search-input"
+                  style={{
+                    padding: '8px 10px',
+                    height: 'auto',
+                    minHeight: '80px',
+                    resize: 'vertical',
+                  }}
+                  placeholder="Nhập nội dung cập nhật nhanh (VD: Đã gọi shipper giao gấp trước 10h)..."
+                  value={quickNoteText}
+                  onChange={(e) => setQuickNoteText(e.target.value)}
+                />
+              </div>
 
-                      <td>
-                        <div style={{ display: 'flex', flexDirection: 'column' }}>
-                          <span style={{ fontWeight: 600, color: '#1e293b' }}>{t.customerName}</span>
-                          <span style={{ fontSize: '11px', color: '#64748b' }}>{t.customerPhone}</span>
-                        </div>
-                      </td>
-
-                      <td style={{ maxWidth: '280px' }}>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                          <span style={{ fontSize: '11px', fontWeight: 600, color: '#475569' }}>
-                            {cat.label}
-                          </span>
-                          <span
-                            style={{
-                              fontSize: '13px',
-                              fontWeight: 500,
-                              color: '#0f172a',
-                              overflow: 'hidden',
-                              textOverflow: 'ellipsis',
-                              whiteSpace: 'nowrap',
-                            }}
-                            title={t.title}
-                          >
-                            {t.title}
-                          </span>
-                        </div>
-                      </td>
-
-                      <td>
-                        <span
-                          className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs border ${priority.badgeClass}`}
-                        >
-                          <span className={`w-1.5 h-1.5 rounded-full ${priority.dotColor}`} />
-                          {priority.label.split(' - ')[0]}
-                        </span>
-                      </td>
-
-                      <td>
-                        <div style={{ display: 'flex', flexDirection: 'column' }}>
-                          <span style={{ fontSize: '12px', fontWeight: 500, color: '#334155' }}>
-                            {t.assignedHubName}
-                          </span>
-                          <span style={{ fontSize: '11px', color: '#64748b' }}>
-                            {t.assignedAgent || 'Chưa phân công'}
-                          </span>
-                        </div>
-                      </td>
-
-                      <td>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                          <span
-                            className={`cskh-sla-badge ${
-                              isClosed ? 'ontime' : slaInfo.isOverdue ? 'overdue' : slaInfo.isUrgent ? 'warning' : 'ontime'
-                            }`}
-                          >
-                            <Clock size={11} />
-                            {slaInfo.text}
-                          </span>
-                          <span style={{ fontSize: '10px', color: '#94a3b8' }}>
-                            Hạn: {formatDateTime(t.slaDeadline)}
-                          </span>
-                        </div>
-                      </td>
-
-                      <td>
-                        <span
-                          className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold border ${status.badgeClass}`}
-                        >
-                          {status.label}
-                        </span>
-                      </td>
-
-                      <td style={{ textAlign: 'right' }}>
-                        <button
-                          type="button"
-                          className="cskh-btn-secondary"
-                          style={{ padding: '6px 10px', fontSize: '11px' }}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setSelectedTicket(t);
-                          }}
-                        >
-                          Chi tiết & Xử lý
-                          <ArrowRight size={12} />
-                        </button>
-                      </td>
-                    </tr>
-                  );
-                })
-              )}
-            </tbody>
-          </table>
+              <div className="cskh-drawer-footer">
+                <button
+                  type="button"
+                  className="cskh-btn-secondary"
+                  onClick={() => setQuickNoteTicket(null)}
+                >
+                  Hủy
+                </button>
+                <button
+                  type="submit"
+                  className="cskh-btn-primary"
+                  disabled={isSubmittingQuickNote || !quickNoteText.trim()}
+                >
+                  {isSubmittingQuickNote ? 'Đang lưu...' : 'Lưu ghi chú'}
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
-      </div>
+      )}
 
-      {/* Slide-over Detail Drawer */}
+      {/* Slide-over Detail & Resolution Drawer */}
       {selectedTicket && (
         <div className="cskh-drawer-backdrop" onClick={() => setSelectedTicket(null)}>
           <div className="cskh-drawer-panel" onClick={(e) => e.stopPropagation()}>
@@ -700,18 +688,25 @@ export function CustomerServiceTicketsPage(): React.JSX.Element {
             <div className="cskh-drawer-header">
               <div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <span style={{ fontSize: '18px', fontWeight: 800, fontFamily: 'monospace', color: '#1d4ed8' }}>
+                  <span
+                    style={{
+                      fontSize: '17px',
+                      fontWeight: 800,
+                      fontFamily: 'monospace',
+                      color: '#1d4ed8',
+                    }}
+                  >
                     {selectedTicket.ticketCode}
                   </span>
                   <span
-                    className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold border ${
+                    className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold border ${
                       CSKH_STATUS_LABELS[selectedTicket.status].badgeClass
                     }`}
                   >
                     {CSKH_STATUS_LABELS[selectedTicket.status].label}
                   </span>
                 </div>
-                <div style={{ fontSize: '12px', color: '#64748b', marginTop: '2px' }}>
+                <div style={{ fontSize: '11.5px', color: '#64748b', marginTop: '2px' }}>
                   Tiếp nhận lúc: {formatDateTime(selectedTicket.createdAt)} (Thời hạn SLA:{' '}
                   {selectedTicket.slaLimitHours} giờ)
                 </div>
@@ -723,176 +718,359 @@ export function CustomerServiceTicketsPage(): React.JSX.Element {
                 style={{ padding: '6px', borderRadius: '50%' }}
                 onClick={() => setSelectedTicket(null)}
               >
-                <X size={16} />
+                <X size={15} />
               </button>
             </div>
 
             {/* Drawer Body */}
             <div className="cskh-drawer-body">
               {/* Overdue alert banner if applicable */}
-              {selectedTicket.isOverdue && selectedTicket.status !== 'CLOSED' && selectedTicket.status !== 'RESOLVED' && (
+              {selectedTicket.isOverdue && !isSelectedClosed && (
                 <div
                   style={{
                     backgroundColor: '#fef2f2',
                     border: '1px solid #fecaca',
-                    borderRadius: '10px',
-                    padding: '12px 16px',
+                    borderRadius: '8px',
+                    padding: '10px 14px',
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '10px',
+                    gap: '8px',
                     color: '#991b1b',
                   }}
                 >
-                  <AlertCircle size={20} className="text-red-600 flex-shrink-0" />
-                  <div style={{ fontSize: '12px' }}>
+                  <AlertCircle size={18} className="text-red-600 flex-shrink-0" />
+                  <div style={{ fontSize: '11.5px' }}>
                     <strong>Cảnh báo vi phạm SLA:</strong> Phiếu khiếu nại này đã quá thời hạn cam kết cam đoan với
                     khách hàng ({selectedTicket.slaLimitHours}h). CSKH vui lòng liên hệ bưu cục/shipper xử lý ngay!
                   </div>
                 </div>
               )}
 
-              {/* Customer & Shipment Info Box */}
+              {/* General Ticket Metadata */}
               <div className="cskh-info-box">
-                <div style={{ fontSize: '13px', fontWeight: 700, color: '#1e293b', marginBottom: '10px' }}>
-                  Thông tin Vận đơn & Khách hàng
-                </div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', fontSize: '12px' }}>
-                  <div>
-                    <span style={{ color: '#64748b' }}>Mã vận đơn:</span>
-                    <div style={{ marginTop: '2px' }}>
-                      <CopyableShipmentCode code={selectedTicket.shipmentCode} />
-                    </div>
-                  </div>
-                  <div>
-                    <span style={{ color: '#64748b' }}>Nguồn tiếp nhận:</span>
-                    <div style={{ marginTop: '2px', fontWeight: 600, color: '#0f172a' }}>
-                      {CSKH_SOURCE_LABELS[selectedTicket.source].label}
-                    </div>
-                  </div>
-                  <div>
-                    <span style={{ color: '#64748b' }}>Khách hàng:</span>
-                    <div style={{ marginTop: '2px', fontWeight: 600, color: '#0f172a' }}>
-                      {selectedTicket.customerName}
-                    </div>
-                  </div>
-                  <div>
-                    <span style={{ color: '#64748b' }}>Số điện thoại:</span>
-                    <div style={{ marginTop: '2px', fontWeight: 600, color: '#0f172a' }}>
-                      <a href={`tel:${selectedTicket.customerPhone}`} style={{ color: '#2563eb' }}>
-                        {selectedTicket.customerPhone}
-                      </a>
-                    </div>
-                  </div>
-                  <div>
-                    <span style={{ color: '#64748b' }}>Bưu cục điều phối:</span>
-                    <div style={{ marginTop: '2px', fontWeight: 600, color: '#0f172a' }}>
-                      {selectedTicket.assignedHubName}
-                    </div>
-                  </div>
-                  <div>
-                    <span style={{ color: '#64748b' }}>Chuyên viên trực:</span>
-                    <div style={{ marginTop: '2px', fontWeight: 600, color: '#0f172a' }}>
-                      {selectedTicket.assignedAgent || 'Đang chờ phân bổ'}
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Issue Description */}
-              <div style={{ background: '#ffffff', borderRadius: '10px', border: '1px solid #e2e8f0', padding: '16px' }}>
-                <div style={{ fontSize: '13px', fontWeight: 700, color: '#0f172a', marginBottom: '6px' }}>
-                  {selectedTicket.title}
-                </div>
-                <div style={{ fontSize: '13px', color: '#334155', lineHeight: '1.6', whiteSpace: 'pre-line' }}>
-                  {selectedTicket.description}
-                </div>
-              </div>
-
-              {/* Claims Escalation Link/Card */}
-              {selectedTicket.claimCode ? (
                 <div
                   style={{
-                    backgroundColor: '#eff6ff',
-                    border: '1px solid #bfdbfe',
-                    borderRadius: '10px',
-                    padding: '14px',
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(2, 1fr)',
+                    gap: '12px',
+                    fontSize: '12px',
                   }}
                 >
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <ShieldAlert size={18} className="text-blue-600" />
-                      <div>
-                        <span style={{ fontSize: '13px', fontWeight: 700, color: '#1e40af' }}>
-                          Hồ sơ Bồi thường Khiếu nại (CLM)
-                        </span>
-                        <div style={{ fontSize: '12px', color: '#3b82f6', fontFamily: 'monospace' }}>
-                          Mã hồ sơ: {selectedTicket.claimCode}
+                  <div>
+                    <span style={{ color: '#64748b', display: 'block', fontSize: '11px' }}>Mã vận đơn liên kết</span>
+                    <div style={{ marginTop: '3px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <CopyableShipmentCode code={selectedTicket.shipmentCode} />
+                      <button
+                        type="button"
+                        className="cskh-btn-icon-action"
+                        style={{ width: '22px', height: '22px' }}
+                        title="Mở tra cứu hành trình vận đơn"
+                        onClick={() => navigate(routePaths.trackingDetail(selectedTicket.shipmentCode))}
+                      >
+                        <ExternalLink size={12} />
+                      </button>
+                    </div>
+                  </div>
+
+                  <div>
+                    <span style={{ color: '#64748b', display: 'block', fontSize: '11px' }}>Kênh gửi khiếu nại</span>
+                    <div style={{ marginTop: '3px', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                      {selectedTicket.source === 'AI_CHATBOT' ? (
+                        <Bot size={14} className="text-indigo-600" />
+                      ) : selectedTicket.source === 'MERCHANT_PORTAL' ? (
+                        <Store size={14} className="text-amber-600" />
+                      ) : selectedTicket.source === 'CUSTOMER_MOBILE' ? (
+                        <Smartphone size={14} className="text-blue-600" />
+                      ) : (
+                        <PhoneCall size={14} className="text-emerald-600" />
+                      )}
+                      <strong style={{ color: '#0f172a' }}>
+                        {CSKH_SOURCE_LABELS[selectedTicket.source].label}
+                      </strong>
+                    </div>
+                  </div>
+
+                  <div>
+                    <span style={{ color: '#64748b', display: 'block', fontSize: '11px' }}>Khách hàng phản ánh</span>
+                    <strong style={{ color: '#0f172a', display: 'block', marginTop: '2px' }}>
+                      {selectedTicket.customerName}
+                    </strong>
+                    <a
+                      href={`tel:${selectedTicket.customerPhone}`}
+                      style={{
+                        color: '#2563eb',
+                        fontSize: '11.5px',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '4px',
+                        marginTop: '2px',
+                        textDecoration: 'none',
+                        fontWeight: 600,
+                      }}
+                      title="Gọi trực tiếp cho khách"
+                    >
+                      <PhoneCall size={11} /> {selectedTicket.customerPhone}
+                    </a>
+                  </div>
+
+                  <div>
+                    <span style={{ color: '#64748b', display: 'block', fontSize: '11px' }}>Bưu cục điều phối</span>
+                    <strong style={{ color: '#0f172a', display: 'block', marginTop: '2px' }}>
+                      {selectedTicket.assignedHubName}
+                    </strong>
+                    <div style={{ color: '#64748b', fontSize: '11px', marginTop: '2px' }}>
+                      Phân loại: <span className="font-semibold">{CSKH_CATEGORY_LABELS[selectedTicket.category]?.label || selectedTicket.category}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Title & Issue Description */}
+              <div>
+                <h3 style={{ fontSize: '13px', fontWeight: 700, color: '#334155', marginBottom: '6px' }}>
+                  Tiêu đề & Nội dung phản ánh
+                </h3>
+                <div
+                  style={{
+                    backgroundColor: '#ffffff',
+                    border: '1px solid #e2e8f0',
+                    borderRadius: '8px',
+                    padding: '12px 14px',
+                  }}
+                >
+                  <div style={{ fontWeight: 700, color: '#0f172a', marginBottom: '6px', fontSize: '13.5px' }}>
+                    {selectedTicket.title}
+                  </div>
+                  <p style={{ fontSize: '12.5px', color: '#475569', margin: 0, lineHeight: 1.5 }}>
+                    {selectedTicket.description}
+                  </p>
+                </div>
+              </div>
+
+              {/* Attachments Section: Images, Videos & Evidence */}
+              <div className="cskh-drawer-section">
+                <div className="cskh-drawer-section-title" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <Paperclip size={15} style={{ color: '#0284c7' }} />
+                    <span>Hình ảnh, Video &amp; Bằng chứng đính kèm</span>
+                  </div>
+                  <span className="cskh-attachments-count-badge">
+                    {selectedTicket.attachments?.length || 0} tệp
+                  </span>
+                </div>
+
+                {(!selectedTicket.attachments || selectedTicket.attachments.length === 0) ? (
+                  <div className="cskh-attachments-empty">
+                    <ImageIcon size={20} style={{ color: '#94a3b8', marginBottom: 4 }} />
+                    <span>Không có hình ảnh hoặc video đính kèm trong phiếu này.</span>
+                  </div>
+                ) : (
+                  <div className="cskh-attachments-grid">
+                    {selectedTicket.attachments.map((att) => (
+                      <div
+                        key={att.id}
+                        className={`cskh-attachment-card cskh-attachment-card--${att.type.toLowerCase()}`}
+                        onClick={() => setPreviewMedia(att)}
+                        title={`Bấm để xem: ${att.fileName} (${formatFileSize(att.fileSizeBytes)})`}
+                        role="button"
+                        tabIndex={0}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            setPreviewMedia(att);
+                          }
+                        }}
+                      >
+                        <div className="cskh-attachment-thumb-wrap">
+                          <span className="cskh-minio-badge" title={`MinIO S3 Bucket: ${att.minioBucket || 'nexus-pod-images'}`}>
+                            MinIO S3
+                          </span>
+                          {att.type === 'IMAGE' && (
+                            <>
+                              <img
+                                src={att.thumbnailUrl || normalizeMinioMediaUrl(att.url)}
+                                alt={att.fileName}
+                                className="cskh-attachment-img"
+                                onError={(e) => {
+                                  if (att.thumbnailUrl && e.currentTarget.src !== att.thumbnailUrl) {
+                                    e.currentTarget.src = att.thumbnailUrl;
+                                  }
+                                }}
+                              />
+                              <div className="cskh-attachment-overlay">
+                                <Eye size={18} />
+                                <span>Phóng to</span>
+                              </div>
+                            </>
+                          )}
+                          {att.type === 'VIDEO' && (
+                            <>
+                              <img
+                                src={att.thumbnailUrl || 'https://images.unsplash.com/photo-1578749556568-bc2c40e68b61?w=300&auto=format&fit=crop&q=80'}
+                                alt={att.fileName}
+                                className="cskh-attachment-img"
+                              />
+                              <div className="cskh-attachment-video-badge">
+                                <Film size={11} />
+                                <span>VIDEO</span>
+                              </div>
+                              <div className="cskh-attachment-play-btn">
+                                <Play size={22} fill="white" />
+                              </div>
+                            </>
+                          )}
+                          {att.type === 'DOCUMENT' && (
+                            <div className="cskh-attachment-doc-placeholder">
+                              <FileText size={32} style={{ color: '#dc2626' }} />
+                              <span style={{ fontSize: 11, fontWeight: 700, color: '#dc2626' }}>TÀI LIỆU</span>
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="cskh-attachment-meta">
+                          <strong className="cskh-attachment-name" title={att.fileName}>
+                            {att.fileName}
+                          </strong>
+                          <div className="cskh-attachment-sub">
+                            <span>{formatFileSize(att.fileSizeBytes)}</span>
+                            {att.uploadedBy && <span> · {att.uploadedBy}</span>}
+                          </div>
                         </div>
                       </div>
-                    </div>
+                    ))}
+                  </div>
+                )}
+              </div>
 
+              {/* Claim escalation banner if linked */}
+              {selectedTicket.linkedClaimCode && (
+                <div
+                  style={{
+                    backgroundColor: '#fef2f2',
+                    border: '1px solid #fecaca',
+                    borderRadius: '8px',
+                    padding: '12px',
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#991b1b', fontWeight: 700 }}>
+                    <ShieldAlert size={18} />
+                    Hồ sơ bồi thường: {selectedTicket.linkedClaimCode}
+                  </div>
+                  <div style={{ fontSize: '12px', color: '#7f1d1d', marginTop: '4px' }}>
+                    Ticket này đã được chuyển tiếp trực tiếp sang Phân hệ Giám định bồi thường Trách nhiệm bưu cục
+                    (Claims Liability Management).
+                  </div>
+                </div>
+              )}
+
+              {/* Escalation to Claims action button if damage and not linked */}
+              {!selectedTicket.linkedClaimCode &&
+                selectedTicket.category === 'DAMAGE_COMPLAINT' &&
+                !isSelectedClosed && (
+                  <div
+                    style={{
+                      border: '1px dashed #f87171',
+                      borderRadius: '8px',
+                      padding: '12px',
+                      backgroundColor: '#fff5f5',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      gap: '10px',
+                    }}
+                  >
+                    <div>
+                      <strong style={{ fontSize: '12px', color: '#991b1b', display: 'block' }}>
+                        Chuyển tiếp sang Ban Giám Định Bồi Thường (CLM)
+                      </strong>
+                      <span style={{ fontSize: '11px', color: '#7f1d1d' }}>
+                        Tự động khởi tạo hồ sơ đền bù liên kết mã vận đơn & mở phiên thẩm định rủi ro.
+                      </span>
+                    </div>
                     <button
                       type="button"
                       className="cskh-btn-secondary"
-                      style={{ fontSize: '11px', padding: '6px 10px', borderColor: '#93c5fd', color: '#1d4ed8' }}
-                      onClick={() => navigate(routePaths.claimsLiabilityManagement)}
+                      style={{
+                        backgroundColor: '#dc2626',
+                        color: '#ffffff',
+                        border: 'none',
+                        flexShrink: 0,
+                      }}
+                      onClick={handleEscalateToClaims}
                     >
-                      Mở hồ sơ CLM
-                      <ExternalLink size={12} />
+                      <ShieldAlert size={14} />
+                      Chuyển sang CLM
                     </button>
                   </div>
-                  <div style={{ fontSize: '11px', color: '#475569', marginTop: '8px' }}>
-                    Hồ sơ này đã được chuyển lên Hội đồng Thẩm định Bồi thường để phân định trách nhiệm bưu cục/tài
-                    xế theo quy định 7-10 ngày làm việc.
-                  </div>
-                </div>
-              ) : selectedTicket.category === 'DAMAGE_COMPLAINT' ? (
+                )}
+
+              {/* Resolution Summary (If resolved / closed) */}
+              {isSelectedClosed && (
                 <div
                   style={{
-                    backgroundColor: '#fffbeb',
-                    border: '1px solid #fde68a',
-                    borderRadius: '10px',
+                    backgroundColor: '#ecfdf5',
+                    border: '1px solid #a7f3d0',
+                    borderRadius: '8px',
                     padding: '14px',
                     display: 'flex',
                     flexDirection: 'column',
-                    gap: '8px',
+                    gap: '6px',
                   }}
                 >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <AlertTriangle size={18} className="text-amber-600" />
-                    <span style={{ fontSize: '13px', fontWeight: 700, color: '#92400e' }}>
-                      Khiếu nại bể vỡ / Hư hỏng hàng hóa
-                    </span>
-                  </div>
-                  <div style={{ fontSize: '12px', color: '#78350f' }}>
-                    Khách hàng phản ánh kiện hàng bị tổn thất. Nếu đã có biên bản đồng kiểm xác nhận bể vỡ, hãy chuyển
-                    Ticket này sang quy trình Thẩm định bồi thường chính thức (Claims Liability).
-                  </div>
-                  <div>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#065f46', fontWeight: 700, fontSize: '13px' }}>
+                      <CheckCircle2 size={16} />
+                      Phiếu đã được xử lý & Đóng hoàn tất
+                    </div>
                     <button
                       type="button"
-                      className="cskh-btn-primary"
-                      style={{ backgroundColor: '#d97706', fontSize: '12px', padding: '6px 12px' }}
-                      onClick={handleEscalateToClaims}
+                      onClick={handleReopenTicket}
+                      className="cskh-btn-secondary"
+                      style={{ fontSize: '11px', padding: '3px 8px', height: '26px' }}
+                      title="Mở lại phiếu trong trường hợp khách có khiếu nại bổ sung"
                     >
-                      🚀 Khởi tạo Hồ sơ Bồi thường (CLM)
+                      <RotateCcw size={12} />
+                      Mở lại phiếu
                     </button>
                   </div>
+                  <div style={{ fontSize: '12px', color: '#047857', marginTop: '2px' }}>
+                    <strong>Kết quả giải quyết:</strong> {selectedTicket.resolutionSummary || 'Đã giải quyết yêu cầu hỗ trợ và thông báo tới khách hàng thành công.'}
+                  </div>
+                  <div style={{ fontSize: '11px', color: '#059669' }}>
+                    Thời gian đóng: {formatDateTime(selectedTicket.resolvedAt || selectedTicket.closedAt)}
+                  </div>
                 </div>
-              ) : null}
+              )}
 
-              {/* Internal Notes & History */}
+              {/* Notes Timeline */}
               <div>
-                <div style={{ fontSize: '13px', fontWeight: 700, color: '#1e293b', marginBottom: '10px' }}>
-                  Nhật ký Xử lý & Ghi chú Phối hợp ({selectedTicket.notes.length})
-                </div>
+                <h3
+                  style={{
+                    fontSize: '13px',
+                    fontWeight: 700,
+                    color: '#334155',
+                    marginBottom: '10px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                  }}
+                >
+                  <MessageSquare size={15} />
+                  Lịch sử xử lý & Ghi chú nội bộ ({selectedTicket.notes?.length || 0})
+                </h3>
 
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', maxHeight: '220px', overflowY: 'auto' }}>
-                  {selectedTicket.notes.map((n) => (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  {(!selectedTicket.notes || selectedTicket.notes.length === 0) && (
+                    <div style={{ fontSize: '12px', color: '#94a3b8', fontStyle: 'italic' }}>
+                      Chưa có ghi chú nào được ghi lại cho ticket này.
+                    </div>
+                  )}
+
+                  {selectedTicket.notes?.map((n) => (
                     <div
                       key={n.id}
                       style={{
-                        backgroundColor: '#f8fafc',
+                        backgroundColor: '#ffffff',
                         border: '1px solid #e2e8f0',
                         borderRadius: '8px',
                         padding: '10px 12px',
@@ -906,308 +1084,251 @@ export function CustomerServiceTicketsPage(): React.JSX.Element {
                           marginBottom: '4px',
                         }}
                       >
-                        <span style={{ fontSize: '12px', fontWeight: 700, color: '#0f172a' }}>
-                          {n.author} <span style={{ fontSize: '11px', fontWeight: 400, color: '#64748b' }}>({n.authorRole})</span>
-                        </span>
-                        <span style={{ fontSize: '11px', color: '#94a3b8' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <strong style={{ fontSize: '12px', color: '#0f172a' }}>{n.author}</strong>
+                          <span
+                            style={{
+                              fontSize: '10px',
+                              backgroundColor: '#f1f5f9',
+                              color: '#64748b',
+                              padding: '1px 5px',
+                              borderRadius: '4px',
+                              fontWeight: 600,
+                            }}
+                          >
+                            {n.authorRole}
+                          </span>
+                        </div>
+                        <span style={{ fontSize: '10.5px', color: '#94a3b8' }}>
                           {formatDateTime(n.createdAt)}
                         </span>
                       </div>
-                      <div style={{ fontSize: '12px', color: '#334155', lineHeight: '1.4' }}>
+                      <p style={{ fontSize: '12px', color: '#334155', margin: 0, lineHeight: 1.4 }}>
                         {n.content}
-                      </div>
+                      </p>
                     </div>
                   ))}
                 </div>
 
                 {/* Add Note Form */}
-                <form onSubmit={handleAddNote} style={{ marginTop: '12px', display: 'flex', gap: '8px' }}>
-                  <input
-                    type="text"
-                    className="cskh-search-input"
-                    style={{ paddingLeft: '12px' }}
-                    placeholder="Nhập ghi chú phản hồi của bưu tá/điều phối..."
-                    value={newNoteText}
-                    onChange={(e) => setNewNoteText(e.target.value)}
-                  />
-                  <button
-                    type="submit"
-                    className="cskh-btn-primary"
-                    disabled={isSubmittingNote || !newNoteText.trim()}
-                  >
-                    <Send size={14} />
-                    Gửi
-                  </button>
+                <form onSubmit={handleAddNote} style={{ marginTop: '10px' }}>
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    <input
+                      type="text"
+                      className="cskh-search-input"
+                      placeholder="Ghi chú nội bộ cho bưu tá / nhân viên kho..."
+                      value={newNoteText}
+                      onChange={(e) => setNewNoteText(e.target.value)}
+                    />
+                    <button
+                      type="submit"
+                      className="cskh-btn-secondary"
+                      disabled={isSubmittingNote || !newNoteText.trim()}
+                      title="Gửi ghi chú nội bộ"
+                    >
+                      <Send size={13} />
+                      Gửi
+                    </button>
+                  </div>
                 </form>
               </div>
-            </div>
 
-            {/* Drawer Footer Actions */}
-            <div className="cskh-drawer-footer">
-              {selectedTicket.status !== 'IN_PROGRESS' && selectedTicket.status !== 'CLOSED' && selectedTicket.status !== 'RESOLVED' && (
-                <button
-                  type="button"
-                  className="cskh-btn-secondary"
-                  onClick={() => handleStatusChange('IN_PROGRESS')}
-                >
-                  Nhận xử lý (In-Progress)
-                </button>
-              )}
-
-              {selectedTicket.status !== 'WAITING_CUSTOMER' && selectedTicket.status !== 'CLOSED' && selectedTicket.status !== 'RESOLVED' && (
-                <button
-                  type="button"
-                  className="cskh-btn-secondary"
-                  onClick={() => handleStatusChange('WAITING_CUSTOMER')}
-                >
-                  Chờ khách phản hồi
-                </button>
-              )}
-
-              {selectedTicket.status !== 'RESOLVED' && selectedTicket.status !== 'CLOSED' && (
-                <button
-                  type="button"
-                  className="cskh-btn-primary"
-                  style={{ backgroundColor: '#059669' }}
-                  onClick={() => handleStatusChange('RESOLVED')}
-                >
-                  <CheckCircle2 size={14} />
-                  Giải quyết xong
-                </button>
-              )}
-
-              {selectedTicket.status !== 'CLOSED' && (
-                <button
-                  type="button"
-                  className="cskh-btn-secondary"
-                  style={{ color: '#64748b' }}
-                  onClick={() => {
-                    if (window.confirm('Bạn có chắc chắn muốn đóng hoàn tất Ticket khiếu nại này?')) {
-                      handleStatusChange('CLOSED');
-                    }
+              {/* Streamlined Single-Action Resolution & Closing */}
+              {!isSelectedClosed && (
+                <div
+                  style={{
+                    borderTop: '1px solid #e2e8f0',
+                    paddingTop: '14px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '10px',
                   }}
                 >
-                  Đóng Ticket
-                </button>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <h3 style={{ fontSize: '13px', fontWeight: 700, color: '#0f172a', margin: 0 }}>
+                      Phương án xử lý & Đóng phiếu
+                    </h3>
+                    <span style={{ fontSize: '11px', color: '#64748b' }}>
+                      (Xử lý xong sẽ tự động đóng phiếu hoàn tất)
+                    </span>
+                  </div>
+
+                  {/* Quick Preset Chips */}
+                  <div>
+                    <label style={{ fontSize: '11px', color: '#64748b', display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '6px' }}>
+                      <Zap size={11} className="text-amber-500" /> Chọn nhanh phương án xử lý phổ biến:
+                    </label>
+                    <div className="cskh-quick-chips-wrap">
+                      {QUICK_RESOLUTIONS.map((preset, idx) => (
+                        <button
+                          key={idx}
+                          type="button"
+                          className="cskh-quick-chip"
+                          onClick={() => setResolutionInput(preset)}
+                          title="Bấm để điền nhanh nội dung này"
+                        >
+                          {preset}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <label style={{ fontSize: '11.5px', color: '#475569', display: 'block', marginBottom: '4px', fontWeight: 600 }}>
+                      Nội dung kết quả xử lý (*):
+                    </label>
+                    <textarea
+                      rows={2}
+                      className="cskh-search-input"
+                      style={{
+                        padding: '8px 10px',
+                        height: 'auto',
+                        minHeight: '60px',
+                        resize: 'vertical',
+                        lineHeight: 1.4,
+                      }}
+                      placeholder="VD: Đã liên hệ bưu tá giao bổ sung lúc 11h30, người nhận đã nhận hàng thành công..."
+                      value={resolutionInput}
+                      onChange={(e) => setResolutionInput(e.target.value)}
+                    />
+                  </div>
+
+                  {/* Action Buttons: Unified Resolution Button */}
+                  <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center', marginTop: '4px' }}>
+                    <button
+                      type="button"
+                      className="cskh-btn-primary"
+                      style={{
+                        backgroundColor: '#059669',
+                        padding: '8px 16px',
+                        fontSize: '13px',
+                        fontWeight: 700,
+                        boxShadow: '0 2px 4px rgba(5, 150, 105, 0.2)',
+                      }}
+                      disabled={isResolving}
+                      onClick={() => handleResolveAndClose()}
+                    >
+                      <CheckCircle2 size={16} />
+                      {isResolving ? 'Đang đóng phiếu...' : 'Xác nhận Xử lý & Đóng phiếu'}
+                    </button>
+
+                    <button
+                      type="button"
+                      className="cskh-btn-secondary"
+                      onClick={handleWaitCustomer}
+                      title="Chuyển trạng thái sang Chờ khách nếu khách chưa phản hồi hoặc cần gửi thêm ảnh"
+                    >
+                      <Clock size={13} />
+                      Chờ khách phản hồi
+                    </button>
+                  </div>
+                </div>
               )}
+            </div>
+
+            {/* Drawer Footer */}
+            <div className="cskh-drawer-footer">
+              <button
+                type="button"
+                className="cskh-btn-secondary"
+                onClick={() => setSelectedTicket(null)}
+              >
+                Đóng cửa sổ
+              </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Create Ticket Modal */}
-      {isCreateModalOpen && (
-        <div className="cskh-drawer-backdrop" onClick={() => setIsCreateModalOpen(false)}>
-          <div
-            style={{
-              backgroundColor: '#ffffff',
-              borderRadius: '16px',
-              maxWidth: '620px',
-              width: '90%',
-              margin: 'auto',
-              boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)',
-              overflow: 'hidden',
-              display: 'flex',
-              flexDirection: 'column',
-              maxHeight: '90vh',
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="cskh-drawer-header">
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <Headphones size={20} className="text-blue-600" />
-                <span style={{ fontSize: '16px', fontWeight: 800, color: '#0f172a' }}>
-                  Tiếp nhận Yêu cầu / Khiếu nại Khách hàng mới
-                </span>
+      {/* Lightbox / Media Preview Modal */}
+      {previewMedia && (
+        <div className="cskh-media-modal-backdrop" onClick={() => setPreviewMedia(null)}>
+          <div className="cskh-media-modal-card" onClick={(e) => e.stopPropagation()}>
+            <div className="cskh-media-modal-header">
+              <div className="cskh-media-modal-info">
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <span className={`cskh-media-type-tag cskh-media-type-tag--${previewMedia.type.toLowerCase()}`}>
+                    {previewMedia.type === 'IMAGE' ? 'HÌNH ẢNH' : previewMedia.type === 'VIDEO' ? 'VIDEO CLIP' : 'TÀI LIỆU'}
+                  </span>
+                  <span className="cskh-media-minio-tag" title="MinIO S3 Object Storage">
+                    MinIO: {previewMedia.minioBucket || 'nexus-pod-images'}
+                  </span>
+                </div>
+                <strong title={previewMedia.fileName}>{previewMedia.fileName}</strong>
+                <small>
+                  {formatFileSize(previewMedia.fileSizeBytes)}
+                  {previewMedia.uploadedBy ? ` · Nguồn: ${previewMedia.uploadedBy}` : ''}
+                  {previewMedia.uploadedAt ? ` · ${formatDateTime(previewMedia.uploadedAt)}` : ''}
+                  {previewMedia.minioKey ? ` · Key: ${previewMedia.minioKey}` : ''}
+                </small>
               </div>
-              <button
-                type="button"
-                className="cskh-btn-secondary"
-                style={{ padding: '6px', borderRadius: '50%' }}
-                onClick={() => setIsCreateModalOpen(false)}
-              >
-                <X size={16} />
-              </button>
-            </div>
-
-            <form onSubmit={handleCreateTicket} style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-              <div style={{ padding: '20px 24px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                  <div>
-                    <label style={{ fontSize: '12px', fontWeight: 600, color: '#475569', display: 'block', marginBottom: '4px' }}>
-                      Mã vận đơn (*)
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      placeholder="VD: NX-88992211"
-                      className="cskh-search-input"
-                      style={{ paddingLeft: '12px' }}
-                      value={newTicketForm.shipmentCode}
-                      onChange={(e) => setNewTicketForm({ ...newTicketForm, shipmentCode: e.target.value.toUpperCase() })}
-                    />
-                  </div>
-
-                  <div>
-                    <label style={{ fontSize: '12px', fontWeight: 600, color: '#475569', display: 'block', marginBottom: '4px' }}>
-                      Nguồn tiếp nhận
-                    </label>
-                    <select
-                      className="cskh-select"
-                      style={{ width: '100%', height: '38px' }}
-                      value={newTicketForm.source}
-                      onChange={(e) => setNewTicketForm({ ...newTicketForm, source: e.target.value as CskhTicketSource })}
-                    >
-                      <option value="HOTLINE_1900">Tổng đài Hotline 1900</option>
-                      <option value="AI_CHATBOT">AI Chatbot Handover</option>
-                      <option value="MERCHANT_PORTAL">Cổng Merchant Shop</option>
-                      <option value="CUSTOMER_MOBILE">Ứng dụng Khách hàng</option>
-                    </select>
-                  </div>
-                </div>
-
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                  <div>
-                    <label style={{ fontSize: '12px', fontWeight: 600, color: '#475569', display: 'block', marginBottom: '4px' }}>
-                      Họ tên người liên hệ (*)
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      placeholder="VD: Nguyễn Văn A"
-                      className="cskh-search-input"
-                      style={{ paddingLeft: '12px' }}
-                      value={newTicketForm.customerName}
-                      onChange={(e) => setNewTicketForm({ ...newTicketForm, customerName: e.target.value })}
-                    />
-                  </div>
-
-                  <div>
-                    <label style={{ fontSize: '12px', fontWeight: 600, color: '#475569', display: 'block', marginBottom: '4px' }}>
-                      Số điện thoại (*)
-                    </label>
-                    <input
-                      type="tel"
-                      required
-                      placeholder="VD: 0912 345 678"
-                      className="cskh-search-input"
-                      style={{ paddingLeft: '12px' }}
-                      value={newTicketForm.customerPhone}
-                      onChange={(e) => setNewTicketForm({ ...newTicketForm, customerPhone: e.target.value })}
-                    />
-                  </div>
-                </div>
-
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                  <div>
-                    <label style={{ fontSize: '12px', fontWeight: 600, color: '#475569', display: 'block', marginBottom: '4px' }}>
-                      Phân loại khiếu nại
-                    </label>
-                    <select
-                      className="cskh-select"
-                      style={{ width: '100%', height: '38px' }}
-                      value={newTicketForm.category}
-                      onChange={(e) => setNewTicketForm({ ...newTicketForm, category: e.target.value as CskhTicketCategory })}
-                    >
-                      <option value="DELIVERY_EXPEDITE">Giục giao khẩn cấp trong ca</option>
-                      <option value="ADDRESS_CHANGE">Yêu cầu đổi địa chỉ / SĐT người nhận</option>
-                      <option value="DAMAGE_COMPLAINT">Khiếu nại bể vỡ / Hư hỏng hàng hóa</option>
-                      <option value="COURIER_ATTITUDE">Phản ánh thái độ bưu tá</option>
-                      <option value="AI_HANDOVER">Tiếp nhận từ Chatbot AI</option>
-                      <option value="COD_DISCREPANCY">Thắc mắc / Khiếu nại tiền COD</option>
-                      <option value="GENERAL_INQUIRY">Tư vấn chính sách / Khác</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label style={{ fontSize: '12px', fontWeight: 600, color: '#475569', display: 'block', marginBottom: '4px' }}>
-                      Mức độ ưu tiên & Hạn SLA
-                    </label>
-                    <select
-                      className="cskh-select"
-                      style={{ width: '100%', height: '38px' }}
-                      value={newTicketForm.priority}
-                      onChange={(e) => {
-                        const pri = e.target.value as CskhTicketPriority;
-                        const sla = pri === 'P1_CRITICAL' ? 4 : pri === 'P2_HIGH' ? 12 : 24;
-                        setNewTicketForm({ ...newTicketForm, priority: pri, slaLimitHours: sla });
-                      }}
-                    >
-                      <option value="P1_CRITICAL">P1 - Khẩn cấp (SLA &lt; 4 giờ)</option>
-                      <option value="P2_HIGH">P2 - Cao (SLA &lt; 12 giờ)</option>
-                      <option value="P3_NORMAL">P3 - Tiêu chuẩn (SLA &lt; 24 giờ)</option>
-                    </select>
-                  </div>
-                </div>
-
-                <div>
-                  <label style={{ fontSize: '12px', fontWeight: 600, color: '#475569', display: 'block', marginBottom: '4px' }}>
-                    Bưu cục phụ trách điều phối
-                  </label>
-                  <select
-                    className="cskh-select"
-                    style={{ width: '100%', height: '38px' }}
-                    value={newTicketForm.assignedHubCode}
-                    onChange={(e) => {
-                      const code = e.target.value;
-                      const name =
-                        code === 'HUB_TAN_BINH'
-                          ? 'Hub Tân Bình (TP.HCM)'
-                          : code === 'HUB_LONG_BIEN'
-                          ? 'Hub Long Biên (Hà Nội)'
-                          : 'Hub Hải Châu (Đà Nẵng)';
-                      setNewTicketForm({ ...newTicketForm, assignedHubCode: code, assignedHubName: name });
-                    }}
-                  >
-                    <option value="HUB_TAN_BINH">Hub Tân Bình (TP.HCM)</option>
-                    <option value="HUB_LONG_BIEN">Hub Long Biên (Hà Nội)</option>
-                    <option value="HUB_HAI_CHAU">Hub Hải Châu (Đà Nẵng)</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label style={{ fontSize: '12px', fontWeight: 600, color: '#475569', display: 'block', marginBottom: '4px' }}>
-                    Tiêu đề Ticket (*)
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="VD: Khách cần giao trước 11h sáng để kịp bay"
-                    className="cskh-search-input"
-                    style={{ paddingLeft: '12px' }}
-                    value={newTicketForm.title}
-                    onChange={(e) => setNewTicketForm({ ...newTicketForm, title: e.target.value })}
-                  />
-                </div>
-
-                <div>
-                  <label style={{ fontSize: '12px', fontWeight: 600, color: '#475569', display: 'block', marginBottom: '4px' }}>
-                    Mô tả chi tiết nội dung sự cố
-                  </label>
-                  <textarea
-                    rows={3}
-                    className="cskh-search-input"
-                    style={{ paddingLeft: '12px', minHeight: '70px', resize: 'vertical' }}
-                    placeholder="Ghi rõ chi tiết sự việc, yêu cầu của khách để bưu cục phối hợp..."
-                    value={newTicketForm.description}
-                    onChange={(e) => setNewTicketForm({ ...newTicketForm, description: e.target.value })}
-                  />
-                </div>
-              </div>
-
-              <div className="cskh-drawer-footer">
+              <div className="cskh-media-modal-actions">
+                <a
+                  href={normalizeMinioMediaUrl(previewMedia.url)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="cskh-media-btn-download"
+                  title="Mở tab mới hoặc tải về từ MinIO"
+                  download={previewMedia.fileName}
+                >
+                  <Download size={15} />
+                  <span>Tải về (MinIO)</span>
+                </a>
                 <button
                   type="button"
-                  className="cskh-btn-secondary"
-                  onClick={() => setIsCreateModalOpen(false)}
+                  className="cskh-media-btn-close"
+                  onClick={() => setPreviewMedia(null)}
+                  title="Đóng cửa sổ xem"
                 >
-                  Hủy bỏ
-                </button>
-                <button type="submit" className="cskh-btn-primary">
-                  Lưu & Tiếp nhận Ticket
+                  <X size={18} />
                 </button>
               </div>
-            </form>
+            </div>
+
+            <div className="cskh-media-modal-body">
+              {previewMedia.type === 'IMAGE' && (
+                <img
+                  src={previewMedia.thumbnailUrl || normalizeMinioMediaUrl(previewMedia.url)}
+                  alt={previewMedia.fileName}
+                  className="cskh-media-zoom-img"
+                  onError={(e) => {
+                    if (previewMedia.thumbnailUrl && e.currentTarget.src !== previewMedia.thumbnailUrl) {
+                      e.currentTarget.src = previewMedia.thumbnailUrl;
+                    }
+                  }}
+                />
+              )}
+              {previewMedia.type === 'VIDEO' && (
+                <div className="cskh-media-video-container">
+                  <video
+                    src={normalizeMinioMediaUrl(previewMedia.url)}
+                    controls
+                    autoPlay
+                    playsInline
+                    className="cskh-media-video-player"
+                  >
+                    <source src="https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4" type="video/mp4" />
+                    Trình duyệt của bạn không hỗ trợ thẻ video.
+                  </video>
+                </div>
+              )}
+              {previewMedia.type === 'DOCUMENT' && (
+                <div className="cskh-media-doc-container">
+                  <FileText size={48} style={{ color: '#0284c7', marginBottom: 12 }} />
+                  <p>Tài liệu: <strong>{previewMedia.fileName}</strong></p>
+                  <a
+                    href={normalizeMinioMediaUrl(previewMedia.url)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="cskh-btn-primary"
+                    style={{ marginTop: 12, display: 'inline-flex', alignItems: 'center', gap: 6 }}
+                  >
+                    <ExternalLink size={14} />
+                    Mở tài liệu trong tab mới (MinIO)
+                  </a>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}

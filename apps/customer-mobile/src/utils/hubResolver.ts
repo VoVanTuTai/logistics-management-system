@@ -101,13 +101,13 @@ const HUB_DATABASE_DICT: Record<string, HubDatabaseRecord> = {
   },
   '07912W001': {
     code: '07912W001',
-    name: 'Bưu cục Phường Thảo Điền (TP. Thủ Đức)',
-    fullAddress: 'Bưu cục Phường Thảo Điền, TP. Thủ Đức, TP. Hồ Chí Minh',
+    name: 'Bưu cục Phường An Phú Đông (Quận 12)',
+    fullAddress: 'Bưu cục Phường An Phú Đông, 1013A Hà Huy Giáp, Phường An Phú Đông, Quận 12, TP. Hồ Chí Minh',
   },
   '07913W001': {
     code: '07913W001',
-    name: 'Bưu cục Phường Tân Phong (Quận 7)',
-    fullAddress: 'Bưu cục Phường Tân Phong, Quận 7, TP. Hồ Chí Minh',
+    name: 'Bưu cục Phường 13 (Tân Bình)',
+    fullAddress: 'Bưu cục Phường 13, 789 Cộng Hòa, Phường 13, Quận Tân Bình, TP. Hồ Chí Minh',
   },
 
   // Bình Dương Branch Hubs (Dĩ An)

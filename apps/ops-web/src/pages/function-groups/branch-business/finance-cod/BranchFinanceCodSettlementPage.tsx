@@ -1,4 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { DollarSign, FileSpreadsheet } from 'lucide-react';
+import { BranchFinanceReconcilePage } from '../finance-reconcile/BranchFinanceReconcilePage';
 
 import { useHubsQuery } from '../../../../features/masterdata/masterdata.api';
 import {
@@ -11,6 +13,7 @@ import type {
   CodDailySettlementRecordDto,
   CodSettlementBatchDto,
 } from '../../../../features/payments/payment.types';
+import { useShipperUsersQuery } from '../../../../features/auth/auth.api';
 import { useShipmentsQuery } from '../../../../features/shipments/shipments.api';
 import type { ShipmentListItemDto } from '../../../../features/shipments/shipments.types';
 import { useTasksQuery } from '../../../../features/tasks/tasks.api';
@@ -22,6 +25,7 @@ import {
   deriveHubScopeTokens,
   isShipmentInScope,
 } from '../../../../utils/locationScope';
+import { NexusInfoCircleIcon } from '../finance-reconcile/NexusFinanceIcons';
 import './BranchFinanceCodSettlementPage.css';
 
 interface CodSettlementFilters {
@@ -224,7 +228,28 @@ function getStatusTone(status: CodCollectionStatus | CodSettlementBatchDto['stat
   }
 }
 
+
 export function BranchFinanceCodSettlementPage(): React.JSX.Element {
+  const [currentTab, setCurrentTab] = useState<string>(() => {
+    try {
+      const p = new URLSearchParams(window.location.search);
+      return p.get('tab') === 'reconcile' ? 'reconcile' : 'cod';
+    } catch {
+      return 'cod';
+    }
+  });
+
+  const handleSwitchTab = (tab: string) => {
+    setCurrentTab(tab);
+    try {
+      const url = new URL(window.location.href);
+      url.searchParams.set('tab', tab);
+      window.history.replaceState(null, '', url.toString());
+    } catch {
+      // ignore
+    }
+  };
+
   const session = useAuthStore((state) => state.session);
   const accessToken = session?.tokens.accessToken ?? null;
   const assignedHubCodes = useMemo(
@@ -282,6 +307,18 @@ export function BranchFinanceCodSettlementPage(): React.JSX.Element {
     { refetchInterval: false },
   );
   const deliveryTasksQuery = useTasksQuery(accessToken, { taskType: 'DELIVERY' }, { refetchInterval: false });
+  const activeHubCodeForShippers =
+    draftFilters.hubCode && draftFilters.hubCode !== 'all'
+      ? draftFilters.hubCode
+      : appliedFilters.hubCode && appliedFilters.hubCode !== 'all'
+        ? appliedFilters.hubCode
+        : defaultHubCode && defaultHubCode !== 'all'
+          ? defaultHubCode
+          : undefined;
+
+  const shipperUsersQuery = useShipperUsersQuery(accessToken, {
+    hubCode: activeHubCodeForShippers,
+  });
   const hubsQuery = useHubsQuery(accessToken, {});
   const createSettlementMutation = useCreateCodSettlementMutation(accessToken);
   const confirmSettlementMutation = useConfirmCodSettlementMutation(accessToken);
@@ -379,11 +416,17 @@ export function BranchFinanceCodSettlementPage(): React.JSX.Element {
               ? UNKNOWN_HUB
               : appliedFilters.hubCode.trim().toUpperCase());
 
+        const courierId = record.courierId ?? task?.assignedCourierId ?? UNKNOWN_COURIER;
+
+        if (appliedFilters.courierId !== 'all' && courierId !== appliedFilters.courierId) {
+          return null;
+        }
+
         return {
           ...record,
           paymentMethod: record.paymentMethod ?? 'COD',
           shipment,
-          courierId: record.courierId ?? task?.assignedCourierId ?? UNKNOWN_COURIER,
+          courierId,
           hubCode: resolvedHubCode,
           receiverName: shipment?.receiverName ?? 'Chưa khớp vận đơn',
           receiverPhone: shipment?.receiverPhone ?? '-',
@@ -392,6 +435,7 @@ export function BranchFinanceCodSettlementPage(): React.JSX.Element {
       })
       .filter((record): record is EnrichedCodSettlementRecord => Boolean(record));
   }, [
+    appliedFilters.courierId,
     appliedFilters.hubCode,
     hubScopeTokens,
     selectedHubCodes,
@@ -465,22 +509,53 @@ export function BranchFinanceCodSettlementPage(): React.JSX.Element {
     [enrichedRecords],
   );
 
-  const courierOptions = useMemo(
-    () =>
-      Array.from(
-        new Set(
-          enrichedRecords
-            .map((record) => record.courierId)
-            .filter((courierId) => courierId !== UNKNOWN_COURIER),
-        ),
-      ).sort((a, b) => a.localeCompare(b)),
-    [enrichedRecords],
-  );
+  const activeHubCodes = useMemo(() => {
+    if (activeHubCodeForShippers) {
+      return [activeHubCodeForShippers.trim().toUpperCase()];
+    }
+    return canViewAllHubAreas ? [] : assignedHubCodes;
+  }, [activeHubCodeForShippers, canViewAllHubAreas, assignedHubCodes]);
+
+  const hubShipperUsers = useMemo(() => {
+    const shippers = shipperUsersQuery.data ?? [];
+    if (activeHubCodes.length === 0) {
+      return shippers;
+    }
+    return shippers.filter((user) => {
+      const userHubs = (user.hubCodes ?? []).map((h) => h.trim().toUpperCase());
+      return userHubs.some((h) => activeHubCodes.includes(h));
+    });
+  }, [shipperUsersQuery.data, activeHubCodes]);
+
+  const courierOptions = useMemo(() => {
+    const set = new Set<string>();
+
+    for (const user of hubShipperUsers) {
+      if (user.username && user.username !== UNKNOWN_COURIER) {
+        set.add(user.username);
+      }
+    }
+
+    for (const record of enrichedRecords) {
+      if (record.courierId && record.courierId !== UNKNOWN_COURIER) {
+        if (activeHubCodes.length === 0 || activeHubCodes.includes(record.hubCode.trim().toUpperCase())) {
+          set.add(record.courierId);
+        }
+      }
+    }
+
+    return Array.from(set).sort((a, b) => a.localeCompare(b));
+  }, [hubShipperUsers, enrichedRecords, activeHubCodes]);
 
   const courierSummaries = useMemo<CourierCodSummary[]>(() => {
     const summaryByCourier = new Map<string, CourierCodSummary>();
 
+    // 1. Process all cash records (couriers with active COD collections/batches at this hub)
     for (const record of cashRecords) {
+      if (selectedHubCodes.length > 0 && !selectedHubCodes.includes(record.hubCode.trim().toUpperCase())) {
+        continue;
+      }
+
       const key = buildSummaryKey(record.courierId, record.hubCode);
       const latestBatch = latestBatchByKey.get(key) ?? null;
       const summary =
@@ -535,10 +610,74 @@ export function BranchFinanceCodSettlementPage(): React.JSX.Element {
       summaryByCourier.set(key, summary);
     }
 
-    return Array.from(summaryByCourier.values()).sort(
-      (a, b) => b.pendingRemitTotal - a.pendingRemitTotal || b.codTotal - a.codTotal,
-    );
-  }, [batchedShipmentCodes, cashRecords, latestBatchByKey]);
+    // 2. Also ensure all registered couriers in THIS hub are displayed (even with 0đ COD to remit)
+    const hubRegisteredCouriers = new Set<string>();
+
+    for (const user of hubShipperUsers) {
+      if (user.username && user.username !== UNKNOWN_COURIER) {
+        hubRegisteredCouriers.add(user.username);
+      }
+    }
+
+    const defaultHubForCourier =
+      appliedFilters.hubCode && appliedFilters.hubCode !== 'all'
+        ? appliedFilters.hubCode.trim().toUpperCase()
+        : selectedHubCodes[0] ?? defaultHubCode ?? UNKNOWN_HUB;
+
+    for (const courierId of hubRegisteredCouriers) {
+      const key = buildSummaryKey(courierId, defaultHubForCourier);
+      if (!summaryByCourier.has(key)) {
+        const latestBatch = latestBatchByKey.get(key) ?? null;
+        summaryByCourier.set(key, {
+          key,
+          courierId,
+          hubCode: defaultHubForCourier,
+          codOrders: 0,
+          collectedOrders: 0,
+          remittedOrders: 0,
+          pendingOrders: 0,
+          codTotal: 0,
+          collectedTotal: 0,
+          remittedTotal: 0,
+          pendingRemitTotal: 0,
+          latestCollectedAt: null,
+          records: [],
+          creatableRecords: [],
+          waitingBatch: latestBatch?.status === 'WAITING_PAYMENT' ? latestBatch : null,
+          latestBatch,
+        });
+      }
+    }
+
+    return Array.from(summaryByCourier.values())
+      .filter((summary) => {
+        if (appliedFilters.courierId !== 'all' && summary.courierId !== appliedFilters.courierId) {
+          return false;
+        }
+
+        // Strict hub isolation: If a specific hub is selected or assigned, only show couriers from this hub!
+        if (selectedHubCodes.length > 0 && !selectedHubCodes.includes(summary.hubCode.trim().toUpperCase())) {
+          return false;
+        }
+
+        return true;
+      })
+      .sort(
+        (a, b) =>
+          b.pendingRemitTotal - a.pendingRemitTotal ||
+          b.codTotal - a.codTotal ||
+          a.courierId.localeCompare(b.courierId),
+      );
+  }, [
+    appliedFilters.courierId,
+    appliedFilters.hubCode,
+    batchedShipmentCodes,
+    cashRecords,
+    defaultHubCode,
+    hubShipperUsers,
+    latestBatchByKey,
+    selectedHubCodes,
+  ]);
 
 
 
@@ -711,7 +850,31 @@ export function BranchFinanceCodSettlementPage(): React.JSX.Element {
 
   return (
     <section className="ops-branch-cod">
-      <header className="ops-branch-cod__header">
+      {/* Unified Tab Navigation Bar */}
+      <div className="ops-unified-sub-tabs" role="tablist">
+        <button
+          type="button"
+          className={`ops-unified-sub-tab-btn ${currentTab === 'cod' ? 'ops-unified-sub-tab-btn--active' : ''}`}
+          onClick={() => handleSwitchTab('cod')}
+        >
+          <DollarSign size={15} />
+          <span>Quyết toán Thu hộ COD</span>
+        </button>
+        <button
+          type="button"
+          className={`ops-unified-sub-tab-btn ${currentTab === 'reconcile' ? 'ops-unified-sub-tab-btn--active' : ''}`}
+          onClick={() => handleSwitchTab('reconcile')}
+        >
+          <FileSpreadsheet size={15} />
+          <span>Đối soát Công nợ Bưu cục</span>
+        </button>
+      </div>
+
+      {currentTab === 'reconcile' ? (
+        <BranchFinanceReconcilePage />
+      ) : (
+        <>
+          <header className="ops-branch-cod__header">
         <div>
           <small>BRANCH_FINANCE_COD_SETTLEMENT</small>
           <h2>Quyết toán thu hộ</h2>
@@ -719,15 +882,39 @@ export function BranchFinanceCodSettlementPage(): React.JSX.Element {
         </div>
         <div className="ops-branch-cod__summary" aria-label="Tổng quan thu hộ">
           <article>
-            <span>Tổng tiền COD</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+              <span>Tổng tiền COD</span>
+              <span
+                title="Tổng tiền hàng do bưu tá thu hộ từ người mua cho các đơn giao thành công. Bưu cục chỉ giữ hộ và nộp về công ty để hoàn trả cho Shop."
+                style={{ display: 'inline-flex', cursor: 'help' }}
+              >
+                <NexusInfoCircleIcon />
+              </span>
+            </div>
             <strong>{formatCurrency(codTotal)}</strong>
           </article>
           <article>
-            <span>Đã nộp công ty</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+              <span>Đã nộp công ty</span>
+              <span
+                title="Khoản tiền COD đã được bưu tá/bưu cục nộp thành công vào tài khoản công ty qua chuyển khoản SePay hoặc xác nhận thủ công."
+                style={{ display: 'inline-flex', cursor: 'help' }}
+              >
+                <NexusInfoCircleIcon />
+              </span>
+            </div>
             <strong style={{ color: '#2563EB' }}>{formatCurrency(companyReceivedTotal)}</strong>
           </article>
           <article>
-            <span>Chưa nộp công ty</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+              <span>Chưa nộp công ty</span>
+              <span
+                title="Khoản tiền mặt COD bưu tá đang giữ hoặc lệnh chuyển khoản đang chờ ngân hàng xác nhận, cần thu hồi và nộp dứt điểm trong ca."
+                style={{ display: 'inline-flex', cursor: 'help' }}
+              >
+                <NexusInfoCircleIcon />
+              </span>
+            </div>
             <strong style={{ color: '#D97706' }}>{formatCurrency(pendingCashRemitTotal + waitingBankConfirmTotal)}</strong>
           </article>
         </div>
@@ -866,7 +1053,15 @@ export function BranchFinanceCodSettlementPage(): React.JSX.Element {
                     <td className="ops-branch-cod__money">{formatCurrency(summary.codTotal)}</td>
                     <td className="ops-branch-cod__money" style={{ color: '#059669', fontWeight: 'bold' }}>{formatCurrency(summary.collectedTotal)}</td>
                     <td className="ops-branch-cod__money" style={{ color: '#2563EB' }}>{formatCurrency(summary.remittedTotal)}</td>
-                    <td className="ops-branch-cod__money" style={{ color: '#D97706', fontWeight: 'bold' }}>{formatCurrency(summary.pendingRemitTotal)}</td>
+                    <td
+                      className="ops-branch-cod__money"
+                      style={{
+                        color: summary.pendingRemitTotal > 0 ? '#D97706' : '#059669',
+                        fontWeight: 'bold',
+                      }}
+                    >
+                      {formatCurrency(summary.pendingRemitTotal)}
+                    </td>
                     <td>
                       {batch ? (
                         <div className="ops-branch-cod__batch-cell">
@@ -879,38 +1074,55 @@ export function BranchFinanceCodSettlementPage(): React.JSX.Element {
                         <span className="ops-branch-cod__status ops-branch-cod__status--muted">
                           Preview từ vận đơn
                         </span>
+                      ) : summary.pendingRemitTotal === 0 && summary.remittedTotal > 0 ? (
+                        <span className="ops-branch-cod__status ops-branch-cod__status--success">
+                          Đã nộp đủ COD
+                        </span>
+                      ) : summary.pendingRemitTotal === 0 ? (
+                        <span
+                          className="ops-branch-cod__status ops-branch-cod__status--success"
+                          style={{ borderColor: '#86efac', background: '#f0fdf4', color: '#166534' }}
+                        >
+                          0đ (Đã đóng đủ)
+                        </span>
                       ) : (
                         <span className="ops-branch-cod__muted">Chưa tạo batch</span>
                       )}
                     </td>
                     <td>
-                      <div className="ops-branch-cod__actions">
-                        {hasWaitingBatch ? (
+                      {summary.pendingRemitTotal === 0 ? (
+                        <span className="ops-branch-cod__muted" style={{ color: '#059669', fontWeight: 600 }}>
+                          {summary.remittedTotal > 0 ? '✓ Đã hoàn tất' : '✓ Đủ điều kiện ca'}
+                        </span>
+                      ) : (
+                        <div className="ops-branch-cod__actions">
+                          {hasWaitingBatch ? (
+                            <button
+                              type="button"
+                              onClick={() => summary.waitingBatch && setViewQrBatch(summary.waitingBatch)}
+                              style={{ backgroundColor: '#10B981', borderColor: '#10B981', color: '#FFFFFF' }}
+                            >
+                              Thanh toán QR
+                            </button>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => setPendingQrSummary(summary)}
+                              disabled={!canCreateQr || createSettlementMutation.isPending}
+                            >
+                              Tạo QR
+                            </button>
+                          )}
                           <button
+                            className="ops-branch-cod__secondary-button"
+                            disabled={!canConfirmBatch || confirmSettlementMutation.isPending}
+                            onClick={() => batch && openConfirmModal(batch)}
                             type="button"
-                            onClick={() => summary.waitingBatch && setViewQrBatch(summary.waitingBatch)}
-                            style={{ backgroundColor: '#10B981', borderColor: '#10B981', color: '#FFFFFF' }}
                           >
-                            Thanh toán QR
+                            Xác nhận thủ công
                           </button>
-                        ) : (
-                          <button
-                            type="button"
-                            onClick={() => setPendingQrSummary(summary)}
-                            disabled={!canCreateQr || createSettlementMutation.isPending}
-                          >
-                            Tạo QR
-                          </button>
-                        )}
-                        <button
-                          className="ops-branch-cod__secondary-button"
-                          disabled={!canConfirmBatch || confirmSettlementMutation.isPending}
-                          onClick={() => batch && openConfirmModal(batch)}
-                          type="button"
-                        >
-                          Xác nhận thủ công
-                        </button>
-                      </div>
+                        </div>
+                      )}
                     </td>
                   </tr>
                 );
@@ -1147,7 +1359,8 @@ export function BranchFinanceCodSettlementPage(): React.JSX.Element {
             {batch.qrUrl ? <img src={batch.qrUrl} alt={`QR quyết toán ${batch.settlementCode}`} /> : null}
           </section>
         ))}
-
+        </>
+      )}
 
     </section>
   );

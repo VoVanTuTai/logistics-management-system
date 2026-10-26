@@ -53,14 +53,14 @@ export class KnowledgeService {
     for (const file of files) {
       const content = fs.readFileSync(path.join(docsDir, file), 'utf-8');
       const chunks = this.chunker.chunkMarkdown(file, content);
+      allChunks.push(...chunks);
+    }
 
-      for (const chunk of chunks) {
-        const embedRes = await this.embeddingService.getEmbedding(
-          `${chunk.sectionTitle}\n${chunk.content}`
-        );
-        chunk.embedding = embedRes.embedding;
-        allChunks.push(chunk);
-      }
+    const texts = allChunks.map((c) => `${c.sectionTitle}\n${c.content}`);
+    const embeddings = await this.embeddingService.getBatchEmbeddings(texts);
+
+    for (let i = 0; i < allChunks.length; i++) {
+      allChunks[i].embedding = embeddings[i];
     }
 
     this.vectorStore.saveIndex(allChunks, this.embeddingService.getModelName());

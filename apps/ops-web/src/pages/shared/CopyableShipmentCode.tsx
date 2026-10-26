@@ -48,18 +48,20 @@ export function CopyableShipmentCode({
   }
 
   return (
-    <button
-      type="button"
-      className={`ops-copy-shipment-code${className ? ` ${className}` : ''}`}
-      data-copied={copied ? 'true' : 'false'}
-      title={copied ? 'Đã sao chép mã vận đơn' : 'Bấm để sao chép mã vận đơn'}
-      aria-label={`Sao chép mã vận đơn ${normalizedCode}`}
-      onClick={() => {
-        void copyText(normalizedCode).then(() => setCopied(true));
-      }}
-    >
-      <span>{normalizedCode}</span>
-      {copied ? <Check size={14} aria-hidden="true" /> : <Copy size={14} aria-hidden="true" />}
-    </button>
+    <div className={`ops-copy-shipment-code-wrap${className ? ` ${className}` : ''}`}>
+      <span className="ops-copy-shipment-code-text">{normalizedCode}</span>
+      <button
+        type="button"
+        className="ops-copy-shipment-code-btn"
+        data-copied={copied ? 'true' : 'false'}
+        title={copied ? 'Đã sao chép mã vận đơn' : 'Bấm để sao chép mã vận đơn'}
+        aria-label={`Sao chép mã vận đơn ${normalizedCode}`}
+        onClick={() => {
+          void copyText(normalizedCode).then(() => setCopied(true));
+        }}
+      >
+        {copied ? <Check size={13} aria-hidden="true" /> : <Copy size={13} aria-hidden="true" />}
+      </button>
+    </div>
   );
 }

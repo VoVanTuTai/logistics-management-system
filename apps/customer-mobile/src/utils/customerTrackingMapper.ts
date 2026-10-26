@@ -413,7 +413,7 @@ export function mapTrackingToCustomerOrderModel(
     weightKg: Number(pkg.weightKg) || 0.5,
     declaredValueVnd: Number(pkg.declaredValue) || 0,
     codAmountVnd: Number(meta.codAmount || pkg.codAmount) || 0,
-    shippingFeeVnd: Number(meta.estimatedFee || meta.shippingFee || meta.service?.fee || meta.pricing?.totalFee) || 22000,
+    shippingFeeVnd: Number(meta.estimatedFee || meta.shippingFee || meta.service?.fee || meta.pricing?.totalFee) || 18000,
     status: currentStatus,
     createdAt: shipment?.createdAt || res.current?.lastEventAt || new Date().toISOString(),
     updatedAt: shipment?.updatedAt || res.current?.updatedAt || new Date().toISOString(),

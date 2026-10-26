@@ -197,11 +197,18 @@
 .ops-branch-workflow__table th,
 .ops-branch-workflow__table td {
   border-bottom: 1px solid #e5eaf2;
-  padding: 10px 12px;
+  padding: 6px 10px;
   color: #475569;
   font-size: 12px;
   text-align: left;
-  vertical-align: top;
+  vertical-align: middle;
+  white-space: nowrap;
+  height: 38px;
+  box-sizing: border-box;
+}
+
+.ops-branch-workflow__table tbody tr:hover td {
+  background-color: #f8faff;
 }
 
 .ops-branch-workflow__table th {
@@ -212,6 +219,9 @@
   letter-spacing: 0.04em;
   text-transform: uppercase;
   white-space: nowrap;
+  position: sticky;
+  top: 0;
+  z-index: 2;
 }
 
 .ops-branch-workflow__table strong,

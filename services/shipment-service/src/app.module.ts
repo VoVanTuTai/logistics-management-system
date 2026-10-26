@@ -2,12 +2,16 @@ import { Module } from '@nestjs/common';
 
 import { ChangeRequestController } from './api/controllers/change-request.controller';
 import { ClaimsController } from './api/controllers/claims.controller';
+import { CskhController } from './api/controllers/cskh.controller';
 import { InvestigationsController } from './api/controllers/investigations.controller';
+import { RatingsController } from './api/controllers/ratings.controller';
 import { ShipmentController } from './api/controllers/shipment.controller';
 import { ChangeRequestsService } from './application/services/change-requests.service';
 import { ClaimsService } from './application/services/claims.service';
+import { CskhService } from './application/services/cskh.service';
 import { InvestigationsService } from './application/services/investigations.service';
 import { PricingClientService } from './application/services/pricing-client.service';
+import { RatingsService } from './application/services/ratings.service';
 import { ShipmentEventHandlersService } from './application/services/shipment-event-handlers.service';
 import { ShipmentRetentionCleanupService } from './application/services/shipment-retention-cleanup.service';
 import { ShipmentsService } from './application/services/shipments.service';
@@ -34,6 +38,8 @@ import { ShipmentOutboxService } from './messaging/outbox/shipment-outbox.servic
     ChangeRequestController,
     InvestigationsController,
     ClaimsController,
+    CskhController,
+    RatingsController,
   ],
   providers: [
     PrismaService,
@@ -41,6 +47,8 @@ import { ShipmentOutboxService } from './messaging/outbox/shipment-outbox.servic
     ShipmentsService,
     InvestigationsService,
     ClaimsService,
+    CskhService,
+    RatingsService,
     ShipmentRetentionCleanupService,
     PricingClientService,
     ChangeRequestsService,

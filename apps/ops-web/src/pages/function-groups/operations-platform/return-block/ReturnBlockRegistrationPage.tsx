@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
+import { routePaths } from '../../../../navigation/routes';
 import { useAuthStore } from '../../../../store/authStore';
 import { useUiStore } from '../../../../store/uiStore';
 import { returnClient } from '../../../../features/returns/return.client';
@@ -126,7 +128,17 @@ function ReturnPanel({
   );
 }
 
-export function ReturnBlockRegistrationPage(): React.JSX.Element {
+export interface ReturnBlockRegistrationPageProps {
+  isModal?: boolean;
+  onSuccess?: () => void;
+  onClose?: () => void;
+}
+
+export function ReturnBlockRegistrationPage({
+  isModal,
+  onSuccess,
+  onClose,
+}: ReturnBlockRegistrationPageProps = {}): React.JSX.Element {
   const session = useAuthStore((state) => state.session);
   const showToast = useUiStore((state) => state.showToast);
   const accessToken = session?.tokens.accessToken ?? null;
@@ -239,6 +251,7 @@ export function ReturnBlockRegistrationPage(): React.JSX.Element {
         'success',
       );
       handleReset();
+      onSuccess?.();
     } catch (error) {
       showToast(
         error instanceof Error ? error.message : 'Không ghi nhận được chuyển hoàn.',
@@ -284,6 +297,37 @@ export function ReturnBlockRegistrationPage(): React.JSX.Element {
 
   return (
     <section className="ops-return-management">
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px', flexWrap: 'wrap', gap: '12px' }}>
+        <div>
+          <h2 style={{ margin: 0, fontSize: '20px', fontWeight: 700, color: '#0f172a' }}>
+            Đăng ký chuyển hoàn đơn hàng
+          </h2>
+          <p style={{ margin: '4px 0 0 0', fontSize: '13px', color: '#64748b' }}>
+            Thiết lập chiều chuyển hoàn và thông tin người nhận hoàn về shop
+          </p>
+        </div>
+        {!isModal ? (
+          <Link
+            to={routePaths.returnBlockManagement}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              padding: '8px 14px',
+              borderRadius: '8px',
+              border: '1px solid #cbd5e1',
+              background: '#ffffff',
+              color: '#334155',
+              textDecoration: 'none',
+              fontSize: '13px',
+              fontWeight: 600,
+            }}
+          >
+            ← Danh sách Quản lý chuyển hoàn
+          </Link>
+        ) : null}
+      </div>
+
       <ReturnPanel title="Thông tin đề xuất">
         <div className="ops-return-management__proposal">
           <label className="ops-return-management__field ops-return-management__field--required">

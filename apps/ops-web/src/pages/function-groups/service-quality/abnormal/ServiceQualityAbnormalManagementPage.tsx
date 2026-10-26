@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 
 import { useManifestsQuery } from '../../../../features/manifests/manifests.api';
 import type { ManifestListItemDto } from '../../../../features/manifests/manifests.types';
@@ -13,6 +13,7 @@ import { routePaths } from '../../../../navigation/routes';
 import { getErrorMessage } from '../../../../services/api/errors';
 import { useAuthStore } from '../../../../store/authStore';
 import { formatDateTime } from '../../../../utils/format';
+import { ServiceQualityActionBoardPage } from '../proactive/ServiceQualityActionBoardPage';
 import {
   formatManifestStatusLabel,
   formatNdrStatusLabel,
@@ -354,6 +355,21 @@ function buildShipmentLookupUrl(shipmentCode: string): string {
 
 export function ServiceQualityAbnormalManagementPage(): React.JSX.Element {
   const accessToken = useAuthStore((state) => state.session?.tokens.accessToken ?? null);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const currentTab = searchParams.get('tab') === 'sla-radar' ? 'sla-radar' : 'abnormal';
+
+  const setTab = (tab: 'abnormal' | 'sla-radar') => {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      if (tab === 'sla-radar') {
+        next.set('tab', 'sla-radar');
+      } else {
+        next.delete('tab');
+      }
+      return next;
+    });
+  };
+
   const [typeFilter, setTypeFilter] = useState<AbnormalType | 'ALL'>('ALL');
   const [severityFilter, setSeverityFilter] = useState<AbnormalSeverity | 'ALL'>('ALL');
   const [workflowFilter, setWorkflowFilter] = useState<CaseWorkflow | 'ACTIVE' | 'ALL'>('ACTIVE');
@@ -470,19 +486,71 @@ export function ServiceQualityAbnormalManagementPage(): React.JSX.Element {
   return (
     <section className="ops-service-quality-monitor">
       <header className="ops-service-quality-monitor__header">
-        <div>
-          <small>SERVICE_QUALITY_ABNORMAL_MANAGEMENT</small>
-          <h2>Quản lý hàng bất thường</h2>
-          <p>
-            Quản lý case bất thường từ dữ liệu vận đơn, NDR, task và manifest:
-            giao thất bại, hoàn hàng, tồn hub, task quá hạn và manifest chưa nhận.
-          </p>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', width: '100%', flexWrap: 'wrap', gap: '12px' }}>
+          <div>
+            <small>SERVICE_QUALITY_CONTROL_CENTER</small>
+            <h2>Giám sát Rủi ro & Hàng bất thường</h2>
+            <p>
+              Trung tâm giám sát tập trung các sự cố vật lý, hàng hư hỏng và cảnh báo rủi ro vi phạm SLA giao nhận bưu cục.
+            </p>
+          </div>
+          <button type="button" onClick={refetchAll}>
+            Làm mới
+          </button>
         </div>
-        <button type="button" onClick={refetchAll}>
-          Làm mới
-        </button>
+
+        <div style={{ display: 'flex', gap: '8px', marginTop: '14px', borderBottom: '1px solid #e2e8f0', width: '100%' }}>
+          <button
+            type="button"
+            onClick={() => setTab('abnormal')}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              padding: '8px 16px',
+              fontSize: '13px',
+              fontWeight: currentTab === 'abnormal' ? 700 : 500,
+              color: currentTab === 'abnormal' ? '#1d4ed8' : '#64748b',
+              background: currentTab === 'abnormal' ? '#eff6ff' : 'transparent',
+              border: currentTab === 'abnormal' ? '1px solid #bfdbfe' : '1px solid transparent',
+              borderRadius: '6px 6px 0 0',
+              cursor: 'pointer',
+              marginBottom: '-1px',
+              borderBottomColor: currentTab === 'abnormal' ? '#ffffff' : 'transparent',
+            }}
+          >
+            <span>⚠️ Sự cố & Hàng bất thường</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setTab('sla-radar')}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              padding: '8px 16px',
+              fontSize: '13px',
+              fontWeight: currentTab === 'sla-radar' ? 700 : 500,
+              color: currentTab === 'sla-radar' ? '#1d4ed8' : '#64748b',
+              background: currentTab === 'sla-radar' ? '#eff6ff' : 'transparent',
+              border: currentTab === 'sla-radar' ? '1px solid #bfdbfe' : '1px solid transparent',
+              borderRadius: '6px 6px 0 0',
+              cursor: 'pointer',
+              marginBottom: '-1px',
+              borderBottomColor: currentTab === 'sla-radar' ? '#ffffff' : 'transparent',
+            }}
+          >
+            <span>📡 Radar Cảnh báo SLA Chủ động</span>
+          </button>
+        </div>
       </header>
 
+      {currentTab === 'sla-radar' ? (
+        <div style={{ marginTop: '16px' }}>
+          <ServiceQualityActionBoardPage />
+        </div>
+      ) : (
+        <>
       <section className="ops-service-quality-monitor__kpis">
         <article data-tone="danger">
           <span>Khẩn cấp</span>
@@ -686,6 +754,8 @@ export function ServiceQualityAbnormalManagementPage(): React.JSX.Element {
           </div>
         </footer>
       </section>
+        </>
+      )}
     </section>
   );
 }

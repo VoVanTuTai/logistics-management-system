@@ -36,11 +36,16 @@ const ZONE_SURCHARGES: Record<PricingZone, number> = {
 const METRO_PROVINCES = new Set([
   'HA NOI',
   'HANOI',
+  'HN',
   'TP HCM',
   'TP. HCM',
+  'TPHCM',
   'HO CHI MINH',
   'HO CHI MINH CITY',
+  'SAI GON',
+  'SG',
   'DA NANG',
+  'DN',
 ]);
 
 @Injectable()
@@ -207,17 +212,28 @@ export class PricingService {
   }
 
   private resolveServiceType(input: PricingQuoteInput): ServiceType {
-    const value = String(input.serviceType ?? input.service?.type ?? 'STANDARD')
+    const raw = String(input.serviceType ?? input.service?.type ?? 'STANDARD')
       .trim()
       .toUpperCase();
 
-    if (value === 'STANDARD' || value === 'EXPRESS' || value === 'SAME_DAY') {
-      return value;
+    if (raw === 'STANDARD' || raw === 'EXPRESS' || raw === 'SAME_DAY') {
+      return raw;
     }
 
-    throw new BadRequestException(
-      'serviceType must be one of STANDARD, EXPRESS, SAME_DAY.',
-    );
+    // Support client aliases gracefully to prevent 400 errors
+    if (raw.includes('SAME') || raw.includes('SUPER') || raw.includes('HOA_TOC') || raw.includes('HOATOC')) {
+      return 'SAME_DAY';
+    }
+
+    if (raw.includes('EXPRESS') || raw.includes('NHANH') || raw.includes('FAST')) {
+      return 'EXPRESS';
+    }
+
+    if (raw.includes('REGULAR') || raw.includes('TIET_KIEM') || raw.includes('CARGO') || raw.includes('ECO')) {
+      return 'STANDARD';
+    }
+
+    return 'STANDARD';
   }
 
   private resolveZone(input: PricingQuoteInput): PricingZone {
@@ -243,13 +259,16 @@ export class PricingService {
   }
 
   private normalizeProvince(value: string | null | undefined): string {
-    return String(value ?? '')
+    const raw = String(value ?? '')
       .normalize('NFD')
       .replace(/[\u0300-\u036f]/g, '')
       .replace(/[^a-zA-Z0-9 ]/g, ' ')
       .replace(/\s+/g, ' ')
       .trim()
       .toUpperCase();
+
+    // Strip common administrative prefixes (Thanh pho, TP, Tinh)
+    return raw.replace(/^(THANH PHO|TP|TINH)\s+/i, '').trim();
   }
 
   private normalizeNonNegativeNumber(value: number | string | null | undefined): number {

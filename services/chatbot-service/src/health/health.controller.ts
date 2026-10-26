@@ -24,10 +24,22 @@ export class HealthController {
         model: kbStatus.vectorStore.model,
       },
       aiEngine: {
-        chatModel: process.env.OPENAI_CHAT_MODEL || 'gpt-4o-mini',
+        provider: process.env.GEMINI_API_KEY
+          ? 'Google Gemini'
+          : this.embeddingService.isApiKeyConfigured()
+          ? 'OpenAI'
+          : 'Offline Semantic Engine',
+        chatModel: process.env.GEMINI_API_KEY
+          ? process.env.GEMINI_MODEL || 'gemini-3.6-flash'
+          : process.env.OPENAI_CHAT_MODEL || 'gpt-4o-mini',
         embeddingModel: this.embeddingService.getModelName(),
+        geminiConfigured: Boolean(process.env.GEMINI_API_KEY),
         openAiKeyConfigured: this.embeddingService.isApiKeyConfigured(),
-        mode: this.embeddingService.isApiKeyConfigured() ? 'ONLINE_OPENAI' : 'OFFLINE_SEMANTIC_HASH',
+        mode: process.env.GEMINI_API_KEY
+          ? 'ONLINE_GOOGLE_GEMINI'
+          : this.embeddingService.isApiKeyConfigured()
+          ? 'ONLINE_OPENAI'
+          : 'OFFLINE_SEMANTIC_HASH',
       },
     };
   }

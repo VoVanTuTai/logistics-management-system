@@ -28,12 +28,12 @@ export const CLAIM_STATUS_LABELS: Record<ClaimStatus, string> = {
 };
 
 export const RESPONSIBLE_PARTY_LABELS: Record<ResponsiblePartyType, string> = {
-  ORIGIN_HUB: '🏢 Bưu cục gửi (Origin Hub)',
-  LINEHAUL_FLEET: '🚛 Xe tuyến & Lái xe (Linehaul)',
-  TRANSIT_HUB: '🏬 Hub trung chuyển (Sorting Hub)',
-  DELIVERY_HUB: '🛵 Bưu cục phát & Shipper',
-  INSURANCE_FORCE_MAJEURE: '🛡️ Bảo hiểm / Bất khả kháng',
-  UNASSIGNED: '⏳ Chưa phân định',
+  ORIGIN_HUB: 'Bưu cục gửi (Origin Hub)',
+  LINEHAUL_FLEET: 'Xe tuyến & Lái xe (Linehaul)',
+  TRANSIT_HUB: 'Hub trung chuyển (Sorting Hub)',
+  DELIVERY_HUB: 'Bưu cục phát & Shipper',
+  INSURANCE_FORCE_MAJEURE: 'Bảo hiểm / Bất khả kháng',
+  UNASSIGNED: 'Chưa phân định',
 };
 
 export const ROOT_CAUSE_LABELS: Record<RootCauseCategory, string> = {

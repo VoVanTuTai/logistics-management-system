@@ -23,19 +23,22 @@ Kiem tra health:
 - Ops Web: `http://localhost:5173`
 - Merchant Web: `http://localhost:5174`
 - Admin Web: `http://localhost:5175`
-- Public Tracking: `http://localhost:5176` (neu co)
+- Guest Web / Public Tracking: `http://localhost:5177`
+- Courier Mobile: `http://localhost:8081` (hoặc Expo Go)
+- Customer Mobile: `http://localhost:8082` (hoặc Expo Go)
 
 ### 2. Xac nhan Build/Typecheck truoc demo
 
-```powershell
-# Reporting service typecheck
-cd services\reporting-service && pnpm exec tsc -p tsconfig.json --noEmit
+```bash
+# Pricing service test
+cd services/pricing-service && pnpm run test
 
 # Ops-web build + smoke
-cd apps\ops-web && pnpm run build && pnpm run test:smoke
+cd apps/ops-web && pnpm run build && pnpm run test:smoke
 
-# Courier-mobile typecheck
-cd apps\courier-mobile && pnpm run typecheck
+# Courier-mobile & Customer-mobile typecheck
+cd apps/courier-mobile && pnpm run typecheck
+cd apps/customer-mobile && pnpm run typecheck
 ```
 
 Tat ca phai pass truoc khi demo.

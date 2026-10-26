@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   KeyboardAvoidingView,
   Platform,
@@ -19,6 +19,7 @@ import { PrimaryButton } from '../../components/PrimaryButton';
 import type { RootStackParamList } from '../../navigation/types';
 import { authApi } from '../../services/api/auth.api';
 import { authStore, useAuthSession } from '../../store/authStore';
+import { bankAccountStore, type CustomerBankAccount } from '../../store/bankAccountStore';
 import { colors, shadows, spacing } from '../../theme';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'AccountDetail'>;
@@ -28,6 +29,20 @@ const REMEMBER_ME_STORAGE_KEY = 'NEXUS_REMEMBER_ME_CREDS_V1';
 export function AccountDetailScreen({ navigation }: Props): React.JSX.Element {
   const session = useAuthSession();
   const user = session?.user;
+
+  // Bank account state
+  const [bankAccount, setBankAccount] = useState<CustomerBankAccount | null>(null);
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
+
+  useEffect(() => {
+    const loadBank = async () => {
+      const data = await bankAccountStore.getBankAccount();
+      setBankAccount(data);
+    };
+    loadBank();
+    const unsubscribe = navigation.addListener('focus', loadBank);
+    return unsubscribe;
+  }, [navigation]);
 
   // Change Password state
   const [currentPassword, setCurrentPassword] = useState('');
@@ -221,8 +236,58 @@ export function AccountDetailScreen({ navigation }: Props): React.JSX.Element {
           </View>
         </View>
 
-        {/* CHANGE PASSWORD CARD */}
+        {/* BANK ACCOUNT CARD */}
         <View style={styles.card}>
+          <View style={styles.cardHeaderRow}>
+            <Ionicons name="card-outline" size={20} color={colors.primary} />
+            <Text style={styles.cardTitle}>Tài khoản ngân hàng nhận tiền</Text>
+          </View>
+          <Text style={styles.cardSub}>
+            Tài khoản dùng để nhận tiền thu hộ COD hoặc tiền hoàn cước khi gửi hàng.
+          </Text>
+
+          {bankAccount ? (
+            <View style={styles.bankBox}>
+              <View style={styles.bankTopRow}>
+                <View style={styles.bankBadge}>
+                  <Text style={styles.bankBadgeText}>{bankAccount.bankCode}</Text>
+                </View>
+                <Text style={styles.bankNameText}>{bankAccount.bankName}</Text>
+              </View>
+              <View style={styles.bankNumRow}>
+                <Text style={styles.bankNumLabel}>Số tài khoản:</Text>
+                <Text style={styles.bankNumVal}>{bankAccount.accountNumber}</Text>
+              </View>
+              <View style={styles.bankHolderRow}>
+                <Text style={styles.bankHolderLabel}>Chủ tài khoản:</Text>
+                <Text style={styles.bankHolderVal}>{bankAccount.accountHolder}</Text>
+              </View>
+              <TouchableOpacity
+                style={styles.bankEditBtn}
+                activeOpacity={0.7}
+                onPress={() => navigation.navigate('BankAccount')}
+              >
+                <Ionicons name="create-outline" size={16} color={colors.primary} />
+                <Text style={styles.bankEditBtnText}>Chỉnh sửa tài khoản ngân hàng</Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <View style={styles.emptyBankBox}>
+              <Text style={styles.emptyBankText}>Chưa liên kết tài khoản ngân hàng nhận tiền COD</Text>
+              <TouchableOpacity
+                style={styles.bankAddBtn}
+                activeOpacity={0.7}
+                onPress={() => navigation.navigate('BankAccount')}
+              >
+                <Ionicons name="add-circle-outline" size={18} color="#fff" />
+                <Text style={styles.bankAddBtnText}>Thêm tài khoản ngân hàng ngay</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+        </View>
+
+        {/* CHANGE PASSWORD CARD */}
+        <View style={[styles.card, { marginTop: spacing.lg }]}>
           <View style={styles.cardHeaderRow}>
             <Ionicons name="lock-closed" size={20} color={colors.primary} />
             <Text style={styles.cardTitle}>Đổi mật khẩu tài khoản</Text>
@@ -277,7 +342,33 @@ export function AccountDetailScreen({ navigation }: Props): React.JSX.Element {
             style={styles.submitBtn}
           />
         </View>
+
+        {/* LOGOUT BUTTON */}
+        <TouchableOpacity
+          style={styles.logoutBtn}
+          activeOpacity={0.8}
+          onPress={() => setShowLogoutModal(true)}
+        >
+          <Ionicons name="log-out-outline" size={20} color="#DC2626" />
+          <Text style={styles.logoutBtnText}>Đăng xuất tài khoản</Text>
+        </TouchableOpacity>
       </ScrollView>
+
+      {/* LOGOUT MODAL */}
+      <AppModal
+        visible={showLogoutModal}
+        variant="warning"
+        title="Đăng xuất"
+        message="Bạn có chắc chắn muốn đăng xuất khỏi tài khoản không?"
+        confirmText="Đăng xuất"
+        cancelText="Hủy"
+        onConfirm={() => {
+          setShowLogoutModal(false);
+          authStore.logout();
+          navigation.replace('Login');
+        }}
+        onCancel={() => setShowLogoutModal(false)}
+      />
 
       {/* ERROR MODAL */}
       <AppErrorModal
@@ -291,7 +382,7 @@ export function AccountDetailScreen({ navigation }: Props): React.JSX.Element {
       <AppModal
         visible={successModalVisible}
         variant="info"
-        title="🎉 Đổi mật khẩu thành công!"
+        title="Đổi mật khẩu thành công"
         message="Mật khẩu mới đã được cập nhật chính thức vào cơ sở dữ liệu hệ thống Nexus Express. Bạn sẽ được tự động đăng xuất để đăng nhập lại với mật khẩu mới."
         confirmText="Đăng nhập lại ngay"
         onConfirm={handleSuccessLogout}
@@ -465,5 +556,128 @@ const styles = StyleSheet.create({
   },
   submitBtn: {
     marginTop: spacing.md,
+  },
+  bankBox: {
+    backgroundColor: '#F8FAFC',
+    borderRadius: 14,
+    padding: spacing.md,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    gap: 8,
+  },
+  bankTopRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 4,
+  },
+  bankBadge: {
+    backgroundColor: colors.primary,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+  },
+  bankBadgeText: {
+    color: '#fff',
+    fontSize: 11,
+    fontWeight: '800',
+  },
+  bankNameText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: colors.textPrimary,
+  },
+  bankNumRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 2,
+  },
+  bankNumLabel: {
+    fontSize: 12.5,
+    color: colors.textSecondary,
+  },
+  bankNumVal: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: colors.primary,
+    fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
+  },
+  bankHolderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 2,
+  },
+  bankHolderLabel: {
+    fontSize: 12.5,
+    color: colors.textSecondary,
+  },
+  bankHolderVal: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: colors.textPrimary,
+    textTransform: 'uppercase',
+  },
+  bankEditBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 8,
+    marginTop: 4,
+    borderTopWidth: 1,
+    borderTopColor: '#E2E8F0',
+  },
+  bankEditBtnText: {
+    fontSize: 12.5,
+    fontWeight: '700',
+    color: colors.primary,
+  },
+  emptyBankBox: {
+    backgroundColor: '#F8FAFC',
+    borderRadius: 14,
+    padding: spacing.lg,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    borderStyle: 'dashed',
+    alignItems: 'center',
+    gap: 12,
+  },
+  emptyBankText: {
+    fontSize: 12.5,
+    color: colors.textMuted,
+    textAlign: 'center',
+  },
+  bankAddBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: colors.primary,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: 10,
+    borderRadius: 10,
+  },
+  bankAddBtnText: {
+    color: '#fff',
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  logoutBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: '#FEF2F2',
+    borderWidth: 1,
+    borderColor: '#FECACA',
+    borderRadius: 16,
+    paddingVertical: 14,
+    marginTop: spacing.xl,
+  },
+  logoutBtnText: {
+    color: '#DC2626',
+    fontSize: 14,
+    fontWeight: '800',
   },
 });

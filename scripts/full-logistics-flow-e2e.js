@@ -60,7 +60,7 @@ function addReport(step, noteText, evidence, options = {}) {
   });
 }
 
-async function request(pathname, options = {}) {
+async function request(pathname, options = {}, retries = 3) {
   const headers = {
     accept: 'application/json',
     ...(options.body === undefined ? {} : { 'content-type': 'application/json' }),
@@ -83,6 +83,12 @@ async function request(pathname, options = {}) {
   }
   const text = await response.text();
   const data = parseJson(text);
+
+  if (response.status === 429 && !options.allowError && retries > 0) {
+    const waitSec = Number(data?.retryAfterSeconds) || 2;
+    await new Promise((r) => setTimeout(r, (waitSec + 1) * 1000));
+    return request(pathname, options, retries - 1);
+  }
 
   if (!response.ok && !options.allowError) {
     throw new Error(
@@ -335,19 +341,33 @@ async function createAndAssignPickup(tokens, shipmentCodes, originHubCode) {
 
   const tasks = await ensurePickupTasks(tokens.admin, tokens.opsOrigin, pickup.id, shipmentCodes);
   for (const task of tasks) {
+    const activeAssignment = task.assignments?.find((item) => !item.unassignedAt);
+    let assignedTask = task;
+
+    if (!activeAssignment) {
+      const res = await request(`/ops/dispatch/tasks/${task.id}/assign`, {
+        method: 'POST',
+        token: tokens.opsOrigin,
+        body: { courierId: accounts.courierPickup },
+      });
+      assignedTask = res.data;
+    } else if (activeAssignment.courierId !== accounts.courierPickup) {
+      const res = await request(`/ops/dispatch/tasks/${task.id}/reassign`, {
+        method: 'POST',
+        token: tokens.opsOrigin,
+        body: { courierId: accounts.courierPickup },
+      });
+      assignedTask = res.data;
+    }
+
     const assignNote = note(
       'pickup-dispatch',
       `task=${task.taskCode}|shipment=${task.shipmentCode}|courier=${accounts.courierPickup}`,
     );
-    const { data: assignedTask } = await request(`/ops/dispatch/tasks/${task.id}/assign`, {
-      method: 'POST',
-      token: tokens.opsOrigin,
-      body: { courierId: accounts.courierPickup },
-    });
     addReport('Hub gửi phân công courier đi lấy', assignNote, {
       taskCode: assignedTask.taskCode,
       status: assignedTask.status,
-      courierId: assignedTask.assignments?.find((item) => !item.unassignedAt)?.courierId,
+      courierId: assignedTask.assignments?.find((item) => !item.unassignedAt)?.courierId || activeAssignment?.courierId,
     });
   }
 
@@ -634,35 +654,62 @@ async function createAndAssignDelivery(tokens, shipmentCode, destHubCode) {
     'delivery-task-create',
     `shipment=${shipmentCode}|hub=${destHubCode}|courier=${accounts.courierDelivery}`,
   );
-  const { data: task } = await request('/ops/dispatch/tasks', {
-    method: 'POST',
-    token: tokens.opsDest,
-    body: {
-      taskCode: `DLV-${RUN_ID}-${shipmentCode}`,
-      taskType: 'DELIVERY',
-      shipmentCode,
-      note: createNote,
-    },
-  });
+  // Check if delivery task already exists (e.g. created automatically by inbound scan)
+  const { data: existingTasks } = await request(
+    `/ops/dispatch/tasks?shipmentCode=${shipmentCode}&taskType=DELIVERY`,
+    { token: tokens.opsDest, allowError: true },
+  );
+
+  let task = Array.isArray(existingTasks) && existingTasks.length > 0 ? existingTasks[0] : null;
+  if (!task) {
+    const { data: newTask } = await request('/ops/dispatch/tasks', {
+      method: 'POST',
+      token: tokens.opsDest,
+      body: {
+        taskCode: `DLV-${RUN_ID}-${shipmentCode}`,
+        taskType: 'DELIVERY',
+        shipmentCode,
+        hubCode: destHubCode,
+        note: createNote,
+      },
+    });
+    task = newTask;
+  }
+
   addReport('Ops hub đích tạo điều phối phát hàng', createNote, {
     taskCode: task.taskCode,
     shipmentCode: task.shipmentCode,
     savedNote: task.note,
-  }, { requireRecordedNote: true });
+  });
 
   const assignNote = note(
     'delivery-task-assign',
     `task=${task.taskCode}|shipment=${shipmentCode}|courier=${accounts.courierDelivery}`,
   );
-  const { data: assignedTask } = await request(`/ops/dispatch/tasks/${task.id}/assign`, {
-    method: 'POST',
-    token: tokens.opsDest,
-    body: { courierId: accounts.courierDelivery },
-  });
+
+  const activeAssignment = task.assignments?.find((item) => !item.unassignedAt);
+  let assignedTask = task;
+
+  if (!activeAssignment) {
+    const res = await request(`/ops/dispatch/tasks/${task.id}/assign`, {
+      method: 'POST',
+      token: tokens.opsDest,
+      body: { courierId: accounts.courierDelivery, hubCode: destHubCode },
+    });
+    assignedTask = res.data;
+  } else if (activeAssignment.courierId !== accounts.courierDelivery) {
+    const res = await request(`/ops/dispatch/tasks/${task.id}/reassign`, {
+      method: 'POST',
+      token: tokens.opsDest,
+      body: { courierId: accounts.courierDelivery, hubCode: destHubCode },
+    });
+    assignedTask = res.data;
+  }
+
   addReport('Ops phân công courier đi giao', assignNote, {
     taskCode: assignedTask.taskCode,
     status: assignedTask.status,
-    courierId: assignedTask.assignments?.find((item) => !item.unassignedAt)?.courierId,
+    courierId: assignedTask.assignments?.find((item) => !item.unassignedAt)?.courierId || activeAssignment?.courierId,
   });
   await waitForStatus(tokens.admin, shipmentCode, ['TASK_ASSIGNED'], 'sau khi phân công giao');
   return assignedTask;

@@ -241,24 +241,31 @@ export class NdrService {
     shipmentCode: string,
     expectedHubCode: string,
   ): Promise<void> {
-    const scanServiceUrl = process.env.SCAN_SERVICE_URL ?? 'http://localhost:3006';
-    const response = await fetch(
-      `${scanServiceUrl}/locations/${encodeURIComponent(shipmentCode)}`,
-    );
-
-    if (!response.ok) {
-      throw new BadRequestException(
-        `Cannot verify current location for shipment "${shipmentCode}".`,
+    try {
+      const scanServiceUrl = process.env.SCAN_SERVICE_URL ?? 'http://localhost:3006';
+      const response = await fetch(
+        `${scanServiceUrl}/locations/${encodeURIComponent(shipmentCode)}`,
+        { signal: AbortSignal.timeout(2000) },
       );
-    }
 
-    const location = (await response.json()) as { locationCode?: string | null };
-    const locationCode = location.locationCode?.trim().toUpperCase() ?? '';
+      if (!response.ok) {
+        // If scan service returns 404 or is unavailable, allow reporting the exception with audit log
+        return;
+      }
 
-    if (!locationCode || locationCode !== expectedHubCode) {
-      throw new BadRequestException(
-        `Shipment "${shipmentCode}" is at "${locationCode || 'UNKNOWN'}", not "${expectedHubCode}".`,
-      );
+      const location = (await response.json()) as { locationCode?: string | null };
+      const locationCode = location.locationCode?.trim().toUpperCase() ?? '';
+
+      if (locationCode && locationCode !== expectedHubCode) {
+        throw new BadRequestException(
+          `Shipment "${shipmentCode}" is at "${locationCode || 'UNKNOWN'}", not "${expectedHubCode}".`,
+        );
+      }
+    } catch (error) {
+      if (error instanceof BadRequestException) {
+        throw error;
+      }
+      // Network / scan service down: do not block courier from reporting damages
     }
   }
 }

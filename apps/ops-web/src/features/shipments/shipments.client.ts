@@ -283,10 +283,13 @@ function resolveParcelType(metadata: Record<string, unknown> | null): string | n
 
   const parcel = asRecord(metadata.parcel);
   const item = asRecord(metadata.item);
+  const pkg = asRecord(metadata.package);
 
   return (
     asString(parcel?.type) ??
     asString(item?.type) ??
+    asString(pkg?.parcelType) ??
+    asString(pkg?.itemType) ??
     asString(metadata.parcelType) ??
     asString(metadata.itemType) ??
     asString(metadata.goodsType) ??
@@ -427,6 +430,7 @@ function mapShipmentToListItem(payload: ShipmentApiResponse): ShipmentListItemDt
     labelReprintReason: resolveLabelReprintReason(metadata),
     isOperationLocked: Boolean(resolveOperationLockReason(metadata, payload.isLocked)),
     operationLockReason: resolveOperationLockReason(metadata, payload.isLocked),
+    metadata,
     createdAt: payload.createdAt,
     updatedAt: payload.updatedAt,
   };
@@ -464,6 +468,7 @@ function mapShipmentToDetail(payload: ShipmentApiResponse): ShipmentDetailDto {
     labelReprintReason: resolveLabelReprintReason(metadata),
     isOperationLocked: Boolean(resolveOperationLockReason(metadata, payload.isLocked)),
     operationLockReason: resolveOperationLockReason(metadata, payload.isLocked),
+    metadata,
     createdAt: payload.createdAt,
     updatedAt: payload.updatedAt,
   };

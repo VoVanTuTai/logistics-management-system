@@ -3,16 +3,21 @@ import {
   AlertTriangle,
   ArrowRight,
   Ban,
+  BarChart3,
   Building2,
   CheckCircle2,
+  ChevronDown,
   ChevronRight,
+  ChevronUp,
   Clock,
   DollarSign,
+  Download,
   Eye,
   FileCheck,
   FileText,
   Filter,
   Gavel,
+  HelpCircle,
   Image as ImageIcon,
   Info,
   Package,
@@ -49,6 +54,8 @@ import type {
   RootCauseCategory,
 } from '../../../../features/claims/claims.types';
 import { CopyableShipmentCode } from '../../../shared/CopyableShipmentCode';
+import { ClaimsLiabilityTable, exportClaimsToExcel } from './ClaimsLiabilityTable';
+import { HubCompensationStatisticsPage } from './HubCompensationStatisticsPage';
 import './ClaimsLiabilityManagementPage.css';
 
 function formatCurrency(amount: number | null | undefined): string {
@@ -162,10 +169,33 @@ function computeMatrixVerdict(claim: CompensationClaim): MatrixVerdict {
 type TabType = 'ALL' | 'PENDING' | 'ADJUDICATED' | 'SETTLED';
 
 export function ClaimsLiabilityManagementPage(): React.JSX.Element {
+  const [currentTab, setCurrentTab] = useState<string>(() => {
+    try {
+      const p = new URLSearchParams(window.location.search);
+      return p.get('tab') === 'statistics' ? 'statistics' : 'liability';
+    } catch {
+      return 'liability';
+    }
+  });
+
+  const handleSwitchTab = (tab: string) => {
+    setCurrentTab(tab);
+    try {
+      const url = new URL(window.location.href);
+      url.searchParams.set('tab', tab);
+      window.history.replaceState(null, '', url.toString());
+    } catch {
+      // ignore
+    }
+  };
+
   // Claims state initialized with local cache, updated with real DB via API
   const [claims, setClaims] = useState<CompensationClaim[]>(() => readClaims());
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<TabType>('ALL');
+
+  // Toggle for operational workflow explanation banner
+  const [isGuideOpen, setIsGuideOpen] = useState(true);
 
   // Filters
   const [keyword, setKeyword] = useState('');
@@ -332,6 +362,27 @@ export function ClaimsLiabilityManagementPage(): React.JSX.Element {
     }
   };
 
+  // Batch actions
+  const handleBatchApprove = async (claimIds: string[]) => {
+    try {
+      await Promise.all(claimIds.map((id) => approveCompensationApi(id)));
+      await loadClaimsData();
+      showFeedback(`Đã duyệt chi tiền bồi thường cho ${claimIds.length} hồ sơ thành công!`);
+    } catch (err) {
+      alert('Lỗi duyệt chi hàng loạt: ' + (err instanceof Error ? err.message : String(err)));
+    }
+  };
+
+  const handleBatchSettle = async (claimIds: string[]) => {
+    try {
+      await Promise.all(claimIds.map((id) => settleDeductionApi(id)));
+      await loadClaimsData();
+      showFeedback(`Đã tất toán khấu trừ chế tài cho ${claimIds.length} hồ sơ thành công!`);
+    } catch (err) {
+      alert('Lỗi khấu trừ hàng loạt: ' + (err instanceof Error ? err.message : String(err)));
+    }
+  };
+
   const handleCreateNewClaim = async () => {
     if (!newShipmentCode.trim()) {
       alert('Vui lòng nhập mã vận đơn.');
@@ -376,7 +427,31 @@ export function ClaimsLiabilityManagementPage(): React.JSX.Element {
 
   return (
     <div className="claims-page">
-      {/* Toast Feedback */}
+      {/* Unified Tab Navigation Bar */}
+      <div className="ops-unified-sub-tabs" role="tablist">
+        <button
+          type="button"
+          className={`ops-unified-sub-tab-btn ${currentTab === 'liability' ? 'ops-unified-sub-tab-btn--active' : ''}`}
+          onClick={() => handleSwitchTab('liability')}
+        >
+          <Scale size={15} />
+          <span>Hồ sơ Bồi thường & Phân định</span>
+        </button>
+        <button
+          type="button"
+          className={`ops-unified-sub-tab-btn ${currentTab === 'statistics' ? 'ops-unified-sub-tab-btn--active' : ''}`}
+          onClick={() => handleSwitchTab('statistics')}
+        >
+          <BarChart3 size={15} />
+          <span>Thống kê Bồi thường Hub</span>
+        </button>
+      </div>
+
+      {currentTab === 'statistics' ? (
+        <HubCompensationStatisticsPage />
+      ) : (
+        <>
+          {/* Toast Feedback */}
       {actionSuccessMsg && (
         <div className="claims-toast">
           <CheckCircle2 size={16} color="#10b981" />
@@ -391,14 +466,14 @@ export function ClaimsLiabilityManagementPage(): React.JSX.Element {
       <div className="claims-header">
         <div className="claims-header-left">
           <div className="claims-header-icon">
-            <ShieldAlert size={22} />
+            <Scale size={20} />
           </div>
           <div>
             <h2 className="claims-header-title">
               Hồ sơ Bồi thường & Phân định Trách nhiệm
             </h2>
             <p className="claims-header-desc">
-              Giám định tổn thất, quy lỗi minh bạch giữa Bưu cục gửi, Xe tuyến & Bưu cục phát, duyệt chi bồi thường cho Shop và khấu trừ chế tài.
+              Xử lý khiếu nại tổn thất, giám định quy lỗi bưu cục/xe tuyến, duyệt chi bồi thường cho Shop và khấu trừ chế tài theo Luật Bưu chính.
             </p>
           </div>
         </div>
@@ -410,7 +485,7 @@ export function ClaimsLiabilityManagementPage(): React.JSX.Element {
             disabled={isLoading}
             title="Tải lại dữ liệu từ Database"
           >
-            <RefreshCw size={14} className={isLoading ? 'claims-spin' : ''} />
+            <RefreshCw size={13} className={isLoading ? 'claims-spin' : ''} />
             <span>{isLoading ? 'Đang tải...' : 'Làm mới'}</span>
           </button>
           <button
@@ -418,10 +493,85 @@ export function ClaimsLiabilityManagementPage(): React.JSX.Element {
             className="claims-btn claims-btn-primary"
             onClick={() => setIsNewModalOpen(true)}
           >
-            <Plus size={15} />
+            <Plus size={14} />
             <span>Lập hồ sơ bồi thường</span>
           </button>
         </div>
+      </div>
+
+      {/* Operational Workflow Guide for Non-Specialists */}
+      <div className="claims-guide-box">
+        <div
+          className="claims-guide-header"
+          onClick={() => setIsGuideOpen(!isGuideOpen)}
+          role="button"
+          tabIndex={0}
+        >
+          <div className="claims-guide-header-title">
+            <Info size={15} />
+            <span>Quy trình xử lý hồ sơ bồi thường bưu gửi (Dành cho nhân viên vận hành)</span>
+          </div>
+          <button type="button" className="claims-guide-toggle-btn">
+            {isGuideOpen ? 'Thu gọn hướng dẫn ▲' : 'Xem hướng dẫn 4 bước ▼'}
+          </button>
+        </div>
+
+        {isGuideOpen && (
+          <div className="claims-guide-content">
+            <div className="claims-guide-steps">
+              <div className="claims-guide-step-card">
+                <span className="claims-guide-step-num">Bước 1: Tiếp nhận</span>
+                <span className="claims-guide-step-title">Ghi nhận sự cố tổn thất</span>
+                <p className="claims-guide-step-desc">
+                  Lập hồ sơ bồi thường khi bưu kiện bị nứt vỡ, móp méo hoặc thất lạc trong quá trình vận chuyển. Kèm ảnh hiện trường và biên bản đồng kiểm.
+                </p>
+              </div>
+
+              <div className="claims-guide-step-card">
+                <span className="claims-guide-step-num">Bước 2: Giám định</span>
+                <span className="claims-guide-step-title">Quy lỗi & Xác định trách nhiệm</span>
+                <p className="claims-guide-step-desc">
+                  Đối soát camera, biên bản bàn giao giữa Hub gửi, Xe tuyến liên tỉnh và Bưu tá phát để chỉ định bên gây lỗi và mức chế tài phạt tương ứng.
+                </p>
+              </div>
+
+              <div className="claims-guide-step-card">
+                <span className="claims-guide-step-num">Bước 3: Duyệt chi</span>
+                <span className="claims-guide-step-title">Chi trả tiền bồi thường</span>
+                <p className="claims-guide-step-desc">
+                  Kế toán phê duyệt thanh toán tiền đền bù vào tài khoản ngân hàng của Khách gửi/Shop để bảo đảm quyền lợi khách hàng không bị chậm trễ.
+                </p>
+              </div>
+
+              <div className="claims-guide-step-card">
+                <span className="claims-guide-step-num">Bước 4: Tất toán</span>
+                <span className="claims-guide-step-title">Khấu trừ chế tài đơn vị lỗi</span>
+                <p className="claims-guide-step-desc">
+                  Cấn trừ số tiền phạt vào kỳ đối soát công nợ tiếp theo của Hub hoặc bưu tá gây lỗi, sau đó đóng và lưu trữ hồ sơ vụ việc hoàn tất.
+                </p>
+              </div>
+            </div>
+
+            <div className="claims-guide-legal-strip">
+              <div className="claims-guide-legal-item">
+                <span>Căn cứ pháp lý:</span>
+                <strong>Luật Bưu chính 2010 (Điều 24 & 25)</strong>
+              </div>
+              <div className="claims-guide-legal-item">
+                <span>• Có bảo hiểm 100%:</span>
+                <strong>Đền 100% giá trị khai báo theo hóa đơn mua hàng</strong>
+              </div>
+              <div className="claims-guide-legal-item">
+                <span>• Không mua bảo hiểm:</span>
+                <strong>Đền tối đa 04 lần cước gửi (trần 1.000.000đ/kiện)</strong>
+              </div>
+              <div className="claims-guide-legal-item">
+                <span>• Miễn trừ đóng gói:</span>
+                <strong>Từ chối đền bù do lỗi người gửi tự đóng gói</strong>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Metric Counters Strip */}
@@ -434,7 +584,7 @@ export function ClaimsLiabilityManagementPage(): React.JSX.Element {
         >
           <div className="claims-kpi-meta">
             <span className="claims-kpi-label">Tổng hồ sơ khiếu nại</span>
-            <FileText size={18} className="claims-kpi-icon claims-kpi-icon--slate" />
+            <FileText size={16} className="claims-kpi-icon claims-kpi-icon--slate" />
           </div>
           <div className="claims-kpi-number">{stats.total}</div>
           <div className="claims-kpi-hint">Toàn bộ hồ sơ trên hệ thống</div>
@@ -448,7 +598,7 @@ export function ClaimsLiabilityManagementPage(): React.JSX.Element {
         >
           <div className="claims-kpi-meta">
             <span className="claims-kpi-label">Chờ giám định & Quy lỗi</span>
-            <AlertTriangle size={18} className="claims-kpi-icon claims-kpi-icon--amber" />
+            <AlertTriangle size={16} className="claims-kpi-icon claims-kpi-icon--amber" />
           </div>
           <div className="claims-kpi-number claims-text-amber">{stats.pending}</div>
           <div className="claims-kpi-hint">Cần QA kết luận nguyên nhân</div>
@@ -462,7 +612,7 @@ export function ClaimsLiabilityManagementPage(): React.JSX.Element {
         >
           <div className="claims-kpi-meta">
             <span className="claims-kpi-label">Chờ duyệt chi bồi thường</span>
-            <Scale size={18} className="claims-kpi-icon claims-kpi-icon--blue" />
+            <Scale size={16} className="claims-kpi-icon claims-kpi-icon--blue" />
           </div>
           <div className="claims-kpi-number claims-text-blue">{stats.determined}</div>
           <div className="claims-kpi-hint">Đã phân định bên chịu trách nhiệm</div>
@@ -476,7 +626,7 @@ export function ClaimsLiabilityManagementPage(): React.JSX.Element {
         >
           <div className="claims-kpi-meta">
             <span className="claims-kpi-label">Tiền đền bù đã duyệt</span>
-            <DollarSign size={18} className="claims-kpi-icon claims-kpi-icon--emerald" />
+            <DollarSign size={16} className="claims-kpi-icon claims-kpi-icon--emerald" />
           </div>
           <div className="claims-kpi-number claims-text-emerald">
             {formatCurrency(stats.settledAmount)}
@@ -528,7 +678,7 @@ export function ClaimsLiabilityManagementPage(): React.JSX.Element {
         {/* Toolbar: Search and Filters */}
         <div className="claims-toolbar">
           <div className="claims-search-box">
-            <Search size={15} className="claims-search-icon" />
+            <Search size={14} className="claims-search-icon" />
             <input
               type="text"
               className="claims-search-input"
@@ -541,6 +691,7 @@ export function ClaimsLiabilityManagementPage(): React.JSX.Element {
                 type="button"
                 className="claims-search-clear"
                 onClick={() => setKeyword('')}
+                title="Xóa tìm kiếm"
               >
                 <X size={14} />
               </button>
@@ -581,226 +732,17 @@ export function ClaimsLiabilityManagementPage(): React.JSX.Element {
           </div>
         </div>
 
-        {/* Master Table */}
-        <div className="claims-table-container">
-          <table className="claims-table">
-            <thead>
-              <tr>
-                <th style={{ width: '130px' }}>Mã hồ sơ</th>
-                <th style={{ width: '220px' }}>Vận đơn & Khách gửi</th>
-                <th style={{ width: '150px' }}>Loại sự cố</th>
-                <th style={{ width: '150px' }}>Tiền yêu cầu</th>
-                <th style={{ minWidth: '220px' }}>Phân định trách nhiệm</th>
-                <th style={{ width: '150px' }}>Trạng thái</th>
-                <th style={{ width: '140px', textAlign: 'right' }}>Thao tác</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredClaims.length === 0 ? (
-                <tr>
-                  <td colSpan={7} className="claims-empty-cell">
-                    <div className="claims-empty-state">
-                      <FileCheck size={36} color="#94a3b8" />
-                      <p>Không có hồ sơ đền bù nào phù hợp với bộ lọc hiện tại.</p>
-                      {keyword && (
-                        <button
-                          type="button"
-                          className="claims-btn claims-btn-subtle"
-                          onClick={() => setKeyword('')}
-                        >
-                          Xóa tìm kiếm
-                        </button>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              ) : (
-                filteredClaims.map((claim) => {
-                  const isPending =
-                    claim.status === 'PENDING_INSPECTION' || claim.status === 'DRAFT';
-                  const isAdjudicated = claim.status === 'LIABILITY_DETERMINED';
-                  const isApproved = claim.status === 'APPROVED_COMPENSATION';
-                  const isSettled = claim.status === 'SETTLED';
-
-                  return (
-                    <tr key={claim.id} className="claims-tr">
-                      {/* Claim Code & Time */}
-                      <td>
-                        <div className="claims-cell-primary">{claim.claimCode}</div>
-                        <div className="claims-cell-sub">
-                          <Clock size={11} />
-                          <span>{formatDate(claim.reportedAt)}</span>
-                        </div>
-                      </td>
-
-                      {/* Shipment & Customer */}
-                      <td>
-                        <div className="claims-shipment-row">
-                          <CopyableShipmentCode code={claim.shipmentCode} />
-                        </div>
-                        <div className="claims-cell-customer">
-                          {claim.customerName || 'Khách hàng'}
-                        </div>
-                        <div className="claims-cell-route">
-                          <span>{claim.originHubCode}</span>
-                          <ArrowRight size={10} />
-                          <span>{claim.destinationHubCode}</span>
-                        </div>
-                      </td>
-
-                      {/* Incident Type */}
-                      <td>
-                        <span
-                          className={`claims-badge-incident ${
-                            claim.incidentType === 'DAMAGED'
-                              ? 'claims-badge-incident--damaged'
-                              : 'claims-badge-incident--lost'
-                          }`}
-                        >
-                          {claim.incidentType === 'DAMAGED' ? (
-                            <AlertTriangle size={11} />
-                          ) : (
-                            <ShieldAlert size={11} />
-                          )}
-                          <span>{INCIDENT_TYPE_LABELS[claim.incidentType]}</span>
-                        </span>
-                        <div className="claims-pkg-desc" title={claim.packageDescription}>
-                          {claim.packageDescription}
-                        </div>
-                      </td>
-
-                      {/* Claim Amount */}
-                      <td>
-                        <div className="claims-cell-amount">
-                          {formatCurrency(claim.claimRequestedAmount)}
-                        </div>
-                        {claim.approvedCompensationAmount > 0 && (
-                          <div className="claims-cell-approved-amount">
-                            Duyệt: {formatCurrency(claim.approvedCompensationAmount)}
-                          </div>
-                        )}
-                      </td>
-
-                      {/* Responsibility Assignment */}
-                      <td>
-                        {claim.responsibleParty === 'UNASSIGNED' ? (
-                          <span className="claims-unassigned-tag">
-                            <Clock size={11} />
-                            <span>Chưa phân định</span>
-                          </span>
-                        ) : (
-                          <div className="claims-liability-box">
-                            <div className="claims-liability-party">
-                              {claim.responsibleParty === 'LINEHAUL_FLEET' ? (
-                                <Truck size={12} />
-                              ) : claim.responsibleParty === 'DELIVERY_HUB' ? (
-                                <UserCheck size={12} />
-                              ) : (
-                                <Building2 size={12} />
-                              )}
-                              <strong>{claim.responsibleEntityName || claim.responsibleEntityCode}</strong>
-                            </div>
-                            <div className="claims-liability-ratio">
-                              Chịu: <strong>{claim.liabilityRatioPercent}%</strong>
-                              {claim.penaltyAmount > 0 && (
-                                <span className="claims-liability-penalty">
-                                  Phạt: {formatCurrency(claim.penaltyAmount)}
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                        )}
-                      </td>
-
-                      {/* Status */}
-                      <td>
-                        <span
-                          className={`claims-status-pill ${
-                            isPending
-                              ? 'claims-status-pill--pending'
-                              : isAdjudicated
-                              ? 'claims-status-pill--adjudicated'
-                              : isApproved
-                              ? 'claims-status-pill--approved'
-                              : isSettled
-                              ? 'claims-status-pill--settled'
-                              : 'claims-status-pill--rejected'
-                          }`}
-                        >
-                          {isPending && <Clock size={11} />}
-                          {isAdjudicated && <Scale size={11} />}
-                          {isApproved && <CheckCircle2 size={11} />}
-                          {isSettled && <ShieldCheck size={11} />}
-                          <span>{CLAIM_STATUS_LABELS[claim.status]}</span>
-                        </span>
-                      </td>
-
-                      {/* Actions */}
-                      <td style={{ textAlign: 'right' }}>
-                        <div className="claims-actions-cell">
-                          {/* Main workflow action */}
-                          {isPending ? (
-                            <button
-                              type="button"
-                              className="claims-action-btn claims-action-btn--primary"
-                              onClick={() => openInspection(claim, true)}
-                              title="Giám định và phân định trách nhiệm"
-                            >
-                              <Gavel size={13} />
-                              <span>Quy lỗi</span>
-                            </button>
-                          ) : isAdjudicated ? (
-                            <button
-                              type="button"
-                              className="claims-action-btn claims-action-btn--success"
-                              onClick={() => handleApprovePayment(claim.id)}
-                              title="Duyệt chi bồi thường cho Shop"
-                            >
-                              <CheckCircle2 size={13} />
-                              <span>Duyệt chi</span>
-                            </button>
-                          ) : isApproved ? (
-                            <button
-                              type="button"
-                              className="claims-action-btn claims-action-btn--settle"
-                              onClick={() => handleSettle(claim.id)}
-                              title="Khấu trừ chế tài hoàn tất"
-                            >
-                              <DollarSign size={13} />
-                              <span>Khấu trừ</span>
-                            </button>
-                          ) : (
-                            <button
-                              type="button"
-                              className="claims-action-btn claims-action-btn--view"
-                              onClick={() => openInspection(claim, false)}
-                              title="Xem chi tiết hồ sơ"
-                            >
-                              <Eye size={13} />
-                              <span>Chi tiết</span>
-                            </button>
-                          )}
-
-                          {/* Quick view button if not in view mode */}
-                          {isPending || isAdjudicated || isApproved ? (
-                            <button
-                              type="button"
-                              className="claims-icon-btn"
-                              onClick={() => openInspection(claim, false)}
-                              title="Xem biên bản & ảnh hiện trường"
-                            >
-                              <Eye size={14} />
-                            </button>
-                          ) : null}
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })
-              )}
-            </tbody>
-          </table>
-        </div>
+        {/* Master Universal Claims Table */}
+        <ClaimsLiabilityTable
+          claims={filteredClaims}
+          selectedClaim={selectedClaim}
+          onOpenInspection={openInspection}
+          onApprovePayment={handleApprovePayment}
+          onSettle={handleSettle}
+          onBatchApprove={handleBatchApprove}
+          onBatchSettle={handleBatchSettle}
+          isLoading={isLoading}
+        />
       </div>
 
       {/* ========================================================= */}
@@ -899,55 +841,42 @@ export function ClaimsLiabilityManagementPage(): React.JSX.Element {
                 <div className="claims-insurance-card">
                   <div className="claims-insurance-card-title">
                     <Shield size={14} />
-                    <span>Thông tin Bảo hiểm & Đóng gói (Metadata từ lúc tiếp nhận)</span>
+                    <span>Gói Bảo hiểm & Ràng buộc Đóng gói</span>
                   </div>
-                  <div className="claims-insurance-badges">
-                    <span className={`claims-badge-meta ${selectedClaim.isFragile ? 'claims-badge-meta--danger' : 'claims-badge-meta--muted'}`}>
-                      {selectedClaim.isFragile ? 'Hàng dễ vỡ' : 'Hàng thường'}
-                    </span>
-                    <span className={`claims-badge-meta ${selectedClaim.insuranceTier === 'COMPREHENSIVE_100' ? 'claims-badge-meta--success' : 'claims-badge-meta--warning'}`}>
-                      {selectedClaim.insuranceTier === 'COMPREHENSIVE_100' ? 'Bảo hiểm 100%' : 'Không có BH'}
-                    </span>
-                    {selectedClaim.packagingWaiver && (
-                      <span className="claims-badge-meta claims-badge-meta--orange">
-                        Miễn trừ bể vỡ (Waiver)
-                      </span>
-                    )}
-                    {!selectedClaim.packagingWaiver && selectedClaim.isFragile && (
-                      <span className="claims-badge-meta claims-badge-meta--teal">
-                        Đóng gói đạt SOP
-                      </span>
-                    )}
+                  <div className="claims-insurance-row">
+                    <span>Gói bảo hiểm:</span>
+                    <strong>
+                      {selectedClaim.insuranceTier === 'COMPREHENSIVE_100'
+                        ? 'Bảo hiểm Toàn diện 100% (Phí 0.5%)'
+                        : 'Tiêu chuẩn (Không bảo hiểm)'}
+                    </strong>
                   </div>
-                  <div className="claims-insurance-details">
-                    <span>Khai giá: <strong>{formatCurrency(selectedClaim.declaredValue)}</strong></span>
-                    {selectedClaim.insuranceFee != null && selectedClaim.insuranceFee > 0 && (
-                      <span>Phí BH: <strong>{formatCurrency(selectedClaim.insuranceFee)}</strong></span>
-                    )}
-                    {selectedClaim.shippingFee != null && (
-                      <span>Cước VC: <strong>{formatCurrency(selectedClaim.shippingFee)}</strong></span>
-                    )}
+                  <div className="claims-insurance-row">
+                    <span>Biên bản Miễn trừ đóng gói:</span>
+                    <strong className={selectedClaim.packagingWaiver ? 'claims-text-danger' : 'claims-text-success'}>
+                      {selectedClaim.packagingWaiver
+                        ? 'CÓ (Người gửi ký cam kết tự chịu rủi ro bể vỡ)'
+                        : 'KHÔNG (Hàng đóng gói chuẩn quy cách bưu điện)'}
+                    </strong>
+                  </div>
+                  <div className="claims-insurance-row">
+                    <span>Cước phí vận chuyển:</span>
+                    <span>{formatCurrency(selectedClaim.shippingFee)}</span>
                   </div>
                 </div>
 
-                {/* Incident Description */}
-                <div className="claims-desc-box">
-                  <div className="claims-desc-title">Mô tả sản phẩm & hư hại:</div>
-                  <p className="claims-desc-text">
-                    <strong>Hàng hóa:</strong> {selectedClaim.packageDescription}
-                  </p>
-                  <p className="claims-desc-text">
-                    <strong>Hư hại ghi nhận:</strong>{' '}
-                    {selectedClaim.damageDescription || 'Không có ghi chú thêm.'}
-                  </p>
+                {/* Damage Description */}
+                <div className="claims-text-block">
+                  <label>Mô tả hư hỏng & Hiện trường:</label>
+                  <p>{selectedClaim.damageDescription || 'Chưa ghi nhận mô tả chi tiết.'}</p>
                 </div>
 
-                {/* Evidence Photos */}
+                {/* Photos */}
                 <div className="claims-photos-section">
-                  <div className="claims-desc-title">Ảnh chụp hiện trường & Biên bản:</div>
-                  {selectedClaim.evidencePhotos && selectedClaim.evidencePhotos.length > 0 ? (
-                    <div className="claims-photos-grid">
-                      {selectedClaim.evidencePhotos.map((photo) => (
+                  <label>Ảnh chụp bằng chứng tổn thất ({selectedClaim.evidencePhotos?.length || 0}):</label>
+                  <div className="claims-photos-row">
+                    {selectedClaim.evidencePhotos && selectedClaim.evidencePhotos.length > 0 ? (
+                      selectedClaim.evidencePhotos.map((photo) => (
                         <div
                           key={photo.id}
                           className="claims-photo-thumb"
@@ -955,318 +884,316 @@ export function ClaimsLiabilityManagementPage(): React.JSX.Element {
                           title={`${photo.label} (Chụp bởi: ${photo.takenBy})`}
                         >
                           <img src={photo.url} alt={photo.label} />
-                          <div className="claims-photo-caption">{photo.label}</div>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="claims-no-photos">
-                      <ImageIcon size={20} color="#94a3b8" />
-                      <span>Không có ảnh đính kèm</span>
-                    </div>
-                  )}
-                </div>
-
-                {/* Reporter info */}
-                <div className="claims-reporter-info">
-                  <User size={13} />
-                  <span>
-                    Báo cáo bởi: <strong>{selectedClaim.reportedBy}</strong> lúc{' '}
-                    {formatDate(selectedClaim.reportedAt)}
-                  </span>
-                </div>
-              </div>
-
-              {/* RIGHT COLUMN: ADJUDICATION & RESOLUTION WORKFLOW */}
-              <div className="claims-col-right">
-                <div className="claims-section-title">
-                  <Gavel size={16} />
-                  <span>Quy trình Xử lý & Phán quyết Trách nhiệm</span>
-                </div>
-
-                {/* Step 1: Adjudication Decision */}
-                <div className="claims-step-card">
-                  <div className="claims-step-header">
-                    <div className="claims-step-num">1</div>
-                    <div className="claims-step-title">
-                      <strong>Phán quyết quy trách nhiệm (Liability)</strong>
-                      <span>Xác định đơn vị vi phạm SOP & tỷ lệ bồi thường</span>
-                    </div>
-                  </div>
-
-                  {isAdjudicateMode ? (
-                    <div className="claims-step-form">
-                      <div className="claims-form-row">
-                        <label>Đơn vị chịu trách nhiệm:</label>
-                        <select
-                          className="claims-select"
-                          value={adjParty}
-                          onChange={(e) => setAdjParty(e.target.value as ResponsiblePartyType)}
-                        >
-                          <option value="ORIGIN_HUB">Bưu cục gửi (Origin Hub)</option>
-                          <option value="LINEHAUL_FLEET">Xe tuyến liên tỉnh (Linehaul Fleet)</option>
-                          <option value="TRANSIT_HUB">Hub trung chuyển (Transit Sorting)</option>
-                          <option value="DELIVERY_HUB">Bưu cục phát & Shipper</option>
-                          <option value="INSURANCE_FORCE_MAJEURE">Bảo hiểm / Bất khả kháng</option>
-                        </select>
-                      </div>
-
-                      <div className="claims-form-row">
-                        <label>Tên đơn vị / Xe / Bưu tá:</label>
-                        <input
-                          type="text"
-                          className="claims-input"
-                          value={adjEntityName}
-                          onChange={(e) => setAdjEntityName(e.target.value)}
-                          placeholder="VD: Bưu cục Hàng Bài / Xe 29C-882.19"
-                        />
-                      </div>
-
-                      <div className="claims-form-grid-2">
-                        <div className="claims-form-row">
-                          <label>Tỷ lệ chịu lỗi (%):</label>
-                          <input
-                            type="number"
-                            min={0}
-                            max={100}
-                            className="claims-input"
-                            value={adjRatio}
-                            onChange={(e) => setAdjRatio(Number(e.target.value))}
-                          />
-                        </div>
-                        <div className="claims-form-row">
-                          <label>Tiền đền bù duyệt (VNĐ):</label>
-                          <input
-                            type="number"
-                            className="claims-input"
-                            value={adjCompensation}
-                            onChange={(e) => setAdjCompensation(Number(e.target.value))}
-                          />
-                        </div>
-                      </div>
-
-                      <div className="claims-form-row">
-                        <label>Nguyên nhân cốt lõi:</label>
-                        <select
-                          className="claims-select"
-                          value={adjRootCause}
-                          onChange={(e) => setAdjRootCause(e.target.value as RootCauseCategory)}
-                        >
-                          {Object.entries(ROOT_CAUSE_LABELS).map(([k, v]) => (
-                            <option key={k} value={k}>
-                              {v}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-
-                      <div className="claims-form-row">
-                        <label>Ghi chú kết luận của QA / Điều phối:</label>
-                        <textarea
-                          rows={3}
-                          className="claims-textarea"
-                          value={adjNotes}
-                          onChange={(e) => setAdjNotes(e.target.value)}
-                          placeholder="Trích xuất camera, lời giải trình, lý do quy lỗi..."
-                        />
-                      </div>
-
-                      <div className="claims-step-actions">
-                        <button
-                          type="button"
-                          className="claims-btn claims-btn-subtle"
-                          onClick={() => setIsAdjudicateMode(false)}
-                        >
-                          Hủy
-                        </button>
-                        <button
-                          type="button"
-                          className="claims-btn claims-btn-primary"
-                          onClick={handleSaveAdjudication}
-                          disabled={isSavingAdj}
-                        >
-                          {isSavingAdj ? 'Đang lưu...' : 'Lưu phán quyết'}
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="claims-step-view">
-                      {selectedClaim.responsibleParty === 'UNASSIGNED' ? (
-                        <div className="claims-step-empty">
-                          <Clock size={16} color="#d97706" />
-                          <span>Hồ sơ chưa có phán quyết trách nhiệm.</span>
-                          <button
-                            type="button"
-                            className="claims-btn claims-btn-primary claims-btn-sm"
-                            onClick={() => setIsAdjudicateMode(true)}
-                          >
-                            <Gavel size={13} />
-                            <span>Thực hiện quy lỗi ngay</span>
-                          </button>
-                        </div>
-                      ) : (
-                        <div className="claims-adjudicated-summary">
-                          <div className="claims-adj-item">
-                            <span>Bên chịu lỗi:</span>
-                            <strong>
-                              {RESPONSIBLE_PARTY_LABELS[selectedClaim.responsibleParty]} (
-                              {selectedClaim.responsibleEntityName})
-                            </strong>
-                          </div>
-                          <div className="claims-adj-item">
-                            <span>Tỷ lệ chịu:</span>
-                            <strong className="claims-text-danger">
-                              {selectedClaim.liabilityRatioPercent}%
-                            </strong>
-                          </div>
-                          <div className="claims-adj-item">
-                            <span>Số tiền duyệt bồi thường:</span>
-                            <strong className="claims-text-success">
-                              {formatCurrency(selectedClaim.approvedCompensationAmount)}
-                            </strong>
-                          </div>
-                          <div className="claims-adj-item">
-                            <span>Nguyên nhân:</span>
-                            <span>{ROOT_CAUSE_LABELS[selectedClaim.rootCause]}</span>
-                          </div>
-                          {selectedClaim.adjudicationNotes && (
-                            <div className="claims-adj-notes">
-                              <strong>Kết luận:</strong> {selectedClaim.adjudicationNotes}
-                            </div>
-                          )}
-                          <div className="claims-adj-footer">
-                            <small>
-                              Kết luận bởi: <strong>{selectedClaim.adjudicatedBy}</strong> lúc{' '}
-                              {formatDate(selectedClaim.adjudicatedAt)}
-                            </small>
-                            <button
-                              type="button"
-                              className="claims-btn claims-btn-subtle claims-btn-xs"
-                              onClick={() => setIsAdjudicateMode(true)}
-                            >
-                              Điều chỉnh
-                            </button>
+                          <div className="claims-photo-hover">
+                            <Eye size={14} />
                           </div>
                         </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-
-                {/* Step 2: Compensation Approval */}
-                <div className="claims-step-card">
-                  <div className="claims-step-header">
-                    <div className="claims-step-num">2</div>
-                    <div className="claims-step-title">
-                      <strong>Chi trả bồi thường cho Shop (Payout)</strong>
-                      <span>Duyệt chuyển khoản tiền đền bù thiệt hại</span>
-                    </div>
-                  </div>
-
-                  <div className="claims-step-content">
-                    {selectedClaim.status === 'PENDING_INSPECTION' ||
-                    selectedClaim.status === 'DRAFT' ? (
-                      <div className="claims-step-locked">
-                        <Info size={14} />
-                        <span>Cần hoàn tất Bước 1 (Phán quyết quy lỗi) trước khi duyệt chi.</span>
-                      </div>
-                    ) : selectedClaim.merchantPaidAt ||
-                      selectedClaim.status === 'APPROVED_COMPENSATION' ||
-                      selectedClaim.status === 'SETTLED' ? (
-                      <div className="claims-step-done">
-                        <CheckCircle2 size={16} color="#10b981" />
-                        <div>
-                          <strong>Đã duyệt chi trả cho khách gửi</strong>
-                          <div className="claims-text-sm">
-                            Số tiền: {formatCurrency(selectedClaim.approvedCompensationAmount)} •{' '}
-                            {formatDate(selectedClaim.merchantPaidAt)}
-                          </div>
-                        </div>
-                      </div>
+                      ))
                     ) : (
-                      <div className="claims-payout-cta">
-                        <p>
-                          Xác nhận chi trả{' '}
-                          <strong>{formatCurrency(selectedClaim.approvedCompensationAmount)}</strong> cho chủ
-                          hàng: <strong>{selectedClaim.customerName}</strong>.
-                        </p>
-                        <button
-                          type="button"
-                          className="claims-btn claims-btn-success"
-                          onClick={() => handleApprovePayment(selectedClaim.id)}
-                        >
-                          <CheckCircle2 size={15} />
-                          <span>Duyệt chuyển tiền đền bù</span>
-                        </button>
-                      </div>
+                      <span className="claims-photo-empty">Không có ảnh đính kèm trong biên bản.</span>
                     )}
                   </div>
                 </div>
+              </div>
 
-                {/* Step 3: Deduction & Final Settlement */}
-                <div className="claims-step-card">
-                  <div className="claims-step-header">
-                    <div className="claims-step-num">3</div>
-                    <div className="claims-step-title">
-                      <strong>Khấu trừ chế tài & Hoàn tất (Settlement)</strong>
-                      <span>Truy thu đối soát công nợ Hub hoặc trừ lương lái xe/bưu tá</span>
+              {/* RIGHT COLUMN: ADJUDICATION & VERDICT */}
+              <div className="claims-col-right">
+                <div className="claims-section-title">
+                  <Gavel size={16} />
+                  <span>Phán Quyết Trách Nhiệm & Bồi Thường</span>
+                </div>
+
+                {/* Automatic 4-Quadrant Legal Engine Recommendation */}
+                {(() => {
+                  const matrix = computeMatrixVerdict(selectedClaim);
+                  return (
+                    <div
+                      className={`claims-verdict-box ${
+                        matrix.isRejected ? 'claims-verdict-box--rejected' : 'claims-verdict-box--accepted'
+                      }`}
+                    >
+                      <div className="claims-verdict-header">
+                        <Scale size={16} />
+                        <strong>Gợi ý phán quyết chuẩn Luật Bưu chính:</strong>
+                      </div>
+                      <div className="claims-verdict-title">{matrix.verdictLabel}</div>
+                      <div className="claims-verdict-body">{matrix.verdictExplanation}</div>
+                      <div className="claims-verdict-legal">
+                        <em>Căn cứ pháp lý: {matrix.legalBasis}</em>
+                      </div>
+                      <div className="claims-verdict-suggested">
+                        <span>Mức bồi thường gợi ý:</span>
+                        <strong className={matrix.isRejected ? 'claims-text-danger' : 'claims-text-success'}>
+                          {formatCurrency(matrix.suggestedAmount)}
+                        </strong>
+                      </div>
+                    </div>
+                  );
+                })()}
+
+                {/* Adjudication View or Edit Form */}
+                {isAdjudicateMode ? (
+                  <div className="claims-adj-form">
+                    <div className="claims-form-group">
+                      <label>Khâu chịu trách nhiệm lỗi (*):</label>
+                      <select
+                        className="claims-form-select"
+                        value={adjParty}
+                        onChange={(e) => setAdjParty(e.target.value as ResponsiblePartyType)}
+                      >
+                        <option value="ORIGIN_HUB">Bưu cục gửi (Origin Hub)</option>
+                        <option value="LINEHAUL_FLEET">Đội xe tuyến vận chuyển (Linehaul Fleet)</option>
+                        <option value="TRANSIT_HUB">Hub trung chuyển (Transit Hub)</option>
+                        <option value="DELIVERY_HUB">Bưu cục phát & Shipper</option>
+                        <option value="SENDER">Người gửi (Lỗi tự đóng gói)</option>
+                      </select>
+                    </div>
+
+                    <div className="claims-form-row">
+                      <div className="claims-form-group">
+                        <label>Mã đơn vị / Hub gây lỗi (*):</label>
+                        <input
+                          type="text"
+                          className="claims-form-input"
+                          value={adjEntityCode}
+                          onChange={(e) => setAdjEntityCode(e.target.value)}
+                          placeholder="VD: 00101W001"
+                        />
+                      </div>
+                      <div className="claims-form-group">
+                        <label>Tên đơn vị gây lỗi:</label>
+                        <input
+                          type="text"
+                          className="claims-form-input"
+                          value={adjEntityName}
+                          onChange={(e) => setAdjEntityName(e.target.value)}
+                          placeholder="VD: Hub Tân Bình (Khu dỡ hàng)"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="claims-form-row">
+                      <div className="claims-form-group">
+                        <label>Tỷ lệ lỗi (%):</label>
+                        <input
+                          type="number"
+                          className="claims-form-input"
+                          min="0"
+                          max="100"
+                          value={adjRatio}
+                          onChange={(e) => setAdjRatio(Number(e.target.value))}
+                        />
+                      </div>
+                      <div className="claims-form-group">
+                        <label>Nguyên nhân gốc rễ (Root Cause):</label>
+                        <select
+                          className="claims-form-select"
+                          value={adjRootCause}
+                          onChange={(e) => setAdjRootCause(e.target.value as RootCauseCategory)}
+                        >
+                          <option value="PACKAGING_SOP_VIOLATION">Vi phạm SOP đóng gói</option>
+                          <option value="ROUGH_HANDLING_STACKING">Ném hàng / Xếp đè hàng nặng</option>
+                          <option value="VEHICLE_ACCIDENT_RAIN">Tai nạn xe / Mưa ướt thùng</option>
+                          <option value="INTERNAL_THEFT">Mất cắp / Rút ruột nội bộ</option>
+                          <option value="WRONG_ROUTING_AGING">Lưu kho quá hạn bẹp dập</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div className="claims-form-row">
+                      <div className="claims-form-group">
+                        <label>Tiền bồi thường duyệt đền cho Shop (đ):</label>
+                        <input
+                          type="number"
+                          className="claims-form-input"
+                          value={adjCompensation}
+                          onChange={(e) => setAdjCompensation(Number(e.target.value))}
+                        />
+                      </div>
+                      <div className="claims-form-group">
+                        <label>Tiền phạt khấu trừ đơn vị lỗi (đ):</label>
+                        <input
+                          type="number"
+                          className="claims-form-input"
+                          value={adjPenalty}
+                          onChange={(e) => setAdjPenalty(Number(e.target.value))}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="claims-form-group">
+                      <label>Ghi chú phán quyết của QA / Ban Giám Sát:</label>
+                      <textarea
+                        className="claims-form-textarea"
+                        rows={3}
+                        value={adjNotes}
+                        onChange={(e) => setAdjNotes(e.target.value)}
+                        placeholder="Nêu rõ camera bàn dỡ, biên bản kiểm tra chéo..."
+                      />
+                    </div>
+
+                    <div className="claims-form-actions">
+                      <button
+                        type="button"
+                        className="claims-btn claims-btn-subtle"
+                        onClick={() => setIsAdjudicateMode(false)}
+                      >
+                        Hủy
+                      </button>
+                      <button
+                        type="button"
+                        className="claims-btn claims-btn-primary"
+                        onClick={handleSaveAdjudication}
+                        disabled={isSavingAdj}
+                      >
+                        {isSavingAdj ? 'Đang lưu...' : 'Lưu phán quyết quy trách nhiệm'}
+                      </button>
                     </div>
                   </div>
-
-                  <div className="claims-step-content">
-                    {selectedClaim.status === 'SETTLED' || selectedClaim.hubDeductedAt ? (
-                      <div className="claims-step-done">
-                        <ShieldCheck size={16} color="#10b981" />
-                        <div>
-                          <strong>Hồ sơ đã được tất toán hoàn tất</strong>
-                          <div className="claims-text-sm">
-                            Đã khấu trừ: {formatCurrency(selectedClaim.penaltyAmount)} •{' '}
-                            {formatDate(selectedClaim.hubDeductedAt)}
-                          </div>
-                        </div>
+                ) : (
+                  /* Read-Only Status & Workflow Overview */
+                  <div className="claims-adjudicated-info">
+                    <div className="claims-summary-card">
+                      <div className="claims-summary-row">
+                        <span>Trạng thái hồ sơ:</span>
+                        <strong className="claims-text-blue">
+                          {CLAIM_STATUS_LABELS[selectedClaim.status]}
+                        </strong>
                       </div>
-                    ) : selectedClaim.status === 'APPROVED_COMPENSATION' ? (
-                      <div className="claims-settle-cta">
-                        <p>
-                          Xác nhận khấu trừ{' '}
-                          <strong>{formatCurrency(selectedClaim.penaltyAmount || selectedClaim.approvedCompensationAmount)}</strong> vào kỳ
-                          lương/đối soát của:{' '}
-                          <strong>{selectedClaim.responsibleEntityName || selectedClaim.responsibleEntityCode}</strong>.
-                        </p>
+                      <div className="claims-summary-row">
+                        <span>Khâu chịu lỗi:</span>
+                        <strong>{RESPONSIBLE_PARTY_LABELS[selectedClaim.responsibleParty]}</strong>
+                      </div>
+                      <div className="claims-summary-row">
+                        <span>Đơn vị chịu lỗi:</span>
+                        <strong>
+                          {selectedClaim.responsibleEntityName || selectedClaim.responsibleEntityCode || '---'}
+                        </strong>
+                      </div>
+                      <div className="claims-summary-row">
+                        <span>Tỷ lệ chịu trách nhiệm:</span>
+                        <strong>{selectedClaim.liabilityRatioPercent}%</strong>
+                      </div>
+                      <div className="claims-summary-row">
+                        <span>Tiền bồi thường duyệt:</span>
+                        <strong className="claims-text-success">
+                          {formatCurrency(selectedClaim.approvedCompensationAmount)}
+                        </strong>
+                      </div>
+                      <div className="claims-summary-row">
+                        <span>Tiền phạt khấu trừ:</span>
+                        <strong className="claims-text-danger">
+                          {formatCurrency(selectedClaim.penaltyAmount)}
+                        </strong>
+                      </div>
+                      <div className="claims-summary-row">
+                        <span>Người lập phán quyết:</span>
+                        <span>{selectedClaim.adjudicatedBy || '---'}</span>
+                      </div>
+                    </div>
+
+                    {selectedClaim.adjudicationNotes && (
+                      <div className="claims-notes-box">
+                        <label>Căn cứ giám định:</label>
+                        <p>{selectedClaim.adjudicationNotes}</p>
+                      </div>
+                    )}
+
+                    {/* Operational Action Buttons */}
+                    <div className="claims-workflow-actions">
+                      {selectedClaim.status === 'PENDING_INSPECTION' || selectedClaim.status === 'DRAFT' ? (
+                        <button
+                          type="button"
+                          className="claims-btn claims-btn-primary"
+                          onClick={() => setIsAdjudicateMode(true)}
+                        >
+                          <Gavel size={15} />
+                          <span>Mở phiên quy lỗi & Giám định</span>
+                        </button>
+                      ) : null}
+
+                      {selectedClaim.status === 'LIABILITY_DETERMINED' ? (
+                        <div className="claims-workflow-group">
+                          <button
+                            type="button"
+                            className="claims-btn claims-btn-subtle"
+                            onClick={() => setIsAdjudicateMode(true)}
+                          >
+                            Chỉnh sửa phán quyết
+                          </button>
+                          <button
+                            type="button"
+                            className="claims-btn claims-btn-success"
+                            onClick={() => handleApprovePayment(selectedClaim.id)}
+                          >
+                            <CheckCircle2 size={15} />
+                            <span>Duyệt chi bồi thường ({formatCurrency(selectedClaim.approvedCompensationAmount)})</span>
+                          </button>
+                        </div>
+                      ) : null}
+
+                      {selectedClaim.status === 'APPROVED_COMPENSATION' ? (
                         <button
                           type="button"
                           className="claims-btn claims-btn-settle"
                           onClick={() => handleSettle(selectedClaim.id)}
                         >
                           <DollarSign size={15} />
-                          <span>Xác nhận đã khấu trừ chế tài</span>
+                          <span>Tất toán khấu trừ chế tài ({formatCurrency(selectedClaim.penaltyAmount)})</span>
                         </button>
-                      </div>
-                    ) : (
-                      <div className="claims-step-locked">
-                        <Info size={14} />
-                        <span>Cần hoàn tất duyệt chi bồi thường ở Bước 2 trước khi đóng hồ sơ.</span>
-                      </div>
-                    )}
+                      ) : null}
+
+                      {selectedClaim.status === 'SETTLED' ? (
+                        <div className="claims-settled-badge">
+                          <CheckCircle2 size={16} />
+                          <span>Hồ sơ đã tất toán chi trả & khấu trừ hoàn tất!</span>
+                        </div>
+                      ) : null}
+                    </div>
                   </div>
-                </div>
+                )}
               </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="claims-modal-footer">
+              <button
+                type="button"
+                className="claims-btn claims-btn-subtle"
+                onClick={() => setSelectedClaim(null)}
+              >
+                Đóng
+              </button>
             </div>
           </div>
         </div>
       )}
 
       {/* ========================================================= */}
-      {/* MODAL: CREATE NEW CLAIM                                   */}
+      {/* PHOTO PREVIEW MODAL                                       */}
+      {/* ========================================================= */}
+      {previewPhotoUrl && (
+        <div className="claims-modal-backdrop" onClick={() => setPreviewPhotoUrl(null)}>
+          <div className="claims-photo-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="claims-photo-modal-header">
+              <span>Ảnh hiện trường tổn thất</span>
+              <button type="button" onClick={() => setPreviewPhotoUrl(null)}>
+                <X size={18} />
+              </button>
+            </div>
+            <img src={previewPhotoUrl} alt="Phóng to tổn thất" className="claims-photo-zoom" />
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================= */}
+      {/* CREATE NEW CLAIM MODAL                                    */}
       {/* ========================================================= */}
       {isNewModalOpen && (
         <div className="claims-modal-backdrop" onClick={() => setIsNewModalOpen(false)}>
-          <div
-            className="claims-modal-dialog claims-modal-dialog--medium"
-            onClick={(e) => e.stopPropagation()}
-          >
+          <div className="claims-modal-dialog" onClick={(e) => e.stopPropagation()}>
             <div className="claims-modal-header">
-              <h3>Lập hồ sơ bồi thường mới</h3>
+              <h3>Lập Hồ sơ Bồi thường Sự cố mới</h3>
               <button
                 type="button"
                 className="claims-modal-close"
@@ -1275,69 +1202,57 @@ export function ClaimsLiabilityManagementPage(): React.JSX.Element {
                 <X size={18} />
               </button>
             </div>
+
             <div className="claims-modal-body">
-              <div className="claims-form-grid-2">
-                <div className="claims-form-row">
-                  <label>Mã vận đơn (*):</label>
-                  <input
-                    type="text"
-                    className="claims-input"
-                    value={newShipmentCode}
-                    onChange={(e) => setNewShipmentCode(e.target.value)}
-                    placeholder="VD: 101000000001"
-                  />
-                </div>
-                <div className="claims-form-row">
-                  <label>Loại sự cố:</label>
-                  <select
-                    className="claims-select"
-                    value={newIncidentType}
-                    onChange={(e) => setNewIncidentType(e.target.value as IncidentType)}
-                  >
-                    <option value="DAMAGED">Bể vỡ / Hư hỏng</option>
-                    <option value="LOST_IN_TRANSIT">Thất lạc / Mất kiện</option>
-                  </select>
-                </div>
+              <div className="claims-form-group">
+                <label>Mã vận đơn (*):</label>
+                <input
+                  type="text"
+                  className="claims-form-input"
+                  placeholder="VD: NXS000999"
+                  value={newShipmentCode}
+                  onChange={(e) => setNewShipmentCode(e.target.value)}
+                />
               </div>
 
-              <div className="claims-form-grid-2">
-                <div className="claims-form-row">
-                  <label>Tên khách hàng / Shop:</label>
+              <div className="claims-form-row">
+                <div className="claims-form-group">
+                  <label>Tên khách hàng / Shop gửi:</label>
                   <input
                     type="text"
-                    className="claims-input"
+                    className="claims-form-input"
+                    placeholder="VD: Shop Đồ Chơi Mỹ"
                     value={newCustomer}
                     onChange={(e) => setNewCustomer(e.target.value)}
-                    placeholder="Tên shop hoặc khách gửi"
                   />
                 </div>
-                <div className="claims-form-row">
+                <div className="claims-form-group">
                   <label>Số điện thoại:</label>
                   <input
                     type="text"
-                    className="claims-input"
+                    className="claims-form-input"
+                    placeholder="VD: 0912 345 678"
                     value={newPhone}
                     onChange={(e) => setNewPhone(e.target.value)}
-                    placeholder="0912345678"
                   />
                 </div>
               </div>
 
-              <div className="claims-form-grid-2">
-                <div className="claims-form-row">
-                  <label>Bưu cục gửi (Origin):</label>
+              <div className="claims-form-row">
+                <div className="claims-form-group">
+                  <label>Bưu cục gửi (Origin Hub):</label>
                   <input
                     type="text"
-                    className="claims-input"
+                    className="claims-form-input"
                     value={newOriginHub}
                     onChange={(e) => setNewOriginHub(e.target.value)}
                   />
                 </div>
-                <div className="claims-form-row">
-                  <label>Bưu cục nhận (Dest):</label>
+                <div className="claims-form-group">
+                  <label>Bưu cục phát (Destination Hub):</label>
                   <input
                     type="text"
-                    className="claims-input"
+                    className="claims-form-input"
                     value={newDestHub}
                     onChange={(e) => setNewDestHub(e.target.value)}
                   />
@@ -1345,75 +1260,72 @@ export function ClaimsLiabilityManagementPage(): React.JSX.Element {
               </div>
 
               <div className="claims-form-row">
-                <label>Số tiền yêu cầu bồi thường (VNĐ):</label>
-                <input
-                  type="number"
-                  className="claims-input"
-                  value={newDeclaredValue}
-                  onChange={(e) => setNewDeclaredValue(Number(e.target.value))}
-                />
+                <div className="claims-form-group">
+                  <label>Loại sự cố (*):</label>
+                  <select
+                    className="claims-form-select"
+                    value={newIncidentType}
+                    onChange={(e) => setNewIncidentType(e.target.value as IncidentType)}
+                  >
+                    <option value="DAMAGED">Bể vỡ / Hư hỏng hàng hóa</option>
+                    <option value="LOST_IN_TRANSIT">Thất lạc / Mất mát nguyên kiện</option>
+                  </select>
+                </div>
+                <div className="claims-form-group">
+                  <label>Giá trị hàng khai báo / Yêu cầu đền (đ):</label>
+                  <input
+                    type="number"
+                    className="claims-form-input"
+                    value={newDeclaredValue}
+                    onChange={(e) => setNewDeclaredValue(Number(e.target.value))}
+                  />
+                </div>
               </div>
 
-              <div className="claims-form-row">
+              <div className="claims-form-group">
                 <label>Mô tả hàng hóa:</label>
                 <input
                   type="text"
-                  className="claims-input"
+                  className="claims-form-input"
+                  placeholder="VD: Màn hình máy tính Dell 27 inch"
                   value={newPackageDesc}
                   onChange={(e) => setNewPackageDesc(e.target.value)}
-                  placeholder="VD: Hộp bánh kẹo, Bộ ấm chén gốm..."
                 />
               </div>
 
-              <div className="claims-form-row">
-                <label>Mô tả hiện trạng hư hại:</label>
+              <div className="claims-form-group">
+                <label>Mô tả hiện trạng hư hỏng tổn thất:</label>
                 <textarea
-                  rows={3}
-                  className="claims-textarea"
+                  className="claims-form-textarea"
+                  rows={2}
+                  placeholder="VD: Thùng ngoài dập góc đáy, màn hình bên trong nứt rạn rỗ sọc..."
                   value={newDamageDesc}
                   onChange={(e) => setNewDamageDesc(e.target.value)}
-                  placeholder="Thùng móp rách, gãy chân đèn, ướt nước..."
                 />
               </div>
+            </div>
 
-              <div className="claims-modal-actions">
-                <button
-                  type="button"
-                  className="claims-btn claims-btn-subtle"
-                  onClick={() => setIsNewModalOpen(false)}
-                >
-                  Hủy
-                </button>
-                <button
-                  type="button"
-                  className="claims-btn claims-btn-primary"
-                  onClick={handleCreateNewClaim}
-                  disabled={isCreatingClaim}
-                >
-                  {isCreatingClaim ? 'Đang tạo...' : 'Tạo hồ sơ'}
-                </button>
-              </div>
+            <div className="claims-modal-footer">
+              <button
+                type="button"
+                className="claims-btn claims-btn-subtle"
+                onClick={() => setIsNewModalOpen(false)}
+              >
+                Hủy
+              </button>
+              <button
+                type="button"
+                className="claims-btn claims-btn-primary"
+                onClick={handleCreateNewClaim}
+                disabled={isCreatingClaim}
+              >
+                {isCreatingClaim ? 'Đang tạo...' : 'Lưu hồ sơ bồi thường'}
+              </button>
             </div>
           </div>
         </div>
       )}
-
-      {/* ========================================================= */}
-      {/* PHOTO PREVIEW LIGHTBOX                                    */}
-      {/* ========================================================= */}
-      {previewPhotoUrl && (
-        <div className="claims-lightbox-backdrop" onClick={() => setPreviewPhotoUrl(null)}>
-          <div className="claims-lightbox-dialog" onClick={(e) => e.stopPropagation()}>
-            <button
-              type="button"
-              className="claims-lightbox-close"
-              onClick={() => setPreviewPhotoUrl(null)}
-            >
-              <X size={20} />
-            </button>
-            <img src={previewPhotoUrl} alt="Ảnh bằng chứng hiện trường phóng to" />
-          </div>
-        </div>
+        </>
       )}
     </div>
   );

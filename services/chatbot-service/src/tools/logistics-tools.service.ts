@@ -5,11 +5,62 @@ export interface TrackingResult {
   trackingNumber: string;
   status: string;
   statusText: string;
+  senderName?: string;
   senderCity?: string;
+  senderAddress?: string;
+  receiverName?: string;
+  receiverPhone?: string;
   receiverCity?: string;
+  receiverAddress?: string;
+  itemName?: string;
+  weightKg?: number;
+  codAmount?: number;
   currentLocation?: string;
   estimatedDelivery?: string;
+  createdAt?: string;
   timeline: { time: string; status: string; description: string }[];
+  isMasked?: boolean;
+  notFoundMessage?: string;
+}
+
+function maskVietnameseName(name?: string): string {
+  if (!name) return 'Khách hàng';
+  const parts = name.trim().split(/\s+/);
+  return parts
+    .map((p) => (p.length > 2 ? p[0] + '*'.repeat(p.length - 2) + p[p.length - 1] : p[0] + '*'))
+    .join(' ');
+}
+
+function maskPhone(phone?: string): string {
+  if (!phone) return '';
+  return phone.replace(/(\d{3,4})\d{3,4}(\d{3})/, '$1****$2');
+}
+
+function maskAddress(addr?: string): string {
+  if (!addr) return '';
+  const parts = addr.split(/,\s*/);
+  if (parts.length > 2) {
+    return '***, ' + parts.slice(-2).join(', ');
+  }
+  return '***, ' + addr;
+}
+
+export function formatShipmentStatusVi(status?: string): string {
+  switch (status) {
+    case 'CREATED': return 'Đã tạo đơn hàng thành công';
+    case 'TASK_ASSIGNED': return 'Đã phân công bưu tá lấy hàng';
+    case 'PICKED_UP': return 'Bưu tá đã lấy hàng thành công';
+    case 'RECEIVED_ORIGIN_HUB': return 'Đã nhập kho bưu cục gốc';
+    case 'IN_TRANSIT': return 'Đang trung chuyển liên tỉnh';
+    case 'RECEIVED_DESTINATION_HUB': return 'Đã đến bưu cục phát';
+    case 'OUT_FOR_DELIVERY': return 'Bưu tá đang trên đường giao hàng';
+    case 'DELIVERED': return 'Đã giao hàng thành công';
+    case 'FAILED_ATTEMPT': return 'Giao hàng không thành công (chờ phát lại)';
+    case 'RETURNING': return 'Đang chuyển hoàn về người gửi';
+    case 'RETURNED': return 'Đã chuyển hoàn thành công';
+    case 'CANCELLED': return 'Đã hủy đơn hàng';
+    default: return status || 'Đang cập nhật';
+  }
 }
 
 export interface PricingResult {
@@ -33,118 +84,597 @@ export class LogisticsToolsService {
   private readonly logger = new Logger(LogisticsToolsService.name);
   private trackingServiceUrl: string;
   private pricingServiceUrl: string;
+  private shipmentServiceUrl: string;
+  private readonly createdShipmentsMap = new Map<string, TrackingResult>();
 
   constructor() {
     this.trackingServiceUrl = process.env.TRACKING_SERVICE_URL || 'http://localhost:3008';
     this.pricingServiceUrl = process.env.PRICING_SERVICE_URL || 'http://localhost:3012';
+    this.shipmentServiceUrl = process.env.SHIPMENT_SERVICE_URL || 'http://localhost:3002';
   }
 
   /**
-   * Tra cứu hành trình bưu kiện thời gian thực (Real-time Shipment Tracking)
+   * Tạo đơn hàng khách lẻ trực tiếp qua Giao dịch viên bưu cục AI (Retail 333 series)
    */
-  public async trackShipment(trackingNumber: string): Promise<TrackingResult> {
-    const cleanTracking = trackingNumber.trim().toUpperCase();
-    this.logger.log(`Tool trackShipment invoked for: ${cleanTracking}`);
+  public async createRetailOrder(input: {
+    userId?: string;
+    senderAddress?: string;
+    senderPhone?: string;
+    senderName?: string;
+    receiverName?: string;
+    receiverPhone?: string;
+    receiverAddress?: string;
+    receiverCity?: string;
+    itemName?: string;
+    weightKg?: number;
+    codAmount?: number;
+    payer?: 'SENDER' | 'RECEIVER';
+    shippingFee?: number;
+  }): Promise<{
+    trackingNumber: string;
+    status: string;
+    statusText: string;
+    courierName: string;
+    courierPhone: string;
+    courierRoute: string;
+    pickupWindow: string;
+    totalFee: number;
+    payer: 'SENDER' | 'RECEIVER';
+    trackingResult: TrackingResult;
+  }> {
+    const code = '333' + Math.floor(100000000 + Math.random() * 900000000).toString();
+    const payer = input.payer || 'SENDER';
+    const shippingFee = input.shippingFee || 32000;
+    const nowTime = new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+    const nowDate = new Date().toLocaleDateString('vi-VN');
 
-    try {
-      const response = await fetch(`${this.trackingServiceUrl}/tracking/public/${cleanTracking}`);
-      if (response.ok) {
-        const data = await response.json();
-        return {
-          found: true,
-          trackingNumber: cleanTracking,
-          status: data.currentStatus || 'IN_TRANSIT',
-          statusText: data.statusDescription || 'Đang vận chuyển',
-          senderCity: data.senderCity,
-          receiverCity: data.receiverCity,
-          currentLocation: data.currentLocation,
-          estimatedDelivery: data.estimatedDelivery,
-          timeline: data.checkpoints || [],
-        };
-      }
-    } catch (err) {
-      this.logger.warn(`Failed to query tracking service: ${(err as Error).message}. Using mock response.`);
-    }
-
-    // Mock response fallback khi service offline
-    return {
+    const trackingResult: TrackingResult = {
       found: true,
-      trackingNumber: cleanTracking,
-      status: 'IN_TRANSIT',
-      statusText: 'Đang trung chuyển qua Hub Đà Nẵng',
+      trackingNumber: code,
+      status: 'TASK_ASSIGNED',
+      statusText: 'Đã phân công bưu tá lấy hàng',
+      senderName: input.senderName || 'Khách hàng Nexus',
       senderCity: 'TP. Hồ Chí Minh',
-      receiverCity: 'Hà Nội',
-      currentLocation: 'Hub Đà Nẵng (Quận Liên Chiểu)',
+      senderAddress: input.senderAddress || '128 Phan Đăng Lưu, Phường 3, Quận Phú Nhuận, TP.HCM',
+      receiverName: input.receiverName || 'Anh Nguyễn Văn An',
+      receiverPhone: input.receiverPhone || '0912345678',
+      receiverAddress: input.receiverAddress || '25 Tràng Tiền, Quận Hoàn Kiếm, TP. Hà Nội',
+      receiverCity: input.receiverCity || 'Thành phố Hà Nội',
+      itemName: input.itemName || 'Kiện hàng quà tặng người thân',
+      weightKg: input.weightKg || 1.5,
+      codAmount: input.codAmount || 0,
+      currentLocation: 'Hub Tân Định (Bưu cục gốc tiếp nhận)',
       estimatedDelivery: '18:00 Ngày mai',
+      createdAt: `${nowDate} ${nowTime}`,
       timeline: [
-        { time: '14/09 09:30', status: 'PICKED_UP', description: 'Bưu tá đã lấy hàng tại Shop' },
-        { time: '14/09 14:00', status: 'HUB_IN', description: 'Đã nhập Hub Tân Bình' },
-        { time: '14/09 21:00', status: 'LINEHAUL_DISPATCH', description: 'Đang chuyển xe tải liên tỉnh Bắc - Nam' },
-        { time: '15/09 06:15', status: 'HUB_IN', description: 'Đã nhập kho trung chuyển Đà Nẵng' },
+        {
+          time: `${nowDate} ${nowTime}`,
+          status: 'TASK_ASSIGNED',
+          description: 'Hệ thống đã tự động điều phối bưu tá Nguyễn Văn Tuấn (SĐT: 0908 123 456) phụ trách tuyến đến lấy hàng tận nơi.',
+        },
+        {
+          time: `${nowDate} ${nowTime}`,
+          status: 'CREATED',
+          description: `Tạo đơn bưu phẩm thành công qua Giao dịch viên AI Nexus. Cước: ${shippingFee.toLocaleString('vi-VN')} VNĐ (${payer === 'SENDER' ? 'Người gửi thanh toán' : 'Người nhận thanh toán'}).`,
+        },
       ],
+      isMasked: false,
+    };
+
+    this.createdShipmentsMap.set(code, trackingResult);
+
+    // Đồng bộ sang shipment-service nếu service đang chạy
+    try {
+      await fetch(`http://localhost:3003/api/v1/shipments`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          code,
+          currentStatus: 'TASK_ASSIGNED',
+          createdByUserId: input.userId || 'retail_customer',
+          createdByType: 'CUSTOMER',
+          receiverPhone: input.receiverPhone || '0912345678',
+          metadata: {
+            sender: {
+              name: trackingResult.senderName,
+              address: trackingResult.senderAddress,
+              province: 'TP. Hồ Chí Minh',
+            },
+            receiver: {
+              name: trackingResult.receiverName,
+              phone: trackingResult.receiverPhone,
+              address: trackingResult.receiverAddress,
+              province: trackingResult.receiverCity,
+            },
+            package: {
+              itemName: trackingResult.itemName,
+              weightKg: trackingResult.weightKg,
+              codAmount: trackingResult.codAmount,
+            },
+            payment: {
+              shippingFee,
+              codAmount: trackingResult.codAmount,
+              payer,
+            },
+            assignedCourier: {
+              name: 'Nguyễn Văn Tuấn',
+              phone: '0908 123 456',
+              routeCode: 'SGN-01-TB',
+            },
+          },
+        }),
+        signal: AbortSignal.timeout(2000),
+      });
+    } catch {}
+
+    return {
+      trackingNumber: code,
+      status: 'TASK_ASSIGNED',
+      statusText: 'Đã phân công bưu tá lấy hàng',
+      courierName: 'Nguyễn Văn Tuấn',
+      courierPhone: '0908 123 456',
+      courierRoute: 'SGN-01-TB (Hub Tân Định)',
+      pickupWindow: 'Trong vòng 30 - 60 phút tới (bưu tá sẽ gọi trước 15 phút)',
+      totalFee: shippingFee,
+      payer,
+      trackingResult,
     };
   }
 
   /**
-   * Dự toán cước phí bưu gửi theo quy chuẩn Nexus Logistics & IATA (Phân tầng 3-Tier)
+   * Tra cứu hành trình bưu kiện thời gian thực (Real-time Shipment Tracking)
+   * Có cơ chế Privacy Masking cho người dùng vãng lai chưa đăng nhập
    */
-  public calculatePricing(
-    weightKg: number,
-    serviceType = 'STANDARD',
-    fromCity = 'TP.HCM',
-    toCity = 'Hà Nội',
-    customerTier: 'GUEST' | 'STANDARD' | 'VIP_ENTERPRISE' = 'GUEST'
-  ): PricingResult {
-    this.logger.log(`Tool calculatePricing invoked: ${weightKg}kg, ${serviceType}, ${fromCity} -> ${toCity}, tier=${customerTier}`);
+  public async trackShipment(trackingNumber: string, isGuest = true): Promise<TrackingResult> {
+    const cleanTracking = trackingNumber.trim().toUpperCase();
+    this.logger.log(`Tool trackShipment invoked for: ${cleanTracking} (isGuest: ${isGuest})`);
 
-    const sType = serviceType.toUpperCase();
-    let baseFee = 18000;
-    let excessRatePerHalfKg = 5000;
-
-    if (sType.includes('EXPRESS') || sType.includes('HOA_TOC') || sType.includes('NHANH')) {
-      baseFee = 28000;
-      excessRatePerHalfKg = 8000;
-    } else if (sType.includes('SAME') || sType.includes('TRONG_NGAY')) {
-      baseFee = 42000;
-      excessRatePerHalfKg = 12000;
+    // Kiểm tra đơn hàng mới tạo trong phiên của Giao dịch viên bưu cục
+    if (this.createdShipmentsMap.has(cleanTracking)) {
+      return this.createdShipmentsMap.get(cleanTracking)!;
     }
 
-    // Phụ phí vượt nấc 0.5kg
-    const baseWeight = 0.5;
-    const excessWeight = Math.max(0, weightKg - baseWeight);
+    try {
+      // 1. Thử lấy thông tin chi tiết từ shipment-service
+      let shipData: any = null;
+      try {
+        const shipResp = await fetch(`${this.shipmentServiceUrl}/shipments/${cleanTracking}`, {
+          signal: AbortSignal.timeout(2000),
+        });
+        if (shipResp.ok) {
+          shipData = await shipResp.json();
+        }
+      } catch {}
+
+      // 2. Thử lấy thông tin trạng thái & timeline từ tracking-service
+      let currentTracking: any = null;
+      let timelineEvents: any[] = [];
+      try {
+        const curResp = await fetch(`${this.trackingServiceUrl}/tracking/${cleanTracking}/current`, {
+          signal: AbortSignal.timeout(2000),
+        });
+        if (curResp.ok) currentTracking = await curResp.json();
+
+        const timeResp = await fetch(`${this.trackingServiceUrl}/tracking/${cleanTracking}/timeline`, {
+          signal: AbortSignal.timeout(2000),
+        });
+        if (timeResp.ok) {
+          const timeData = await timeResp.json();
+          if (Array.isArray(timeData)) timelineEvents = timeData;
+        }
+      } catch {}
+
+      if (shipData || currentTracking) {
+        const payload = currentTracking?.viewPayload || {};
+        const meta = shipData?.metadata || {};
+        const sender = payload.sender || meta.sender || {};
+        const receiver = payload.receiver || meta.receiver || {};
+        const pkg = payload.package || meta.package || {};
+
+        const status = currentTracking?.currentStatusCode || shipData?.currentStatus || 'IN_TRANSIT';
+        const statusText =
+          formatShipmentStatusVi(status) ||
+          currentTracking?.currentStatus ||
+          payload?.display?.current_status_label_vi ||
+          status;
+        const currentLocation =
+          currentTracking?.currentLocationText ||
+          payload.location?.current ||
+          shipData?.currentLocation ||
+          'Bưu cục tiếp nhận';
+
+        let timeline: { time: string; status: string; description: string }[] = [];
+        if (payload.timeline && Array.isArray(payload.timeline) && payload.timeline.length > 0) {
+          timeline = payload.timeline.map((t: any) => ({
+            time: t.time ? new Date(t.time).toLocaleString('vi-VN') : '',
+            status: t.type || '',
+            description: t.desc || t.location || 'Cập nhật trạng thái',
+          }));
+        } else if (timelineEvents.length > 0) {
+          timeline = timelineEvents.map((t: any) => ({
+            time: t.occurredAt ? new Date(t.occurredAt).toLocaleString('vi-VN') : '',
+            status: t.statusAfterEventCode || t.eventTypeCode || '',
+            description: t.note || t.locationText || t.eventTypeName || 'Cập nhật trạng thái',
+          }));
+        } else {
+          timeline = [
+            {
+              time: shipData?.createdAt
+                ? new Date(shipData.createdAt).toLocaleString('vi-VN')
+                : 'Gần đây',
+              status: status,
+              description: statusText,
+            },
+          ];
+        }
+
+        const senderName = isGuest ? maskVietnameseName(sender.name) : sender.name;
+        const receiverName = isGuest ? maskVietnameseName(receiver.name) : receiver.name;
+        const receiverPhone = isGuest ? maskPhone(receiver.phone) : receiver.phone;
+        const receiverAddress = isGuest
+          ? maskAddress(receiver.address || receiver.addressDetail)
+          : (receiver.address || receiver.addressDetail);
+        const senderAddress = isGuest
+          ? maskAddress(sender.address || sender.addressDetail)
+          : (sender.address || sender.addressDetail);
+
+        const realItemName = pkg.itemName || pkg.itemType || meta.package?.itemName || meta.package?.itemType || 'Kiện hàng bưu gửi';
+
+        return {
+          found: true,
+          trackingNumber: cleanTracking,
+          status,
+          statusText,
+          senderName,
+          senderCity: sender.province || sender.city,
+          senderAddress,
+          receiverName,
+          receiverPhone,
+          receiverCity: receiver.province || receiver.city,
+          receiverAddress,
+          itemName: realItemName,
+          weightKg: payload.weightKg || pkg.weightKg || meta.package?.weightKg || 0.5,
+          codAmount: payload.codAmount ?? meta.codAmount ?? pkg.codAmount ?? shipData?.codAmount ?? 0,
+          currentLocation,
+          estimatedDelivery: '18:00 Ngày mai',
+          createdAt: shipData?.createdAt
+            ? new Date(shipData.createdAt).toLocaleString('vi-VN')
+            : undefined,
+          timeline,
+          isMasked: isGuest,
+        };
+      }
+    } catch (err) {
+      this.logger.warn(`Failed to query microservices: ${(err as Error).message}`);
+    }
+
+    // Chỉ dùng Mock response khi người dùng tra cứu đúng mã demo hệ thống NX-88992211
+    if (cleanTracking === 'NX-88992211' || cleanTracking === 'DEMO-TRACK') {
+      return {
+        found: true,
+        trackingNumber: cleanTracking,
+        status: 'IN_TRANSIT',
+        statusText: 'Đang trung chuyển qua Hub Đà Nẵng',
+        senderName: isGuest ? 'Shop T*** C***' : 'Shop Thời Trang Coolmate',
+        senderCity: 'TP. Hồ Chí Minh',
+        receiverName: isGuest ? 'A** Hoàng L***' : 'Anh Hoàng Long',
+        receiverPhone: isGuest ? '0909****88' : '0909112288',
+        receiverAddress: isGuest ? '***, Quận Cầu Giấy, Hà Nội' : 'Số 18 Cầu Giấy, Hà Nội',
+        receiverCity: 'Hà Nội',
+        itemName: isGuest ? 'Bưu phẩm tiêu chuẩn' : 'Áo khoác gió cao cấp',
+        codAmount: 250000,
+        currentLocation: 'Hub Đà Nẵng (Quận Liên Chiểu)',
+        estimatedDelivery: '18:00 Ngày mai',
+        timeline: [
+          { time: '14/09 09:30', status: 'PICKED_UP', description: 'Bưu tá đã lấy hàng tại Shop' },
+          { time: '14/09 14:00', status: 'HUB_IN', description: 'Đã nhập Hub Tân Bình' },
+          { time: '14/09 21:00', status: 'LINEHAUL_DISPATCH', description: 'Đang chuyển xe tải liên tỉnh Bắc - Nam' },
+          { time: '15/09 06:15', status: 'HUB_IN', description: 'Đã nhập kho trung chuyển Đà Nẵng' },
+        ],
+        isMasked: isGuest,
+      };
+    }
+
+    // Nếu không tìm thấy mã trong DB và không phải mã demo -> Tuyệt đối không phịa đơn hàng!
+    return {
+      found: false,
+      trackingNumber: cleanTracking,
+      status: 'NOT_FOUND',
+      statusText: 'Không tìm thấy bưu phẩm',
+      currentLocation: 'Không xác định',
+      timeline: [],
+      notFoundMessage: `Hệ thống không tìm thấy bưu phẩm có mã vận đơn "${cleanTracking}". Bạn vui lòng kiểm tra lại tính chính xác của mã vận đơn hoặc liên hệ người gửi/bưu cục gửi hàng để được hỗ trợ.`,
+    };
+  }
+
+  /**
+  /**
+   * Lấy danh sách các đơn hàng gần đây (theo userId nếu đã đăng nhập)
+   * Hỗ trợ trường hợp khách có 1 đơn hoặc NHIỀU ĐƠN HÀNG (Multiple Shipments)
+   */
+  public async getUserShipments(userId?: string, limit = 5): Promise<{
+    found: boolean;
+    isUserSpecific: boolean;
+    total: number;
+    items: Array<{
+      code: string;
+      status: string;
+      statusText: string;
+      itemName?: string;
+      receiverName?: string;
+      receiverCity?: string;
+      receiverAddress?: string;
+      codAmount?: number;
+      createdAt?: string;
+    }>;
+    singleTracking?: TrackingResult;
+    notFoundMessage?: string;
+  }> {
+    this.logger.log(`Tool getUserShipments invoked for userId: ${userId || 'anonymous'}, limit: ${limit}`);
+
+    const createdItems = Array.from(this.createdShipmentsMap.values()).map((s) => ({
+      code: s.trackingNumber,
+      status: s.status,
+      statusText: s.statusText,
+      itemName: s.itemName,
+      receiverName: s.receiverName,
+      receiverCity: s.receiverCity,
+      receiverAddress: s.receiverAddress,
+      codAmount: s.codAmount,
+      createdAt: s.createdAt,
+    }));
+
+    // Khách vãng lai (chưa đăng nhập) -> Nếu có đơn vừa tạo trong phiên thì trả về đơn vừa tạo
+    if (!userId || userId === 'anonymous') {
+      if (createdItems.length > 0) {
+        return {
+          found: true,
+          isUserSpecific: true,
+          total: createdItems.length,
+          items: createdItems,
+          singleTracking: createdItems.length === 1 ? this.createdShipmentsMap.get(createdItems[0].code) : undefined,
+        };
+      }
+      return {
+        found: false,
+        isUserSpecific: false,
+        total: 0,
+        items: [],
+        notFoundMessage: 'Bạn chưa đăng nhập tài khoản. Vui lòng đăng nhập hoặc cung cấp mã vận đơn cụ thể để hệ thống tra cứu an toàn.',
+      };
+    }
+
+    try {
+      // 1. Query đa nguồn: Đơn gửi qua /shipments/sent và Đơn nhận qua /shipments/received
+      const fetchPromises: Promise<any>[] = [
+        fetch(`${this.shipmentServiceUrl}/shipments/sent?limit=${limit}&userId=${encodeURIComponent(userId)}`, {
+          signal: AbortSignal.timeout(3000),
+        }).then((r) => (r.ok ? r.json() : null)).catch(() => null),
+        fetch(`${this.shipmentServiceUrl}/shipments/received?limit=${limit}&phone=${encodeURIComponent(userId)}`, {
+          signal: AbortSignal.timeout(3000),
+        }).then((r) => (r.ok ? r.json() : null)).catch(() => null),
+        fetch(`${this.shipmentServiceUrl}/shipments?createdByUserId=${encodeURIComponent(userId)}&limit=${limit}`, {
+          signal: AbortSignal.timeout(3000),
+        }).then((r) => (r.ok ? r.json() : null)).catch(() => null),
+      ];
+
+      // Nếu userId là số điện thoại hoặc chứa số, query thêm cả receiverPhone
+      if (/\d{8,11}/.test(userId)) {
+        fetchPromises.push(
+          fetch(`${this.shipmentServiceUrl}/shipments?receiverPhone=${encodeURIComponent(userId)}&limit=${limit}`, {
+            signal: AbortSignal.timeout(3000),
+          }).then((r) => (r.ok ? r.json() : null)).catch(() => null)
+        );
+      }
+
+      const results = await Promise.all(fetchPromises);
+      const rawMap = new Map<string, any>();
+
+      for (const res of results) {
+        if (!res) continue;
+        const list = Array.isArray(res) ? res : (res?.items || []);
+        for (const item of list) {
+          if (item && item.code && !rawMap.has(item.code)) {
+            rawMap.set(item.code, item);
+          }
+        }
+      }
+
+      if (rawMap.size > 0) {
+        // Sắp xếp đơn mới nhất lên trước
+        const sortedRaw = Array.from(rawMap.values()).sort(
+          (a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()
+        ).slice(0, limit);
+
+        const items = sortedRaw.map((s: any) => {
+          const meta = s.metadata || {};
+          const pkg = meta.package || {};
+          const receiver = meta.receiver || {};
+          const sender = meta.sender || {};
+          const realItemName = pkg.itemName || pkg.itemType || meta.package?.itemName || s.itemName || 'Kiện hàng bưu gửi';
+
+          return {
+            code: s.code,
+            status: s.currentStatus || 'IN_TRANSIT',
+            statusText: formatShipmentStatusVi(s.currentStatus),
+            itemName: realItemName,
+            senderName: sender.name || s.senderName || '',
+            receiverName: receiver.name || s.receiverName || '',
+            receiverCity: receiver.province || receiver.city || receiver.region || '',
+            receiverAddress: [receiver.ward, receiver.district, receiver.province].filter(Boolean).join(', ') || receiver.address || '',
+            codAmount: pkg.codAmount ?? meta.codAmount ?? s.codAmount ?? 0,
+            createdAt: s.createdAt ? new Date(s.createdAt).toLocaleString('vi-VN') : '',
+          };
+        });
+
+        let singleTracking: TrackingResult | undefined;
+        if (items.length === 1) {
+          singleTracking = await this.trackShipment(items[0].code, false);
+        }
+
+        return {
+          found: true,
+          isUserSpecific: true,
+          total: items.length,
+          items,
+          singleTracking,
+        };
+      }
+    } catch (err: any) {
+      this.logger.warn(`Failed to fetch shipments for user ${userId}: ${err.message}`);
+    }
+
+    if (createdItems.length > 0) {
+      return {
+        found: true,
+        isUserSpecific: true,
+        total: createdItems.length,
+        items: createdItems,
+        singleTracking: createdItems.length === 1 ? this.createdShipmentsMap.get(createdItems[0].code) : undefined,
+      };
+    }
+
+    return {
+      found: false,
+      isUserSpecific: true,
+      total: 0,
+      items: [],
+      notFoundMessage: `Tài khoản ${userId} hiện chưa phát sinh đơn gửi/nhận nào trên hệ thống Nexus Logistics. Quý khách vui lòng cung cấp mã vận đơn cụ thể để tra cứu nhanh.`,
+    };
+  }
+
+  /**
+   * Tương thích ngược: Lấy đơn hàng mới nhất
+   */
+  public async getLatestShipment(userId?: string): Promise<{
+    found: boolean;
+    isUserSpecific: boolean;
+    shipment?: any;
+    tracking?: TrackingResult;
+    notFoundMessage?: string;
+  }> {
+    const res = await this.getUserShipments(userId, 1);
+    return {
+      found: res.found,
+      isUserSpecific: res.isUserSpecific,
+      shipment: res.items[0],
+      tracking: res.singleTracking,
+      notFoundMessage: res.notFoundMessage,
+    };
+  }
+
+  /**
+   * Dự toán cước phí bưu gửi qua microservice pricing-service (:3012)
+   */
+  public async calculatePricing(
+    weightKg: number,
+    serviceType = 'STANDARD',
+    fromCity = 'HO CHI MINH',
+    toCity = 'HA NOI',
+    customerTier: 'GUEST' | 'STANDARD' | 'VIP_ENTERPRISE' = 'GUEST',
+    dimensionsCm?: { length: number; width: number; height: number }
+  ): Promise<PricingResult> {
+    this.logger.log(`Tool calculatePricing invoked: ${weightKg}kg, dim=${JSON.stringify(dimensionsCm)}, ${serviceType}, ${fromCity} -> ${toCity}, tier=${customerTier}`);
+
+    const sType = (serviceType || 'STANDARD').toUpperCase();
+    const cleanFrom = fromCity.toUpperCase();
+    const cleanTo = toCity.toUpperCase();
+
+    // 1. Thử gọi microservice pricing-service (:3012/quotes)
+    try {
+      const resp = await fetch(`${this.pricingServiceUrl}/quotes`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          serviceType: sType.includes('EXPRESS') ? 'EXPRESS' : sType.includes('SAME') ? 'SAME_DAY' : 'STANDARD',
+          origin: { province: cleanFrom },
+          destination: { province: cleanTo },
+          package: {
+            weightKg,
+            dimensionsCm: dimensionsCm || undefined,
+          },
+          customerTier,
+        }),
+        signal: AbortSignal.timeout(2000),
+      });
+
+      if (resp.ok) {
+        const quote = (await resp.json()) as any;
+        const baseItem = quote.breakdown?.find((b: any) => b.code === 'BASE_SERVICE');
+        const weightItem = quote.breakdown?.find((b: any) => b.code === 'CHARGEABLE_WEIGHT');
+        const zoneItem = quote.breakdown?.find((b: any) => b.code === 'ZONE_SURCHARGE');
+
+        const baseFee = baseItem?.amount || 18000;
+        const excessFee = weightItem?.amount || 0;
+        const zoneSurcharge = zoneItem?.amount || 0;
+
+        const dimInfo = dimensionsCm
+          ? ` (Kích thước: ${dimensionsCm.length}x${dimensionsCm.width}x${dimensionsCm.height}cm | Thể tích IATA: ${quote.volumetricWeightKg}kg | Tính cước theo: ${quote.chargeableWeightKg}kg)`
+          : '';
+
+        return {
+          weightKg: quote.actualWeightKg ?? weightKg,
+          serviceType: quote.serviceType ?? sType,
+          customerTier: quote.customerTier ?? customerTier,
+          baseFee,
+          excessFee,
+          zoneSurcharge,
+          subtotalFee: quote.subtotalFee,
+          discountAmount: quote.discountAmount || 0,
+          totalFee: quote.totalFee,
+          estimatedReturnFee: quote.estimatedReturnFee,
+          returnSettlementMethod: quote.returnPolicy?.settlementMethod || 'CASH_OR_QR_ON_RETURN',
+          currency: quote.currency || 'VND',
+          breakdown: `Tuyến ${fromCity} ➔ ${toCity}: Cân thực tế ${quote.actualWeightKg}kg${dimInfo} | Cước cơ sở (0.5kg đầu): ${baseFee.toLocaleString('vi-VN')}đ | Phụ phí vượt nấc: ${excessFee.toLocaleString('vi-VN')}đ | Phụ phí vùng miền (${quote.zone || 'METRO'}): ${zoneSurcharge.toLocaleString('vi-VN')}đ ➔ TỔNG CƯỚC CHIỀU ĐI: ${quote.totalFee.toLocaleString('vi-VN')}đ | Cước chuyển hoàn dự kiến (nếu bom hàng): ${quote.estimatedReturnFee?.toLocaleString('vi-VN')}đ (${quote.returnPolicy?.description || 'Thu 50% cước chiều đi'})`,
+        };
+      }
+    } catch (err: any) {
+      this.logger.warn(`Failed to fetch from pricing-service: ${err.message}. Falling back to internal engine.`);
+    }
+
+    // 2. Dự phòng nội bộ nếu pricing-service gián đoạn
+    let baseFee = 18000;
+    let excessRatePerHalfKg = 3500;
+    if (sType.includes('EXPRESS') || sType.includes('NHANH')) {
+      baseFee = 28000;
+      excessRatePerHalfKg = 5000;
+    } else if (sType.includes('SAME') || sType.includes('SUPER') || sType.includes('HOA_TOC')) {
+      baseFee = 42000;
+      excessRatePerHalfKg = 8000;
+    }
+
+    const volumetricWeight = dimensionsCm ? (dimensionsCm.length * dimensionsCm.width * dimensionsCm.height) / 6000 : 0;
+    const chargeableWeight = Math.max(weightKg, volumetricWeight);
+
+    const excessWeight = Math.max(0, chargeableWeight - 0.5);
     const excessSteps = Math.ceil(excessWeight / 0.5);
     const excessFee = excessSteps * excessRatePerHalfKg;
 
-    // Phụ phí vùng miền liên miền Bắc - Nam
-    const isInterZone =
-      (fromCity.toLowerCase().includes('hà nội') && toCity.toLowerCase().includes('hcm')) ||
-      (fromCity.toLowerCase().includes('hcm') && toCity.toLowerCase().includes('hà nội'));
-    const zoneSurcharge = isInterZone ? 10000 : 0;
+    const METRO_CITIES = ['HA NOI', 'HANOI', 'HN', 'HO CHI MINH', 'HCM', 'SAI GON', 'DA NANG'];
+    const isFromMetro = METRO_CITIES.some((m) => cleanFrom.includes(m));
+    const isToMetro = METRO_CITIES.some((m) => cleanTo.includes(m));
+    const isSameProvince =
+      cleanFrom === cleanTo ||
+      (cleanFrom.includes('HCM') && cleanTo.includes('HCM')) ||
+      (cleanFrom.includes('NOI') && cleanTo.includes('NOI')) ||
+      (cleanFrom.includes('NANG') && cleanTo.includes('NANG'));
+
+    let zoneSurcharge = 0;
+    let zoneName = 'Nội tỉnh';
+    if (isSameProvince) {
+      zoneSurcharge = 0;
+      zoneName = 'Nội tỉnh';
+    } else if (isFromMetro && isToMetro) {
+      zoneSurcharge = 7000;
+      zoneName = 'Trục chính Metro Corridor';
+    } else {
+      zoneSurcharge = 12000;
+      zoneName = 'Liên tỉnh phổ thông';
+    }
 
     const subtotalFee = baseFee + excessFee + zoneSurcharge;
-
-    // Chiết khấu theo Customer Tier
-    let discountAmount = 0;
-    let discountLabel = '';
-    if (customerTier === 'STANDARD') {
-      discountAmount = Math.round((subtotalFee * 0.05) / 100) * 100; // 5%
-      discountLabel = ' (Đã trừ 5% ưu đãi Shop)';
-    } else if (customerTier === 'VIP_ENTERPRISE') {
-      discountAmount = Math.round((subtotalFee * 0.15) / 100) * 100; // 15%
-      discountLabel = ' (Đã trừ 15% chiết khấu Hợp đồng VIP)';
-    }
-
-    const totalFee = subtotalFee - discountAmount;
-
-    // Cước hoàn ước tính
-    let estimatedReturnFee = Math.round((totalFee * 0.5) / 100) * 100;
-    let returnSettlementMethod = 'CASH_OR_QR_ON_RETURN';
-    if (customerTier === 'VIP_ENTERPRISE') {
-      estimatedReturnFee = 0;
-      returnSettlementMethod = 'WAIVED (Miễn phí 100%)';
-    } else if (customerTier === 'STANDARD') {
-      returnSettlementMethod = 'COD_SETTLEMENT_DEDUCTION (Tự động trừ đối soát COD)';
-    }
+    const totalFee = subtotalFee;
+    const estimatedReturnFee = Math.round(totalFee * 0.5);
 
     return {
       weightKg,
@@ -154,12 +684,12 @@ export class LogisticsToolsService {
       excessFee,
       zoneSurcharge,
       subtotalFee,
-      discountAmount,
+      discountAmount: 0,
       totalFee,
       estimatedReturnFee,
-      returnSettlementMethod,
+      returnSettlementMethod: 'CASH_OR_QR_ON_RETURN',
       currency: 'VND',
-      breakdown: `Tạm tính: ${subtotalFee.toLocaleString('vi-VN')}đ${discountLabel} -> Tổng cước chiều đi: ${totalFee.toLocaleString('vi-VN')}đ | Cước hoàn dự kiến (nếu bom hàng): ${estimatedReturnFee.toLocaleString('vi-VN')}đ (${returnSettlementMethod})`,
+      breakdown: `Tuyến ${fromCity} ➔ ${toCity}: Cân tính cước ${chargeableWeight.toFixed(2)}kg | Cước cơ sở (0.5kg đầu): ${baseFee.toLocaleString('vi-VN')}đ | Phụ phí vượt nấc: ${excessFee.toLocaleString('vi-VN')}đ | Phụ phí vùng miền (${zoneName}): ${zoneSurcharge.toLocaleString('vi-VN')}đ ➔ TỔNG CƯỚC CHIỀU ĐI: ${totalFee.toLocaleString('vi-VN')}đ | Cước hoàn (nếu bom hàng): ${estimatedReturnFee.toLocaleString('vi-VN')}đ`,
     };
   }
 
@@ -243,4 +773,72 @@ export class LogisticsToolsService {
       adjudicatedAt: '15/09/2026',
     };
   }
+
+  /**
+   * Điều hướng chuyển tiếp sang Chuyên viên CSKH con người (AI Handover to Human Agent)
+   */
+  public escalateToHumanAgent(input: {
+    userId?: string;
+    trackingNumber?: string;
+    reason?: string;
+  }) {
+    const ticketId = `TICKET-${Date.now().toString(36).toUpperCase()}`;
+    this.logger.log(`Tool escalateToHumanAgent invoked: ticketId=${ticketId}, reason=${input.reason}`);
+
+    return {
+      ticketId,
+      queue: 'TIER_2_HUMAN_SUPPORT',
+      priority: 'HIGH',
+      hotline: '1900-1234 (Phím 1: Giao nhận / Khiếu nại; Phím 2: Bồi thường bưu gửi)',
+      operatingHours: '07:30 - 21:00 hàng ngày (kể cả Thứ 7, Chủ Nhật và ngày lễ)',
+      trackingNumber: input.trackingNumber || 'N/A',
+      estimatedWaitTimeSeconds: 45,
+      message: `Hệ thống đã khởi tạo phiếu yêu cầu hỗ trợ trực tiếp [${ticketId}]. Chuyên viên CSKH Nexus Logistics đang được kết nối trong vòng 45 giây. Quý khách cũng có thể liên hệ tổng đài 1900-1234 để được xử lý khẩn cấp.`,
+    };
+  }
+
+  /**
+   * Tra cứu chính sách thời hạn lưu kho tồn đọng & Quy trình xử lý bưu gửi vô chủ (Điều 18 & 28 Luật Bưu chính)
+   */
+  public getStorageAgingPolicy() {
+    return {
+      legalBasis: 'Điều 18 & Điều 28 Luật Bưu chính Việt Nam số 49/2010/QH12',
+      agingLimits: {
+        sortingHub: 'Tối đa 12 - 24 giờ (Nguyên tắc Zero Backlog, không tồn qua ca)',
+        deliveryHubPending: 'Tối đa 03 - 05 ngày (Tối đa 03 lần phát lại; nếu khách hẹn thì tối đa không quá 07 ngày)',
+        returnHubStaging: 'Tối đa 24 - 48 giờ (Phải đóng bao chuyển hoàn về bưu cục gốc)',
+        originHubReturnHolding: 'Tối đa 07 - 14 ngày (Chờ người gửi nhận lại bưu phẩm hoàn)',
+      },
+      alertMechanisms: {
+        holdingHubAlert: 'Hub đang giữ hàng nhận Cảnh báo Vàng khi tồn >= 48h, Cảnh báo Đỏ vi phạm SLA khi tồn >= 72h trên Ops Web & App Kiểm kê bưu tá',
+        senderNotification: 'Người gửi nhận thông báo đẩy qua Merchant Web, App Customer và Webhook ngay khi giao thất bại lần 1, lần 2 và trước 48h khi bị chuyển hoàn / chuyển kho vô chủ',
+      },
+      overdueAndDeadLetterWorkflow: {
+        step1: 'Sau 14 ngày lưu kho tại Hub gốc mà Shop không nhận hoặc từ chối nhận hoàn -> Chuyển vào Kho bưu gửi vô chủ tập trung (Dead-Letter Depot).',
+        step2: 'Lưu trữ bảo quản pháp lý bắt buộc: 06 THÁNG đối với hàng thông thường; 24 - 48 GIỜ đối với hàng tươi sống mau hỏng.',
+        step3: 'Thành lập Hội đồng xử lý hàng vô chủ (Pháp chế + Kiểm toán + Giám đốc Khai thác) lập biên bản mở niêm phong dưới camera 360.',
+        step4: 'Tiêu hủy đối với hàng cấm/hỏng; Bán đấu giá công khai đối với hàng hóa thương mại còn giá trị.',
+        step5: 'Tiền đấu giá: Khấu trừ phí lưu kho 6 tháng -> Khấu trừ cước nợ chiều đi/về -> Phần tiền dư còn lại nộp vào Ngân sách Nhà nước hoặc Quỹ rủi ro bưu chính sau thời hiệu luật định.',
+      },
+    };
+  }
+
+  /**
+   * Tra cứu quy hoạch dải mã vận đơn & Mã định tuyến 3 đoạn kiểu J&T
+   */
+  public getWaybillFormatPolicy() {
+    return {
+      numberSeries: {
+        merchant101: '101xxxxxxxxx (12 số): Đơn Chủ Shop B2B (tạo từ merchant-web, mã Shop 411xxxxx, có thu COD, đối soát kỳ 2-4-6)',
+        marketplace111: '111xxxxxxxxx (12 số): Đơn Sàn TMĐT / Doanh nghiệp lớn (tích hợp API Shopee, TikTok Shop, bắn webhook realtime)',
+        retail333: '333xxxxxxxxx (12 số): Đơn Khách hàng cá nhân lẻ / Gửi tại quầy (tạo từ customer-mobile, trả trước)',
+        return222: '222xxxxxxxxx (12 số): Đơn Chuyển hoàn / Hàng hoàn (tự động cấn trừ 50% cước hoàn vào công nợ Shop)',
+      },
+      jtRoutingComparison: {
+        jtFormat: 'J&T sử dụng mã vận đơn 12 số (đầu số 84...) hoặc JT... / SPX... / TK... kèm nhãn dịch vụ EZ (Chuẩn), FAST (Nhanh), SUPER (Cao cấp).',
+        threeSegmentRoutingCode: 'Mã định tuyến 3 đoạn in chữ cực to trên tem: [Hub đích] - [Bưu cục phát] - [Mã tuyến bưu tá] (Ví dụ: SGN-01 / TB-02 / 03A) giúp công nhân phân loại siêu tốc trong 0.5s.',
+      },
+    };
+  }
 }
+
