@@ -3,7 +3,7 @@ import type { ShipmentListItemDto } from '../../features/shipments/shipments.typ
 import type { TaskListItemDto } from '../../features/tasks/tasks.types';
 import { formatDateTime } from '../../utils/format';
 import { formatShipmentStatusLabel, formatTaskStatusLabel } from '../../utils/logisticsLabels';
-import { CopyableShipmentCode } from '../shared/CopyableShipmentCode';
+import { useColumnSelection } from '../../hooks/useColumnSelection';
 
 export interface ShipmentsTableProps {
   items: ShipmentListItemDto[];
@@ -28,6 +28,7 @@ export interface ShipmentsTableProps {
   maxHeight?: string | number;
   tableShellStyle?: React.CSSProperties;
   containerStyle?: React.CSSProperties;
+  onRowClick?: (shipment: ShipmentListItemDto) => void;
 }
 
 const DEFAULT_EMPTY_COURIER_MAP = new Map<string, string>();
@@ -108,13 +109,13 @@ export const DEFAULT_VISIBLE_COLUMNS: Record<OpsColumnKey, boolean> = {
   stt: false,
   code: true,
   status: true,
-  parcelType: true,
-  chargeableWeight: true,
+  parcelType: false,
+  chargeableWeight: false,
   primaryHub: false,
   oppositeHub: false,
   senderName: true,
-  senderPhone: true,
-  senderAddress: true,
+  senderPhone: false,
+  senderAddress: false,
   receiverName: true,
   receiverPhone: true,
   receiverAddress: true,
@@ -122,7 +123,7 @@ export const DEFAULT_VISIBLE_COLUMNS: Record<OpsColumnKey, boolean> = {
   routeHub: true,
   ageMinutes: false,
   createdAt: true,
-  deliveredAt: true,
+  deliveredAt: false,
   updatedAt: false,
   deliveryNote: false,
 };
@@ -751,6 +752,7 @@ export function ShipmentsTable({
   maxHeight,
   tableShellStyle,
   containerStyle,
+  onRowClick,
 }: ShipmentsTableProps): React.JSX.Element {
   const selectedSet = new Set(selectedShipmentCodes);
   const allVisibleSelected = items.length > 0 && items.every((item) => selectedSet.has(item.shipmentCode));
@@ -781,6 +783,68 @@ export function ShipmentsTable({
     initialVisibleCols,
     enabledColumns,
   );
+
+  const tableShellRef = React.useRef<HTMLDivElement>(null);
+  const { copyColumn, shouldSuppressRowClick, renderToast } = useColumnSelection(
+    tableShellRef,
+    { labels: mergedLabels },
+  );
+
+  const renderHeaderCell = (colKey: OpsColumnKey, align?: 'left' | 'center' | 'right') => {
+    return (
+      <th
+        key={colKey}
+        data-col-key={colKey}
+        style={{
+          ...styles.headerCell,
+          width: widths[colKey],
+          minWidth: widths[colKey],
+          maxWidth: widths[colKey],
+          textAlign: align || 'left',
+        }}
+        title={`Bôi đen kéo chuột theo cột • Nhấp đúp hoặc bấm icon để sao chép cột "${mergedLabels[colKey]}"`}
+        onDoubleClick={() => copyColumn(colKey, mergedLabels[colKey])}
+      >
+        <div className="ops-col-header-wrap">
+          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {mergedLabels[colKey]}
+          </span>
+          <button
+            type="button"
+            className="ops-col-copy-btn"
+            title={`Sao chép toàn bộ cột "${mergedLabels[colKey]}" (dán được vào Excel)`}
+            onClick={(e) => {
+              e.stopPropagation();
+              copyColumn(colKey, mergedLabels[colKey]);
+            }}
+          >
+            <svg
+              width="12"
+              height="12"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+            </svg>
+          </button>
+        </div>
+        <span
+          className="table-col-resizer"
+          title="Kéo chuột để chỉnh độ rộng (Nhấp đúp để đặt lại)"
+          onMouseDown={(e) => handleMouseDown(colKey, e)}
+          onDoubleClick={(e) => {
+            e.stopPropagation();
+            resetColumnWidth(colKey);
+          }}
+        />
+      </th>
+    );
+  };
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 4, flex: 1, minHeight: 0, ...containerStyle }}>
@@ -868,12 +932,13 @@ export function ShipmentsTable({
 
       {/* Table Shell */}
       <div
+        ref={tableShellRef}
         style={{
           ...styles.tableShell,
           ...(maxHeight ? { maxHeight, overflow: 'auto' } : {}),
           ...tableShellStyle,
         }}
-        className="ops-shipments-table-shell"
+        className="ops-shipments-table-shell ops-column-selectable-table"
       >
         <table style={{ ...styles.table, minWidth: 1750 }}>
           <thead>
@@ -892,245 +957,26 @@ export function ShipmentsTable({
                 />
               </th>
 
-              {visibleColumns.stt && (
-                <th style={{ ...styles.headerCell, width: widths.stt, minWidth: widths.stt, maxWidth: widths.stt, textAlign: 'center' }}>
-                  <span>{mergedLabels.stt}</span>
-                  <span
-                    className="table-col-resizer"
-                    title="Kéo chuột để chỉnh độ rộng (Nhấp đúp để đặt lại)"
-                    onMouseDown={(e) => handleMouseDown('stt', e)}
-                    onDoubleClick={() => resetColumnWidth('stt')}
-                  />
-                </th>
-              )}
-
-              {visibleColumns.code && (
-                <th style={{ ...styles.headerCell, width: widths.code, minWidth: widths.code, maxWidth: widths.code }}>
-                  <span>{mergedLabels.code}</span>
-                  <span
-                    className="table-col-resizer"
-                    title="Kéo chuột để chỉnh độ rộng (Nhấp đúp để đặt lại)"
-                    onMouseDown={(e) => handleMouseDown('code', e)}
-                    onDoubleClick={() => resetColumnWidth('code')}
-                  />
-                </th>
-              )}
-
-              {visibleColumns.status && (
-                <th style={{ ...styles.headerCell, width: widths.status, minWidth: widths.status, maxWidth: widths.status }}>
-                  <span>{mergedLabels.status}</span>
-                  <span
-                    className="table-col-resizer"
-                    title="Kéo chuột để chỉnh độ rộng (Nhấp đúp để đặt lại)"
-                    onMouseDown={(e) => handleMouseDown('status', e)}
-                    onDoubleClick={() => resetColumnWidth('status')}
-                  />
-                </th>
-              )}
-
-              {visibleColumns.parcelType && (
-                <th style={{ ...styles.headerCell, width: widths.parcelType, minWidth: widths.parcelType, maxWidth: widths.parcelType }}>
-                  <span>{mergedLabels.parcelType}</span>
-                  <span
-                    className="table-col-resizer"
-                    title="Kéo chuột để chỉnh độ rộng (Nhấp đúp để đặt lại)"
-                    onMouseDown={(e) => handleMouseDown('parcelType', e)}
-                    onDoubleClick={() => resetColumnWidth('parcelType')}
-                  />
-                </th>
-              )}
-
-              {visibleColumns.chargeableWeight && (
-                <th style={{ ...styles.headerCell, width: widths.chargeableWeight, minWidth: widths.chargeableWeight, maxWidth: widths.chargeableWeight }}>
-                  <span>{mergedLabels.chargeableWeight}</span>
-                  <span
-                    className="table-col-resizer"
-                    title="Kéo chuột để chỉnh độ rộng (Nhấp đúp để đặt lại)"
-                    onMouseDown={(e) => handleMouseDown('chargeableWeight', e)}
-                    onDoubleClick={() => resetColumnWidth('chargeableWeight')}
-                  />
-                </th>
-              )}
-
-              {visibleColumns.primaryHub && (
-                <th style={{ ...styles.headerCell, width: widths.primaryHub, minWidth: widths.primaryHub, maxWidth: widths.primaryHub }}>
-                  <span>{mergedLabels.primaryHub}</span>
-                  <span
-                    className="table-col-resizer"
-                    title="Kéo chuột để chỉnh độ rộng (Nhấp đúp để đặt lại)"
-                    onMouseDown={(e) => handleMouseDown('primaryHub', e)}
-                    onDoubleClick={() => resetColumnWidth('primaryHub')}
-                  />
-                </th>
-              )}
-
-              {visibleColumns.oppositeHub && (
-                <th style={{ ...styles.headerCell, width: widths.oppositeHub, minWidth: widths.oppositeHub, maxWidth: widths.oppositeHub }}>
-                  <span>{mergedLabels.oppositeHub}</span>
-                  <span
-                    className="table-col-resizer"
-                    title="Kéo chuột để chỉnh độ rộng (Nhấp đúp để đặt lại)"
-                    onMouseDown={(e) => handleMouseDown('oppositeHub', e)}
-                    onDoubleClick={() => resetColumnWidth('oppositeHub')}
-                  />
-                </th>
-              )}
-
-              {visibleColumns.senderName && (
-                <th style={{ ...styles.headerCell, width: widths.senderName, minWidth: widths.senderName, maxWidth: widths.senderName }}>
-                  <span>{mergedLabels.senderName}</span>
-                  <span
-                    className="table-col-resizer"
-                    title="Kéo chuột để chỉnh độ rộng (Nhấp đúp để đặt lại)"
-                    onMouseDown={(e) => handleMouseDown('senderName', e)}
-                    onDoubleClick={() => resetColumnWidth('senderName')}
-                  />
-                </th>
-              )}
-
-              {visibleColumns.senderPhone && (
-                <th style={{ ...styles.headerCell, width: widths.senderPhone, minWidth: widths.senderPhone, maxWidth: widths.senderPhone }}>
-                  <span>{mergedLabels.senderPhone}</span>
-                  <span
-                    className="table-col-resizer"
-                    title="Kéo chuột để chỉnh độ rộng (Nhấp đúp để đặt lại)"
-                    onMouseDown={(e) => handleMouseDown('senderPhone', e)}
-                    onDoubleClick={() => resetColumnWidth('senderPhone')}
-                  />
-                </th>
-              )}
-
-              {visibleColumns.senderAddress && (
-                <th style={{ ...styles.headerCell, width: widths.senderAddress, minWidth: widths.senderAddress, maxWidth: widths.senderAddress }}>
-                  <span>{mergedLabels.senderAddress}</span>
-                  <span
-                    className="table-col-resizer"
-                    title="Kéo chuột để chỉnh độ rộng (Nhấp đúp để đặt lại)"
-                    onMouseDown={(e) => handleMouseDown('senderAddress', e)}
-                    onDoubleClick={() => resetColumnWidth('senderAddress')}
-                  />
-                </th>
-              )}
-
-              {visibleColumns.receiverName && (
-                <th style={{ ...styles.headerCell, width: widths.receiverName, minWidth: widths.receiverName, maxWidth: widths.receiverName }}>
-                  <span>{mergedLabels.receiverName}</span>
-                  <span
-                    className="table-col-resizer"
-                    title="Kéo chuột để chỉnh độ rộng (Nhấp đúp để đặt lại)"
-                    onMouseDown={(e) => handleMouseDown('receiverName', e)}
-                    onDoubleClick={() => resetColumnWidth('receiverName')}
-                  />
-                </th>
-              )}
-
-              {visibleColumns.receiverPhone && (
-                <th style={{ ...styles.headerCell, width: widths.receiverPhone, minWidth: widths.receiverPhone, maxWidth: widths.receiverPhone }}>
-                  <span>{mergedLabels.receiverPhone}</span>
-                  <span
-                    className="table-col-resizer"
-                    title="Kéo chuột để chỉnh độ rộng (Nhấp đúp để đặt lại)"
-                    onMouseDown={(e) => handleMouseDown('receiverPhone', e)}
-                    onDoubleClick={() => resetColumnWidth('receiverPhone')}
-                  />
-                </th>
-              )}
-
-              {visibleColumns.receiverAddress && (
-                <th style={{ ...styles.headerCell, width: widths.receiverAddress, minWidth: widths.receiverAddress, maxWidth: widths.receiverAddress }}>
-                  <span>{mergedLabels.receiverAddress}</span>
-                  <span
-                    className="table-col-resizer"
-                    title="Kéo chuột để chỉnh độ rộng (Nhấp đúp để đặt lại)"
-                    onMouseDown={(e) => handleMouseDown('receiverAddress', e)}
-                    onDoubleClick={() => resetColumnWidth('receiverAddress')}
-                  />
-                </th>
-              )}
-
-              {visibleColumns.cod && (
-                <th style={{ ...styles.headerCell, width: widths.cod, minWidth: widths.cod, maxWidth: widths.cod }}>
-                  <span>{mergedLabels.cod}</span>
-                  <span
-                    className="table-col-resizer"
-                    title="Kéo chuột để chỉnh độ rộng (Nhấp đúp để đặt lại)"
-                    onMouseDown={(e) => handleMouseDown('cod', e)}
-                    onDoubleClick={() => resetColumnWidth('cod')}
-                  />
-                </th>
-              )}
-
-              {visibleColumns.routeHub && (
-                <th style={{ ...styles.headerCell, width: widths.routeHub, minWidth: widths.routeHub, maxWidth: widths.routeHub }}>
-                  <span>{mergedLabels.routeHub}</span>
-                  <span
-                    className="table-col-resizer"
-                    title="Kéo chuột để chỉnh độ rộng (Nhấp đúp để đặt lại)"
-                    onMouseDown={(e) => handleMouseDown('routeHub', e)}
-                    onDoubleClick={() => resetColumnWidth('routeHub')}
-                  />
-                </th>
-              )}
-
-              {visibleColumns.ageMinutes && (
-                <th style={{ ...styles.headerCell, width: widths.ageMinutes, minWidth: widths.ageMinutes, maxWidth: widths.ageMinutes }}>
-                  <span>{mergedLabels.ageMinutes}</span>
-                  <span
-                    className="table-col-resizer"
-                    title="Kéo chuột để chỉnh độ rộng (Nhấp đúp để đặt lại)"
-                    onMouseDown={(e) => handleMouseDown('ageMinutes', e)}
-                    onDoubleClick={() => resetColumnWidth('ageMinutes')}
-                  />
-                </th>
-              )}
-
-              {visibleColumns.createdAt && (
-                <th style={{ ...styles.headerCell, width: widths.createdAt, minWidth: widths.createdAt, maxWidth: widths.createdAt }}>
-                  <span>{mergedLabels.createdAt}</span>
-                  <span
-                    className="table-col-resizer"
-                    title="Kéo chuột để chỉnh độ rộng (Nhấp đúp để đặt lại)"
-                    onMouseDown={(e) => handleMouseDown('createdAt', e)}
-                    onDoubleClick={() => resetColumnWidth('createdAt')}
-                  />
-                </th>
-              )}
-
-              {visibleColumns.deliveredAt && (
-                <th style={{ ...styles.headerCell, width: widths.deliveredAt, minWidth: widths.deliveredAt, maxWidth: widths.deliveredAt }}>
-                  <span>{mergedLabels.deliveredAt}</span>
-                  <span
-                    className="table-col-resizer"
-                    title="Kéo chuột để chỉnh độ rộng (Nhấp đúp để đặt lại)"
-                    onMouseDown={(e) => handleMouseDown('deliveredAt', e)}
-                    onDoubleClick={() => resetColumnWidth('deliveredAt')}
-                  />
-                </th>
-              )}
-
-              {visibleColumns.updatedAt && (
-                <th style={{ ...styles.headerCell, width: widths.updatedAt, minWidth: widths.updatedAt, maxWidth: widths.updatedAt }}>
-                  <span>{mergedLabels.updatedAt}</span>
-                  <span
-                    className="table-col-resizer"
-                    title="Kéo chuột để chỉnh độ rộng (Nhấp đúp để đặt lại)"
-                    onMouseDown={(e) => handleMouseDown('updatedAt', e)}
-                    onDoubleClick={() => resetColumnWidth('updatedAt')}
-                  />
-                </th>
-              )}
-
-              {visibleColumns.deliveryNote && (
-                <th style={{ ...styles.headerCell, width: widths.deliveryNote, minWidth: widths.deliveryNote, maxWidth: widths.deliveryNote }}>
-                  <span>{mergedLabels.deliveryNote}</span>
-                  <span
-                    className="table-col-resizer"
-                    title="Kéo chuột để chỉnh độ rộng (Nhấp đúp để đặt lại)"
-                    onMouseDown={(e) => handleMouseDown('deliveryNote', e)}
-                    onDoubleClick={() => resetColumnWidth('deliveryNote')}
-                  />
-                </th>
-              )}
+              {visibleColumns.stt && renderHeaderCell('stt', 'center')}
+              {visibleColumns.code && renderHeaderCell('code')}
+              {visibleColumns.status && renderHeaderCell('status')}
+              {visibleColumns.parcelType && renderHeaderCell('parcelType')}
+              {visibleColumns.chargeableWeight && renderHeaderCell('chargeableWeight')}
+              {visibleColumns.primaryHub && renderHeaderCell('primaryHub')}
+              {visibleColumns.oppositeHub && renderHeaderCell('oppositeHub')}
+              {visibleColumns.senderName && renderHeaderCell('senderName')}
+              {visibleColumns.senderPhone && renderHeaderCell('senderPhone')}
+              {visibleColumns.senderAddress && renderHeaderCell('senderAddress')}
+              {visibleColumns.receiverName && renderHeaderCell('receiverName')}
+              {visibleColumns.receiverPhone && renderHeaderCell('receiverPhone')}
+              {visibleColumns.receiverAddress && renderHeaderCell('receiverAddress')}
+              {visibleColumns.cod && renderHeaderCell('cod')}
+              {visibleColumns.routeHub && renderHeaderCell('routeHub')}
+              {visibleColumns.ageMinutes && renderHeaderCell('ageMinutes')}
+              {visibleColumns.createdAt && renderHeaderCell('createdAt')}
+              {visibleColumns.deliveredAt && renderHeaderCell('deliveredAt')}
+              {visibleColumns.updatedAt && renderHeaderCell('updatedAt')}
+              {visibleColumns.deliveryNote && renderHeaderCell('deliveryNote')}
             </tr>
           </thead>
           <tbody>
@@ -1171,7 +1017,20 @@ export function ShipmentsTable({
               const isOverdue = (age ?? 0) >= 360;
 
               return (
-                <tr key={item.id} style={checked ? styles.selectedRow : undefined}>
+                <tr
+                  key={item.id}
+                  data-row-index={index}
+                  onClick={(e) => {
+                    const target = e.target as HTMLElement;
+                    if (target.tagName === 'INPUT' || target.closest('input')) return;
+                    if (shouldSuppressRowClick()) return;
+                    onRowClick?.(item);
+                  }}
+                  style={{
+                    ...(checked ? styles.selectedRow : undefined),
+                    cursor: onRowClick ? 'pointer' : undefined,
+                  }}
+                >
                   <td style={{ ...styles.cell, ...styles.selectCell }}>
                     <input
                       type="checkbox"
@@ -1182,49 +1041,83 @@ export function ShipmentsTable({
                   </td>
 
                   {visibleColumns.stt && (
-                    <td style={{ ...styles.cell, width: widths.stt, maxWidth: widths.stt, textAlign: 'center', color: '#64748b', fontSize: 12 }}>
+                    <td
+                      data-col-key="stt"
+                      data-row-index={index}
+                      data-copy-value={String(pageOffset + index + 1)}
+                      style={{ ...styles.cell, width: widths.stt, maxWidth: widths.stt, textAlign: 'center', color: '#64748b', fontSize: 12 }}
+                    >
                       {pageOffset + index + 1}
                     </td>
                   )}
 
                   {visibleColumns.code && (
-                    <td style={{ ...styles.shipmentCodeCell, width: widths.code, maxWidth: widths.code }} className="ops-shipment-code-cell">
-                      <CopyableShipmentCode code={item.shipmentCode} />
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 3 }}>
-                        <span style={styles.platformBadge}>{service.platformLabel}</span>
-                        <span style={styles.serviceTag}>{service.serviceLabel}</span>
-                      </div>
+                    <td
+                      data-col-key="code"
+                      data-row-index={index}
+                      data-copy-value={item.shipmentCode}
+                      style={{
+                        ...styles.shipmentCodeCell,
+                        width: widths.code,
+                        maxWidth: widths.code,
+                      }}
+                      className="ops-shipment-code-cell"
+                    >
+                      <span
+                        className="ops-shipment-code-text"
+                        title="Bôi đen kéo chuột để sao chép mã vận đơn (Ctrl+C)"
+                        style={{
+                          fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
+                          fontWeight: 700,
+                          color: 'var(--ops-primary, #0052cc)',
+                          userSelect: 'text',
+                          WebkitUserSelect: 'text',
+                          cursor: 'text',
+                          whiteSpace: 'nowrap',
+                          display: 'inline-block',
+                        }}
+                      >
+                        {item.shipmentCode}
+                      </span>
                     </td>
                   )}
 
                   {visibleColumns.status && (
-                    <td style={{ ...styles.cell, width: widths.status, maxWidth: widths.status }}>
-                      <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, whiteSpace: 'nowrap' }}>
-                        <span style={getOpsStatusBadgeStyle(item.currentStatus)}>
-                          {statusLabel}
+                    <td
+                      data-col-key="status"
+                      data-row-index={index}
+                      data-copy-value={statusLabel}
+                      style={{ ...styles.cell, width: widths.status, maxWidth: widths.status }}
+                    >
+                      <span style={getOpsStatusBadgeStyle(item.currentStatus)}>
+                        {statusLabel}
+                      </span>
+                      {item.requiresLabelReprint ? (
+                        <span
+                          title="Vận đơn cần in lại tem mới"
+                          style={{ ...styles.reprintBadge, marginLeft: 4 }}
+                        >
+                          In lại tem
                         </span>
-                        {item.requiresLabelReprint ? (
-                          <span
-                            title="Vận đơn cần in lại tem mới"
-                            style={styles.reprintBadge}
-                          >
-                            In lại tem
-                          </span>
-                        ) : null}
-                        {item.isOperationLocked ? (
-                          <span
-                            title="Đơn hàng đang bị khóa thao tác"
-                            style={styles.lockBadge}
-                          >
-                            Khóa
-                          </span>
-                        ) : null}
-                      </div>
+                      ) : null}
+                      {item.isOperationLocked ? (
+                        <span
+                          title="Đơn hàng đang bị khóa thao tác"
+                          style={{ ...styles.lockBadge, marginLeft: 4 }}
+                        >
+                          Khóa
+                        </span>
+                      ) : null}
                     </td>
                   )}
 
                   {visibleColumns.parcelType && (
-                    <td style={{ ...styles.cell, width: widths.parcelType, maxWidth: widths.parcelType }}>
+                    <td
+                      data-col-key="parcelType"
+                      data-row-index={index}
+                      data-copy-value={classification.label}
+                      style={{ ...styles.cell, width: widths.parcelType, maxWidth: widths.parcelType }}
+                    >
                       <span style={classification.badgeStyle}>
                         {classification.label}
                       </span>
@@ -1232,36 +1125,48 @@ export function ShipmentsTable({
                   )}
 
                   {visibleColumns.chargeableWeight && (
-                    <td style={{ ...styles.cell, width: widths.chargeableWeight, maxWidth: widths.chargeableWeight }}>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                    <td
+                      data-col-key="chargeableWeight"
+                      data-row-index={index}
+                      data-copy-value={chargeableWeightInfo.weightText}
+                      style={{ ...styles.cell, width: widths.chargeableWeight, maxWidth: widths.chargeableWeight }}
+                    >
+                      <span
+                        title={chargeableWeightInfo.formulaHint}
+                        style={{
+                          fontFamily: 'monospace',
+                          fontWeight: 700,
+                          fontSize: 13,
+                          color: chargeableWeightInfo.isVolumetric ? '#ea580c' : '#0f172a',
+                          whiteSpace: 'nowrap',
+                        }}
+                      >
+                        {chargeableWeightInfo.weightText}
+                      </span>
+                      {chargeableWeightInfo.isVolumetric && (
                         <span
                           title={chargeableWeightInfo.formulaHint}
-                          style={{ fontFamily: 'monospace', fontWeight: 700, fontSize: 13, color: '#0f172a' }}
+                          style={{
+                            fontSize: 10,
+                            color: '#ea580c',
+                            fontWeight: 700,
+                            marginLeft: 4,
+                            whiteSpace: 'nowrap',
+                          }}
                         >
-                          {chargeableWeightInfo.weightText}
+                          📐 Thể tích IATA
                         </span>
-                        {chargeableWeightInfo.isVolumetric && (
-                          <span
-                            title={chargeableWeightInfo.formulaHint}
-                            style={{
-                              fontSize: 10,
-                              color: '#ea580c',
-                              fontWeight: 700,
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              gap: 2,
-                              whiteSpace: 'nowrap',
-                            }}
-                          >
-                            📐 Thể tích IATA
-                          </span>
-                        )}
-                      </div>
+                      )}
                     </td>
                   )}
 
                   {visibleColumns.primaryHub && (
-                    <td style={{ ...styles.cell, width: widths.primaryHub, maxWidth: widths.primaryHub }}>
+                    <td
+                      data-col-key="primaryHub"
+                      data-row-index={index}
+                      data-copy-value={primaryHub}
+                      style={{ ...styles.cell, width: widths.primaryHub, maxWidth: widths.primaryHub }}
+                    >
                       <span style={{
                         fontFamily: 'monospace',
                         fontWeight: 700,
@@ -1279,7 +1184,12 @@ export function ShipmentsTable({
                   )}
 
                   {visibleColumns.oppositeHub && (
-                    <td style={{ ...styles.cell, width: widths.oppositeHub, maxWidth: widths.oppositeHub }}>
+                    <td
+                      data-col-key="oppositeHub"
+                      data-row-index={index}
+                      data-copy-value={oppositeHub}
+                      style={{ ...styles.cell, width: widths.oppositeHub, maxWidth: widths.oppositeHub }}
+                    >
                       <span style={{
                         fontFamily: 'monospace',
                         fontWeight: 700,
@@ -1297,11 +1207,16 @@ export function ShipmentsTable({
                   )}
 
                   {visibleColumns.senderName && (
-                    <td style={{ ...styles.cell, width: widths.senderName, maxWidth: widths.senderName }}>
+                    <td
+                      data-col-key="senderName"
+                      data-row-index={index}
+                      data-copy-value={item.senderName ?? ''}
+                      style={{ ...styles.cell, width: widths.senderName, maxWidth: widths.senderName }}
+                    >
                       <div
                         className="ops-cell-scrollable"
                         title={item.senderName ?? 'Không có'}
-                        style={{ width: '100%', maxWidth: '100%', fontWeight: 600 }}
+                        style={{ width: '100%', maxWidth: '100%', fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}
                       >
                         {item.senderName ?? 'Không có'}
                       </div>
@@ -1309,7 +1224,12 @@ export function ShipmentsTable({
                   )}
 
                   {visibleColumns.senderPhone && (
-                    <td style={{ ...styles.cell, width: widths.senderPhone, maxWidth: widths.senderPhone }}>
+                    <td
+                      data-col-key="senderPhone"
+                      data-row-index={index}
+                      data-copy-value={item.senderPhone ?? ''}
+                      style={{ ...styles.cell, width: widths.senderPhone, maxWidth: widths.senderPhone }}
+                    >
                       <span style={{ fontFamily: 'monospace', fontWeight: 600, whiteSpace: 'nowrap' }}>
                         {item.senderPhone ?? '-'}
                       </span>
@@ -1317,7 +1237,12 @@ export function ShipmentsTable({
                   )}
 
                   {visibleColumns.senderAddress && (
-                    <td style={{ ...styles.cell, width: widths.senderAddress, maxWidth: widths.senderAddress }}>
+                    <td
+                      data-col-key="senderAddress"
+                      data-row-index={index}
+                      data-copy-value={fullSenderAddress}
+                      style={{ ...styles.cell, width: widths.senderAddress, maxWidth: widths.senderAddress }}
+                    >
                       <div
                         className="ops-cell-scrollable"
                         title={fullSenderAddress}
@@ -1326,6 +1251,9 @@ export function ShipmentsTable({
                           maxWidth: '100%',
                           fontSize: 12,
                           color: '#334155',
+                          whiteSpace: 'nowrap',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
                         }}
                       >
                         {fullSenderAddress}
@@ -1334,11 +1262,16 @@ export function ShipmentsTable({
                   )}
 
                   {visibleColumns.receiverName && (
-                    <td style={{ ...styles.cell, width: widths.receiverName, maxWidth: widths.receiverName }}>
+                    <td
+                      data-col-key="receiverName"
+                      data-row-index={index}
+                      data-copy-value={item.receiverName ?? ''}
+                      style={{ ...styles.cell, width: widths.receiverName, maxWidth: widths.receiverName }}
+                    >
                       <div
                         className="ops-cell-scrollable"
                         title={item.receiverName ?? 'Không có'}
-                        style={{ width: '100%', maxWidth: '100%', fontWeight: 600 }}
+                        style={{ width: '100%', maxWidth: '100%', fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}
                       >
                         {item.receiverName ?? 'Không có'}
                       </div>
@@ -1346,7 +1279,12 @@ export function ShipmentsTable({
                   )}
 
                   {visibleColumns.receiverPhone && (
-                    <td style={{ ...styles.cell, width: widths.receiverPhone, maxWidth: widths.receiverPhone }}>
+                    <td
+                      data-col-key="receiverPhone"
+                      data-row-index={index}
+                      data-copy-value={item.receiverPhone ?? ''}
+                      style={{ ...styles.cell, width: widths.receiverPhone, maxWidth: widths.receiverPhone }}
+                    >
                       <span style={{ fontFamily: 'monospace', fontWeight: 600, whiteSpace: 'nowrap' }}>
                         {item.receiverPhone ?? '-'}
                       </span>
@@ -1354,55 +1292,66 @@ export function ShipmentsTable({
                   )}
 
                   {visibleColumns.receiverAddress && (
-                    <td style={{ ...styles.cell, width: widths.receiverAddress, maxWidth: widths.receiverAddress }}>
+                    <td
+                      data-col-key="receiverAddress"
+                      data-row-index={index}
+                      data-copy-value={fullReceiverAddress}
+                      style={{ ...styles.cell, width: widths.receiverAddress, maxWidth: widths.receiverAddress }}
+                    >
                       <div
                         className="ops-cell-scrollable"
-                        title={fullReceiverAddress}
+                        title={`${fullReceiverAddress}${item.deliveryNote ? ` • ${item.deliveryNote}` : ''}`}
                         style={{
                           width: '100%',
                           maxWidth: '100%',
                           fontSize: 12,
                           color: '#334155',
+                          whiteSpace: 'nowrap',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
                         }}
                       >
-                        <div>{fullReceiverAddress}</div>
-                        <div style={styles.addressSubline} title={`Đồng kiểm: ${inspectionPolicy}${item.deliveryNote ? ` • ${item.deliveryNote}` : ''}`}>
-                          <span style={styles.inspectionTag}>[{inspectionPolicy}]</span>
-                          {item.deliveryNote ? <span>• {item.deliveryNote}</span> : null}
-                        </div>
+                        {fullReceiverAddress}
                       </div>
                     </td>
                   )}
 
                   {visibleColumns.cod && (
-                    <td style={{ ...styles.cell, width: widths.cod, maxWidth: widths.cod }}>
-                      <div style={{ display: 'flex', flexDirection: 'column' }}>
-                        <span style={{ fontWeight: 700, color: item.codAmount ? '#059669' : '#64748b', whiteSpace: 'nowrap' }}>
-                          {formatCurrency(item.codAmount)}
-                        </span>
-                        <div style={styles.feeSubline}>
-                          <span>Cước: {formatCurrency(item.shippingFee)}</span>
-                          <span style={{ margin: '0 3px', color: '#cbd5e1' }}>•</span>
-                          <span style={{ color: feePayer.isReceiverPay ? '#d97706' : '#64748b', fontWeight: feePayer.isReceiverPay ? 700 : 500 }}>
-                            {feePayer.payerLabel}
-                          </span>
-                        </div>
-                      </div>
+                    <td
+                      data-col-key="cod"
+                      data-row-index={index}
+                      data-copy-value={item.codAmount !== undefined && item.codAmount !== null ? String(item.codAmount) : '0'}
+                      style={{ ...styles.cell, width: widths.cod, maxWidth: widths.cod }}
+                    >
+                      <span
+                        title={`Cước: ${formatCurrency(item.shippingFee)} • ${feePayer.payerLabel}`}
+                        style={{ fontWeight: 700, color: item.codAmount ? '#059669' : '#64748b', whiteSpace: 'nowrap' }}
+                      >
+                        {formatCurrency(item.codAmount)}
+                      </span>
                     </td>
                   )}
 
                   {visibleColumns.routeHub && (
-                    <td style={{ ...styles.cell, width: widths.routeHub, maxWidth: widths.routeHub }}>
+                    <td
+                      data-col-key="routeHub"
+                      data-row-index={index}
+                      data-copy-value={`${item.receiverHubCode ?? item.destinationHubCode ?? '-'} • ${assignedCourier}`}
+                      style={{ ...styles.cell, width: widths.routeHub, maxWidth: widths.routeHub }}
+                    >
                       <div
                         className="ops-cell-scrollable"
-                        title={`Hub: ${item.receiverHubCode ?? item.destinationHubCode ?? '-'} | Shipper: ${assignedCourier} | Tác vụ: ${deliveryTask ? formatTaskStatusLabel(deliveryTask.status) : 'Chưa tạo'}`}
+                        title={`Hub: ${item.receiverHubCode ?? item.destinationHubCode ?? '-'} | Shipper: ${assignedCourier}${deliveryTask ? ` | Task: ${formatTaskStatusLabel(deliveryTask.status)}` : ''}`}
                         style={{
                           width: '100%',
                           maxWidth: '100%',
                           fontSize: 12,
+                          whiteSpace: 'nowrap',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
                         }}
                       >
-                        <span>Hub: <strong>{item.receiverHubCode ?? item.destinationHubCode ?? '-'}</strong></span>
+                        <span>{item.receiverHubCode ?? item.destinationHubCode ?? '-'}</span>
                         <span style={{ margin: '0 4px', color: '#94a3b8' }}>•</span>
                         <span>{assignedCourier}</span>
                       </div>
@@ -1410,7 +1359,12 @@ export function ShipmentsTable({
                   )}
 
                   {visibleColumns.ageMinutes && (
-                    <td style={{ ...styles.cell, width: widths.ageMinutes, maxWidth: widths.ageMinutes }}>
+                    <td
+                      data-col-key="ageMinutes"
+                      data-row-index={index}
+                      data-copy-value={formatAge(age)}
+                      style={{ ...styles.cell, width: widths.ageMinutes, maxWidth: widths.ageMinutes }}
+                    >
                       <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                         <span style={{ fontWeight: 700, color: isOverdue ? '#dc2626' : '#0f766e', whiteSpace: 'nowrap' }}>
                           {formatAge(age)}
@@ -1437,7 +1391,12 @@ export function ShipmentsTable({
                   )}
 
                   {visibleColumns.createdAt && (
-                    <td style={{ ...styles.cell, width: widths.createdAt, maxWidth: widths.createdAt }}>
+                    <td
+                      data-col-key="createdAt"
+                      data-row-index={index}
+                      data-copy-value={formatDateTime(item.createdAt)}
+                      style={{ ...styles.cell, width: widths.createdAt, maxWidth: widths.createdAt }}
+                    >
                       <span style={{ fontSize: 12, color: '#334155', whiteSpace: 'nowrap' }}>
                         {formatDateTime(item.createdAt)}
                       </span>
@@ -1445,7 +1404,12 @@ export function ShipmentsTable({
                   )}
 
                   {visibleColumns.deliveredAt && (
-                    <td style={{ ...styles.cell, width: widths.deliveredAt, maxWidth: widths.deliveredAt }}>
+                    <td
+                      data-col-key="deliveredAt"
+                      data-row-index={index}
+                      data-copy-value={deliveredAt ? formatDateTime(deliveredAt) : 'Chưa nhận'}
+                      style={{ ...styles.cell, width: widths.deliveredAt, maxWidth: widths.deliveredAt }}
+                    >
                       {deliveredAt ? (
                         <span style={{ fontSize: 12, fontWeight: 600, color: '#16a34a', whiteSpace: 'nowrap' }}>
                           {formatDateTime(deliveredAt)}
@@ -1459,7 +1423,12 @@ export function ShipmentsTable({
                   )}
 
                   {visibleColumns.updatedAt && (
-                    <td style={{ ...styles.cell, width: widths.updatedAt, maxWidth: widths.updatedAt }}>
+                    <td
+                      data-col-key="updatedAt"
+                      data-row-index={index}
+                      data-copy-value={formatDateTime(item.updatedAt)}
+                      style={{ ...styles.cell, width: widths.updatedAt, maxWidth: widths.updatedAt }}
+                    >
                       <span style={{ fontSize: 12, color: '#334155', whiteSpace: 'nowrap' }}>
                         {formatDateTime(item.updatedAt)}
                       </span>
@@ -1467,7 +1436,12 @@ export function ShipmentsTable({
                   )}
 
                   {visibleColumns.deliveryNote && (
-                    <td style={{ ...styles.cell, width: widths.deliveryNote, maxWidth: widths.deliveryNote }}>
+                    <td
+                      data-col-key="deliveryNote"
+                      data-row-index={index}
+                      data-copy-value={item.deliveryNote || ''}
+                      style={{ ...styles.cell, width: widths.deliveryNote, maxWidth: widths.deliveryNote }}
+                    >
                       <div
                         title={item.deliveryNote || ''}
                         style={{
@@ -1497,6 +1471,7 @@ export function ShipmentsTable({
           </tbody>
         </table>
       </div>
+      {renderToast()}
     </div>
   );
 }
@@ -1515,7 +1490,7 @@ export const styles: Record<string, React.CSSProperties> = {
   table: {
     width: '100%',
     borderCollapse: 'collapse',
-    minWidth: 1750,
+    minWidth: 1100,
   },
   headerCell: {
     position: 'sticky',
@@ -1534,7 +1509,7 @@ export const styles: Record<string, React.CSSProperties> = {
     WebkitUserSelect: 'none',
   },
   cell: {
-    padding: '6px 12px',
+    padding: '6px 10px',
     borderBottom: '1px solid #e7ebf8',
     verticalAlign: 'middle',
     color: '#152052',
@@ -1542,9 +1517,10 @@ export const styles: Record<string, React.CSSProperties> = {
     whiteSpace: 'nowrap',
     userSelect: 'text',
     WebkitUserSelect: 'text',
+    height: 38,
   },
   shipmentCodeCell: {
-    padding: '6px 12px',
+    padding: '6px 10px',
     borderBottom: '1px solid #e7ebf8',
     verticalAlign: 'middle',
     color: '#152052',
@@ -1552,6 +1528,8 @@ export const styles: Record<string, React.CSSProperties> = {
     userSelect: 'text',
     WebkitUserSelect: 'text',
     whiteSpace: 'nowrap',
+    cursor: 'text',
+    height: 38,
   },
   selectCell: {
     width: 44,

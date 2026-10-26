@@ -40,8 +40,42 @@ export class NdrCasePrismaRepository extends NdrCaseRepository {
     return record ? this.toEntity(record) : null;
   }
 
+  private async generateNdrCode(): Promise<string> {
+    const now = new Date();
+    const utc7 = new Date(now.getTime() + 7 * 60 * 60 * 1000);
+    const yyyy = utc7.getUTCFullYear();
+    const mm = String(utc7.getUTCMonth() + 1).padStart(2, '0');
+    const dd = String(utc7.getUTCDate()).padStart(2, '0');
+    const dateStr = `${yyyy}${mm}${dd}`;
+    const prefix = `NDR-${dateStr}-`;
+
+    const count = await this.prisma.ndrCase.count({
+      where: {
+        id: {
+          startsWith: prefix,
+        },
+      },
+    });
+
+    const nextSeq = String(count + 1).padStart(4, '0');
+    let candidate = `${prefix}${nextSeq}`;
+
+    const existing = await this.prisma.ndrCase.findUnique({
+      where: { id: candidate },
+    });
+
+    if (existing) {
+      const fallbackSeq = String(Math.floor(1000 + Math.random() * 9000));
+      candidate = `${prefix}${fallbackSeq}`;
+    }
+
+    return candidate;
+  }
+
   async create(input: CreateNdrCaseInput): Promise<NdrCase> {
+    const id = input.id?.trim() || (await this.generateNdrCode());
     const data: Prisma.NdrCaseCreateInput = {
+      id,
       shipmentCode: input.shipmentCode,
       reasonCode: input.reasonCode ?? null,
       issueType: input.issueType ?? null,

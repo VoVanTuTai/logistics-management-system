@@ -1,22 +1,13 @@
 import { useQueryClient } from '@tanstack/react-query';
 import React, { useEffect, useMemo, useState } from 'react';
 import {
-  Building2,
-  Target,
-  PackageOpen,
-  ShieldCheck,
-  CheckCircle2,
   AlertTriangle,
-  Lock,
-  Zap,
   RotateCcw,
   Printer,
-  Sparkles,
   Truck,
   CreditCard,
   Banknote,
   Check,
-  User,
   Info,
   QrCode,
   Maximize2,
@@ -93,6 +84,15 @@ const CARRIER_GOODS_CATEGORIES: Array<{
 ];
 
 import { DELIVERY_NOTE_TEMPLATES } from './branchOrderPresets';
+
+const DECLARED_VALUE_PRESETS: Array<{ label: string; value: string }> = [
+  { label: '500.000 đ', value: '500000' },
+  { label: '1.000.000 đ', value: '1000000' },
+  { label: '2.000.000 đ', value: '2000000' },
+  { label: '5.000.000 đ', value: '5000000' },
+  { label: '10.000.000 đ', value: '10000000' },
+  { label: '20.000.000 đ', value: '20000000' },
+];
 
 interface BranchOrderFormState {
   manualCode: string;
@@ -972,13 +972,11 @@ export function BranchBusinessOrderCreatePage(): React.JSX.Element {
     <section className="ops-branch-order-create">
       <div className="ops-branch-order-create__station-bar">
         <div className="ops-branch-order-create__station-title">
-          <Building2 size={18} />
           <span>QUẦY GIAO DỊCH BƯU CỤC • TẠO MỚI VẬN ĐƠN (POS COUNTER)</span>
         </div>
         <div className="ops-branch-order-create__station-meta">
           <span>Bưu cục trực:</span>
           <span className="ops-branch-order-create__station-badge">
-            <Building2 size={13} />
             {operatorHub ? `[${operatorHub.code}] ${operatorHub.name}` : defaultHubCode || 'Bưu cục quầy'}
           </span>
           <span>Giao dịch viên:</span>
@@ -994,12 +992,8 @@ export function BranchBusinessOrderCreatePage(): React.JSX.Element {
           {/* PANEL 1: THÔNG TIN KHÁCH GỬI HÀNG (WALK-IN POS) */}
           <article className="ops-branch-order-create__panel">
             <header className="ops-branch-order-create__panel-header">
-              <h2>
-                <User size={16} />
-                <span>1. Thông tin Khách gửi hàng (Khách vãng lai tại quầy)</span>
-              </h2>
+              <h2>1. Thông tin Khách gửi hàng (Khách vãng lai tại quầy)</h2>
               <span className="ops-branch-order-create__station-pill">
-                <Building2 size={12} />
                 Điểm tiếp nhận: <strong>[{operatorHub?.code || defaultHubCode || 'HUB'}] {operatorHub?.name || 'Bưu cục quầy'}</strong>
               </span>
             </header>
@@ -1075,17 +1069,13 @@ export function BranchBusinessOrderCreatePage(): React.JSX.Element {
           {/* PANEL 2: THÔNG TIN NGƯỜI NHẬN & TUYẾN PHÁT */}
           <article className="ops-branch-order-create__panel">
             <header className="ops-branch-order-create__panel-header">
-              <h2>
-                <Target size={16} />
-                <span>2. Thông tin Người nhận & Tuyến phát hàng</span>
-              </h2>
+              <h2>2. Thông tin Người nhận & Tuyến phát hàng</h2>
               <button
                 type="button"
                 className="ops-branch-order-create__smart-parse-btn"
                 onClick={() => setIsSmartParseOpen(!isSmartParseOpen)}
               >
-                <Zap size={14} />
-                <span>{isSmartParseOpen ? 'Đóng bộ bóc tách' : '⚡ Dán nhanh SMS / Zalo'}</span>
+                <span>{isSmartParseOpen ? 'Đóng bộ bóc tách' : 'Dán nhanh SMS / Zalo'}</span>
               </button>
             </header>
 
@@ -1094,9 +1084,8 @@ export function BranchBusinessOrderCreatePage(): React.JSX.Element {
               {isSmartParseOpen ? (
                 <div className="ops-branch-order-create__smart-parse-box ops-branch-order-create__col-12">
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <strong style={{ fontSize: '12px', color: '#166534', display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
-                      <Sparkles size={14} />
-                      <span>Công cụ phân tích tin nhắn SMS / Zalo / Facebook:</span>
+                    <strong style={{ fontSize: '12px', color: '#166534' }}>
+                      Công cụ phân tích tin nhắn SMS / Zalo / Facebook:
                     </strong>
                     <span style={{ fontSize: '11px', color: '#475569' }}>Tự động bóc tách Tên, SĐT, Tỉnh, Phường, Địa chỉ</span>
                   </div>
@@ -1132,19 +1121,17 @@ export function BranchBusinessOrderCreatePage(): React.JSX.Element {
 
               {smartParseFeedback ? (
                 <div className="ops-branch-order-create__col-12" style={{ padding: '6px 12px', background: '#dcfce7', border: '1px solid #86efac', borderRadius: '6px', color: '#166534', fontSize: '12px', fontWeight: 600 }}>
-                  ✓ {smartParseFeedback}
+                  Đã bóc tách thành công: {smartParseFeedback}
                 </div>
               ) : null}
 
               {receiverHub ? (
                 <div className="ops-branch-order-create__route-preview ops-branch-order-create__col-12">
                   <span className="ops-branch-order-create__route-point">
-                    <Building2 size={13} />
                     <span>Gửi: <strong>[{senderHub?.code || defaultHubCode || 'HUB'}] {senderHub?.name || 'Bưu cục gửi'}</strong></span>
                   </span>
                   <span className="ops-branch-order-create__route-arrow">➔</span>
                   <span className="ops-branch-order-create__route-point">
-                    <Target size={13} />
                     <span>Phát: <strong>[{receiverHub.code}] {receiverHub.name}</strong></span>
                     {form.receiverWard ? (
                       <span className="ops-branch-order-create__coords-tag" style={{ color: '#0d9488', fontWeight: 700 }}>
@@ -1288,10 +1275,7 @@ export function BranchBusinessOrderCreatePage(): React.JSX.Element {
           {/* PANEL 3: THÔNG SỐ KIỆN HÀNG & DỊCH VỤ VẬN CHUYỂN */}
           <article className="ops-branch-order-create__panel">
             <header className="ops-branch-order-create__panel-header">
-              <h2>
-                <PackageOpen size={16} />
-                <span>3. Thông số Kiện hàng & Dịch vụ Vận chuyển</span>
-              </h2>
+              <h2>3. Thông số Kiện hàng & Dịch vụ Vận chuyển</h2>
             </header>
 
             <div className="ops-branch-order-create__form">
@@ -1317,9 +1301,9 @@ export function BranchBusinessOrderCreatePage(): React.JSX.Element {
                   value={form.serviceType}
                   onChange={(event) => updateForm('serviceType', event.target.value as ServiceType)}
                 >
-                  <option value="STANDARD">J&T STANDARD (Chuyển phát tiêu chuẩn - Tiết kiệm)</option>
-                  <option value="EXPRESS">J&T FAST (Chuyển phát nhanh - Ưu tiên)</option>
-                  <option value="SAME_DAY">J&T SUPER (Hỏa tốc trong ngày - VIP)</option>
+                  <option value="STANDARD">NEXUS STANDARD (Chuyển phát tiêu chuẩn - Tiết kiệm)</option>
+                  <option value="EXPRESS">NEXUS FAST (Chuyển phát nhanh - Ưu tiên)</option>
+                  <option value="SAME_DAY">NEXUS SUPER (Hỏa tốc trong ngày - VIP)</option>
                 </select>
               </label>
 
@@ -1467,13 +1451,12 @@ export function BranchBusinessOrderCreatePage(): React.JSX.Element {
                       onChange={(e) => handleFragileToggle(e.target.checked)}
                     />
                     <span className="ops-branch-order-create__fragile-title">
-                      <PackageOpen size={16} />
-                      <span>Bưu kiện thuộc nhóm HÀNG DỄ VỠ / CHẤT LỎNG / ĐIỆN TỬ NHẠY CẢM</span>
+                      Bưu kiện thuộc nhóm HÀNG DỄ VỠ / CHẤT LỎNG / ĐIỆN TỬ NHẠY CẢM
                     </span>
                   </label>
                   <span className="ops-branch-order-create__fragile-badge">
                     {form.isFragile
-                      ? 'Yêu cầu bọc SOP & Tem Ly nứt (FRAGILE)'
+                      ? 'Yêu cầu bọc SOP & Tem Dễ vỡ (FRAGILE)'
                       : 'Hàng thông thường'}
                   </span>
                 </div>
@@ -1498,21 +1481,20 @@ export function BranchBusinessOrderCreatePage(): React.JSX.Element {
 
                     <div className="ops-branch-order-create__sop-box">
                       <div className="ops-branch-order-create__sop-title">
-                        <ShieldCheck size={16} />
-                        <span>QUY CHUẨN ĐÓNG GÓI CHỐNG SỐC BẮT BUỘC (SOP TIÊU CHUẨN):</span>
+                        QUY CHUẨN ĐÓNG GÓI CHỐNG SỐC BẮT BUỘC (SOP TIÊU CHUẨN):
                       </div>
                       <div className="ops-branch-order-create__sop-grid">
                         <div className="ops-branch-order-create__sop-item">
-                          <span>✓</span> Quấn tối thiểu 3 - 4 lớp xốp bọt khí (Bubble Wrap) bảo vệ mọi góc cạnh.
+                          <span>1.</span> Quấn tối thiểu 3 - 4 lớp xốp bọt khí (Bubble Wrap) bảo vệ mọi góc cạnh.
                         </div>
                         <div className="ops-branch-order-create__sop-item">
-                          <span>✓</span> Chèn mút xốp hoặc túi khí kín 6 mặt đáy - thành - nắp hộp (Lắc nhẹ không phát ra tiếng động).
+                          <span>2.</span> Chèn mút xốp hoặc túi khí kín 6 mặt đáy - thành - nắp hộp (Lắc nhẹ không phát ra tiếng động).
                         </div>
                         <div className="ops-branch-order-create__sop-item">
-                          <span>✓</span> Sử dụng thùng carton sóng cứng, niêm phong băng dính hình chữ H chắc chắn.
+                          <span>3.</span> Sử dụng thùng carton sóng cứng, niêm phong băng dính hình chữ H chắc chắn.
                         </div>
                         <div className="ops-branch-order-create__sop-item">
-                          <span>✓</span> Tự động in tem cảnh báo Ly vỡ & Xếp tầng trên cùng (Top Stacking) trên xe tải.
+                          <span>4.</span> Tự động in tem cảnh báo Hàng dễ vỡ & Xếp tầng trên cùng (Top Stacking) trên xe tải.
                         </div>
                       </div>
                     </div>
@@ -1525,7 +1507,6 @@ export function BranchBusinessOrderCreatePage(): React.JSX.Element {
                           onChange={(e) => handlePackagingStandardToggle(e.target.checked)}
                           style={{ accentColor: '#16a34a', width: '16px', height: '16px' }}
                         />
-                        <CheckCircle2 size={15} style={{ color: '#16a34a', flexShrink: 0 }} />
                         <span>Kiện hàng đã được kiểm tra: Đóng gói đạt chuẩn an toàn chống sốc SOP.</span>
                       </label>
 
@@ -1552,33 +1533,60 @@ export function BranchBusinessOrderCreatePage(): React.JSX.Element {
             </div>
           </article>
 
-          {/* PANEL 4: BẢO HIỂM HÀNG HÓA */}
+          {/* PANEL 4: KHAI GIÁ & CHÍNH SÁCH BẢO HIỂM HÀNG HÓA */}
           <article className="ops-branch-order-create__panel">
             <header className="ops-branch-order-create__panel-header">
-              <h2>
-                Chính sách bảo hiểm hàng hóa
-                <span aria-hidden="true">&#128176;</span>
-              </h2>
+              <h2>4. Khai giá & Chính sách Bảo hiểm Hàng hóa</h2>
             </header>
 
             <div className="ops-branch-order-create__form">
-              <label className="ops-branch-order-create__field ops-branch-order-create__field--wide">
-                <span>
-                  <i>*</i> Giá trị hàng hóa khai báo (VNĐ)
-                </span>
-                <input
-                  type="number"
-                  min="0"
-                  step="50000"
-                  placeholder="Nhập giá trị món hàng (VD: 5000000)"
-                  value={form.declaredValue}
-                  onChange={(event) => updateForm('declaredValue', event.target.value)}
-                />
-                <small className="ops-branch-order-create__help-text">
-                  Giá trị khai báo là căn cứ xác định mức bồi hoàn theo Điều 25 Luật Bưu chính khi phát sinh sự cố.
-                </small>
-              </label>
+              <div className="ops-branch-order-create__declared-group">
+                <label className="ops-branch-order-create__field">
+                  <span>
+                    <i>*</i> Giá trị hàng hóa khai báo (VNĐ)
+                  </span>
+                  <input
+                    type="number"
+                    min="0"
+                    step="50000"
+                    placeholder="Nhập giá trị món hàng (VD: 5000000)"
+                    value={form.declaredValue}
+                    onChange={(event) => updateForm('declaredValue', event.target.value)}
+                  />
+                  <small className="ops-branch-order-create__help-text">
+                    Giá trị khai báo là căn cứ pháp lý xác định mức bồi hoàn theo Điều 25 Luật Bưu chính khi phát sinh sự cố mất mát hoặc bể vỡ.
+                  </small>
+                </label>
 
+                {/* Phím chọn nhanh mốc khai giá */}
+                <div className="ops-branch-order-create__preset-chips">
+                  <span style={{ fontSize: '11.5px', color: '#64748b', alignSelf: 'center', marginRight: '4px' }}>Chọn nhanh:</span>
+                  {DECLARED_VALUE_PRESETS.map((preset) => (
+                    <button
+                      key={preset.value}
+                      type="button"
+                      className={`ops-branch-order-create__preset-chip ${
+                        form.declaredValue === preset.value ? 'ops-branch-order-create__preset-chip--active' : ''
+                      }`}
+                      onClick={() => updateForm('declaredValue', preset.value)}
+                    >
+                      {preset.label}
+                    </button>
+                  ))}
+                  {form.declaredValue ? (
+                    <button
+                      type="button"
+                      className="ops-branch-order-create__preset-chip"
+                      onClick={() => updateForm('declaredValue', '')}
+                      style={{ color: '#ef4444', borderColor: '#fca5a5' }}
+                    >
+                      Xóa giá trị
+                    </button>
+                  ) : null}
+                </div>
+              </div>
+
+              {/* THẺ CHỌN GÓI BẢO HIỂM */}
               <div className="ops-branch-order-create__insurance-section">
                 <div className="ops-branch-order-create__insurance-cards">
                   {/* Card 1: Gói Tiêu chuẩn */}
@@ -1589,7 +1597,7 @@ export function BranchBusinessOrderCreatePage(): React.JSX.Element {
                     onClick={() => updateForm('insuranceTier', 'NONE')}
                   >
                     <div className="ops-branch-order-create__tier-top">
-                      <span className="ops-branch-order-create__tier-title">
+                      <label className="ops-branch-order-create__tier-title">
                         <input
                           type="radio"
                           name="insuranceTier"
@@ -1597,17 +1605,20 @@ export function BranchBusinessOrderCreatePage(): React.JSX.Element {
                           checked={form.insuranceTier === 'NONE'}
                           onChange={() => updateForm('insuranceTier', 'NONE')}
                         />
-                        GÓI VẬN CHUYỂN TIÊU CHUẨN
-                      </span>
-                      <span className="ops-branch-order-create__tier-price ops-branch-order-create__tier-price--free">
-                        0 VNĐ (Miễn phí)
-                      </span>
+                        <span>GÓI VẬN CHUYỂN TIÊU CHUẨN</span>
+                      </label>
+                      <div className="ops-branch-order-create__tier-price-box">
+                        <span className="ops-branch-order-create__tier-price-badge ops-branch-order-create__tier-price-badge--free">
+                          0 VNĐ (Miễn phí)
+                        </span>
+                        <span className="ops-branch-order-create__tier-price-formula">Mặc định theo vận đơn</span>
+                      </div>
                     </div>
                     <div className="ops-branch-order-create__tier-desc">
-                      Phù hợp cho quần áo, tài liệu, hàng thông thường giá trị thấp (&le; 1.000.000đ).
+                      Phù hợp cho quần áo, tài liệu, hàng gia dụng thông thường giá trị thấp (&le; 1.000.000 VNĐ).
                     </div>
                     <div className="ops-branch-order-create__tier-policy">
-                      Hạn mức bồi thường: <strong>Tối đa 04 lần cước vận chuyển</strong> (Trần tối đa 1.000.000đ theo Điều 25 Luật Bưu chính).
+                      Hạn mức bồi thường: <strong>Tối đa 04 lần cước vận chuyển</strong> (Trần tối đa 1.000.000 VNĐ theo Điều 25 Luật Bưu chính).
                     </div>
                   </div>
 
@@ -1621,7 +1632,7 @@ export function BranchBusinessOrderCreatePage(): React.JSX.Element {
                     onClick={() => updateForm('insuranceTier', 'COMPREHENSIVE_100')}
                   >
                     <div className="ops-branch-order-create__tier-top">
-                      <span className="ops-branch-order-create__tier-title">
+                      <label className="ops-branch-order-create__tier-title">
                         <input
                           type="radio"
                           name="insuranceTier"
@@ -1629,23 +1640,31 @@ export function BranchBusinessOrderCreatePage(): React.JSX.Element {
                           checked={form.insuranceTier === 'COMPREHENSIVE_100'}
                           onChange={() => updateForm('insuranceTier', 'COMPREHENSIVE_100')}
                         />
-                        BẢO HIỂM TOÀN DIỆN 100%
-                      </span>
-                      <span className="ops-branch-order-create__tier-price">
-                        + {formatCurrency(feeBreakdown.insuranceFee)}
-                        <span style={{ fontSize: '10.5px', fontWeight: '500', color: '#64748b', display: 'block', textAlign: 'right' }}>
-                          (0.5% giá trị khai báo, tối thiểu 5.000đ)
+                        <span>BẢO HIỂM TOÀN DIỆN 100%</span>
+                      </label>
+                      <div className="ops-branch-order-create__tier-price-box">
+                        <span className="ops-branch-order-create__tier-price-badge">
+                          + {formatCurrency(feeBreakdown.insuranceFee > 0 ? feeBreakdown.insuranceFee : 5000)}
                         </span>
-                      </span>
+                        <span className="ops-branch-order-create__tier-price-formula">
+                          0.5% giá trị khai báo (tối thiểu 5.000đ)
+                        </span>
+                      </div>
                     </div>
                     <div className="ops-branch-order-create__tier-desc">
-                      Kiện hàng được dán tem định danh an ninh, giám sát camera riêng trên toàn bộ hành trình.
+                      Kiện hàng được dán tem niêm phong an ninh, phân luồng giám sát camera riêng trên toàn bộ hành trình.
                     </div>
                     <div className="ops-branch-order-create__tier-policy ops-branch-order-create__tier-policy--comprehensive">
-                      Cam kết bồi thường: <strong>100% GIÁ TRỊ KHAI BÁO THỰC TẾ</strong> khi mất hàng hoặc bể vỡ (kèm hóa đơn/chứng từ hợp lệ).
+                      Cam kết bồi thường: <strong>100% GIÁ TRỊ KHAI BÁO THỰC TẾ</strong> khi phát sinh mất mát, bể vỡ toàn phần (kèm hóa đơn/chứng từ hợp lệ).
                     </div>
                   </div>
                 </div>
+
+                {form.insuranceTier === 'COMPREHENSIVE_100' && !form.declaredValue ? (
+                  <div className="ops-branch-order-create__insurance-alert">
+                    Lưu ý: Quý khách đang chọn Gói Bảo Hiểm Toàn Diện 100%. Vui lòng nhập hoặc chọn Giá trị khai báo hàng hóa ở trên để hệ thống ghi nhận hạn mức bảo hiểm hợp lệ.
+                  </div>
+                ) : null}
               </div>
             </div>
           </article>
@@ -1778,7 +1797,7 @@ export function BranchBusinessOrderCreatePage(): React.JSX.Element {
                       </div>
 
                       <div className="ops-branch-order-create__vietqr-footer-hint">
-                        <Sparkles size={12} /> Tự động điền số tiền & nội dung, khách dùng mọi App ngân hàng để quét
+                        Tự động điền số tiền & nội dung, khách dùng mọi App ngân hàng để quét
                       </div>
                     </>
                   ) : (

@@ -636,6 +636,49 @@ export function ShipmentListPage(): React.JSX.Element {
   const pageSize = toPageNumber(searchParams.get('limit'), DEFAULT_PAGE_SIZE, 10, 100);
   const offset = toPageNumber(searchParams.get('offset'), 0, 0, 1_000_000);
   const pageNumber = Math.floor(offset / pageSize) + 1;
+
+  const currentFlow = useMemo(() => {
+    const flowParam = searchParams.get('flow');
+    if (flowParam) return flowParam;
+    if (branchGoodsFilter === 'readyForDelivery') return 'arrival';
+    if (branchGoodsFilter === 'inventoryByDay') return 'inventory';
+    if (branchGoodsFilter === 'problemOrders' || branchGoodsFilter === 'returnNeeded') return 'problem';
+    if (filters.status === 'SCAN_OUTBOUND' || filters.status === 'SEND_GOODS') return 'outbound';
+    if (filters.status === 'OUT_FOR_DELIVERY' || filters.status === 'TASK_ASSIGNED') return 'delivery';
+    return 'all';
+  }, [branchGoodsFilter, filters.status, searchParams]);
+
+  const handleFlowTabChange = (flowId: string) => {
+    const next = new URLSearchParams(searchParams);
+    next.set('offset', '0');
+    if (flowId === 'all') {
+      next.delete('flow');
+      next.delete('status');
+      next.delete('branchGoods');
+    } else if (flowId === 'arrival') {
+      next.set('flow', 'arrival');
+      next.set('branchGoods', 'readyForDelivery');
+      next.delete('status');
+    } else if (flowId === 'outbound') {
+      next.set('flow', 'outbound');
+      next.set('status', 'SCAN_OUTBOUND');
+      next.delete('branchGoods');
+    } else if (flowId === 'delivery') {
+      next.set('flow', 'delivery');
+      next.set('status', 'OUT_FOR_DELIVERY');
+      next.delete('branchGoods');
+    } else if (flowId === 'inventory') {
+      next.set('flow', 'inventory');
+      next.set('branchGoods', 'inventoryByDay');
+      next.delete('status');
+    } else if (flowId === 'problem') {
+      next.set('flow', 'problem');
+      next.set('branchGoods', 'problemOrders');
+      next.delete('status');
+    }
+    setSearchParams(next);
+  };
+
   const [qInput, setQInput] = useState(filters.q ?? '');
   const [statusInput, setStatusInput] = useState(filters.status ?? '');
   const [timeInput, setTimeInput] = useState<ShipmentTimeFilter>(timeFilter);
@@ -1324,6 +1367,40 @@ export function ShipmentListPage(): React.JSX.Element {
 
   return (
     <div>
+      {/* 1. OPERATIONAL FLOW TABS (Hợp nhất Hàng đến / Hàng gửi / Hàng phát / Tồn kho) */}
+      <div style={{ display: 'flex', gap: '8px', marginBottom: '14px', flexWrap: 'wrap' }}>
+        {[
+          { id: 'all', label: '📦 Tất cả vận đơn' },
+          { id: 'arrival', label: '📥 Hàng đến (Inbound)' },
+          { id: 'outbound', label: '📤 Hàng gửi (Outbound)' },
+          { id: 'delivery', label: '🚚 Đang phát (Delivery)' },
+          { id: 'inventory', label: '🏬 Tồn kho bưu cục' },
+          { id: 'problem', label: '⚠️ Sự cố & Hoàn hàng' },
+        ].map((tab) => {
+          const isActive = currentFlow === tab.id;
+          return (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => handleFlowTabChange(tab.id)}
+              style={{
+                padding: '7px 14px',
+                borderRadius: '6px',
+                fontSize: '13px',
+                fontWeight: isActive ? 700 : 500,
+                color: isActive ? '#1e40af' : '#475569',
+                background: isActive ? '#dbeafe' : '#f8fafc',
+                border: isActive ? '1px solid #93c5fd' : '1px solid #cbd5e1',
+                cursor: 'pointer',
+                transition: 'all 0.15s ease',
+              }}
+            >
+              {tab.label}
+            </button>
+          );
+        })}
+      </div>
+
       <form onSubmit={onFilterSubmit} style={styles.systemFilterForm}>
         {/* Header Label */}
         <div style={styles.systemFilterHeader}>
@@ -2287,6 +2364,29 @@ export function ShipmentListPage(): React.JSX.Element {
               selectedShipmentCodes={selectedShipmentCodes}
               onToggleShipment={toggleShipmentSelection}
               onToggleAllVisible={toggleAllVisibleShipments}
+              storageKeyPrefix="ops_shipment_list"
+              defaultVisibleColumns={{
+                stt: false,
+                code: true,
+                status: true,
+                parcelType: false,
+                chargeableWeight: false,
+                primaryHub: false,
+                oppositeHub: false,
+                senderName: true,
+                senderPhone: false,
+                senderAddress: false,
+                receiverName: true,
+                receiverPhone: true,
+                receiverAddress: true,
+                cod: true,
+                routeHub: true,
+                ageMinutes: false,
+                createdAt: true,
+                deliveredAt: false,
+                updatedAt: false,
+                deliveryNote: false,
+              }}
             />
           ) : null}
         </>

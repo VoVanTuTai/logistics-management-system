@@ -680,14 +680,23 @@ export function ShipmentListView({
                       />
                     </td>
                     <td style={{ width: widths.code, maxWidth: widths.code }} className="shipment-code-cell">
-                      <button
-                        type="button"
-                        className="shipment-code-link"
-                        title="Click để xem chi tiết đơn hàng"
-                        onClick={() => void onOpenShipmentDetail(row.shipment.code)}
+                      <span
+                        className="shipment-code-text"
+                        title="Bôi đen kéo chuột để sao chép mã"
+                        style={{
+                          cursor: 'text',
+                          userSelect: 'text',
+                          WebkitUserSelect: 'text',
+                          fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
+                          fontWeight: 700,
+                          color: 'var(--stitch-primary, #0059b8)',
+                          whiteSpace: 'nowrap',
+                          display: 'inline-block',
+                        }}
+                        onDoubleClick={() => void onOpenShipmentDetail(row.shipment.code)}
                       >
                         {row.shipment.code}
-                      </button>
+                      </span>
                     </td>
                     <td style={{ width: widths.status, maxWidth: widths.status }}>
                       <span className={resolveShipmentStatusClass(row.shipment)}>

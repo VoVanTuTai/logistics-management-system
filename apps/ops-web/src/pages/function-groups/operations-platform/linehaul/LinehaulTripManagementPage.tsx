@@ -1,5 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { LinehaulVehicleSealPage } from './LinehaulVehicleSealPage';
+import { LinehaulTripDataMonitorPage } from './LinehaulTripDataMonitorPage';
 import {
   CheckCircle2,
   Clock,
@@ -113,6 +115,26 @@ function buildLinehaulTripNote(trip: LinehaulTrip): string {
 }
 
 export function LinehaulTripManagementPage(): React.JSX.Element {
+  const [currentTab, setCurrentTab] = useState<string>(() => {
+    try {
+      const p = new URLSearchParams(window.location.search);
+      return p.get('tab') || 'trips';
+    } catch {
+      return 'trips';
+    }
+  });
+
+  const handleSwitchTab = (tab: string) => {
+    setCurrentTab(tab);
+    try {
+      const url = new URL(window.location.href);
+      url.searchParams.set('tab', tab);
+      window.history.replaceState(null, '', url.toString());
+    } catch {
+      // ignore
+    }
+  };
+
   const session = useAuthStore((state) => state.session);
   const accessToken = session?.tokens.accessToken ?? null;
   const assignedHubCodes = useMemo(
@@ -563,15 +585,49 @@ export function LinehaulTripManagementPage(): React.JSX.Element {
 
   return (
     <section className="ops-linehaul-dashboard">
-      <header className="ops-linehaul-dashboard__header">
-        <div>
-          <small>LINEHAUL_TRIP_MANAGEMENT</small>
-          <h2>Quản lý chuyến xe</h2>
-          <p>
-            Giám sát toàn trình xe tải trung chuyển liên Hub: Biển số xe, tài xế phụ trách, số lượng kiện hàng,
-            mã chì niêm phong (Seal) và biên bản xác nhận tiếp nhận tại Hub đích.
-          </p>
-        </div>
+      {/* Unified Tab Navigation Bar */}
+      <div className="ops-unified-sub-tabs" role="tablist">
+        <button
+          type="button"
+          className={`ops-unified-sub-tab-btn ${currentTab === 'trips' ? 'ops-unified-sub-tab-btn--active' : ''}`}
+          onClick={() => handleSwitchTab('trips')}
+        >
+          <Truck size={15} />
+          <span>Quản lý Chuyến xe tải</span>
+        </button>
+        <button
+          type="button"
+          className={`ops-unified-sub-tab-btn ${currentTab === 'seal' ? 'ops-unified-sub-tab-btn--active' : ''}`}
+          onClick={() => handleSwitchTab('seal')}
+        >
+          <Lock size={15} />
+          <span>Niêm phong & Kẹp chì xe</span>
+        </button>
+        <button
+          type="button"
+          className={`ops-unified-sub-tab-btn ${currentTab === 'monitor' ? 'ops-unified-sub-tab-btn--active' : ''}`}
+          onClick={() => handleSwitchTab('monitor')}
+        >
+          <Clock size={15} />
+          <span>Giám sát Dữ liệu Chuyến xe</span>
+        </button>
+      </div>
+
+      {currentTab === 'seal' ? (
+        <LinehaulVehicleSealPage />
+      ) : currentTab === 'monitor' ? (
+        <LinehaulTripDataMonitorPage />
+      ) : (
+        <>
+          <header className="ops-linehaul-dashboard__header">
+            <div>
+              <small>LINEHAUL_TRIP_MANAGEMENT</small>
+              <h2>Quản lý chuyến xe</h2>
+              <p>
+                Giám sát toàn trình xe tải trung chuyển liên Hub: Biển số xe, tài xế phụ trách, số lượng kiện hàng,
+                mã chì niêm phong (Seal) và biên bản xác nhận tiếp nhận tại Hub đích.
+              </p>
+            </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
           <div className="ops-thermal-management__hub-badge">
             <span className="ops-thermal-management__hub-badge-dot" />
@@ -1307,6 +1363,8 @@ export function LinehaulTripManagementPage(): React.JSX.Element {
           </div>
         </div>
       ) : null}
+        </>
+      )}
     </section>
   );
 }

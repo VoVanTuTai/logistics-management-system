@@ -1,0 +1,626 @@
+/* OpsMetricsAbnormalHandlingPage.css - Professional Carrier Ops UI */
+
+.ops-abnormal-page {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  color: #1e293b;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+/* Header */
+.ops-abnormal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  background: #ffffff;
+  border: 1px solid #d9def3;
+  border-radius: 8px;
+  padding: 14px 18px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.ops-abnormal-header__title-block {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ops-abnormal-header__meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.ops-abnormal-badge-code {
+  display: inline-block;
+  padding: 2px 7px;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 4px;
+  color: #1d4ed8;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+.ops-abnormal-header__update-time {
+  font-size: 12px;
+  color: #64748b;
+}
+
+.ops-abnormal-header__title {
+  margin: 2px 0 0;
+  font-size: 20px;
+  font-weight: 700;
+  color: #0f172a;
+  line-height: 1.3;
+}
+
+.ops-abnormal-header__summary {
+  margin: 0;
+  font-size: 13px;
+  color: #64748b;
+  max-width: 860px;
+  line-height: 1.45;
+}
+
+.ops-abnormal-header__actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ops-abnormal-refresh-btn {
+  height: 34px;
+  padding: 0 14px;
+  background: #f8fafc;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  color: #1e293b;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.ops-abnormal-refresh-btn:hover:not(:disabled) {
+  background: #eff6ff;
+  border-color: #93c5fd;
+  color: #0052cc;
+}
+
+.ops-abnormal-refresh-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* SLA Metric Cards */
+.ops-abnormal-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+
+.ops-abnormal-metric-card {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  background: #ffffff;
+  border: 1px solid #d9def3;
+  border-radius: 8px;
+  padding: 12px 16px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+}
+
+.ops-abnormal-metric-card__label {
+  font-size: 12px;
+  font-weight: 700;
+  color: #475569;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.ops-abnormal-metric-card__value {
+  font-size: 26px;
+  font-weight: 800;
+  line-height: 1.1;
+  color: #0f172a;
+}
+
+.ops-abnormal-metric-card__hint {
+  font-size: 12px;
+  color: #64748b;
+}
+
+.ops-abnormal-metric-card[data-tone='danger'] {
+  border-color: #fecaca;
+  background: #fffafa;
+}
+
+.ops-abnormal-metric-card[data-tone='danger'] .ops-abnormal-metric-card__value {
+  color: #dc2626;
+}
+
+.ops-abnormal-metric-card[data-tone='danger'] .ops-abnormal-metric-card__label {
+  color: #b91c1c;
+}
+
+.ops-abnormal-metric-card[data-tone='warning'] {
+  border-color: #fed7aa;
+  background: #fffdf8;
+}
+
+.ops-abnormal-metric-card[data-tone='warning'] .ops-abnormal-metric-card__value {
+  color: #d97706;
+}
+
+.ops-abnormal-metric-card[data-tone='success'] {
+  border-color: #bbf7d0;
+  background: #f8fdf9;
+}
+
+.ops-abnormal-metric-card[data-tone='success'] .ops-abnormal-metric-card__value {
+  color: #16a34a;
+}
+
+/* Panel */
+.ops-abnormal-panel {
+  display: flex;
+  flex-direction: column;
+  background: #ffffff;
+  border: 1px solid #d9def3;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  overflow: hidden;
+}
+
+/* Quick Filter Tabs */
+.ops-abnormal-tabs {
+  display: flex;
+  align-items: center;
+  border-bottom: 1px solid #e2e8f0;
+  background: #f8fafc;
+  padding: 0 12px;
+  gap: 4px;
+}
+
+.ops-abnormal-tab {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 42px;
+  padding: 0 14px;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: #475569;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.ops-abnormal-tab:hover {
+  color: #0f172a;
+  background: rgba(0, 0, 0, 0.02);
+}
+
+.ops-abnormal-tab--active {
+  color: #0052cc !important;
+  border-bottom-color: #0052cc !important;
+  font-weight: 700;
+  background: #ffffff;
+}
+
+.ops-abnormal-tab--danger.ops-abnormal-tab--active {
+  color: #dc2626 !important;
+  border-bottom-color: #dc2626 !important;
+}
+
+.ops-abnormal-tab__count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1px 6px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 700;
+  background: #e2e8f0;
+  color: #334155;
+}
+
+.ops-abnormal-tab--active .ops-abnormal-tab__count {
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+
+.ops-abnormal-tab__count--danger {
+  background: #fee2e2 !important;
+  color: #b91c1c !important;
+}
+
+/* Filter Bar */
+.ops-abnormal-filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 10px;
+  padding: 12px 14px;
+  background: #ffffff;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.ops-abnormal-filter-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ops-abnormal-filter-item label {
+  font-size: 11px;
+  font-weight: 700;
+  color: #64748b;
+  text-transform: uppercase;
+}
+
+.ops-abnormal-filter-item input,
+.ops-abnormal-filter-item select {
+  height: 32px;
+  padding: 0 10px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  font-size: 13px;
+  color: #1e293b;
+  background: #ffffff;
+  outline: none;
+}
+
+.ops-abnormal-filter-item input:focus,
+.ops-abnormal-filter-item select:focus {
+  border-color: #0052cc;
+  box-shadow: 0 0 0 2px rgba(0, 82, 204, 0.15);
+}
+
+.ops-abnormal-filter-item--search {
+  flex: 1;
+  min-width: 220px;
+}
+
+.ops-abnormal-filter-item--date input {
+  width: 140px;
+}
+
+.ops-abnormal-btn-reset {
+  height: 32px;
+  padding: 0 12px;
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  color: #475569;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.ops-abnormal-btn-reset:hover {
+  background: #e2e8f0;
+  color: #1e293b;
+}
+
+/* Error Banner */
+.ops-abnormal-error-banner {
+  padding: 10px 14px;
+  background: #fef2f2;
+  border-bottom: 1px solid #fecaca;
+  color: #b91c1c;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+/* Table Shell */
+.ops-abnormal-table-shell {
+  width: 100%;
+  overflow-x: auto;
+  max-height: calc(100vh - 350px);
+  min-height: 280px;
+  position: relative;
+}
+
+.ops-abnormal-table {
+  width: 100%;
+  min-width: 1420px;
+  border-collapse: separate;
+  border-spacing: 0;
+  table-layout: fixed;
+  font-size: 13px;
+}
+
+/* Table Header */
+.ops-abnormal-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: #f8faff;
+  color: #1f2b6f;
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  padding: 0 10px;
+  height: 38px;
+  line-height: 38px;
+  border-bottom: 1px solid #cbd5e1;
+  border-right: 1px solid #f1f5f9;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: default;
+}
+
+/* Table Rows & Cells */
+.ops-abnormal-row {
+  height: 38px;
+  transition: background-color 0.1s ease;
+}
+
+.ops-abnormal-row:nth-child(even) {
+  background: #fafcff;
+}
+
+.ops-abnormal-row:hover {
+  background: #f0f6ff !important;
+}
+
+.ops-abnormal-row--overdue {
+  background: #fffdfd;
+}
+
+.ops-abnormal-cell {
+  height: 38px;
+  padding: 0 10px;
+  vertical-align: middle;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  border-bottom: 1px solid #eef2f6;
+  border-right: 1px solid #f8fafc;
+  color: #334155;
+  font-size: 13px;
+}
+
+.ops-abnormal-cell--center {
+  text-align: center;
+}
+
+.ops-abnormal-cell--muted {
+  color: #64748b;
+  font-size: 12px;
+}
+
+/* Tracking Code Cell - Pure Selectable Monospace */
+.ops-abnormal-cell--code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+.ops-abnormal-code-text {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace !important;
+  font-weight: 700;
+  color: var(--ops-primary, #0052cc);
+  user-select: text !important;
+  -webkit-user-select: text !important;
+  cursor: text;
+  display: inline-block;
+  white-space: nowrap;
+}
+
+/* Category Badges */
+.ops-abnormal-cat-badge {
+  display: inline-block;
+  padding: 2px 7px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.ops-abnormal-cat-badge--ndr {
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  color: #1d4ed8;
+}
+
+.ops-abnormal-cat-badge--delivery_failed {
+  background: #fff7ed;
+  border: 1px solid #fed7aa;
+  color: #c2410c;
+}
+
+.ops-abnormal-cat-badge--return_started {
+  background: #fefce8;
+  border: 1px solid #fef08a;
+  color: #a16207;
+}
+
+.ops-abnormal-cat-badge--return_completed {
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  color: #475569;
+}
+
+.ops-abnormal-cat-badge--inventory_check {
+  background: #faf5ff;
+  border: 1px solid #e9d5ff;
+  color: #7e22ce;
+}
+
+/* SLA Age Badges */
+.ops-abnormal-age-badge {
+  display: inline-block;
+  padding: 2px 7px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+.ops-abnormal-age-badge--danger {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #dc2626;
+}
+
+.ops-abnormal-age-badge--normal {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  color: #475569;
+}
+
+/* Status Badges */
+.ops-abnormal-status-badge {
+  display: inline-block;
+  padding: 2px 7px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  background: #f1f5f9;
+  color: #475569;
+  border: 1px solid #e2e8f0;
+}
+
+.ops-abnormal-status-badge--resolved {
+  background: #f0fdf4;
+  border-color: #bbf7d0;
+  color: #15803d;
+}
+
+/* Action Buttons Group */
+.ops-abnormal-actions-group {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.ops-abnormal-act-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 25px;
+  padding: 0 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: all 0.12s ease;
+}
+
+.ops-abnormal-act-btn--primary {
+  background: #0052cc;
+  color: #ffffff !important;
+  border: 1px solid #0052cc;
+}
+
+.ops-abnormal-act-btn--primary:hover {
+  background: #0040a8;
+  border-color: #0040a8;
+}
+
+.ops-abnormal-act-btn--secondary {
+  background: #f8fafc;
+  color: #1e293b !important;
+  border: 1px solid #cbd5e1;
+}
+
+.ops-abnormal-act-btn--secondary:hover {
+  background: #eff6ff;
+  border-color: #93c5fd;
+  color: #0052cc !important;
+}
+
+/* Empty Cell */
+.ops-abnormal-empty-cell {
+  text-align: center;
+  padding: 36px 16px;
+  color: #64748b;
+  font-size: 13px;
+  font-style: italic;
+}
+
+/* Pagination Footer */
+.ops-abnormal-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px;
+  background: #ffffff;
+  border-top: 1px solid #e2e8f0;
+  font-size: 12px;
+  color: #64748b;
+}
+
+.ops-abnormal-pagination strong {
+  color: #1e293b;
+}
+
+.ops-abnormal-pagination__controls {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.ops-abnormal-pagination__pagesize {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.ops-abnormal-pagination__pagesize select {
+  height: 28px;
+  padding: 0 6px;
+  border: 1px solid #cbd5e1;
+  border-radius: 4px;
+  font-size: 12px;
+  color: #1e293b;
+  background: #ffffff;
+}
+
+.ops-abnormal-pagination__nav {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ops-abnormal-page-btn {
+  height: 28px;
+  padding: 0 10px;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #1e293b;
+  cursor: pointer;
+  transition: all 0.12s ease;
+}
+
+.ops-abnormal-page-btn:hover:not(:disabled) {
+  background: #eff6ff;
+  border-color: #93c5fd;
+  color: #0052cc;
+}
+
+.ops-abnormal-page-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.ops-abnormal-page-indicator {
+  font-size: 12px;
+  font-weight: 600;
+  color: #334155;
+}

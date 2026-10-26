@@ -17,6 +17,7 @@ import { useAuthStore } from '../../store/authStore';
 import { formatDateTime } from '../../utils/format';
 import { formatAnyCodeLabel, formatNdrStatusLabel } from '../../utils/logisticsLabels';
 import { type NdrActionMode } from './NdrActionForm.schema';
+import { formatNdrDisplayCode } from './NdrCasesTable';
 import { NdrNextActionForm } from './NdrNextActionForm';
 
 export function NdrCaseDetailPage(): React.JSX.Element {
@@ -68,7 +69,17 @@ export function NdrCaseDetailPage(): React.JSX.Element {
         <Link to={routePaths.ndr}>Quay lại danh sách NDR</Link>
       </p>
 
-      <p>NDR ID: {detailQuery.data.id}</p>
+      <p>
+        <strong>Mã hồ sơ NDR:</strong>{' '}
+        <span style={{ fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace', fontWeight: 700, color: '#1e40af' }}>
+          {formatNdrDisplayCode(detailQuery.data.id, detailQuery.data.createdAt)}
+        </span>
+        {detailQuery.data.id !== formatNdrDisplayCode(detailQuery.data.id, detailQuery.data.createdAt) && (
+          <span style={{ fontSize: 12, color: '#64748b', marginLeft: 8 }}>
+            (ID kỹ thuật: {detailQuery.data.id})
+          </span>
+        )}
+      </p>
       <p>Mã vận đơn: {detailQuery.data.shipmentCode}</p>
       <p>Trạng thái: {formatNdrStatusLabel(detailQuery.data.status)}</p>
       <p>Mã lý do: {formatAnyCodeLabel(detailQuery.data.reasonCode)}</p>

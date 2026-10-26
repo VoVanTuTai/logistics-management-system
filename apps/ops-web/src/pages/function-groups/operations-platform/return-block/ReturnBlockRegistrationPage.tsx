@@ -128,7 +128,17 @@ function ReturnPanel({
   );
 }
 
-export function ReturnBlockRegistrationPage(): React.JSX.Element {
+export interface ReturnBlockRegistrationPageProps {
+  isModal?: boolean;
+  onSuccess?: () => void;
+  onClose?: () => void;
+}
+
+export function ReturnBlockRegistrationPage({
+  isModal,
+  onSuccess,
+  onClose,
+}: ReturnBlockRegistrationPageProps = {}): React.JSX.Element {
   const session = useAuthStore((state) => state.session);
   const showToast = useUiStore((state) => state.showToast);
   const accessToken = session?.tokens.accessToken ?? null;
@@ -241,6 +251,7 @@ export function ReturnBlockRegistrationPage(): React.JSX.Element {
         'success',
       );
       handleReset();
+      onSuccess?.();
     } catch (error) {
       showToast(
         error instanceof Error ? error.message : 'Không ghi nhận được chuyển hoàn.',
@@ -295,24 +306,26 @@ export function ReturnBlockRegistrationPage(): React.JSX.Element {
             Thiết lập chiều chuyển hoàn và thông tin người nhận hoàn về shop
           </p>
         </div>
-        <Link
-          to={routePaths.returnBlockManagement}
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '6px',
-            padding: '8px 14px',
-            borderRadius: '8px',
-            border: '1px solid #cbd5e1',
-            background: '#ffffff',
-            color: '#334155',
-            textDecoration: 'none',
-            fontSize: '13px',
-            fontWeight: 600,
-          }}
-        >
-          ← Danh sách Quản lý chuyển hoàn
-        </Link>
+        {!isModal ? (
+          <Link
+            to={routePaths.returnBlockManagement}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              padding: '8px 14px',
+              borderRadius: '8px',
+              border: '1px solid #cbd5e1',
+              background: '#ffffff',
+              color: '#334155',
+              textDecoration: 'none',
+              fontSize: '13px',
+              fontWeight: 600,
+            }}
+          >
+            ← Danh sách Quản lý chuyển hoàn
+          </Link>
+        ) : null}
       </div>
 
       <ReturnPanel title="Thông tin đề xuất">

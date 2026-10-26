@@ -1,5 +1,6 @@
 import React from 'react';
 
+import { OpsMetricsAbnormalHandlingPage } from '../abnormal/OpsMetricsAbnormalHandlingPage';
 import {
   OpsMetricsDerivedDashboardPage,
   type OpsMetricsDashboardKind,
@@ -16,9 +17,14 @@ export function OperationsMetricsDerivedRoutePage({
   title,
   summary,
 }: OperationsMetricsDerivedRoutePageProps): React.JSX.Element {
+  if (
+    groupCode === 'OPS_METRICS_ABNORMAL_HANDLING' ||
+    groupCode === 'OPS_METRICS_ABNORMAL_OVERVIEW'
+  ) {
+    return <OpsMetricsAbnormalHandlingPage title={title} summary={summary} />;
+  }
+
   const dashboardKinds: Record<string, OpsMetricsDashboardKind> = {
-    OPS_METRICS_ABNORMAL_OVERVIEW: 'abnormal-overview',
-    OPS_METRICS_ABNORMAL_HANDLING: 'abnormal-handling',
     OPS_METRICS_DEADLINE_PICKUP_RATIO: 'pickup-ratio',
     OPS_METRICS_DEADLINE_DELIVERY_SLA: 'delivery-sla',
     OPS_METRICS_DEADLINE_SIGN_T1: 'sign-t1',

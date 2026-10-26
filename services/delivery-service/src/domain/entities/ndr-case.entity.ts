@@ -42,6 +42,7 @@ export interface NdrCaseSnapshot {
 }
 
 export interface CreateNdrCaseInput {
+  id?: string;
   shipmentCode: string;
   deliveryAttemptId?: string | null;
   reasonCode?: string | null;

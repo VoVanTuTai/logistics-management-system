@@ -313,6 +313,8 @@ export class ShipmentPrismaRepository extends ShipmentRepository {
     const opsArrivedUnsigned = normalizeBoolean(filters.opsArrivedUnsigned);
     const createdByUserId = normalizeString(filters.createdByUserId);
     const receiverPhone = normalizeString(filters.receiverPhone);
+    const externalOrderId = normalizeString(filters.externalOrderId);
+    const externalOrderCode = normalizeString(filters.externalOrderCode);
 
     if (status) {
       where.currentStatus = status as PrismaShipmentCurrentStatus;
@@ -326,6 +328,24 @@ export class ShipmentPrismaRepository extends ShipmentRepository {
       where.receiverPhone = receiverPhone;
     }
 
+    if (externalOrderId) {
+      andFilters.push({
+        metadata: {
+          path: ['external', 'externalOrderId'],
+          equals: externalOrderId,
+        },
+      });
+    }
+
+    if (externalOrderCode) {
+      andFilters.push({
+        metadata: {
+          path: ['external', 'externalOrderCode'],
+          equals: externalOrderCode,
+        },
+      });
+    }
+
     if (shipmentCodes.length > 0) {
       andFilters.push({
         code: {
@@ -334,10 +354,26 @@ export class ShipmentPrismaRepository extends ShipmentRepository {
       });
     } else if (keyword) {
       andFilters.push({
-        code: {
-          contains: keyword,
-          mode: 'insensitive',
-        },
+        OR: [
+          {
+            code: {
+              contains: keyword,
+              mode: 'insensitive',
+            },
+          },
+          {
+            metadata: {
+              path: ['external', 'externalOrderId'],
+              string_contains: keyword,
+            },
+          },
+          {
+            metadata: {
+              path: ['external', 'externalOrderCode'],
+              string_contains: keyword,
+            },
+          },
+        ],
       });
     }
 
