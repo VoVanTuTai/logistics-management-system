@@ -8,22 +8,22 @@ COMPOSE_INFRA="$ROOT_DIR/infra/dev/docker-compose.yml"
 
 mkdir -p "$LOG_DIR" "$PID_DIR"
 
-echo "========================================================================"
-echo "⚡ NEXUS LOGISTICS - TRIỂN KHAI SIÊU NHẸ (LEAN PRODUCTION HYBRID)"
-echo "   Hệ thống 14 Microservices + 5 Web Apps + 4 Hạ Tầng Dữ Liệu"
-echo "========================================================================"
+echo "=================================================================================="
+echo "NEXUS LOGISTICS - TRIEN KHAI HE THONG (LEAN PRODUCTION HYBRID)"
+echo "He thong: 14 Microservices + 5 Web Apps + 4 Ha Tang Du Lieu"
+echo "=================================================================================="
 
-# 1. Kiểm tra Docker Desktop
+# 1. Kiem tra Docker Desktop
 echo ""
-echo "[1/5] 🐳 Kiểm tra trạng thái Docker..."
+echo "[1/6] Kiem tra trang thai Docker daemon..."
 if ! docker info >/dev/null 2>&1; then
-  echo "  ⏳ Docker daemon chưa chạy. Đang mở Docker Desktop..."
+  echo "  [WAIT] Docker daemon chua chay. Dang mo Docker Desktop..."
   if [[ -d "/Applications/Docker.app" ]]; then
     open -a Docker
-    echo "  ⏳ Đang đợi Docker khởi động hoàn tất (tối đa 40s)..."
+    echo "  [WAIT] Dang doi Docker khoi dong hoan tat (toi da 40s)..."
     for i in {1..20}; do
       if docker info >/dev/null 2>&1; then
-        echo "  ✅ Docker Desktop đã sẵn sàng!"
+        echo "  [OK] Docker Desktop da san sang."
         break
       fi
       sleep 2
@@ -32,33 +32,33 @@ if ! docker info >/dev/null 2>&1; then
 fi
 
 if ! docker info >/dev/null 2>&1; then
-  echo "  ❌ Không thể kết nối tới Docker." >&2
-  echo "  👉 Vui lòng mở Docker Desktop bằng tay rồi chạy lại script này." >&2
+  echo "  [ERROR] Khong the ket noi toi Docker daemon." >&2
+  echo "  Huong dan: Vui long mo Docker Desktop bang tay roi chay lai script nay." >&2
   exit 1
 fi
-echo "  ✅ Docker daemon đang hoạt động tốt."
+echo "  [OK] Docker daemon dang hoat dong binh thuong."
 
-# 2. Khởi động 4 Container Hạ Tầng Cơ Bản (Postgres, RabbitMQ, Redis, MinIO)
+# 2. Khoi dong cac Container Ha Tang Co Ban (Postgres, RabbitMQ, Redis, MinIO)
 echo ""
-echo "[2/5] 🏗️  Khởi động hạ tầng lõi (Postgres, Redis, RabbitMQ, MinIO)..."
+echo "[2/6] Khoi dong ha tang du lieu (Postgres, Redis, RabbitMQ, MinIO)..."
 docker compose -f "$COMPOSE_INFRA" up -d --remove-orphans
 
-echo "  ⏳ Đợi PostgreSQL và RabbitMQ sẵn sàng..."
+echo "  [WAIT] Dang cho PostgreSQL va RabbitMQ san sang ket noi..."
 for i in {1..25}; do
   if docker exec NEXUS-dev-postgres pg_isready -U postgres -d postgres >/dev/null 2>&1; then
-    echo "  ✅ PostgreSQL (Port 15432) đã sẵn sàng kết nối."
+    echo "  [OK] PostgreSQL (Port 15432) da san sang ket noi."
     break
   fi
   sleep 1
 done
 
-# 3. Kiểm tra và đồng bộ Database Schemas & Seed dữ liệu (nếu DB mới)
+# 3. Kiem tra va dong bo Database Schemas & Seed du lieu (neu DB moi)
 echo ""
-echo "[3/6] 🗄️  Kiểm tra dữ liệu Database..."
+echo "[3/6] Kiem tra du lieu va schema database..."
 AUTH_TABLE_COUNT=$(docker exec NEXUS-dev-postgres psql -U postgres -d auth_db -tAc "SELECT count(*) FROM information_schema.tables WHERE table_schema='public';" 2>/dev/null || echo "0")
 
 if [[ "${AUTH_TABLE_COUNT:-0}" -lt "2" ]]; then
-  echo "  🌱 Database chưa có schema/dữ liệu. Đang tự động khởi tạo bảng và seed dữ liệu demo..."
+  echo "  [INFO] Database chua co schema. Dang khoi tao bang va nap du lieu demo..."
   SERVICES_WITH_PRISMA=(
     "masterdata-service:masterdata_db"
     "shipment-service:shipment_db"
@@ -78,7 +78,7 @@ if [[ "${AUTH_TABLE_COUNT:-0}" -lt "2" ]]; then
     dbname="${entry##*:}"
     svc_dir="$ROOT_DIR/services/$svc"
     if [[ -f "$svc_dir/prisma/schema.prisma" ]]; then
-      echo "  → Cập nhật schema: $svc ($dbname)..."
+      echo "  - Cap nhat schema: $svc ($dbname)..."
       (
         cd "$svc_dir"
         DATABASE_URL="postgresql://postgres:postgres@localhost:15432/$dbname" \
@@ -87,7 +87,7 @@ if [[ "${AUTH_TABLE_COUNT:-0}" -lt "2" ]]; then
     fi
   done
 
-  echo "  🌱 Nạp người dùng và dữ liệu vận hành mẫu..."
+  echo "  [INFO] Nap tai khoan nguoi dung va du lieu van hanh mau..."
   (
     cd "$ROOT_DIR/services/auth-service"
     DATABASE_URL="postgresql://postgres:postgres@localhost:15432/auth_db" \
@@ -99,35 +99,35 @@ if [[ "${AUTH_TABLE_COUNT:-0}" -lt "2" ]]; then
       node node_modules/ts-node/dist/bin.js --transpile-only prisma/seed.ts >/dev/null 2>&1 || true
   )
   node "$ROOT_DIR/scripts/seed-master-logistics-flow.js" >/dev/null 2>&1 || true
-  echo "  ✅ Khởi tạo và nạp dữ liệu demo thành công!"
+  echo "  [OK] Khoi tao va nap du lieu demo thanh cong."
 else
-  echo "  ✅ Dữ liệu Database đã tồn tại sẵn, bỏ qua bước seed để khởi động nhanh."
+  echo "  [OK] Du lieu database da ton tai san, bo qua buoc seed."
 fi
 
-# 4. Kiểm tra code đã build chưa
+# 4. Kiem tra code da build chua
 echo ""
-echo "[4/6] 📦 Kiểm tra bản build production..."
+echo "[4/6] Kiem tra ban build production..."
 MISSING_BUILD=0
 if [[ ! -f "$ROOT_DIR/services/gateway-bff/dist/main.js" ]] || [[ ! -f "$ROOT_DIR/apps/merchant-web/dist/index.html" ]]; then
   MISSING_BUILD=1
 fi
 
 if [[ "$MISSING_BUILD" == "1" ]]; then
-  echo "  ⏳ Phát hiện thiếu bản build, đang tiến hành build toàn bộ hệ thống..."
+  echo "  [WAIT] Phat hien thieu ban build, dang tien hanh build toan bo he thong..."
   node "$ROOT_DIR/scripts/rebuild-all.mjs"
 else
-  echo "  ✅ Toàn bộ 13 services và 5 web apps đã được biên dịch sẵn sàng."
+  echo "  [OK] Toan bo microservices va web apps da duoc bien dich san sang."
 fi
 
-# 5. Khởi chạy 14 Services và Web Apps qua PM2
+# 5. Khoi chay 14 Services va Web Apps qua PM2
 echo ""
-echo "[5/6] 🚀 Khởi chạy hệ thống qua PM2 Process Manager (Native M4 ARM64)..."
+echo "[5/6] Khoi chay he thong qua PM2 Process Manager (Native ARM64/x86)..."
 npx pm2 delete ecosystem.config.cjs 2>/dev/null || true
 npx pm2 start "$ROOT_DIR/ecosystem.config.cjs"
 
-# 6. Kiểm tra sức khỏe hệ thống
+# 6. Kiem tra suc khoe he thong
 echo ""
-echo "[6/6] 🩺 Đang kiểm tra cổng API Gateway (Port 3000)..."
+echo "[6/6] Kiem tra ket noi API Gateway (Port 3000)..."
 GATEWAY_HEALTHY=0
 for i in {1..20}; do
   if curl -fsS http://localhost:3000/health >/dev/null 2>&1; then
@@ -138,44 +138,47 @@ for i in {1..20}; do
 done
 
 if [[ "$GATEWAY_HEALTHY" == "1" ]]; then
-  echo "  ✅ API Gateway BFF đã phản hồi HTTP 200 OK!"
+  echo "  [OK] API Gateway BFF phan hoi HTTP 200 OK."
 else
-  echo "  ⚠️ API Gateway đang khởi động (sẽ sẵn sàng trong vài giây tới)."
+  echo "  [WARN] API Gateway dang khoi dong (se san sang trong vai giay toi)."
 fi
 
-# In Dashboard hoàn tất
+# In Dashboard hoan tat
 echo ""
-echo "========================================================================"
-echo "🎉 HỆ THỐNG ĐÃ TRIỂN KHAI THÀNH CÔNG TRÊN MÁY CỦA BẠN!"
-echo "========================================================================"
+echo "=================================================================================="
+echo "HE THONG DA DUOC TRIEN KHAI THANH CONG"
+echo "=================================================================================="
 echo ""
-echo "📌 CÁC ĐỊA CHỈ TRUY CẬP (LOCAL PRODUCTION URLS):"
-echo "  ┌──────────────────┬─────────────────────────────┬──────────────────────────┐"
-echo "  │ Ứng dụng         │ Địa chỉ Web / API           │ Ghi chú                  │"
-echo "  ├──────────────────┼─────────────────────────────┼──────────────────────────┤"
-echo "  │ 🛍️  Merchant Web │ http://localhost:5174       │ Cổng thông tin Merchant  │"
-echo "  │ 🏢 Ops Web       │ http://localhost:5173       │ Quản trị vận hành Hub/Kho│"
-echo "  │ 👑 Admin Web     │ http://localhost:5175       │ Bảng điều khiển Quản trị │"
-echo "  │ 📦 Guest Tracking│ http://localhost:5177       │ Tra cứu đơn hàng công khai│"
-echo "  │ 📱 Customer Web  │ http://localhost:5176       │ Webview khách hàng đặt xe│"
-echo "  │ ⚡ API Gateway    │ http://localhost:3000/health│ Cổng trung tâm BFF       │"
-echo "  │ 🤖 AI Chatbot    │ http://localhost:3013       │ Chatbot RAG Subsystem    │"
-echo "  │ 🗄️  MinIO S3 UI   │ http://localhost:9001       │ minioadmin / minioadmin123│"
-echo "  └──────────────────┴─────────────────────────────┴──────────────────────────┘"
+echo "DANH SACH DIA CHI TRUY CAP (LOCAL URLS):"
+echo "┌───────────────────┬──────────────────────────────────┬──────────────────────────────┐"
+echo "│ Ung Dung          │ Dia Chi URL / API                │ Mo Ta / Ghi Chu              │"
+echo "├───────────────────┼──────────────────────────────────┼──────────────────────────────┤"
+echo "│ Merchant Web      │ http://localhost:5174            │ Cong thong tin Merchant      │"
+echo "│ Ops Web           │ http://localhost:5173            │ Quan tri van hanh Hub/Kho    │"
+echo "│ Admin Web         │ http://localhost:5175            │ Bang dieu khien Quan tri     │"
+echo "│ Guest Tracking    │ http://localhost:5177            │ Tra cuu don hang cong khai   │"
+echo "│ Customer Web      │ http://localhost:5176            │ Web khach hang dat giao hang │"
+echo "│ API Gateway       │ http://localhost:3000/health     │ Cong trung tam API Gateway   │"
+echo "│ AI Chatbot        │ http://localhost:3013            │ Chatbot RAG Subsystem        │"
+echo "│ MinIO S3 Console  │ http://localhost:9001            │ minioadmin / minioadmin123   │"
+echo "└───────────────────┴──────────────────────────────────┴──────────────────────────────┘"
 echo ""
-echo "🔑 TÀI KHOẢN MẪU DÙNG THỬ (DEMO CREDENTIALS):"
-echo "  • Merchant:  41100001 / password"
-echo "  • Ops Staff: 20001001 / password"
-echo "  • Admin:     10000001 / password"
-echo "  • Courier:   30002015 / password"
+echo "THONG TIN TAI KHOAN DUNG THU (DEMO CREDENTIALS):"
+echo "┌───────────────────┬──────────────────────────────────┬──────────────────────────────┐"
+echo "│ Vai Tro           │ Ma Tai Khoan / Username          │ Mat Khau                     │"
+echo "├───────────────────┼──────────────────────────────────┼──────────────────────────────┤"
+echo "│ Merchant          │ 41100001                         │ password                     │"
+echo "│ Ops Staff         │ 20001001                         │ password                     │"
+echo "│ System Admin      │ 10000001                         │ password                     │"
+echo "│ Courier (Shipper) │ 30002015                         │ password                     │"
+echo "└───────────────────┴──────────────────────────────────┴──────────────────────────────┘"
 echo ""
-echo "📊 QUẢN TRỊ & THEO DÕI HỆ THỐNG:"
-echo "  • Xem bảng điều khiển CPU / RAM realtime:  npx pm2 monit"
-echo "  • Xem danh sách tiến trình:                npx pm2 list"
-echo "  • Xem log thời gian thực:                  npx pm2 logs"
-echo "  • Dừng toàn bộ hệ thống:                   ./stop-local-lean.sh"
+echo "QUAN TRI VA THEO DOI HE THONG:"
+echo "  - Bang dieu khien realtime:    npx pm2 monit"
+echo "  - Danh sach tien trinh:        npx pm2 list"
+echo "  - Xem nhat ky (logs):          npx pm2 logs"
+echo "  - Dung he thong:               ./stop-local-lean.sh"
 echo ""
-echo "🌐 PUBLIC RA INTERNET MIỄN PHÍ VỚI HTTPS (CLOUDFLARE TUNNEL):"
-echo "  Nếu cần gửi link cho người ngoài truy cập hoặc test SePay webhook:"
-echo "  👉 Chạy lệnh: cloudflared tunnel --url http://localhost:3000"
-echo "========================================================================"
+echo "PUBLIC INTERNET VOI CLOUDFLARE TUNNEL (TUY CHON):"
+echo "  cloudflared tunnel --url http://localhost:3000"
+echo "=================================================================================="

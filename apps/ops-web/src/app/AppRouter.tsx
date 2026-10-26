@@ -22,42 +22,114 @@ import { appEnv } from '../utils/env';
 import { formatHubFullAddress } from '../utils/locationScope';
 import { formatRoleLabel } from '../utils/logisticsLabels';
 import { OpsUserAccountMenu } from '../features/auth/components/OpsUserAccountMenu';
+import {
+  Globe2,
+  MessageSquare,
+  Search,
+  Printer,
+  RotateCcw,
+  TrendingUp,
+  FileCheck,
+  BarChart3,
+  FileSearch,
+  Activity,
+  Headphones,
+  Scale,
+  AlertTriangle,
+  AlertOctagon,
+  Clock,
+  Layers,
+  CheckSquare,
+  Navigation,
+  Store,
+  Receipt,
+  Truck,
+  Download,
+  Package,
+  Building2,
+  MapPin,
+  Bell,
+  X,
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  LogOut,
+  Map,
+  Building,
+} from 'lucide-react';
+
+function safeDynamicImport<T>(importer: () => Promise<T>): Promise<T> {
+  return importer().catch((error: unknown) => {
+    const message = (error as Error)?.message || String(error);
+    const isChunkLoadFailed =
+      message.includes('Failed to fetch dynamically imported module') ||
+      message.includes('Loading chunk') ||
+      message.includes('Importing a module script failed') ||
+      (error as { name?: string })?.name === 'ChunkLoadError';
+
+    if (isChunkLoadFailed && typeof window !== 'undefined') {
+      const storageKey = 'ops_chunk_reload_timestamp';
+      const lastReload = sessionStorage.getItem(storageKey);
+      const now = Date.now();
+
+      // Only auto-reload if not reloaded within the last 15 seconds
+      if (!lastReload || now - parseInt(lastReload, 10) > 15000) {
+        sessionStorage.setItem(storageKey, String(now));
+        console.warn('[ChunkRetry] New deployment detected or chunk failed to load. Reloading application...');
+        window.location.reload();
+        // Return a pending promise so React Suspense waits for page reload without throwing
+        return new Promise<never>(() => {});
+      }
+    }
+
+    throw error;
+  });
+}
 
 function lazyRoutePage<T extends React.ComponentType<any>>(
   loader: () => Promise<Record<string, T>>,
   exportName: string,
 ): React.LazyExoticComponent<T> {
-  return lazy(async () => ({
-    default: (await loader())[exportName],
-  }));
+  return lazy(() =>
+    safeDynamicImport(loader).then((module) => ({
+      default: module[exportName],
+    })),
+  );
 }
 
 import { SCOPE_OPTIONS, resolveAllowedScopes, resolveOpsTier, useOpsScopeStore, type ScopeLevel } from '../store/opsScopeStore';
 import { canAccessOpsFeature, resolveOpsActor } from '../features/permissions/opsPermissions';
 import { useHubScope } from '../hooks/useHubScope';
 
+function OpsTierIcon({ icon, size = 14 }: { icon: string; size?: number }) {
+  if (icon === 'public') return <Globe2 size={size} />;
+  if (icon === 'map') return <Map size={size} />;
+  if (icon === 'location_city') return <Building size={size} />;
+  return <Building2 size={size} />;
+}
+
 const MasterOpsCommandCenterPage = lazy(() =>
-  import('../pages/dashboard/MasterOpsCommandCenterPage').then((module) => ({
+  safeDynamicImport(() => import('../pages/dashboard/MasterOpsCommandCenterPage')).then((module) => ({
     default: module.MasterOpsCommandCenterPage,
   })),
 );
 const HqNetworkGeofenceMapPage = lazy(() =>
-  import('../pages/dashboard/HqNetworkGeofenceMapPage').then((module) => ({
+  safeDynamicImport(() => import('../pages/dashboard/HqNetworkGeofenceMapPage')).then((module) => ({
     default: module.HqNetworkGeofenceMapPage,
   })),
 );
 const DownloadCenterPage = lazy(() =>
-  import('../pages/download/DownloadCenterPage').then((module) => ({
+  safeDynamicImport(() => import('../pages/download/DownloadCenterPage')).then((module) => ({
     default: module.DownloadCenterPage,
   })),
 );
 const CourierTaskTransferPage = lazy(() =>
-  import('../pages/function-groups/operations-platform/transfer/CourierTaskTransferPage').then((module) => ({
+  safeDynamicImport(() => import('../pages/function-groups/operations-platform/transfer/CourierTaskTransferPage')).then((module) => ({
     default: module.CourierTaskTransferPage,
   })),
 );
 const AnalyticsDashboardPage = lazy(() =>
-  import('../pages/dashboard/analytics/AnalyticsDashboardPage').then((module) => ({
+  safeDynamicImport(() => import('../pages/dashboard/analytics/AnalyticsDashboardPage')).then((module) => ({
     default: module.AnalyticsDashboardPage,
   })),
 );
@@ -300,7 +372,8 @@ type SidebarIconName =
   | 'shipment_dispatch'
   | 'branch_order_management'
   | 'branch_finance_settlement'
-  | 'linehaul_transport';
+  | 'linehaul_transport'
+  | 'download';
 
 type SidebarPanelKind =
   | 'return_block'
@@ -310,8 +383,10 @@ type SidebarPanelKind =
   | 'linehaul_transport';
 
 interface TopNavItem {
+  id: string;
   label: string;
   to: string;
+  icon?: SidebarIconName;
   isActive: boolean;
 }
 
@@ -327,186 +402,85 @@ function pathMatches(pathname: string, basePath: string): boolean {
   return pathname === basePath || pathname.startsWith(`${basePath}/`);
 }
 
-function SidebarIcon({ name }: { name: SidebarIconName }): React.JSX.Element {
-  const common = {
-    fill: 'none',
-    stroke: 'currentColor',
-    strokeWidth: 1.8,
-    strokeLinecap: 'round' as const,
-    strokeLinejoin: 'round' as const,
-  };
+function isRouteOrTabActive(currentPath: string, currentSearch: string, targetTo: string): boolean {
+  const [targetPath, targetQuery] = targetTo.split('?');
+  if (!pathMatches(currentPath, targetPath)) {
+    return false;
+  }
+  if (!targetQuery) {
+    return true;
+  }
+  const currentParams = new URLSearchParams(currentSearch);
+  const targetParams = new URLSearchParams(targetQuery);
+  for (const [key, value] of targetParams.entries()) {
+    if (currentParams.get(key) !== value) {
+      return false;
+    }
+  }
+  return true;
+}
+
+function SidebarIcon({
+  name,
+  size = 17,
+  className,
+}: {
+  name: SidebarIconName;
+  size?: number;
+  className?: string;
+}): React.JSX.Element {
+  const props = { size, strokeWidth: 1.8, className, 'aria-hidden': true };
 
   switch (name) {
     case 'hq_command':
-      return (
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-          <circle cx="12" cy="12" r="9" {...common} />
-          <path d="M3.6 9h16.8" {...common} />
-          <path d="M3.6 15h16.8" {...common} />
-          <path d="M12 3a14 14 0 0 0 0 18" {...common} />
-          <path d="M12 3a14 14 0 0 1 0 18" {...common} />
-        </svg>
-      );
+      return <Globe2 {...props} />;
     case 'chat':
-      return (
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-          <path d="M5 6.5h14v9H9l-4 3v-12Z" {...common} />
-          <path d="M8.5 10h7" {...common} />
-          <path d="M8.5 13h4.5" {...common} />
-        </svg>
-      );
+      return <MessageSquare {...props} />;
     case 'tracking_lookup':
-      return (
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-          <path d="M11 20a8 8 0 1 0 0-16 8 8 0 0 0 0 16Z" {...common} />
-          <path d="M16.5 16.5 20 20" {...common} />
-          <path d="m11 8.5 2 2-2.4 3.2-1.6-1.1Z" {...common} />
-        </svg>
-      );
+      return <Search {...props} />;
     case 'thermal_label':
-      return (
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-          <path d="M5.5 6.5h13v11h-13z" {...common} />
-          <path d="M8 10h8" {...common} />
-          <path d="M8 13.5h8" {...common} />
-          <path d="M8 17h5" {...common} />
-        </svg>
-      );
+      return <Printer {...props} />;
     case 'return_block':
-      return (
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-          <path d="M6.5 8.5h8a4 4 0 0 1 0 8h-8" {...common} />
-          <path d="m9 5.5-3 3 3 3" {...common} />
-          <path d="M16.5 10.5h3v3h-3z" {...common} />
-        </svg>
-      );
+      return <RotateCcw {...props} />;
     case 'monitor_data':
-      return (
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-          <rect x="4.5" y="6.5" width="15" height="10" rx="1.5" {...common} />
-          <path d="m10 19.5 2-3 2 3" {...common} />
-          <circle cx="12" cy="11.5" r="2.2" {...common} />
-        </svg>
-      );
+      return <TrendingUp {...props} />;
     case 'proof_management':
-      return (
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-          <path d="M6.5 4.5h8l3 3v12h-11z" {...common} />
-          <path d="M14.5 4.5v3h3" {...common} />
-          <path d="m8.5 13 2 2 4-4" {...common} />
-        </svg>
-      );
+      return <FileCheck {...props} />;
+    case 'operation_report':
+      return <BarChart3 {...props} />;
     case 'service_lookup':
-      return (
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-          <circle cx="11" cy="11" r="6.5" {...common} />
-          <path d="m16 16 4 4" {...common} />
-        </svg>
-      );
+      return <FileSearch {...props} />;
     case 'service_proactive':
-      return (
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-          <rect x="4.5" y="4.5" width="15" height="15" rx="2.2" {...common} />
-          <path d="M8 12h8" {...common} />
-          <path d="M8 8.5h5" {...common} />
-          <path d="M8 15.5h6" {...common} />
-        </svg>
-      );
+      return <Activity {...props} />;
     case 'service_care':
-      return (
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-          <circle cx="12" cy="8.5" r="3" {...common} />
-          <path d="M5 19a7 7 0 0 1 14 0" {...common} />
-        </svg>
-      );
+      return <Headphones {...props} />;
     case 'service_weight':
-      return (
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-          <path d="M6 19h12" {...common} />
-          <path d="M9 19v-7h6v7" {...common} />
-          <circle cx="12" cy="8" r="2" {...common} />
-        </svg>
-      );
+      return <Scale {...props} />;
     case 'service_abnormal':
-      return (
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-          <path d="M12 3.5 4.5 7v5.5c0 4.2 3.2 7.6 7.5 8.4 4.3-.8 7.5-4.2 7.5-8.4V7L12 3.5Z" {...common} />
-          <path d="m12 8.3 0 5.2" {...common} />
-          <circle cx="12" cy="16.8" r="0.9" {...common} />
-        </svg>
-      );
+      return <AlertTriangle {...props} />;
     case 'metrics_abnormal':
-      return (
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-          <path d="M12 3.5 4.5 7.2v5.2c0 4.3 3.1 7.8 7.5 8.5 4.4-.7 7.5-4.2 7.5-8.5V7.2Z" {...common} />
-          <path d="m12 8.4 0 5" {...common} />
-          <circle cx="12" cy="16.6" r="0.9" {...common} />
-        </svg>
-      );
+      return <AlertOctagon {...props} />;
     case 'metrics_deadline':
-      return (
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-          <circle cx="12" cy="12" r="7.5" {...common} />
-          <path d="m12 8.1 0 4.2 2.7 1.8" {...common} />
-        </svg>
-      );
+      return <Clock {...props} />;
     case 'metrics_planning':
-      return (
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-          <path d="M5.5 6.5h13v11h-13z" {...common} />
-          <path d="M8 10h8" {...common} />
-          <path d="M8 13.5h5.5" {...common} />
-          <circle cx="15.9" cy="13.5" r="0.8" {...common} />
-        </svg>
-      );
+      return <Layers {...props} />;
     case 'metrics_action':
-      return (
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-          <path d="M5.5 5.5h13v13h-13z" {...common} />
-          <path d="m8.3 12 2.1 2.2 5.3-5.4" {...common} />
-        </svg>
-      );
-
+      return <CheckSquare {...props} />;
+    case 'shipment_dispatch':
+      return <Navigation {...props} />;
     case 'branch_order_management':
-      return (
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-          <path d="M6 4.8h12v14.4H6z" {...common} />
-          <path d="M9 9.2h6" {...common} />
-          <path d="M9 12.3h6" {...common} />
-          <path d="M9 15.4h4.2" {...common} />
-        </svg>
-      );
+      return <Store {...props} />;
     case 'branch_finance_settlement':
-      return (
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-          <rect x="4.8" y="6.2" width="14.4" height="11.6" rx="1.8" {...common} />
-          <path d="M4.8 10.1h14.4" {...common} />
-          <path d="M9 13.3h2.7" {...common} />
-          <path d="M13 13.3h2.2" {...common} />
-        </svg>
-      );
+      return <Receipt {...props} />;
     case 'linehaul_transport':
-      return (
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-          <path d="M4 17h16" {...common} />
-          <rect x="4" y="7" width="11" height="8" rx="1" {...common} />
-          <path d="M15 7h3.5l2.5 3v5h-6" {...common} />
-          <circle cx="7.5" cy="17" r="2" {...common} fill="#fff" />
-          <circle cx="16.5" cy="17" r="2" {...common} fill="#fff" />
-        </svg>
-      );
+      return <Truck {...props} />;
+    case 'download':
+      return <Download {...props} />;
     default:
-      return (
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-          <path d="M6.5 18.5h11" {...common} />
-          <path d="M8.5 18.5v-4" {...common} />
-          <path d="M12 18.5v-7" {...common} />
-          <path d="M15.5 18.5v-9" {...common} />
-          <path d="M6.5 8h11" {...common} />
-        </svg>
-      );
+      return <Package {...props} />;
   }
 }
+
 
 function DashboardLayout(): React.JSX.Element {
   const session = useAuthStore((state) => state.session);
@@ -543,6 +517,21 @@ function DashboardLayout(): React.JSX.Element {
     );
   }, [session?.user.username, session?.user.roles, session?.user.hubCodes]);
 
+  useEffect(() => {
+    if (opsTierMeta.tier === 'HQ') {
+      if (scopeLevel !== 'NATIONWIDE') setScopeLevel('NATIONWIDE');
+    } else if (opsTierMeta.tier === 'REGION') {
+      const isNorth = (session?.user.username ?? '').includes('1') || (session?.user.username ?? '').includes('4');
+      const isCentral = (session?.user.username ?? '').includes('2') || (session?.user.username ?? '').includes('5');
+      const target = isNorth ? 'REGION_NORTH' : isCentral ? 'REGION_CENTRAL' : 'REGION_SOUTH';
+      if (scopeLevel !== target) setScopeLevel(target);
+    } else if (opsTierMeta.tier === 'PROVINCE') {
+      if (scopeLevel !== 'PROVINCE') setScopeLevel('PROVINCE');
+    } else if (opsTierMeta.tier === 'WARD') {
+      if (scopeLevel !== 'HUB') setScopeLevel('HUB');
+    }
+  }, [opsTierMeta.tier, session?.user.username, setScopeLevel]);
+
   const hubsQuery = useHubsQuery(accessToken, {});
   const primaryHubCode = (session?.user.hubCodes ?? [])[0] ?? '';
   const currentOperatorHub = useMemo(() => {
@@ -566,18 +555,25 @@ function DashboardLayout(): React.JSX.Element {
   const canViewBranch = canAccessOpsFeature(session?.user, 'nav.branch-business');
   const canViewFleet = canAccessOpsFeature(session?.user, 'nav.linehaul-fleet-control');
 
+  interface ClusterSubMenuItem {
+    label: string;
+    to: string;
+    keywords?: string;
+  }
+
   interface ClusterMenuItem {
     label: string;
     icon: SidebarIconName;
     to: string;
     keywords: string;
+    children?: ClusterSubMenuItem[];
   }
 
   interface MenuCluster {
     id: string;
     label: string;
     shortLabel: string;
-    colorTheme: 'hq' | 'warehouse' | 'dispatch' | 'linehaul' | 'quality' | 'finance';
+    colorTheme: 'hq' | 'warehouse' | 'dispatch' | 'linehaul' | 'quality' | 'finance' | 'analytics' | 'planning';
     icon: SidebarIconName;
     to: string;
     visible?: boolean;
@@ -586,271 +582,267 @@ function DashboardLayout(): React.JSX.Element {
 
   const menuClusters: MenuCluster[] = useMemo(
     () => [
-      {
-        id: 'hq',
-        label: 'Chỉ huy & Mạng lưới HQ',
-        shortLabel: 'Chỉ huy HQ',
-        colorTheme: 'hq',
-        icon: 'hq_command',
-        to: routePaths.masterOpsCommandCenter,
-        visible: canViewHq,
-        items: [
-          {
-            label: 'Trung tâm chỉ huy HQ',
-            icon: 'hq_command',
-            to: routePaths.masterOpsCommandCenter,
-            keywords: 'chi huy hq command center vi mo bac trung nam',
-          },
-          {
-            label: 'Bản đồ Mạng lưới & Hub',
-            icon: 'tracking_lookup',
-            to: routePaths.masterdataHubNetworkMap,
-            keywords: 'ban do mang luoi hub geofence phan vung',
-          },
-          {
-            label: 'Báo cáo Vận hành & KPI',
-            icon: 'operation_report',
-            to: routePaths.opsMetricsReport,
-            keywords: 'bao cao van hanh kpi san luong',
-          },
-          {
-            label: 'Quy hoạch & Dự báo tải',
-            icon: 'metrics_planning',
-            to: routePaths.groupPlanningPlatform,
-            keywords: 'quy hoach du bao tai san luong mua sale',
-          },
-        ],
-      },
+      ...(canViewHq
+        ? [
+            {
+              id: 'hq',
+              label: 'Chỉ huy & Mạng lưới HQ',
+              shortLabel: 'Chỉ huy HQ',
+              colorTheme: 'hq' as const,
+              icon: 'hq_command' as const,
+              to: routePaths.masterOpsCommandCenter,
+              visible: canViewHq,
+              items: [
+                {
+                  label: 'Trung tâm chỉ huy HQ',
+                  icon: 'hq_command' as const,
+                  to: routePaths.masterOpsCommandCenter,
+                  keywords: 'chi huy hq command center vi mo bac trung nam',
+                },
+                {
+                  label: 'Bản đồ Mạng lưới & Hub',
+                  icon: 'tracking_lookup' as const,
+                  to: routePaths.masterdataHubNetworkMap,
+                  keywords: 'ban do mang luoi hub geofence phan vung',
+                },
+                {
+                  label: 'Báo cáo Vận hành & KPI',
+                  icon: 'operation_report' as const,
+                  to: routePaths.opsMetricsReport,
+                  keywords: 'bao cao van hanh kpi san luong',
+                },
+                {
+                  label: 'Quy hoạch & Dự báo tải',
+                  icon: 'metrics_planning' as const,
+                  to: routePaths.groupPlanningPlatform,
+                  keywords: 'quy hoach du bao tai san luong mua sale',
+                },
+              ],
+            },
+          ]
+        : []),
       {
         id: 'branch_warehouse',
-        label: 'Kho & Vận hành Bưu cục',
-        shortLabel: 'Kho & Bưu cục',
-        colorTheme: 'warehouse',
-        icon: 'branch_order_management',
-        to: routePaths.shipments,
-        visible: canViewBranch,
+        label: 'Bưu cục & Quầy',
+        shortLabel: 'Bưu cục',
+        colorTheme: 'warehouse' as const,
+        icon: 'branch_order_management' as const,
+        to: routePaths.groupBranchBusiness,
         items: [
           {
-            label: 'Quét mã vạch tại Hub',
-            icon: 'tracking_lookup',
-            to: routePaths.scans,
-            keywords: 'quet ma vach hub inbound outbound scan lay hang nhan hang',
-          },
-          {
-            label: 'Giám sát hàng đến',
-            icon: 'monitor_data',
-            to: routePaths.monitorDataHangDen,
-            keywords: 'giam sat hang den inbound trong ngay',
-          },
-          {
-            label: 'Quản lý vận đơn',
-            icon: 'branch_order_management',
+            label: 'Quản lý & Giám sát Vận đơn',
+            icon: 'branch_order_management' as const,
             to: routePaths.shipments,
-            keywords: 'quan ly van don don hang danh sach tra cuu',
+            keywords: 'quan ly van don don hang danh sach tra cuu hang den hang gui hang phat',
           },
           {
             label: 'Tạo vận đơn tại quầy',
-            icon: 'branch_order_management',
+            icon: 'branch_order_management' as const,
             to: routePaths.branchBusinessOrderCreate,
             keywords: 'tao van don tai quay khach le gui hang',
           },
           {
+            label: 'Quét mã vạch tại Hub',
+            icon: 'tracking_lookup' as const,
+            to: routePaths.scans,
+            keywords: 'quet ma vach hub inbound outbound scan lay hang nhan hang',
+          },
+          {
             label: 'Kiểm kê tồn kho bưu cục',
-            icon: 'metrics_deadline',
+            icon: 'metrics_deadline' as const,
             to: routePaths.opsMetricsDeadlineInventory,
             keywords: 'kiem ke ton kho buu cuc don ton luu kho',
           },
           {
             label: 'Chốt ca cuối ngày',
-            icon: 'metrics_action',
+            icon: 'metrics_action' as const,
             to: routePaths.branchBusinessShiftClosing,
             keywords: 'chot ca cuoi ngay ban giao ca sang chieu',
+          },
+          {
+            label: 'Tài chính & Thu hộ COD',
+            icon: 'branch_finance_settlement' as const,
+            to: routePaths.branchBusinessFinanceCod,
+            keywords: 'quyet toan thu ho cod doi soat cong no buu cuc tai chinh dong tien',
+            children: [
+              { label: 'Quyết toán Thu hộ COD', to: `${routePaths.branchBusinessFinanceCod}?tab=cod`, keywords: 'thu tien cod nop quy' },
+              { label: 'Đối soát Công nợ Bưu cục', to: `${routePaths.branchBusinessFinanceCod}?tab=reconcile`, keywords: 'doi soat cong no khoa so' },
+            ],
           },
         ],
       },
       {
         id: 'branch_dispatch',
-        label: 'Điều phối Shipper & Tuyến',
+        label: 'Điều phối Giao nhận',
         shortLabel: 'Điều phối',
-        colorTheme: 'dispatch',
-        icon: 'shipment_dispatch',
-        to: routePaths.operationsPlatformPickupDispatch,
-        visible: canViewBranch,
+        colorTheme: 'dispatch' as const,
+        icon: 'shipment_dispatch' as const,
+        to: routePaths.groupOperationsPlatform,
         items: [
           {
-            label: 'Điều phối lấy hàng',
-            icon: 'shipment_dispatch',
-            to: routePaths.operationsPlatformPickupDispatch,
-            keywords: 'dieu phoi lay hang gom don shop',
-          },
-          {
             label: 'Điều phối phát hàng',
-            icon: 'shipment_dispatch',
+            icon: 'shipment_dispatch' as const,
             to: routePaths.operationsPlatformDeliveryDispatch,
             keywords: 'dieu phoi phat hang giao hang shipper',
           },
           {
+            label: 'Điều phối lấy hàng',
+            icon: 'shipment_dispatch' as const,
+            to: routePaths.operationsPlatformPickupDispatch,
+            keywords: 'dieu phoi lay hang gom don shop',
+          },
+          {
             label: 'Phân vùng Shipper',
-            icon: 'tracking_lookup',
+            icon: 'tracking_lookup' as const,
             to: routePaths.courierAreaAssignment,
             keywords: 'phan vung shipper tuyen buu ta khu vuc',
           },
           {
-            label: 'Chuyển đơn Shipper',
-            icon: 'shipment_dispatch',
-            to: routePaths.courierTaskTransfer,
-            keywords: 'chuyen don shipper chuyen giao dieu chuyen',
+            label: 'Chat với Bưu tá',
+            icon: 'chat' as const,
+            to: routePaths.operationsPlatformChat,
+            keywords: 'chat voi buu ta trao doi noi bo',
           },
         ],
       },
       {
         id: 'linehaul',
-        label: 'Tuyến xe & Bao tải',
+        label: 'Trung chuyển & Tuyến xe',
         shortLabel: 'Tuyến xe',
-        colorTheme: 'linehaul',
-        icon: 'linehaul_transport',
-        to: routePaths.linehaulTripManagement,
-        visible: canViewFleet,
+        colorTheme: 'linehaul' as const,
+        icon: 'linehaul_transport' as const,
+        to: routePaths.groupCapabilityPlatform,
         items: [
           {
-            label: 'Quản lý chuyến xe tải',
-            icon: 'linehaul_transport',
+            label: 'Quản lý & Giám sát Chuyến xe',
+            icon: 'linehaul_transport' as const,
             to: routePaths.linehaulTripManagement,
-            keywords: 'quan ly chuyen xe tai linehaul xuat ben',
+            keywords: 'quan ly chuyen xe tai linehaul xuat ben niem phong kep chi seal giam sat du lieu xe',
+            children: [
+              { label: 'Chuyến xe tải', to: `${routePaths.linehaulTripManagement}?tab=trips`, keywords: 'lap chuyen xe gan tai xe' },
+              { label: 'Niêm phong & Kẹp chì', to: `${routePaths.linehaulTripManagement}?tab=seal`, keywords: 'niem phong kep chi seal xuat ben' },
+              { label: 'Giám sát Dữ liệu xe', to: `${routePaths.linehaulTripManagement}?tab=monitor`, keywords: 'radar giam sat du lieu gps' },
+            ],
           },
           {
-            label: 'Niêm phong & Kẹp chì xe',
-            icon: 'thermal_label',
-            to: routePaths.linehaulVehicleSeal,
-            keywords: 'niem phong kep chi seal xe tai thung xe',
-          },
-          {
-            label: 'Quản lý tem bao tải',
-            icon: 'thermal_label',
+            label: 'Quản lý & In tem bao tải',
+            icon: 'thermal_label' as const,
             to: routePaths.linehaulBagLabelManagement,
-            keywords: 'quan ly tem bao tai dong bao bagging',
-          },
-          {
-            label: 'In tem bao tải',
-            icon: 'thermal_label',
-            to: routePaths.linehaulBagLabelPrint,
-            keywords: 'in tem bao tai thermal print',
-          },
-          {
-            label: 'Giám sát dữ liệu xe',
-            icon: 'monitor_data',
-            to: routePaths.linehaulTripDataMonitor,
-            keywords: 'giam sat du lieu chuyen xe hanh trinh',
+            keywords: 'quan ly in tem bao tai dong bao bagging thermal print',
+            children: [
+              { label: 'Danh sách tem bao', to: `${routePaths.linehaulBagLabelManagement}?tab=management`, keywords: 'danh sach bao tai tra cuu' },
+              { label: 'Tạo & In tem mới', to: `${routePaths.linehaulBagLabelManagement}?tab=print`, keywords: 'in tem nhiet dong bao' },
+            ],
           },
         ],
       },
       {
         id: 'quality',
-        label: 'Sự cố & Đền bù / CSKH',
-        shortLabel: 'Sự cố & Đền bù',
-        colorTheme: 'quality',
-        icon: 'service_proactive',
-        to: routePaths.claimsLiabilityManagement,
+        label: 'Sự cố & Khiếu nại',
+        shortLabel: 'Khiếu nại',
+        colorTheme: 'quality' as const,
+        icon: 'service_proactive' as const,
+        to: routePaths.groupServiceQuality,
         items: [
           {
-            label: 'Hồ sơ đền bù & Phân định',
-            icon: 'metrics_action',
-            to: routePaths.claimsLiabilityManagement,
-            keywords: 'ho so den bu phan dinh trach nhiem boi thuong hu hong mat kien ai chiu hub nao chiu',
-          },
-          {
-            label: 'Thống kê bồi thường Hub',
-            icon: 'operation_report',
-            to: routePaths.claimsHubStatistics,
-            keywords: 'thong ke boi thuong theo hub bao cao rui ro loss rate che tai',
-          },
-          {
-            label: 'Xử lý giao thất bại (NDR)',
-            icon: 'service_abnormal',
-            to: routePaths.ndr,
-            keywords: 'xu ly giao that bai ndr hen lai sai dia chi',
-          },
-          {
-            label: 'Quản lý chuyển hoàn',
-            icon: 'return_block',
-            to: routePaths.returnBlockManagement,
-            keywords: 'quan ly chuyen hoan tra hang ve shop',
-          },
-          {
-            label: 'Đăng ký chuyển hoàn',
-            icon: 'return_block',
-            to: routePaths.returnBlockRegistration,
-            keywords: 'dang ky chuyen hoan tra hang ve shop tao don hoan',
-          },
-          {
-            label: 'Radar cảnh báo SLA',
-            icon: 'service_proactive',
-            to: routePaths.serviceQualityProactiveActionBoard,
-            keywords: 'radar canh bao chu dong sla tre han',
-          },
-          {
-            label: 'Hàng bất thường & Hư hỏng',
-            icon: 'service_abnormal',
-            to: routePaths.serviceQualityAbnormalManagement,
-            keywords: 'hang bat thuong hu hong be vo bien ban',
-          },
-          {
             label: 'Trung tâm CSKH & Khiếu nại',
-            icon: 'service_care',
+            icon: 'service_care' as const,
             to: routePaths.customerServiceTickets,
             keywords: 'cskh khieu nai giuc giao doi dia chi ho tro khach hang ai handover sla 24h 48h',
           },
           {
-            label: 'Giám định đơn lạc & Log',
-            icon: 'metrics_action',
+            label: 'Giám định đơn lạc & CCTV',
+            icon: 'metrics_action' as const,
             to: routePaths.strayShipmentInvestigation,
             keywords: 'giam dinh don lac phan tich log vet thao tac mat kien cctv giai trinh',
           },
           {
-            label: 'Tra cứu chất lượng sự cố',
-            icon: 'service_lookup',
-            to: routePaths.serviceQualityIntegratedLookup,
-            keywords: 'tra cuu chat luong su co lich su khieu nai',
+            label: 'Quản lý Đền bù & Bồi thường',
+            icon: 'metrics_action' as const,
+            to: routePaths.claimsLiabilityManagement,
+            keywords: 'ho so den bu phan dinh trach nhiem boi thuong thong ke hub che tai',
+            children: [
+              { label: 'Hồ sơ Bồi thường & Phân định', to: `${routePaths.claimsLiabilityManagement}?tab=liability`, keywords: 'phan dinh trach nhiem che tai' },
+              { label: 'Thống kê Bồi thường Hub', to: `${routePaths.claimsLiabilityManagement}?tab=statistics`, keywords: 'thong ke ty le that thoat kpi' },
+            ],
+          },
+          {
+            label: 'Giao thất bại (NDR) & Chuyển hoàn',
+            icon: 'service_abnormal' as const,
+            to: routePaths.ndr,
+            keywords: 'xu ly giao that bai ndr hen lai sai dia chi chuyen hoan tra hang ve shop tao don hoan',
+            children: [
+              { label: 'Xử lý Giao thất bại (NDR)', to: `${routePaths.ndr}?tab=ndr`, keywords: 'lien he lai hen ca giao' },
+              { label: 'Quản lý Hàng chuyển hoàn', to: `${routePaths.ndr}?tab=return-block`, keywords: 'tra hang ve shop nhap kho hoan' },
+            ],
+          },
+          {
+            label: 'Giám sát Rủi ro & Radar SLA',
+            icon: 'service_abnormal' as const,
+            to: routePaths.serviceQualityAbnormalManagement,
+            keywords: 'hang bat thuong hu hong be vo bien ban radar canh bao sla',
           },
         ],
       },
       {
-        id: 'finance',
-        label: 'Tài chính & Đối soát COD',
-        shortLabel: 'Tài chính',
-        colorTheme: 'finance',
-        icon: 'branch_finance_settlement',
-        to: routePaths.branchBusinessFinanceCod,
+        id: 'operations_metrics',
+        label: 'Báo cáo & Hiệu suất',
+        shortLabel: 'Báo cáo',
+        colorTheme: 'analytics' as const,
+        icon: 'operation_report' as const,
+        to: routePaths.groupOperationsMetrics,
         items: [
           {
-            label: 'Quyết toán thu hộ COD',
-            icon: 'branch_finance_settlement',
-            to: routePaths.branchBusinessFinanceCod,
-            keywords: 'quyet toan thu ho cod nop tien ket buu ta',
+            label: 'Báo cáo Vận hành & KPI',
+            icon: 'operation_report' as const,
+            to: routePaths.opsMetricsReport,
+            keywords: 'bao cao van hanh kpi san luong',
           },
           {
-            label: 'Đối soát công nợ bưu cục',
-            icon: 'branch_finance_settlement',
-            to: routePaths.branchBusinessFinanceReconcile,
-            keywords: 'doi soat cong no buu cuc tai chinh dong tien',
+            label: 'Bảng điều phối thao tác',
+            icon: 'metrics_action' as const,
+            to: routePaths.opsMetricsActionExecutionBoard,
+            keywords: 'ban dieu phoi thao tac xu ly nhanh',
           },
           {
-            label: 'Đối soát chế tài bồi thường',
-            icon: 'operation_report',
-            to: routePaths.claimsHubStatistics,
-            keywords: 'doi soat che tai boi thuong khau tru cong no rui ro',
+            label: 'Giám sát tồn kho bưu cục',
+            icon: 'metrics_deadline' as const,
+            to: routePaths.opsMetricsDeadlineInventory,
+            keywords: 'kiem ke ton kho buu cuc don ton luu kho',
+          },
+        ],
+      },
+      {
+        id: 'planning_platform',
+        label: 'Quy hoạch & Dự báo',
+        shortLabel: 'Quy hoạch',
+        colorTheme: 'planning' as const,
+        icon: 'metrics_planning' as const,
+        to: routePaths.groupPlanningPlatform,
+        items: [
+          {
+            label: 'Quy hoạch tải trọng & mạng lưới',
+            icon: 'metrics_planning' as const,
+            to: routePaths.groupPlanningPlatform,
+            keywords: 'quy hoach du bao tai san luong mua sale can bang cong suat',
+          },
+          {
+            label: 'Bản đồ Mạng lưới & Hub',
+            icon: 'tracking_lookup' as const,
+            to: routePaths.masterdataHubNetworkMap,
+            keywords: 'ban do mang luoi hub geofence phan vung ban kinh',
           },
         ],
       },
     ],
-    [canViewBranch, canViewFleet, canViewHq],
+    [canViewHq],
   );
 
   const quickTools = useMemo(
     () => [
       {
-        label: 'Chat',
-        title: 'Chat với Bưu tá',
+        label: 'Tin nhắn',
+        title: 'Tin nhắn / Chat với Bưu tá',
         icon: 'chat' as SidebarIconName,
         to: routePaths.operationsPlatformChat,
       },
@@ -869,7 +861,7 @@ function DashboardLayout(): React.JSX.Element {
       {
         label: 'Tải về',
         title: 'Trung tâm tải về',
-        icon: 'operation_report' as SidebarIconName,
+        icon: 'download' as SidebarIconName,
         to: routePaths.downloadCenter,
       },
     ],
@@ -896,7 +888,9 @@ function DashboardLayout(): React.JSX.Element {
       pathMatches(location.pathname, routePaths.operationsPlatformPickupDispatch) ||
       pathMatches(location.pathname, routePaths.operationsPlatformDeliveryDispatch) ||
       pathMatches(location.pathname, routePaths.courierAreaAssignment) ||
-      pathMatches(location.pathname, routePaths.courierTaskTransfer)
+      pathMatches(location.pathname, routePaths.courierTaskTransfer) ||
+      pathMatches(location.pathname, routePaths.groupOperationsPlatform) ||
+      location.pathname.startsWith('/app/function-groups/operations-platform')
     ) {
       return 'branch_dispatch';
     }
@@ -904,7 +898,7 @@ function DashboardLayout(): React.JSX.Element {
       pathMatches(location.pathname, routePaths.shipments) ||
       pathMatches(location.pathname, routePaths.scans) ||
       pathMatches(location.pathname, routePaths.groupBranchBusiness) ||
-      pathMatches(location.pathname, routePaths.groupOperationsPlatform)
+      location.pathname.startsWith('/app/function-groups/branch-business')
     ) {
       return 'branch_warehouse';
     }
@@ -922,10 +916,22 @@ function DashboardLayout(): React.JSX.Element {
       return 'quality';
     }
     if (
+      pathMatches(location.pathname, routePaths.groupOperationsMetrics) ||
+      location.pathname.startsWith('/app/function-groups/operations-metrics')
+    ) {
+      return 'operations_metrics';
+    }
+    if (
+      pathMatches(location.pathname, routePaths.groupPlanningPlatform) ||
+      location.pathname.startsWith('/app/function-groups/planning-platform')
+    ) {
+      return 'planning_platform';
+    }
+    if (
       pathMatches(location.pathname, routePaths.groupFinanceSettlement) ||
       pathMatches(location.pathname, routePaths.branchBusinessFinanceSettlementRoot)
     ) {
-      return 'finance';
+      return 'branch_warehouse';
     }
     return null;
   }, [location.pathname, menuClusters]);
@@ -936,7 +942,8 @@ function DashboardLayout(): React.JSX.Element {
     branch_dispatch: true,
     linehaul: true,
     quality: true,
-    finance: true,
+    operations_metrics: true,
+    planning_platform: true,
   });
 
   useEffect(() => {
@@ -946,6 +953,63 @@ function DashboardLayout(): React.JSX.Element {
       );
     }
   }, [activeClusterId]);
+
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem('ops_sidebar_collapsed') === 'true';
+    } catch {
+      return false;
+    }
+  });
+
+  const toggleSidebar = () => {
+    setIsSidebarCollapsed((prev) => {
+      const next = !prev;
+      try {
+        localStorage.setItem('ops_sidebar_collapsed', String(next));
+      } catch {
+        // ignore storage errors
+      }
+      return next;
+    });
+  };
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'b') {
+        const target = e.target as HTMLElement | null;
+        if (
+          target &&
+          (target.tagName === 'INPUT' ||
+            target.tagName === 'TEXTAREA' ||
+            target.isContentEditable)
+        ) {
+          return;
+        }
+        e.preventDefault();
+        toggleSidebar();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
+  const [openSubmenus, setOpenSubmenus] = useState<Record<string, boolean>>({});
+
+  // Auto-expand submenu if any child is currently active
+  useEffect(() => {
+    menuClusters.forEach((cluster) => {
+      cluster.items.forEach((item) => {
+        if (
+          item.children?.some((child) =>
+            isRouteOrTabActive(location.pathname, location.search, child.to),
+          )
+        ) {
+          setOpenSubmenus((prev) => ({ ...prev, [item.label]: true }));
+        }
+      });
+    });
+  }, [location.pathname, location.search, menuClusters]);
 
   const [menuSearchKeyword, setMenuSearchKeyword] = useState('');
   const normalizedSearch = menuSearchKeyword.trim().toLowerCase();
@@ -961,7 +1025,12 @@ function DashboardLayout(): React.JSX.Element {
         const matched = cluster.items.filter(
           (item) =>
             item.label.toLowerCase().includes(normalizedSearch) ||
-            item.keywords.toLowerCase().includes(normalizedSearch),
+            item.keywords.toLowerCase().includes(normalizedSearch) ||
+            item.children?.some(
+              (c) =>
+                c.label.toLowerCase().includes(normalizedSearch) ||
+                (c.keywords && c.keywords.toLowerCase().includes(normalizedSearch)),
+            ),
         );
         return { ...cluster, items: matched };
       })
@@ -973,25 +1042,33 @@ function DashboardLayout(): React.JSX.Element {
         ...menuClusters
           .filter((c) => c.visible !== false)
           .map((c) => ({
-            label: `${c.id === 'hq' ? '🌐 ' : c.id === 'branch_warehouse' ? '🏬 ' : c.id === 'branch_dispatch' ? '🛵 ' : c.id === 'linehaul' ? '🚛 ' : c.id === 'quality' ? '🛡️ ' : '💰 '}${c.shortLabel}`,
+            id: c.id,
+            label: c.shortLabel,
             to: c.to,
+            icon: c.icon,
             isActive: activeClusterId === c.id,
           })),
         {
-          label: '📥 Tải về',
+          id: 'download',
+          label: 'Tải về',
           to: routePaths.downloadCenter,
+          icon: 'download' as const,
           isActive: pathMatches(location.pathname, routePaths.downloadCenter),
         },
       ]
     : [
         {
+          id: 'shipments',
           label: 'Vận đơn',
           to: routePaths.shipments,
+          icon: 'branch_order_management' as const,
           isActive: pathMatches(location.pathname, routePaths.shipments),
         },
         {
+          id: 'analytics',
           label: 'Báo cáo',
           to: routePaths.analyticsDashboard,
+          icon: 'operation_report' as const,
           isActive: pathMatches(location.pathname, routePaths.analyticsDashboard),
         },
       ];
@@ -1063,9 +1140,7 @@ function DashboardLayout(): React.JSX.Element {
 
               <div className="ops-topbar-actions">
                 <form onSubmit={onQuickSearch} className="ops-header-search" role="search">
-                  <span className="material-symbols-outlined ops-header-search-icon" aria-hidden="true">
-                    search
-                  </span>
+                  <Search size={16} strokeWidth={2} className="ops-header-search-icon" aria-hidden="true" />
                   <input
                     type="text"
                     value={quickSearchCode}
@@ -1086,37 +1161,23 @@ function DashboardLayout(): React.JSX.Element {
                       backgroundColor: `${opsTierMeta.badgeColor}15`,
                       color: opsTierMeta.badgeColor,
                       borderColor: `${opsTierMeta.badgeColor}35`,
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      padding: '5px 12px',
+                      borderRadius: '8px',
+                      fontWeight: 700,
+                      fontSize: '12px',
                     }}
-                    title={opsTierMeta.description}
+                    title={`${opsTierMeta.label}\n${opsTierMeta.description}\n(Quyền kế thừa tự động theo cấp bậc)`}
                   >
-                    <span className="material-symbols-outlined ops-scope-badge-icon">
-                      {opsTierMeta.icon}
-                    </span>
+                    <OpsTierIcon icon={opsTierMeta.icon} size={15} />
                     <span>{opsTierMeta.badgeLabel}</span>
                   </span>
-                  {allowedScopes.length > 1 && (
-                    <div className="ops-scope-select-wrap">
-                      <select
-                        value={scopeLevel}
-                        onChange={(e) => setScopeLevel(e.target.value as ScopeLevel)}
-                        className="ops-scope-select"
-                        aria-label="Phạm vi dữ liệu"
-                      >
-                        {allowedScopes.map((opt) => (
-                          <option key={opt.key} value={opt.key}>
-                            {opt.label}
-                          </option>
-                        ))}
-                      </select>
-                      <span className="material-symbols-outlined ops-scope-select-arrow" aria-hidden="true">
-                        expand_more
-                      </span>
-                    </div>
-                  )}
                 </div>
 
                 <button type="button" className="ops-header-icon-btn" aria-label="Thông báo" title="Thông báo hệ thống">
-                  <span className="material-symbols-outlined">notifications</span>
+                  <Bell size={18} strokeWidth={2} aria-hidden="true" />
                   <span className="ops-header-badge-dot" />
                 </button>
 
@@ -1141,7 +1202,7 @@ function DashboardLayout(): React.JSX.Element {
                     aria-label="Đăng xuất"
                     title={logoutMutation.isPending ? 'Đang đăng xuất...' : 'Đăng xuất tài khoản'}
                   >
-                    <span className="material-symbols-outlined">logout</span>
+                    <LogOut size={16} />
                   </button>
                 </div>
               </div>
@@ -1187,12 +1248,13 @@ function DashboardLayout(): React.JSX.Element {
           {topNavItems.map((item) => {
             return (
               <button
-                key={item.label}
+                key={item.id}
                 type="button"
                 onClick={() => navigate(item.to)}
                 className={item.isActive ? 'ops-func-main-link ops-func-main-link--active' : 'ops-func-main-link'}
               >
-                {item.label}
+                {item.icon && <SidebarIcon name={item.icon} size={15} />}
+                <span>{item.label}</span>
               </button>
             );
           })}
@@ -1200,10 +1262,7 @@ function DashboardLayout(): React.JSX.Element {
 
         <div className="ops-func-actions">
           <form onSubmit={onQuickSearch} className="ops-func-search" role="search">
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <circle cx="11" cy="11" r="6.5" />
-              <path d="m16 16 4 4" />
-            </svg>
+            <Search size={15} strokeWidth={2} aria-hidden="true" />
             <input
               type="text"
               value={quickSearchCode}
@@ -1220,10 +1279,7 @@ function DashboardLayout(): React.JSX.Element {
             onClick={() => setIsNotificationsOpen(true)}
             title="Thông báo hệ thống"
           >
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M12 4.5a4.5 4.5 0 0 0-4.5 4.5v2.5c0 .9-.36 1.77-1 2.4l-1.2 1.2h13.4l-1.2-1.2a3.4 3.4 0 0 1-1-2.4V9A4.5 4.5 0 0 0 12 4.5Z" />
-              <path d="M10 17.5a2 2 0 0 0 4 0" />
-            </svg>
+            <Bell size={17} strokeWidth={2} aria-hidden="true" />
           </button>
 
           <div className="ops-func-tier" style={{ display: 'flex', alignItems: 'center', gap: '8px', margin: '0 4px' }}>
@@ -1231,7 +1287,7 @@ function DashboardLayout(): React.JSX.Element {
               style={{
                 display: 'inline-flex',
                 alignItems: 'center',
-                gap: '5px',
+                gap: '6px',
                 fontSize: '11px',
                 fontWeight: 700,
                 padding: '4px 10px',
@@ -1241,38 +1297,11 @@ function DashboardLayout(): React.JSX.Element {
                 border: `1px solid ${opsTierMeta.badgeColor}40`,
                 letterSpacing: '0.3px',
               }}
-              title={opsTierMeta.description}
+              title={`${opsTierMeta.label}\n${opsTierMeta.description}\n(Quyền kế thừa tự động theo cấp bậc)`}
             >
-              <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>
-                {opsTierMeta.icon}
-              </span>
+              <OpsTierIcon icon={opsTierMeta.icon} size={14} />
               <span>{opsTierMeta.badgeLabel}</span>
             </span>
-            {allowedScopes.length > 1 && (
-              <select
-                value={scopeLevel}
-                onChange={(e) => setScopeLevel(e.target.value as ScopeLevel)}
-                style={{
-                  fontSize: '12px',
-                  fontWeight: 600,
-                  color: '#1e293b',
-                  backgroundColor: '#f8fafc',
-                  border: '1px solid #cbd5e1',
-                  borderRadius: '8px',
-                  padding: '4px 10px',
-                  outline: 'none',
-                  cursor: 'pointer',
-                  boxShadow: '0 1px 2px rgba(0,0,0,0.04)',
-                }}
-                aria-label="Phạm vi dữ liệu"
-              >
-                {allowedScopes.map((opt) => (
-                  <option key={opt.key} value={opt.key}>
-                    {opt.label}
-                  </option>
-                ))}
-              </select>
-            )}
           </div>
 
           {currentOperatorHub && (
@@ -1294,14 +1323,12 @@ function DashboardLayout(): React.JSX.Element {
                 whiteSpace: 'nowrap',
                 textOverflow: 'ellipsis',
               }}
-              title={`🏢 Bưu cục: ${currentOperatorHub.name} (${currentOperatorHub.code})\n📍 Địa chỉ: ${currentOperatorHubAddress || 'Đang cập nhật'}`}
+              title={`Bưu cục: ${currentOperatorHub.name} (${currentOperatorHub.code})\nĐịa chỉ: ${currentOperatorHubAddress || 'Đang cập nhật'}`}
             >
-              <span className="material-symbols-outlined" style={{ fontSize: '15px', color: '#0284c7', flexShrink: 0 }}>
-                apartment
-              </span>
+              <Building2 size={15} style={{ color: '#0284c7', flexShrink: 0 }} aria-hidden="true" />
               <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>
                 <strong style={{ color: '#0284c7' }}>{currentOperatorHub.name}</strong>
-                {currentOperatorHubAddress ? ` • 📍 ${currentOperatorHubAddress}` : ''}
+                {currentOperatorHubAddress ? ` • ${currentOperatorHubAddress}` : ''}
               </span>
             </div>
           )}
@@ -1324,62 +1351,194 @@ function DashboardLayout(): React.JSX.Element {
       </header>
 
       <div className="ops-func-body">
-        <aside className="ops-func-sidebar">
-          {/* Active Hub Scope Card */}
-          <div className="ops-func-sidebar-scope-card">
-            <div className="ops-func-sidebar-scope-badge-row">
-              <span className="ops-func-sidebar-scope-pill">
-                <span className="ops-func-sidebar-scope-pulse" />
-                {hubScope.actor === 'HQ_OPS'
-                  ? 'HQ TOÀN QUỐC'
-                  : hubScope.actor === 'REGIONAL_OPS'
-                    ? 'KHU VỰC MIỀN'
-                    : hubScope.actor === 'PROVINCIAL_OPS'
-                      ? 'TỈNH / THÀNH'
-                      : 'BƯU CỤC CƠ SỞ'}
-              </span>
-              <span className="ops-func-sidebar-scope-level">Cấp {hubScope.hubLevel}</span>
-            </div>
-            <div className="ops-func-sidebar-scope-hub" title={hubScope.scopeLabel}>
-              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M12 2a8 8 0 0 0-8 8c0 5.25 8 12 8 12s8-6.75 8-12a8 8 0 0 0-8-8z" />
-                <circle cx="12" cy="10" r="3" />
-              </svg>
-              <span>{hubScope.scopeLabel}</span>
-            </div>
-            <div className="ops-func-sidebar-scope-hint">
-              {hubScope.isAllSystem
-                ? 'Dữ liệu toàn quốc (51 Hub)'
-                : `Phạm vi: ${hubScope.scopedHubCodes.length || 1} Hub (Bao & Tuyến lọc tự động)`}
-            </div>
-          </div>
-
-          <label className="ops-func-sidebar-search">
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <circle cx="11" cy="11" r="6.5" />
-              <path d="m16 16 4 4" />
-            </svg>
-            <input
-              type="text"
-              value={menuSearchKeyword}
-              onChange={(e) => setMenuSearchKeyword(e.target.value)}
-              placeholder="Tra cứu menu nhanh..."
-              aria-label="Tra cứu menu"
-            />
-            {menuSearchKeyword ? (
+        <aside className={`ops-func-sidebar ${isSidebarCollapsed ? 'ops-func-sidebar--collapsed' : ''}`}>
+          {/* Top Bar with Brand / Collapse Toggle */}
+          <div className="ops-func-sidebar-top-bar">
+            {isSidebarCollapsed ? (
               <button
                 type="button"
-                className="ops-func-sidebar-search-clear"
-                onClick={() => setMenuSearchKeyword('')}
-                aria-label="Xoá tìm kiếm"
+                className="ops-func-sidebar-expand-btn"
+                onClick={toggleSidebar}
+                title="Mở rộng menu dọc (Phím tắt: Ctrl + B)"
+                aria-label="Mở rộng thanh điều hướng"
               >
-                ✕
+                <ChevronRight size={17} strokeWidth={2.5} />
               </button>
-            ) : null}
-          </label>
+            ) : (
+              <>
+                <div className="ops-func-sidebar-title-badge">
+                  <span>ĐIỀU HƯỚNG</span>
+                </div>
+                <button
+                  type="button"
+                  className="ops-func-sidebar-collapse-btn"
+                  onClick={toggleSidebar}
+                  title="Thu gọn menu dọc (Phím tắt: Ctrl + B)"
+                  aria-label="Thu gọn thanh điều hướng"
+                >
+                  <ChevronLeft size={15} strokeWidth={2.5} />
+                  <span>Thu gọn</span>
+                </button>
+              </>
+            )}
+          </div>
+
+          {/* Active Hub Scope Card */}
+          {isSidebarCollapsed ? (
+            <div
+              className="ops-func-sidebar-scope-mini"
+              onClick={toggleSidebar}
+              title={`${hubScope.scopeLabel} (Cấp ${hubScope.hubLevel} - ${
+                hubScope.isAllSystem ? 'Dữ liệu toàn quốc (51 Hub)' : `${hubScope.scopedHubCodes.length || 1} Hub`
+              }) - Bấm để mở rộng`}
+              role="button"
+              tabIndex={0}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  toggleSidebar();
+                }
+              }}
+            >
+              <span className="ops-func-sidebar-scope-pulse" />
+              <MapPin size={16} strokeWidth={2.2} />
+            </div>
+          ) : (
+            <div className="ops-func-sidebar-scope-card">
+              <div className="ops-func-sidebar-scope-badge-row">
+                <span className="ops-func-sidebar-scope-pill">
+                  <span className="ops-func-sidebar-scope-pulse" />
+                  {hubScope.actor === 'HQ_OPS'
+                    ? 'HQ TOÀN QUỐC'
+                    : hubScope.actor === 'REGIONAL_OPS'
+                      ? 'KHU VỰC MIỀN'
+                      : hubScope.actor === 'PROVINCIAL_OPS'
+                        ? 'TỈNH / THÀNH'
+                        : 'BƯU CỤC CƠ SỞ'}
+                </span>
+                <span className="ops-func-sidebar-scope-level">Cấp {hubScope.hubLevel}</span>
+              </div>
+              <div className="ops-func-sidebar-scope-hub" title={hubScope.scopeLabel}>
+                <MapPin size={13} strokeWidth={2.2} aria-hidden="true" />
+                <span>{hubScope.scopeLabel}</span>
+              </div>
+              <div className="ops-func-sidebar-scope-hint">
+                {hubScope.isAllSystem
+                  ? 'Dữ liệu toàn quốc (51 Hub)'
+                  : `Phạm vi: ${hubScope.scopedHubCodes.length || 1} Hub (Bao & Tuyến lọc tự động)`}
+              </div>
+            </div>
+          )}
+
+          {/* Search bar */}
+          {isSidebarCollapsed ? (
+            <button
+              type="button"
+              className="ops-func-sidebar-search-mini-btn"
+              onClick={() => setIsSidebarCollapsed(false)}
+              title="Tra cứu menu nhanh (Click để mở rộng)"
+              aria-label="Tra cứu menu nhanh"
+            >
+              <Search size={16} strokeWidth={2.2} />
+            </button>
+          ) : (
+            <label className="ops-func-sidebar-search">
+              <Search size={14} strokeWidth={2} aria-hidden="true" />
+              <input
+                type="text"
+                value={menuSearchKeyword}
+                onChange={(e) => setMenuSearchKeyword(e.target.value)}
+                placeholder="Tra cứu menu nhanh..."
+                aria-label="Tra cứu menu"
+              />
+              {menuSearchKeyword ? (
+                <button
+                  type="button"
+                  className="ops-func-sidebar-search-clear"
+                  onClick={() => setMenuSearchKeyword('')}
+                  aria-label="Xoá tìm kiếm"
+                >
+                  <X size={13} strokeWidth={2.2} aria-hidden="true" />
+                </button>
+              ) : null}
+            </label>
+          )}
 
           <nav className="ops-func-sidebar-nav" aria-label="Sidebar navigation">
-            {filteredClusters.length === 0 ? (
+            {isSidebarCollapsed ? (
+              filteredClusters.map((cluster) => {
+                const isClusterCurrent = activeClusterId === cluster.id;
+                return (
+                  <div key={cluster.id} className="ops-func-cluster-mini-item">
+                    <button
+                      type="button"
+                      className={`ops-func-cluster-mini-btn ops-func-cluster-mini-btn--${cluster.colorTheme} ${
+                        isClusterCurrent ? 'ops-func-cluster-mini-btn--active' : ''
+                      }`}
+                      onClick={() => navigate(cluster.items[0]?.to || cluster.to)}
+                      title={cluster.label}
+                      aria-label={cluster.label}
+                    >
+                      <SidebarIcon name={cluster.icon} />
+                      {isClusterCurrent && <span className="ops-func-cluster-mini-dot" />}
+                    </button>
+
+                    <div className="ops-func-cluster-mini-flyout" role="menu" aria-label={cluster.label}>
+                      <div className="ops-func-cluster-flyout-header">
+                        <span className="ops-func-cluster-flyout-title">{cluster.label}</span>
+                        <span className="ops-func-cluster-flyout-count">{cluster.items.length}</span>
+                      </div>
+                      <div className="ops-func-cluster-flyout-items">
+                        {cluster.items.map((item) => {
+                          const isItemActive = pathMatches(location.pathname, item.to);
+                          const hasChildren = Boolean(item.children && item.children.length > 0);
+                          return (
+                            <div key={item.label} className="ops-func-cluster-flyout-group">
+                              <button
+                                type="button"
+                                className={`ops-func-cluster-flyout-item ${
+                                  isItemActive ? 'ops-func-cluster-flyout-item--active' : ''
+                                }`}
+                                onClick={() => navigate(item.to)}
+                              >
+                                <span className="ops-func-sidebar-icon">
+                                  <SidebarIcon name={item.icon} />
+                                </span>
+                                <span>{item.label}</span>
+                              </button>
+                              {hasChildren && (
+                                <div className="ops-func-cluster-flyout-subitems">
+                                  {item.children!.map((child) => {
+                                    const isChildActive = isRouteOrTabActive(
+                                      location.pathname,
+                                      location.search,
+                                      child.to,
+                                    );
+                                    return (
+                                      <button
+                                        key={child.label}
+                                        type="button"
+                                        className={`ops-func-cluster-flyout-subitem ${
+                                          isChildActive ? 'ops-func-cluster-flyout-subitem--active' : ''
+                                        }`}
+                                        onClick={() => navigate(child.to)}
+                                      >
+                                        <span className="ops-func-sidebar-subitem-bullet" />
+                                        <span>{child.label}</span>
+                                      </button>
+                                    );
+                                  })}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })
+            ) : filteredClusters.length === 0 ? (
               <div className="ops-func-sidebar-search-empty">
                 Không tìm thấy menu khớp với "{menuSearchKeyword}"
               </div>
@@ -1416,30 +1575,106 @@ function DashboardLayout(): React.JSX.Element {
                         }`}
                         aria-hidden="true"
                       >
-                        <svg viewBox="0 0 24 24">
-                          <path d="m6 9 6 6 6-6" fill="none" />
-                        </svg>
+                        <ChevronDown size={15} strokeWidth={2} />
                       </span>
                     </button>
 
                     {isOpen ? (
                       <div className="ops-func-cluster-items">
                         {cluster.items.map((item) => {
+                          const hasChildren = Boolean(item.children && item.children.length > 0);
+                          const isSubmenuOpen = Boolean(openSubmenus[item.label]);
                           const isItemActive = pathMatches(location.pathname, item.to);
+                          const isAnyChildActive = Boolean(
+                            item.children?.some((c) =>
+                              isRouteOrTabActive(location.pathname, location.search, c.to),
+                            ),
+                          );
+                          const isHighlighted = isItemActive || isAnyChildActive;
+
                           return (
-                            <button
-                              key={item.label}
-                              type="button"
-                              className={`ops-func-sidebar-item ${
-                                isItemActive ? 'ops-func-sidebar-item--active' : ''
-                              }`}
-                              onClick={() => navigate(item.to)}
-                            >
-                              <span className="ops-func-sidebar-icon">
-                                <SidebarIcon name={item.icon} />
-                              </span>
-                              <span className="ops-func-sidebar-label">{item.label}</span>
-                            </button>
+                            <div key={item.label} className="ops-func-sidebar-item-group">
+                              <div
+                                className={`ops-func-sidebar-item ${
+                                  isHighlighted ? 'ops-func-sidebar-item--active' : ''
+                                }`}
+                                onClick={() => {
+                                  navigate(item.to);
+                                  if (hasChildren) {
+                                    setOpenSubmenus((prev) => ({
+                                      ...prev,
+                                      [item.label]: !prev[item.label],
+                                    }));
+                                  }
+                                }}
+                                role="button"
+                                tabIndex={0}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter' || e.key === ' ') {
+                                    e.preventDefault();
+                                    navigate(item.to);
+                                    if (hasChildren) {
+                                      setOpenSubmenus((prev) => ({
+                                        ...prev,
+                                        [item.label]: !prev[item.label],
+                                      }));
+                                    }
+                                  }
+                                }}
+                              >
+                                <span className="ops-func-sidebar-icon">
+                                  <SidebarIcon name={item.icon} />
+                                </span>
+                                <span className="ops-func-sidebar-label">{item.label}</span>
+                                {hasChildren && (
+                                  <button
+                                    type="button"
+                                    className={`ops-func-sidebar-subchevron ${
+                                      isSubmenuOpen ? 'ops-func-sidebar-subchevron--open' : ''
+                                    }`}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setOpenSubmenus((prev) => ({
+                                        ...prev,
+                                        [item.label]: !prev[item.label],
+                                      }));
+                                    }}
+                                    title={isSubmenuOpen ? 'Thu gọn mục con' : 'Xem mục con'}
+                                    aria-label={isSubmenuOpen ? 'Thu gọn mục con' : 'Xem mục con'}
+                                  >
+                                    <ChevronDown size={12} strokeWidth={2.2} />
+                                  </button>
+                                )}
+                              </div>
+
+                              {hasChildren && isSubmenuOpen && (
+                                <div className="ops-func-sidebar-subitems">
+                                  {item.children!.map((child) => {
+                                    const isChildActive = isRouteOrTabActive(
+                                      location.pathname,
+                                      location.search,
+                                      child.to,
+                                    );
+                                    return (
+                                      <button
+                                        key={child.label}
+                                        type="button"
+                                        className={`ops-func-sidebar-subitem ${
+                                          isChildActive ? 'ops-func-sidebar-subitem--active' : ''
+                                        }`}
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          navigate(child.to);
+                                        }}
+                                      >
+                                        <span className="ops-func-sidebar-subitem-bullet" />
+                                        <span className="ops-func-sidebar-subitem-label">{child.label}</span>
+                                      </button>
+                                    );
+                                  })}
+                                </div>
+                              )}
+                            </div>
                           );
                         })}
                       </div>
@@ -1628,31 +1863,31 @@ export function AppRouter(): React.JSX.Element {
             />
             <Route
               path={routePaths.returnBlockRegistrationLeaf}
-              element={opsModuleRoute('Đăng ký chuyển hoàn', <ReturnBlockRegistrationPage />)}
+              element={<Navigate to={`${routePaths.returnBlockManagement}?action=create`} replace />}
             />
             <Route
               path={routePaths.monitorDataHangNhanLeaf}
-              element={<Navigate to={routePaths.monitorDataHangDen} replace />}
+              element={<Navigate to={`${routePaths.shipments}?flow=arrival`} replace />}
             />
             <Route
               path={routePaths.monitorDataHangDenLeaf}
-              element={opsModuleRoute('Giám sát hàng đến', <MonitorDataHangDenPage />)}
+              element={<Navigate to={`${routePaths.shipments}?flow=arrival`} replace />}
             />
             <Route
               path={routePaths.monitorDataHangGuiLeaf}
-              element={opsModuleRoute('Giám sát hàng gửi', <MonitorDataHangGuiPage />)}
+              element={<Navigate to={`${routePaths.shipments}?flow=outbound`} replace />}
             />
             <Route
               path={routePaths.monitorDataHangPhatLeaf}
-              element={opsModuleRoute('Giám sát hàng phát', <MonitorDataHangPhatPage />)}
+              element={<Navigate to={`${routePaths.shipments}?flow=delivery`} replace />}
             />
             <Route
               path={routePaths.monitorData2In1Leaf}
-              element={<Navigate to={routePaths.monitorDataHangDen} replace />}
+              element={<Navigate to={`${routePaths.shipments}?flow=arrival`} replace />}
             />
             <Route
               path={routePaths.monitorDataTheoDoiTamUngLeaf}
-              element={<Navigate to={routePaths.monitorDataHangDen} replace />}
+              element={<Navigate to={`${routePaths.shipments}?flow=arrival`} replace />}
             />
             <Route
               path={routePaths.monitorDataDongBaoLeaf}
@@ -1668,11 +1903,11 @@ export function AppRouter(): React.JSX.Element {
             />
             <Route
               path={routePaths.linehaulBagLabelManagementLeaf}
-              element={opsModuleRoute('Quản lý tem bao tuyến', <ThermalLabelManagementPage />)}
+              element={opsModuleRoute('Quản lý & In tem bao tải', <ThermalLabelManagementPage />)}
             />
             <Route
               path={routePaths.linehaulBagLabelPrintLeaf}
-              element={opsModuleRoute('In tem bao tuyến', <ThermalLabelPrintPage />)}
+              element={<Navigate to={`${routePaths.linehaulBagLabelManagement}?tab=print`} replace />}
             />
             <Route
               path={routePaths.linehaulTripDataMonitorLeaf}
@@ -1811,19 +2046,19 @@ export function AppRouter(): React.JSX.Element {
             />
             <Route
               path={routePaths.serviceQualityIntegratedLookupLeaf}
-              element={opsModuleRoute('Tra cứu sự cố / chất lượng', <ServiceQualityIntegratedLookupPage />)}
+              element={<Navigate to={routePaths.tracking} replace />}
             />
             <Route
               path={routePaths.serviceQualityAbnormalManagementLeaf}
-              element={opsModuleRoute('Quản lý hàng bất thường', <ServiceQualityAbnormalManagementPage />)}
+              element={opsModuleRoute('Giám sát Rủi ro & Bất thường', <ServiceQualityAbnormalManagementPage />)}
             />
             <Route
               path={routePaths.serviceQualityProactiveActionBoardLeaf}
-              element={opsModuleRoute('Bảng cảnh báo chất lượng', <ServiceQualityActionBoardPage />)}
+              element={<Navigate to={`${routePaths.serviceQualityAbnormalManagement}?tab=sla-radar`} replace />}
             />
             <Route
               path={routePaths.serviceQualityProactiveInboundLeaf}
-              element={<Navigate to={routePaths.serviceQualityProactiveActionBoard} replace />}
+              element={<Navigate to={`${routePaths.serviceQualityAbnormalManagement}?tab=sla-radar`} replace />}
             />
             <Route
               path={routePaths.serviceQualityProactiveDeliveredLeaf}

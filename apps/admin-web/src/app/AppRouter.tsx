@@ -25,6 +25,7 @@ import { NdrReasonManagementPage } from '../pages/masterdata/NdrReasonManagement
 import { ZoneManagementPage } from '../pages/masterdata/ZoneManagementPage';
 import { PolicyManagementPage } from '../pages/policies/PolicyManagementPage';
 import { CourierPermissionMatrixPage } from '../pages/permissions/CourierPermissionMatrixPage';
+import { OpsPermissionMatrixPage } from '../pages/permissions/OpsPermissionMatrixPage';
 
 import { CustomerUsersPage } from '../pages/users/CustomerUsersPage';
 import { MerchantUsersPage } from '../pages/users/MerchantUsersPage';
@@ -65,6 +66,7 @@ function AdminLayout(): React.JSX.Element {
       { label: 'Tài khoản Merchant', to: routePaths.merchantUsers, testId: 'nav-users-merchants', icon: 'storefront' },
       { label: 'Tài khoản Khách hàng (Mobile)', to: routePaths.customerUsers, testId: 'nav-users-customers', icon: 'person' },
       { label: 'Phân quyền Mobile', to: routePaths.courierPermissions, testId: 'nav-permissions', icon: 'admin_panel_settings' },
+      { label: 'Phân quyền Điều hành (OPS)', to: routePaths.opsPermissions, testId: 'nav-ops-permissions', icon: 'manage_accounts' },
       { label: 'Nhật ký Audit Log', to: routePaths.auditLogs, testId: 'nav-audit', icon: 'receipt_long' },
     ],
     [],
@@ -180,6 +182,7 @@ export function AppRouter(): React.JSX.Element {
             <Route path={routePaths.merchantUsersLeaf} element={<MerchantUsersPage />} />
             <Route path={routePaths.customerUsersLeaf} element={<CustomerUsersPage />} />
             <Route path={routePaths.courierPermissionsLeaf} element={<CourierPermissionMatrixPage />} />
+            <Route path={routePaths.opsPermissionsLeaf} element={<OpsPermissionMatrixPage />} />
             <Route path={routePaths.auditLogsLeaf} element={<AdminAuditLogPage />} />
             <Route path={routePaths.masterdataHubsLeaf} element={<HubManagementPage />} />
             <Route path={routePaths.masterdataHubNetworkMapLeaf} element={<AdminHubGeofenceMapPage />} />

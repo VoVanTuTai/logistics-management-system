@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Globe2 } from 'lucide-react';
 
 import { useTrackingDetailQuery } from '../../features/tracking/tracking.api';
 import type { TrackingTimelineEventDto } from '../../features/tracking/tracking.types';
@@ -54,8 +55,9 @@ export function TrackingLookupPage(): React.JSX.Element {
         <article className="ops-tracking-lookup__left-column">
           <section className="ops-tracking-lookup__panel">
             <h3>Cột mã vận đơn</h3>
-            <p style={{ fontSize: '12px', color: '#059669', fontWeight: 600, margin: '2px 0 10px 0' }}>
-              🌐 Tra cứu toàn hệ thống (Không giới hạn bưu cục/miền)
+            <p style={{ fontSize: '12px', color: '#059669', fontWeight: 600, margin: '2px 0 10px 0', display: 'flex', alignItems: 'center', gap: '4px' }}>
+              <Globe2 size={13} aria-hidden="true" />
+              <span>Tra cứu toàn hệ thống (Không giới hạn bưu cục/miền)</span>
             </p>
             <form onSubmit={onSubmit} className="ops-tracking-lookup__form">
               <textarea

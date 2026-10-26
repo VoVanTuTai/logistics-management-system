@@ -428,12 +428,33 @@ export function TaskListScreen({ route }: Props = {}): React.JSX.Element {
   }, [filteredShipmentCodes, shipmentQueries]);
   const displayItems = useMemo(
     () =>
-      filteredTasks.map((task) =>
-        buildTaskDisplayItem(
-          task,
-          task.shipmentCode ? shipmentByCode.get(task.shipmentCode) ?? null : null,
+      filteredTasks
+        .filter((task) => {
+          if (task.taskType === 'PICKUP' && task.status !== 'COMPLETED') {
+            const shipment = task.shipmentCode ? shipmentByCode.get(task.shipmentCode) : null;
+            if (shipment) {
+              const meta = shipment.metadata;
+              const isCounter =
+                readMetadataPath(meta, 'intakeType') === 'COUNTER_WALK_IN' ||
+                readMetadataPath(meta, 'pickupClassification') === 'COUNTER_DROP_OFF' ||
+                readMetadataPath(meta, 'skipCourierPickup') === true ||
+                String(readMetadataPath(meta, 'source') || '').startsWith('ops-web') ||
+                String(readMetadataPath(meta, 'platform') || '').startsWith('OPS_') ||
+                shipment.currentStatus === 'PICKUP_COMPLETED' ||
+                shipment.createdByType === 'OPS';
+              if (isCounter) {
+                return false;
+              }
+            }
+          }
+          return true;
+        })
+        .map((task) =>
+          buildTaskDisplayItem(
+            task,
+            task.shipmentCode ? shipmentByCode.get(task.shipmentCode) ?? null : null,
+          ),
         ),
-      ),
     [filteredTasks, shipmentByCode],
   );
 

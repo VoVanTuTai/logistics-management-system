@@ -1,29 +1,21 @@
 import React, { useState, useRef, useEffect } from 'react';
 import {
   MessageSquare,
-  Bot,
-  Sparkles,
-  Send,
+  ArrowUp,
   X,
   RotateCcw,
   ChevronDown,
   User,
   MapPin,
   ArrowRight,
-  Phone,
   Copy,
   Check,
   Package,
-  Truck,
-  ShieldCheck,
-  Scale,
-  Search,
-  PhoneCall,
-  Clock,
+  Bot,
+  Sparkles,
 } from 'lucide-react';
 import { useAuthStore } from '../store/useAuthStore';
 import { ZaloIcon } from './ZaloIcon';
-import { NexusBrandMark } from './NexusBrandLogo';
 
 export interface ShipmentCard {
   code: string;
@@ -54,11 +46,11 @@ interface ChatMessage {
 }
 
 const QUICK_SUGGESTIONS = [
-  { icon: Search, label: 'Tra cứu bưu gửi Nexus', query: 'Tra cứu hành trình đơn hàng gần nhất của tôi' },
-  { icon: Scale, label: 'Dự toán cước IATA', query: 'Dự toán cước bưu kiện tiêu chuẩn 2kg từ TP.HCM đi Hà Nội' },
-  { icon: ShieldCheck, label: 'Quy chuẩn đền bù bể vỡ', query: 'Chính sách đồng kiểm và bồi thường hàng dễ vỡ khi bể' },
-  { icon: RotateCcw, label: 'Cước chuyển hoàn bom', query: 'Quy định thu cước chuyển hoàn khi người nhận từ chối nhận hàng' },
-  { icon: PhoneCall, label: '💬 Chat CSKH Zalo 24/7', query: 'Tôi muốn liên hệ hỗ trợ bưu phẩm qua Zalo trực tuyến' },
+  { label: 'Tra cứu vận đơn', query: 'Tra cứu hành trình đơn hàng gần nhất của tôi' },
+  { label: 'Dự toán cước', query: 'Dự toán cước bưu kiện tiêu chuẩn 2kg từ TP.HCM đi Hà Nội' },
+  { label: 'Bồi thường bể vỡ', query: 'Chính sách đồng kiểm và bồi thường hàng dễ vỡ khi bể vỡ' },
+  { label: 'Quy định hoàn hàng', query: 'Quy định thu cước chuyển hoàn khi người nhận từ chối nhận hàng' },
+  { label: 'Hỗ trợ Zalo', query: 'Tôi muốn liên hệ hỗ trợ bưu phẩm qua Zalo trực tuyến' },
 ];
 
 const FormattedChatMessage: React.FC<{ text: string; isUser: boolean }> = ({ text, isUser }) => {
@@ -66,11 +58,12 @@ const FormattedChatMessage: React.FC<{ text: string; isUser: boolean }> = ({ tex
     return <div className="whitespace-pre-wrap">{text}</div>;
   }
 
-  // Tiền xử lý: loại bỏ các ký tự backticks thừa và dấu sao thô
+  // Pre-process: remove raw backticks, excessive asterisks, and generic emojis
   const cleanText = text
     .replace(/`([^`]+)`/g, '$1')
     .replace(/`/g, '')
     .replace(/\*{3,}/g, '**')
+    .replace(/[📦📍🏷️👤💰🏢⏰🚚📋💡✅❌⚠️👋🚨💬]/g, '')
     .replace(/(^|\n)\s*([•\-\*])\s*\n+(\s*)/g, '$1• ');
 
   const rawLines = cleanText.split('\n');
@@ -82,55 +75,80 @@ const FormattedChatMessage: React.FC<{ text: string; isUser: boolean }> = ({ tex
     lines.push(line);
   }
 
-  const renderInlineBold = (content: string) => {
-    const parts = content.split(/\*\*(.*?)\*\*/g);
-    return parts.map((part, idx) => {
-      if (idx % 2 === 1) {
-        return (
-          <strong key={idx} className="font-bold text-slate-900">
-            {part}
+  const renderInlineFormatted = (content: string) => {
+    // Matches markdown links: [text](url) and bold: **text**
+    const regex = /\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)|\*\*([^*]+)\*\*/g;
+    const elements: React.ReactNode[] = [];
+    let lastIndex = 0;
+    let match: RegExpExecArray | null;
+
+    while ((match = regex.exec(content)) !== null) {
+      if (match.index > lastIndex) {
+        elements.push(content.slice(lastIndex, match.index));
+      }
+
+      if (match[1] && match[2]) {
+        // [link text](url) -> Clickable Link
+        elements.push(
+          <a
+            key={`link-${match.index}`}
+            href={match[2]}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-blue-600 hover:text-blue-800 underline font-semibold inline-block break-all"
+          >
+            {match[1]}
+          </a>
+        );
+      } else if (match[3]) {
+        // **bold text**
+        elements.push(
+          <strong key={`bold-${match.index}`} className="font-semibold text-zinc-950">
+            {match[3]}
           </strong>
         );
       }
-      return <span key={idx}>{part}</span>;
-    });
+
+      lastIndex = regex.lastIndex;
+    }
+
+    if (lastIndex < content.length) {
+      elements.push(content.slice(lastIndex));
+    }
+
+    return elements.length > 0 ? elements : content;
   };
 
   return (
-    <div className="space-y-1.5 text-slate-800 leading-relaxed font-sans">
+    <div className="space-y-1.5 text-zinc-800 leading-relaxed font-sans text-[13px]">
       {lines.map((line, idx) => {
         const trimmed = line.trim();
         if (!trimmed) {
           return <div key={idx} className="h-1" />;
         }
 
-        // 1. Dòng bullet điểm
+        // Bullet list item
         if (trimmed.startsWith('•') || trimmed.startsWith('-') || trimmed.startsWith('*')) {
           const itemContent = trimmed.replace(/^[•\-\*]\s*/, '');
           return (
             <div key={idx} className="flex items-start gap-2 pl-0.5 py-0.5">
-              <span className="h-1.5 w-1.5 bg-blue-600 mt-1.5 shrink-0" />
-              <div className="flex-1 text-xs">{renderInlineBold(itemContent)}</div>
+              <span className="h-1.5 w-1.5 rounded-full bg-zinc-400 mt-2 shrink-0" />
+              <div className="flex-1">{renderInlineFormatted(itemContent)}</div>
             </div>
           );
         }
 
-        // 2. Dòng section/tiêu đề ngắn có emoji
-        const isHeader = /^[📦📍🏷️👤💰🏢⏰🚚📋💡✅❌⚠️👋]/.test(trimmed) && trimmed.length < 80;
+        // Section header
+        const isHeader = trimmed.length < 60 && (trimmed.endsWith(':') || trimmed.startsWith('#'));
         if (isHeader) {
           return (
-            <div key={idx} className="font-bold text-slate-900 text-xs pt-0.5">
-              {renderInlineBold(trimmed)}
+            <div key={idx} className="font-semibold text-zinc-950 pt-1 text-[13px]">
+              {renderInlineFormatted(trimmed.replace(/^#+\s*/, ''))}
             </div>
           );
         }
 
-        // 3. Đoạn văn thông thường
-        return (
-          <p key={idx} className="text-xs">
-            {renderInlineBold(trimmed)}
-          </p>
-        );
+        return <p key={idx}>{renderInlineFormatted(trimmed)}</p>;
       })}
     </div>
   );
@@ -151,99 +169,67 @@ const InteractiveShipmentCards: React.FC<{
 
   return (
     <div className="mt-3 pt-2.5 border-t border-slate-100 space-y-2">
-      <div className="flex items-center justify-between text-[11px] font-bold text-slate-500 uppercase tracking-wider px-0.5">
-        <span className="flex items-center gap-1.5 text-blue-700">
-          <Package className="h-3.5 w-3.5" />
-          Vận đơn tìm thấy ({cards.length})
-        </span>
-        <span className="text-[10px] text-slate-400 font-normal lowercase italic">chọn để tra cứu</span>
+      <div className="flex items-center justify-between text-[11px] font-semibold text-slate-500 uppercase tracking-wide px-0.5">
+        <span>Vận đơn liên quan ({cards.length})</span>
+        <span className="text-[10px] text-blue-600 font-normal lowercase">nhấp để tra cứu</span>
       </div>
 
       <div className="flex flex-col gap-2">
-        {cards.map((card, idx) => {
-          const isDelivered = card.status === 'DELIVERED';
-          const isDelivering = card.status === 'OUT_FOR_DELIVERY';
-          const isInTransit = card.status === 'IN_TRANSIT' || card.status === 'RECEIVED_ORIGIN_HUB' || card.status === 'RECEIVED_DESTINATION_HUB';
-
-          let badgeClass = 'bg-blue-50 text-blue-800 border-blue-200';
-          if (isDelivered) badgeClass = 'bg-blue-100 text-blue-900 border-blue-300';
-          else if (isDelivering) badgeClass = 'bg-blue-50 text-blue-800 border-blue-200';
-          else if (isInTransit) badgeClass = 'bg-slate-100 text-slate-800 border-slate-200';
-
-          return (
-            <div
-              key={card.code || idx}
-              onClick={() => onSelect(card.code)}
-              className="group border border-slate-200 bg-slate-50 hover:bg-white p-3 shadow-2xs hover:shadow-xs hover:border-blue-400 transition cursor-pointer text-left"
-            >
-              {/* Header: Code & Copy & Status Badge */}
-              <div className="flex items-center justify-between gap-1.5 mb-1.5">
-                <div className="flex items-center gap-1.5">
-                  <span className="font-mono font-bold text-slate-900 text-xs tracking-tight group-hover:text-blue-600 transition-colors">
-                    #{card.code}
-                  </span>
-                  <button
-                    onClick={(e) => handleCopy(e, card.code)}
-                    title="Sao chép mã vận đơn"
-                    className="p-1 hover:bg-slate-200 text-slate-400 hover:text-slate-700 transition"
-                  >
-                    {copiedCode === card.code ? (
-                      <Check className="h-3 w-3 text-blue-600" />
-                    ) : (
-                      <Copy className="h-3 w-3" />
-                    )}
-                  </button>
-                </div>
-                <span className={`px-2 py-0.5 text-[10px] font-bold border ${badgeClass} shrink-0`}>
-                  {card.statusText || card.status || 'Đang xử lý'}
+        {cards.map((card, idx) => (
+          <div
+            key={card.code || idx}
+            onClick={() => onSelect(card.code)}
+            className="group border border-slate-200/90 bg-gradient-to-b from-white to-slate-50/50 hover:border-blue-400 p-3 rounded-xl transition-all cursor-pointer text-left shadow-xs hover:shadow-md hover:shadow-blue-500/5"
+          >
+            <div className="flex items-center justify-between gap-1.5 mb-1.5">
+              <div className="flex items-center gap-1.5">
+                <span className="font-mono font-bold text-blue-700 text-xs tracking-tight">
+                  #{card.code}
                 </span>
+                <button
+                  type="button"
+                  onClick={(e) => handleCopy(e, card.code)}
+                  title="Sao chép mã"
+                  className="p-1 rounded-md hover:bg-slate-100 text-slate-400 hover:text-slate-700 transition"
+                >
+                  {copiedCode === card.code ? (
+                    <Check className="h-3 w-3 text-emerald-600" />
+                  ) : (
+                    <Copy className="h-3 w-3" />
+                  )}
+                </button>
               </div>
-
-              {/* Item Name */}
-              <div className="text-xs font-semibold text-slate-800 line-clamp-1 mb-1.5 flex items-center gap-1.5">
-                <Package className="h-3.5 w-3.5 text-blue-600 shrink-0" />
-                <span>{card.itemName || 'Kiện hàng bưu gửi'}</span>
-              </div>
-
-              {/* Sub-info: Destination & COD */}
-              <div className="flex items-center justify-between text-[11px] text-slate-600 pt-1.5 border-t border-slate-200/60">
-                <div className="truncate flex items-center gap-1 max-w-[65%]">
-                  <MapPin className="h-3 w-3 text-slate-400 shrink-0" />
-                  <span className="text-slate-700 truncate">{card.receiverCity || card.receiverName || 'Điểm giao'}</span>
-                </div>
-                {card.codAmount !== undefined && (
-                  <div className="text-right shrink-0">
-                    COD: <span className="font-bold text-blue-700">{card.codAmount.toLocaleString('vi-VN')} đ</span>
-                  </div>
-                )}
-              </div>
-
-              {/* Action Button */}
-              <div className="mt-2 pt-1.5 border-t border-slate-200 flex items-center justify-between text-[11px] text-blue-600 font-bold group-hover:text-blue-700">
-                <span className="flex items-center gap-1">
-                  <Truck className="h-3 w-3" />
-                  <span>Tra cứu hành trình bưu phẩm</span>
-                </span>
-                <ArrowRight className="h-3 w-3 group-hover:translate-x-1 transition-transform" />
-              </div>
+              <span className="px-2.5 py-0.5 text-[10px] font-semibold border border-blue-100 bg-blue-50/80 text-blue-700 rounded-full shrink-0">
+                {card.statusText || card.status || 'Đang xử lý'}
+              </span>
             </div>
-          );
-        })}
+
+            <div className="text-xs text-slate-700 font-medium truncate mb-1.5">
+              {card.itemName || 'Bưu gửi bưu chính'}
+            </div>
+
+            <div className="flex items-center justify-between text-[11px] text-slate-500 pt-1.5 border-t border-slate-100">
+              <div className="truncate flex items-center gap-1 max-w-[65%]">
+                <MapPin className="h-3 w-3 text-slate-400 shrink-0" />
+                <span className="truncate">{card.receiverCity || card.receiverName || 'Điểm giao'}</span>
+              </div>
+              {card.codAmount !== undefined && (
+                <div className="text-right shrink-0 font-semibold text-slate-800">
+                  COD: {card.codAmount.toLocaleString('vi-VN')} đ
+                </div>
+              )}
+            </div>
+
+            <div className="mt-2 pt-1.5 border-t border-slate-100 flex items-center justify-between text-[11px] text-blue-600 font-semibold group-hover:text-blue-700">
+              <span>Xem tiến trình vận chuyển</span>
+              <ArrowRight className="h-3 w-3 group-hover:translate-x-1 transition-transform" />
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   );
 };
-
-function formatToolBadge(tool: string): string | null {
-  if (tool.includes('trackShipment') || tool.includes('getUserShipments')) return 'Đã cập nhật hành trình';
-  if (tool.includes('calculatePricing') || tool.includes('quoteShipmentOrder')) return 'Đã tính cước tự động';
-  if (tool.includes('createRetailOrder')) return 'Đã tiếp nhận tạo đơn';
-  if (tool.includes('trackClaimStatus') || tool.includes('getDamageAndClaimPolicy')) return 'Chính sách bồi thường';
-  if (tool.includes('escalateToHumanAgent')) return 'Kết nối tổng đài viên';
-  if (tool.includes('calculateReturnFee')) return 'Quy chuẩn chuyển hoàn';
-  if (tool.includes('getStorageAgingPolicy')) return 'Quy định lưu kho';
-  return null;
-}
 
 export const FloatingAiChatWidget: React.FC = () => {
   const { phone, user } = useAuthStore();
@@ -251,6 +237,7 @@ export const FloatingAiChatWidget: React.FC = () => {
   const userDisplayName = user?.displayName || phone || null;
 
   const [isOpen, setIsOpen] = useState(false);
+  const [showCallout, setShowCallout] = useState(true);
   const [inputMessage, setInputMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
@@ -260,8 +247,8 @@ export const FloatingAiChatWidget: React.FC = () => {
     id: 'welcome_' + (uid || 'guest'),
     sender: 'bot',
     text: uid
-      ? `Kính chào Quý khách **${name || uid}**! 👋\nTôi là **Tổng Đài Viên Số Nexus Logistics**, kênh hỗ trợ trực tuyến chính thức của Mạng lưới Bưu chính Nexus:\n• **Tra cứu bưu phẩm:** Theo dõi định vị GPS hành trình bưu kiện & bưu tá phụ trách.\n• **Dự toán cước bưu chính:** Tính toán chi phí chuẩn mạng lưới 63 tỉnh thành & hỏa tốc IATA.\n• **Hỗ trợ khiếu nại:** Hướng dẫn quy chuẩn bồi thường bể vỡ và thủ tục xử lý nhanh 24/7.\n\nQuý khách có thể nhập mã vận đơn hoặc câu hỏi bất kỳ để tôi hỗ trợ ngay!`
-      : 'Kính chào Quý khách! 👋\nTôi là **Tổng Đài Viên Số Nexus Logistics**, kênh hỗ trợ trực tuyến chính thức của Mạng lưới Bưu chính Nexus:\n• **Tra cứu bưu phẩm:** Theo dõi định vị GPS hành trình bưu kiện & bưu tá phụ trách.\n• **Dự toán cước bưu chính:** Tính toán chi phí chuẩn mạng lưới 63 tỉnh thành & hỏa tốc IATA.\n• **Hỗ trợ khiếu nại:** Hướng dẫn quy chuẩn bồi thường bể vỡ và thủ tục giải quyết sự cố 24/7.\n\nQuý khách có thể gửi mã vận đơn (VD: 333000000001) hoặc nhập câu hỏi để được hỗ trợ ngay lập tức!',
+      ? `Chào ${name || 'bạn'}, mình có thể hỗ trợ gì cho bưu gửi của bạn hôm nay? Bạn gửi mã vận đơn để mình kiểm tra hành trình ngay, hoặc chọn các chủ đề bên dưới nhé.`
+      : 'Chào bạn, mình là trợ lý hỗ trợ trực tuyến của Nexus Logistics. Bạn đang cần kiểm tra đơn hàng hay giải đáp cước phí, bồi thường thì cứ gửi tin nhắn cho mình nhé.',
     time: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
   });
 
@@ -274,7 +261,6 @@ export const FloatingAiChatWidget: React.FC = () => {
     return [getWelcomeMessage(currentUserId, userDisplayName)];
   });
 
-  // Tách biệt lịch sử chat khi chuyển đổi giữa các tài khoản
   useEffect(() => {
     try {
       const key = getStorageKey(currentUserId);
@@ -289,7 +275,6 @@ export const FloatingAiChatWidget: React.FC = () => {
     }
   }, [currentUserId]);
 
-  // Lưu lại tin nhắn vào session storage theo tài khoản hiện tại
   useEffect(() => {
     if (messages.length > 0) {
       try {
@@ -344,13 +329,6 @@ export const FloatingAiChatWidget: React.FC = () => {
         senderRole: currentUserId ? 'CUSTOMER' : 'GUEST',
       };
 
-      // Candidate endpoints in order of reliability:
-      // 1. Same-origin relative path '/api/v1/ai-assistant/message' (zero CORS issues via dev server or reverse proxy)
-      // 2. Gateway BFF URL configured in env
-      // 3. Direct IPv4 Gateway BFF 'http://127.0.0.1:3000/api/v1/ai-assistant/message'
-      // 4. Direct 'http://localhost:3000/api/v1/ai-assistant/message'
-      // 5. Direct Chatbot Microservice 'http://127.0.0.1:3013/api/v1/chat/message'
-      // 6. Direct Chatbot Microservice 'http://localhost:3013/api/v1/chat/message'
       const candidateUrls: string[] = ['/api/v1/ai-assistant/message'];
       if (gatewayUrl && !candidateUrls.includes(`${gatewayUrl}/api/v1/ai-assistant/message`)) {
         candidateUrls.push(`${gatewayUrl}/api/v1/ai-assistant/message`);
@@ -359,7 +337,7 @@ export const FloatingAiChatWidget: React.FC = () => {
         'http://127.0.0.1:3000/api/v1/ai-assistant/message',
         'http://localhost:3000/api/v1/ai-assistant/message',
         'http://127.0.0.1:3013/api/v1/chat/message',
-        'http://localhost:3013/api/v1/chat/message'
+        'http://localhost:3013/api/v1/chat/message',
       );
 
       let responseData: any = null;
@@ -384,13 +362,13 @@ export const FloatingAiChatWidget: React.FC = () => {
       }
 
       if (!responseData) {
-        throw lastErr || new Error('Không thể kết nối đến máy chủ AI');
+        throw lastErr || new Error('Không thể kết nối đến máy chủ hỗ trợ');
       }
 
       const botMsg: ChatMessage = {
         id: 'bot_' + Date.now(),
         sender: 'bot',
-        text: responseData.answer || 'Hệ thống đã tiếp nhận yêu cầu của bạn.',
+        text: responseData.answer || 'Hệ thống đã ghi nhận yêu cầu của bạn.',
         time: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
         toolsUsed: responseData.toolsUsed,
         citations: responseData.citations,
@@ -405,35 +383,29 @@ export const FloatingAiChatWidget: React.FC = () => {
       const isReturnQuery = /hoàn|bom|phí hoàn/i.test(query);
 
       let fallbackText = '';
-      let toolsUsed: string[] = [];
 
       if (isZaloQuery) {
-        toolsUsed = ['ZaloCustomerSupportDirectConnect'];
-        fallbackText = `Dạ chào Quý khách! 👋\n\nBạn có thể liên hệ trực tiếp với bộ phận CSKH của Nexus Logistics qua:\n• **Kênh Zalo hỗ trợ:** [Nhấn vào đây để mở Chat Zalo](https://zalo.me/0869500573) *(Mở ứng dụng hoặc web Zalo trực tiếp)*\n• **Thời gian phục vụ:** 24/7 toàn quốc\n• **Nghiệp vụ hỗ trợ:** Kiểm tra hành trình bưu gửi, giục bưu tá giao hàng gấp, hỗ trợ khiếu nại đền bù và tư vấn cước phí.\n\nNexus Logistics luôn sẵn sàng phục vụ Quý khách!`;
+        fallbackText =
+          `Bạn có thể nhắn tin trực tiếp với chuyên viên hỗ trợ qua Zalo [tại đây](https://zalo.me/0869500573) để được xử lý nhanh nhé. ` +
+          `Đội ngũ luôn sẵn sàng hỗ trợ kiểm tra lộ trình bưu gửi, giục phát hoặc giải quyết khiếu nại phát sinh.`;
       } else if (isDamageQuery) {
-        toolsUsed = ['getDamageAndClaimPolicy(Fragile Goods & Damage Settlement)'];
-        fallbackText = `Quy trình xử lý sự cố hàng hư hỏng / bể vỡ theo Quy chuẩn Nexus Logistics:\n\n` +
-          `1. Khi nhận hàng: Quý khách đồng kiểm với bưu tá, yêu cầu lập Biên bản bất thường tại chỗ (chụp ảnh và video bưu phẩm hư hại) và từ chối nhận hàng.\n` +
-          `2. Hạn mức bồi thường:\n` +
-          `• Gói Tiêu chuẩn: Bồi thường tối đa 04 lần cước vận chuyển (không quá 1.000.000 VNĐ/đơn theo Luật Bưu chính).\n` +
-          `• Gói Bảo hiểm khai giá: Đền bù 100% giá trị tổn thất thực tế theo hóa đơn, trần tối đa 30.000.000 VNĐ/đơn.\n` +
-          `3. Thời hạn giải quyết: Thẩm định trong 24h - 48h, hoàn tất chi trả trong 03 - 05 ngày làm việc.`;
+        fallbackText =
+          `Với đơn hàng có dấu hiệu hư hỏng hoặc bể vỡ, bạn lưu ý đồng kiểm cùng bưu tá và yêu cầu lập biên bản bất thường ngay lúc nhận nhé.\n\n` +
+          `• Gói Tiêu chuẩn: Bồi thường tối đa 4 lần cước vận chuyển (không quá 1.000.000 đ/đơn).\n` +
+          `• Gói Bảo hiểm khai giá: Đền bù 100% giá trị tổn thất theo hóa đơn chứng từ.\n` +
+          `Hồ sơ thường được thẩm định trong 24 đến 48 giờ. Bạn có mã vận đơn thì gửi luôn để mình kiểm tra tình trạng xử lý giúp bạn.`;
       } else if (isClaimQuery) {
-        toolsUsed = ['trackClaimStatus(CLM-Policy)'];
-        fallbackText = `Quy trình tra cứu hồ sơ khiếu nại bồi thường Nexus Logistics:\n\n` +
-          `• Để tra cứu tiến độ, bạn vui lòng gửi kèm mã hồ sơ khiếu nại (ví dụ: CLM-202609-001) hoặc mã vận đơn có phát sinh sự cố.\n` +
-          `• Thời hạn thẩm định: 24h - 48h làm việc kể từ khi lập biên bản đồng kiểm.\n` +
-          `• Hình thức giải ngân: Chuyển khoản trực tiếp hoặc cấn trừ kỳ đối soát gần nhất.\n\n` +
-          `Nếu cần khiếu nại khẩn, bạn có thể gọi hotline: 1900 0000 để được nhân viên hỗ trợ trực tiếp.`;
+        fallbackText =
+          `Để tra cứu tiến độ hồ sơ bồi thường, bạn gửi giúp mình mã hồ sơ (ví dụ CLM-...) hoặc mã vận đơn nhé. ` +
+          `Các yêu cầu thường được thẩm định trong vòng 24 đến 48 giờ làm việc. Nếu cần xử lý khẩn, bạn có thể gọi hotline 1900 6868.`;
       } else if (isReturnQuery) {
-        toolsUsed = ['calculateReturnFee(Rule-based Policy)'];
-        fallbackText = `Quy chuẩn cước chuyển hoàn bưu gửi của Nexus Logistics:\n\n` +
-          `1. Khách lẻ / Shop thường: Áp dụng thu 50% cước chiều đi do người gửi chi trả nhằm bù đắp chi phí phương tiện và hạn chế đơn ảo.\n` +
-          `2. Đối Tác VIP Doanh Nghiệp (sản lượng > 1.000 đơn/tháng): Miễn phí chuyển hoàn 100% theo hợp đồng dịch vụ.`;
+        fallbackText =
+          `Về quy định chuyển hoàn bưu gửi: với khách gửi thông thường, cước hoàn là 50% cước chiều đi; còn khách hàng doanh nghiệp theo hợp đồng sẽ được miễn phí hoàn 100%. ` +
+          `Bạn gửi mã đơn để mình kiểm tra trạng thái chuyển hoàn cụ thể nhé.`;
       } else {
         fallbackText =
-          `Hiện tại kết nối máy chủ điều phối đang bận. ` +
-          `Quý khách vui lòng gửi lại mã vận đơn hoặc liên hệ Hotline tổng đài 1900 0000 để được hỗ trợ nhanh nhất.`;
+          `Hệ thống đang xử lý nhiều lượt tra cứu cùng lúc. ` +
+          `Bạn gửi lại mã vận đơn hoặc liên hệ tổng đài 1900 6868 để bên mình hỗ trợ bạn ngay nhé.`;
       }
 
       const botMsg: ChatMessage = {
@@ -441,7 +413,6 @@ export const FloatingAiChatWidget: React.FC = () => {
         sender: 'bot',
         text: fallbackText,
         time: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
-        toolsUsed,
       };
       setMessages((prev) => [...prev, botMsg]);
     } finally {
@@ -451,69 +422,71 @@ export const FloatingAiChatWidget: React.FC = () => {
 
   return (
     <>
-      {/* 1. Floating Action Buttons: Zalo Contact & AI Chatbot */}
-      <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end gap-3">
-        {/* Floating Zalo Direct Contact (Official Brand Icon - Circular) */}
+      {/* 1. Floating Action Dock (Modern Nexus Brand & Glowing Tech Aesthetics) */}
+      <div className="fixed bottom-6 right-6 z-[9999] flex flex-col items-end gap-2.5 pointer-events-auto select-none">
+        {/* Zalo Direct Button */}
         <a
           href="https://zalo.me/0869500573"
           target="_blank"
           rel="noopener noreferrer"
-          className="relative group flex items-center justify-center h-14 w-14 rounded-full border border-blue-400/50 bg-[#0068FF] shadow-2xl hover:scale-105 active:scale-95 transition-all duration-200 cursor-pointer"
-          title="Chat Zalo hỗ trợ 24/7"
-          aria-label="Chat Zalo hỗ trợ trực tuyến"
+          className="group flex items-center justify-center w-11 h-11 rounded-full border border-slate-200/90 bg-white text-slate-700 shadow-md hover:shadow-xl hover:border-blue-400 hover:scale-105 active:scale-95 transition-all duration-150 cursor-pointer"
+          title="Hỗ trợ Zalo CSKH 24/7"
+          aria-label="Hỗ trợ Zalo"
         >
-          <ZaloIcon className="h-10 w-10 overflow-hidden rounded-full" shape="circle" />
-          <span className="absolute -top-0.5 -right-0.5 flex h-3.5 w-3.5">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-            <span className="relative inline-flex h-3.5 w-3.5 rounded-full bg-emerald-500 border-2 border-white" />
-          </span>
-          {/* Tooltip on hover */}
-          <span className="pointer-events-none absolute right-full mr-3 whitespace-nowrap bg-slate-900 px-3 py-1.5 rounded-full text-xs font-semibold text-white opacity-0 shadow-lg transition-opacity duration-200 group-hover:opacity-100 hidden sm:block">
-            Chat Zalo 24/7
+          <ZaloIcon className="h-6 w-6 rounded-full overflow-hidden" shape="circle" />
+          <span className="pointer-events-none absolute right-full mr-2.5 whitespace-nowrap bg-slate-900 px-2.5 py-1 rounded-md text-[11px] font-semibold text-white opacity-0 shadow-lg transition-opacity duration-150 group-hover:opacity-100 hidden sm:block">
+            CSKH Zalo 24/7
           </span>
         </a>
 
-        {/* Floating AI Chatbot Button (Nexus Logistics CSKH - Circular) */}
-        <div className="flex items-center gap-2.5">
-          {!isOpen && (
-            <button
-              type="button"
-              onClick={() => setIsOpen(true)}
-              className="flex items-center gap-2.5 bg-white text-slate-800 shadow-xl border border-slate-300 pl-3 pr-4 py-2 rounded-full transition-all duration-300 hover:shadow-2xl hover:border-blue-600 group cursor-pointer active:scale-95"
-            >
-              <NexusBrandMark size="xs" className="shadow-xs group-hover:scale-105 transition-transform rounded-full" />
-              <div className="flex flex-col text-left">
-                <div className="flex items-center gap-1.5 leading-none">
-                  <span className="font-black text-xs text-blue-900 tracking-tight">NEXUS CSKH 24/7</span>
-                  <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-                </div>
-                <span className="text-[10px] text-slate-500 font-medium mt-0.5">Trợ lý điều phối bưu chính</span>
-              </div>
-            </button>
+        {/* Chat Launcher with Modern Callout Pill */}
+        <div className="flex items-center gap-2 relative">
+          {!isOpen && showCallout && (
+            <div className="hidden sm:flex items-center gap-2 bg-white/95 backdrop-blur-md text-slate-800 shadow-[0_8px_24px_-4px_rgba(37,99,235,0.18)] border border-blue-100 pl-3 pr-2 py-1.5 rounded-full transition-all duration-200">
+              <span
+                className="text-xs font-semibold cursor-pointer text-slate-800 hover:text-blue-600 flex items-center gap-1.5"
+                onClick={() => setIsOpen(true)}
+              >
+                <span className="px-1.5 py-0.5 rounded text-[9.5px] font-bold bg-blue-100 text-blue-700 flex items-center gap-1 uppercase tracking-wider">
+                  <Bot className="h-3 w-3" />
+                  AI BOT
+                </span>
+                Hỗ trợ tra cứu vận đơn 24/7
+              </span>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowCallout(false);
+                }}
+                className="text-slate-400 hover:text-slate-700 p-0.5 rounded-full hover:bg-slate-100 transition"
+                title="Đóng"
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </div>
           )}
 
+          {/* Launcher Trigger Button */}
           <button
             type="button"
             onClick={() => setIsOpen(!isOpen)}
-            className={`relative group flex items-center justify-center h-14 w-14 rounded-full shadow-2xl transition-all duration-300 cursor-pointer border border-blue-500/50 ${
+            className={`relative group flex items-center justify-center w-14 h-14 rounded-full shadow-[0_8px_25px_-3px_rgba(37,99,235,0.45)] hover:shadow-[0_12px_32px_-2px_rgba(37,99,235,0.6)] hover:scale-105 active:scale-95 transition-all duration-200 cursor-pointer border border-white/30 ${
               isOpen
-                ? 'bg-blue-800 text-white hover:bg-blue-900'
-                : 'bg-blue-600 hover:bg-blue-700 text-white hover:scale-105 active:scale-95'
+                ? 'bg-slate-900 text-white'
+                : 'bg-gradient-to-br from-blue-600 via-blue-500 to-indigo-600 text-white'
             }`}
-            title={isOpen ? 'Đóng cửa sổ chat' : 'Mở Cổng CSKH Nexus Logistics'}
+            title={isOpen ? 'Thu nhỏ chat' : 'Mở trợ lý trực tuyến Robot AI'}
             aria-label={isOpen ? 'Đóng chat' : 'Mở chat'}
           >
             {isOpen ? (
-              <X className="h-6 w-6 text-white" />
+              <X className="h-6 w-6" />
             ) : (
               <>
-                <div className="flex flex-col items-center justify-center">
-                  <NexusBrandMark size="xs" className="shadow-xs group-hover:scale-110 transition-transform rounded-full" />
-                  <span className="text-[8px] font-black uppercase tracking-tight text-white mt-0.5 leading-none">CSKH</span>
-                </div>
-                <span className="absolute -top-0.5 -right-0.5 flex h-3.5 w-3.5">
+                <Bot className="h-7 w-7 text-white" strokeWidth={2.2} />
+                <span className="absolute -top-0.5 -right-0.5 flex h-3 w-3">
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                  <span className="relative inline-flex h-3.5 w-3.5 rounded-full bg-emerald-500 border-2 border-white" />
+                  <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-400 ring-2 ring-white" />
                 </span>
               </>
             )}
@@ -521,253 +494,205 @@ export const FloatingAiChatWidget: React.FC = () => {
         </div>
       </div>
 
-      {/* 2. Floating Chat Window (Drawer) */}
+      {/* 2. Modern Tech AI Assistant Window */}
       {isOpen && (
-        <div className="fixed bottom-24 right-4 sm:right-6 z-50 w-[calc(100vw-32px)] sm:w-[420px] h-[600px] max-h-[calc(100vh-120px)] bg-white shadow-2xl border border-slate-300 rounded-2xl flex flex-col overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-200 font-sans">
-          {/* Header */}
-          <div className="px-4 py-3 bg-blue-600 text-white flex items-center justify-between shadow-xs">
-            <div className="flex items-center gap-3">
-              <div className="relative">
-                <NexusBrandMark size="sm" className="shadow-md border border-white/20 rounded-full" />
-                <span className="absolute -bottom-0.5 -right-0.5 flex h-3 w-3">
-                  <span className="relative inline-flex h-3 w-3 rounded-full bg-emerald-500 border border-white" />
-                </span>
+        <div className="fixed bottom-[96px] right-4 sm:right-6 z-[9999] w-[calc(100vw-32px)] sm:w-[410px] h-[610px] max-h-[calc(100vh-116px)] bg-slate-50/98 backdrop-blur-2xl border border-slate-200/90 rounded-3xl shadow-[0_20px_60px_-15px_rgba(15,23,42,0.22),0_0_0_1px_rgba(226,232,240,0.8)] flex flex-col overflow-hidden font-sans animate-chat-in">
+          {/* Header with Signature Nexus Blue Gradient */}
+          <header className="px-4 py-3.5 bg-gradient-to-r from-blue-700 via-blue-600 to-indigo-700 text-white flex items-center justify-between shadow-sm relative overflow-hidden shrink-0">
+            <div className="absolute -right-8 -top-8 w-28 h-28 bg-white/10 rounded-full blur-xl pointer-events-none" />
+
+            <div className="flex items-center gap-3 relative z-10">
+              <div className="h-9 w-9 rounded-xl bg-white/15 backdrop-blur-md border border-white/20 flex items-center justify-center text-white font-bold text-sm shadow-inner">
+                <Bot className="h-5 w-5 text-white" strokeWidth={2.2} />
               </div>
               <div>
-                <div className="flex items-center gap-1.5">
-                  <h3 className="text-sm font-black text-white tracking-tight">NEXUS CSKH 24/7</h3>
-                  <span className="inline-flex items-center gap-0.5 px-2 py-0.5 text-[9px] font-bold bg-white/20 text-white rounded-full">
-                    <ShieldCheck className="h-2.5 w-2.5 text-emerald-300" />
-                    Chính Thức
+                <div className="flex items-center gap-1.5 leading-none">
+                  <h3 className="text-[13px] font-bold text-white tracking-tight">Nexus AI Robot</h3>
+                  <span className="flex h-2 w-2 relative">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-400" />
                   </span>
                 </div>
-                <p className="text-[11px] text-blue-100 flex items-center gap-1 mt-0.5 font-medium">
-                  <span>Điều Phối Bưu Chính Quốc Gia</span>
-                  <span>•</span>
-                  <span>Trực Tuyến</span>
+                <p className="text-[10.5px] text-blue-100 mt-1 leading-none font-normal">
+                  Trợ lý robot bưu chính trực tuyến 24/7
                 </p>
               </div>
             </div>
 
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-1 relative z-10">
               <a
                 href="https://zalo.me/0869500573"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-1.5 px-3 py-1 bg-white/15 hover:bg-white/25 text-white text-[11px] font-bold transition shadow-xs rounded-full"
-                title="Chat Zalo hỗ trợ khách hàng"
+                className="px-2.5 py-1 text-[11px] font-semibold text-white bg-white/15 hover:bg-white/25 border border-white/20 rounded-lg transition mr-0.5"
+                title="Mở Zalo CSKH"
               >
-                <ZaloIcon className="h-3.5 w-3.5 rounded-full" shape="circle" />
-                <span>Chat Zalo</span>
+                Zalo
               </a>
               <button
                 type="button"
                 onClick={handleClearChat}
                 title="Làm mới cuộc trò chuyện"
-                className="p-1.5 text-blue-100 hover:text-white hover:bg-white/10 transition cursor-pointer rounded-full"
+                className="p-1.5 text-blue-100 hover:text-white hover:bg-white/15 transition rounded-lg"
               >
-                <RotateCcw className="h-4 w-4" />
+                <RotateCcw className="h-3.5 w-3.5" />
               </button>
               <button
                 type="button"
                 onClick={() => setIsOpen(false)}
                 title="Thu nhỏ"
-                className="p-1.5 text-blue-100 hover:text-white hover:bg-white/10 transition cursor-pointer rounded-full"
+                className="p-1.5 text-blue-100 hover:text-white hover:bg-white/15 transition rounded-lg"
               >
-                <ChevronDown className="h-5 w-5" />
+                <ChevronDown className="h-4 w-4" />
               </button>
             </div>
+          </header>
+
+          {/* Quick Suggestions (Modern Pills) */}
+          <div
+            className="px-3.5 py-2.5 bg-white border-b border-slate-100 flex items-center gap-1.5 overflow-x-auto shrink-0 shadow-2xs"
+            style={{ scrollbarWidth: 'none' }}
+          >
+            {QUICK_SUGGESTIONS.map((item, index) => (
+              <button
+                key={index}
+                type="button"
+                onClick={() => handleSendMessage(item.query)}
+                disabled={isLoading}
+                className="shrink-0 px-3 py-1 rounded-full bg-slate-50 hover:bg-blue-50 border border-slate-200/80 hover:border-blue-300 text-[11.5px] text-slate-700 hover:text-blue-700 font-medium transition cursor-pointer active:scale-95 disabled:opacity-50 whitespace-nowrap shadow-xs"
+              >
+                {item.label}
+              </button>
+            ))}
           </div>
 
-          {/* Quick Suggestions Chips */}
-          <div className="px-3 py-2 bg-slate-50 border-b border-slate-200 flex items-center gap-1.5 overflow-x-auto no-scrollbar">
-            {QUICK_SUGGESTIONS.map((item, index) => {
-              const IconComp = item.icon;
-              return (
-                <button
-                  key={index}
-                  type="button"
-                  onClick={() => handleSendMessage(item.query)}
-                  disabled={isLoading}
-                  className="shrink-0 flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white hover:bg-blue-50 border border-slate-300 hover:border-blue-500 text-[11px] text-slate-800 hover:text-blue-700 font-bold transition cursor-pointer active:scale-95 disabled:opacity-50 shadow-2xs"
-                >
-                  <IconComp className="h-3.5 w-3.5 text-blue-600 shrink-0" />
-                  <span>{item.label}</span>
-                </button>
-              );
-            })}
-          </div>
-
-          {/* Messages Body */}
-          <div className="flex-1 p-4 overflow-y-auto space-y-3.5 bg-slate-50/50">
-            {/* Corporate Identification Card */}
-            <div className="border border-slate-300 bg-white p-3 shadow-xs rounded-xl">
-              <div className="flex items-center gap-2.5 mb-2">
-                <div className="h-8 w-8 rounded-full bg-blue-600 text-white flex items-center justify-center shrink-0 shadow-xs">
-                  <Truck className="h-4.5 w-4.5" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-1.5">
-                    <h4 className="text-xs font-black text-slate-900 tracking-tight">HỆ THỐNG ĐIỀU PHỐI NEXUS LOGISTICS</h4>
-                    <span className="inline-flex items-center px-1.5 py-0.5 text-[9px] font-extrabold bg-blue-600 text-white rounded-full leading-none">Chính thức</span>
-                  </div>
-                  <p className="text-[10px] text-slate-500 font-medium truncate">Cổng hỗ trợ tra cứu bưu gửi & xử lý sự cố 24/7</p>
-                </div>
-              </div>
-              <div className="grid grid-cols-3 gap-1.5 pt-2 border-t border-slate-200 text-center">
-                <div className="bg-slate-50 py-1.5 px-1 border border-slate-200 rounded-lg">
-                  <p className="text-[9px] text-slate-500 font-semibold uppercase tracking-wider">Bưu cục</p>
-                  <p className="text-[11px] font-black text-blue-700">63 Tỉnh Thành</p>
-                </div>
-                <div className="bg-slate-50 py-1.5 px-1 border border-slate-200 rounded-lg">
-                  <p className="text-[9px] text-slate-500 font-semibold uppercase tracking-wider">Định vị GPS</p>
-                  <p className="text-[11px] font-black text-emerald-600">Thời Gian Thực</p>
-                </div>
-                <div className="bg-slate-50 py-1.5 px-1 border border-slate-200 rounded-lg">
-                  <p className="text-[9px] text-slate-500 font-semibold uppercase tracking-wider">Hotline</p>
-                  <p className="text-[11px] font-black text-blue-700">1900 6868</p>
-                </div>
-              </div>
-            </div>
-
+          {/* Messages Stream - Card-Based Flow (No pointy classic speech bubbles) */}
+          <div className="flex-1 min-h-0 p-4 overflow-y-auto space-y-4 bg-slate-50/70">
             {messages.map((msg) => (
               <div
                 key={msg.id}
                 className={`flex gap-2.5 ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}
               >
                 {msg.sender === 'bot' && (
-                  <NexusBrandMark size="sm" className="mt-0.5 shadow-xs shrink-0 rounded-full" />
+                  <div className="shrink-0 h-7 w-7 rounded-lg bg-gradient-to-br from-blue-600 to-indigo-600 text-white flex items-center justify-center font-bold text-[11px] mt-0.5 shadow-sm shadow-blue-500/25">
+                    <Bot className="h-4 w-4 text-white" strokeWidth={2.2} />
+                  </div>
                 )}
 
                 <div
-                  className={`max-w-[85%] px-4 py-2.5 text-xs leading-relaxed border shadow-xs ${
-                    msg.sender === 'user'
-                      ? 'bg-blue-600 text-white border-blue-700 rounded-2xl rounded-tr-xs'
-                      : 'bg-white text-slate-800 border-slate-300 rounded-2xl rounded-tl-xs'
+                  className={`flex flex-col ${
+                    msg.sender === 'user' ? 'items-end max-w-[85%]' : 'items-start max-w-[88%]'
                   }`}
                 >
-                  {/* Sender title for bot */}
-                  {msg.sender === 'bot' && (
-                    <div className="flex items-center gap-1.5 mb-1.5 pb-1 border-b border-slate-100">
-                      <span className="text-[11px] font-extrabold text-blue-700 tracking-tight">Nexus CSKH</span>
-                      <span className="text-[9px] font-bold px-2 py-0.5 bg-blue-50 text-blue-600 border border-blue-200 rounded-full">
-                        Tổng Đài Viên Số
-                      </span>
+                  {msg.sender === 'user' ? (
+                    /* User Inquiry: Sleek Brand Gradient Capsule */
+                    <div className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-2xl rounded-br-sm px-4 py-2.5 text-[13px] leading-relaxed shadow-md shadow-blue-500/20 font-medium">
+                      <div className="whitespace-pre-wrap">{msg.text}</div>
+                    </div>
+                  ) : (
+                    /* Assistant Answer: Clean Structured Tech Card */
+                    <div className="bg-white border border-slate-200/90 rounded-2xl p-4 text-[13px] leading-relaxed text-slate-800 shadow-[0_3px_14px_-3px_rgba(0,0,0,0.05)] w-full">
+                      <div className="flex items-center justify-between pb-2 mb-2.5 border-b border-slate-100">
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10.5px] font-semibold bg-blue-50 text-blue-700 border border-blue-100/90 shadow-2xs">
+                          <Bot className="h-3.5 w-3.5 text-blue-600" strokeWidth={2.2} />
+                          Trợ lý Robot Nexus AI
+                        </span>
+                        <span className="text-[10px] font-medium text-slate-400">{msg.time}</span>
+                      </div>
+
+                      <FormattedChatMessage text={msg.text} isUser={false} />
+
+                      {/* Interactive Shipment Cards */}
+                      {msg.shipmentCards && msg.shipmentCards.length > 0 && (
+                        <InteractiveShipmentCards
+                          cards={msg.shipmentCards}
+                          onSelect={(code) => handleSendMessage(`Tra cứu hành trình đơn ${code}`)}
+                        />
+                      )}
+
+                      {/* Action Chips */}
+                      {msg.actionChips && msg.actionChips.length > 0 && (
+                        <div className="mt-3 pt-2.5 border-t border-slate-100 flex flex-wrap gap-1.5">
+                          {msg.actionChips.map((chip, chipIdx) => (
+                            <button
+                              key={chipIdx}
+                              type="button"
+                              onClick={() => handleSendMessage(chip.query)}
+                              className="px-3 py-1 bg-blue-50/70 hover:bg-blue-100/90 text-blue-700 border border-blue-200/80 text-xs font-semibold transition rounded-full cursor-pointer shadow-xs active:scale-95 whitespace-nowrap"
+                            >
+                              {chip.label}
+                            </button>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   )}
 
-                  {/* Badges for tools */}
-                  {msg.toolsUsed && msg.toolsUsed.length > 0 && (
-                    <div className="mb-2 flex flex-wrap gap-1">
-                      {msg.toolsUsed.map((tool, idx) => {
-                        const friendlyLabel = formatToolBadge(tool);
-                        if (!friendlyLabel) return null;
-                        return (
-                          <span
-                            key={idx}
-                            className="inline-flex items-center gap-1 px-2.5 py-0.5 text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200 rounded-full"
-                          >
-                            <Package className="h-2.5 w-2.5 text-blue-600" />
-                            {friendlyLabel}
-                          </span>
-                        );
-                      })}
-                    </div>
+                  {msg.sender === 'user' && (
+                    <span className="text-[10px] mt-1 font-medium px-1 text-slate-400">
+                      {msg.time}
+                    </span>
                   )}
-
-                  {/* Formatted Content */}
-                  <FormattedChatMessage text={msg.text} isUser={msg.sender === 'user'} />
-
-                  {/* Interactive Cards */}
-                  {msg.shipmentCards && msg.shipmentCards.length > 0 && (
-                    <InteractiveShipmentCards
-                      cards={msg.shipmentCards}
-                      onSelect={(code) => handleSendMessage(`Tra cứu hành trình đơn ${code}`)}
-                    />
-                  )}
-
-                  {/* Action Chips */}
-                  {msg.actionChips && msg.actionChips.length > 0 && (
-                    <div className="mt-2.5 pt-2 border-t border-slate-200 flex flex-wrap gap-1.5">
-                      {msg.actionChips.map((chip, chipIdx) => (
-                        <button
-                          key={chipIdx}
-                          type="button"
-                          onClick={() => handleSendMessage(chip.query)}
-                          className="px-3 py-1 bg-white hover:bg-blue-50 text-blue-700 border border-slate-300 hover:border-blue-500 text-[11px] font-bold transition flex items-center gap-1 active:scale-95 cursor-pointer rounded-full shadow-2xs"
-                        >
-                          <span>{chip.label}</span>
-                        </button>
-                      ))}
-                    </div>
-                  )}
-
-                  <div
-                    className={`mt-1.5 text-[10px] text-right font-medium ${
-                      msg.sender === 'user' ? 'text-blue-100' : 'text-slate-400'
-                    }`}
-                  >
-                    {msg.time}
-                  </div>
                 </div>
 
                 {msg.sender === 'user' && (
-                  <div className="shrink-0 h-8 w-8 rounded-full bg-blue-50 border border-blue-200 text-blue-600 flex items-center justify-center mt-0.5 shadow-xs">
-                    <User className="h-4 w-4" />
+                  <div className="shrink-0 h-7 w-7 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center mt-0.5 border border-blue-200">
+                    <User className="h-3.5 w-3.5" />
                   </div>
                 )}
               </div>
             ))}
 
-            {/* Realistic Chatbot 3-dot Typing Animation */}
+            {/* High-Tech Typing Indicator */}
             {isLoading && (
               <div className="flex gap-2.5 justify-start items-center">
-                <div className="shrink-0 h-8 w-8 rounded-full bg-blue-600 text-white flex items-center justify-center shadow-xs">
-                  <Truck className="h-4 w-4" />
+                <div className="shrink-0 h-7 w-7 rounded-lg bg-gradient-to-br from-blue-600 to-indigo-600 text-white flex items-center justify-center shadow-sm shadow-blue-500/25">
+                  <Bot className="h-4 w-4 text-white" strokeWidth={2.2} />
                 </div>
-                <div className="bg-white border border-slate-300 px-4 py-2.5 shadow-xs flex items-center gap-1.5 rounded-2xl rounded-tl-xs">
-                  <span className="h-2 w-2 rounded-full bg-blue-600 animate-bounce [animation-delay:-0.3s]" />
-                  <span className="h-2 w-2 rounded-full bg-blue-600 animate-bounce [animation-delay:-0.15s]" />
-                  <span className="h-2 w-2 rounded-full bg-blue-600 animate-bounce" />
+                <div className="bg-white border border-slate-200/80 px-4 py-2.5 shadow-sm flex items-center gap-1.5 rounded-2xl">
+                  <span className="text-[11px] font-medium text-slate-400 mr-1">Nexus Robot đang soạn</span>
+                  <span className="h-1.5 w-1.5 rounded-full bg-blue-600 animate-bounce [animation-delay:-0.3s]" />
+                  <span className="h-1.5 w-1.5 rounded-full bg-blue-600 animate-bounce [animation-delay:-0.15s]" />
+                  <span className="h-1.5 w-1.5 rounded-full bg-blue-600 animate-bounce" />
                 </div>
               </div>
             )}
             <div ref={messagesEndRef} />
           </div>
 
-          {/* Footer Input */}
-          <div className="p-3.5 bg-white border-t border-slate-200">
+          {/* Composer Footer (Elevated Modern Floating Capsule) */}
+          <footer className="p-3 bg-white border-t border-slate-100 shrink-0 shadow-xs">
             <form
               onSubmit={(e) => {
                 e.preventDefault();
                 handleSendMessage();
               }}
-              className="flex items-center gap-2 bg-slate-50 border border-slate-300 px-4 py-1.5 rounded-full focus-within:bg-white focus-within:border-blue-600 focus-within:ring-2 focus-within:ring-blue-600/15 transition shadow-2xs"
+              className="flex items-center gap-2 bg-slate-50 focus-within:bg-white border border-slate-200 focus-within:border-blue-500 focus-within:ring-4 focus-within:ring-blue-500/10 rounded-2xl pl-3.5 pr-1.5 py-1.5 transition-all shadow-xs"
             >
               <input
                 ref={inputRef}
                 type="text"
                 value={inputMessage}
                 onChange={(e) => setInputMessage(e.target.value)}
-                placeholder="Nhập câu hỏi hoặc mã vận đơn Nexus (VD: 333000000001)..."
+                placeholder="Nhập mã vận đơn hoặc đặt câu hỏi..."
                 disabled={isLoading}
-                className="flex-1 bg-transparent text-xs py-2 outline-none font-medium text-slate-900 placeholder:text-slate-400"
+                className="flex-1 bg-transparent text-xs py-1 outline-none text-slate-800 placeholder:text-slate-400 font-normal"
               />
               <button
                 type="submit"
                 disabled={!inputMessage.trim() || isLoading}
-                className="h-8 w-8 rounded-full bg-blue-600 hover:bg-blue-700 disabled:opacity-40 disabled:hover:bg-blue-600 text-white flex items-center justify-center transition shrink-0 cursor-pointer shadow-xs"
+                className="h-8 w-8 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 disabled:opacity-30 disabled:pointer-events-none text-white shadow-md shadow-blue-500/25 flex items-center justify-center transition active:scale-95 cursor-pointer shrink-0"
+                title="Gửi"
               >
-                <Send className="h-3.5 w-3.5" />
+                <ArrowUp className="h-4 w-4" />
               </button>
             </form>
-            <div className="mt-2 text-center">
-              <span className="text-[10px] text-slate-400 font-medium flex items-center justify-center gap-1">
-                <ShieldCheck className="h-3 w-3 text-slate-400" />
-                Cổng hỗ trợ bưu chính Nexus Logistics • Bảo mật chuẩn Quốc Gia
+            <div className="mt-1.5 text-center">
+              <span className="text-[10px] text-slate-400 font-normal">
+                Hệ thống AI tự động tra cứu vận đơn & giải đáp chính sách bưu chính 24/7
               </span>
             </div>
-          </div>
+          </footer>
         </div>
       )}
     </>

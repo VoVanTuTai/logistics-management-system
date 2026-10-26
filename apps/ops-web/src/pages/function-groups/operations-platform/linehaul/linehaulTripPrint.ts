@@ -177,6 +177,14 @@ function buildTripSealPrintHtml(trip: LinehaulTrip): string {
           <strong>${escapeHtml(vehiclePlate)}</strong>
         </article>
         <article>
+          <span>Số lượng hàng</span>
+          <strong>${escapeHtml(trip.shipmentCount !== undefined ? `${trip.shipmentCount} kiện` : 'Theo bảng kê')}</strong>
+        </article>
+        <article>
+          <span>Mã chì niêm phong (Seal)</span>
+          <strong>${escapeHtml(trip.sealCode || 'Kẹp chì khi xuất bến')}</strong>
+        </article>
+        <article>
           <span>Loại chuyến</span>
           <strong>${escapeHtml(LINEHAUL_TRIP_TYPE_LABELS[trip.tripType])}</strong>
         </article>

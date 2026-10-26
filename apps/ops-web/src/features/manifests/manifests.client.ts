@@ -25,9 +25,12 @@ interface ManifestApiResponse {
   destinationHubCode: string | null;
   createdAt?: string | null;
   sealedAt: string | null;
+  receivedAt?: string | null;
   updatedAt?: string | null;
   note?: string | null;
   items?: ManifestItemApiResponse[];
+  sealRecord?: { sealedBy?: string | null; sealedAt?: string | null; note?: string | null } | null;
+  receiveRecord?: { receivedBy?: string | null; receivedAt?: string | null; note?: string | null } | null;
 }
 
 function mapManifestListItem(payload: ManifestApiResponse): ManifestListItemDto {
@@ -39,8 +42,12 @@ function mapManifestListItem(payload: ManifestApiResponse): ManifestListItemDto 
     destinationHubCode: payload.destinationHubCode,
     createdAt: payload.createdAt ?? null,
     sealedAt: payload.sealedAt,
+    receivedAt: payload.receivedAt ?? null,
     updatedAt: payload.updatedAt ?? null,
     shipmentCount: payload.items?.length ?? 0,
+    note: payload.note ?? null,
+    sealRecord: payload.sealRecord ?? null,
+    receiveRecord: payload.receiveRecord ?? null,
   };
 }
 

@@ -15,7 +15,8 @@ export class MediaController {
   getUploadUrl(
     @Query('filename') filename: string,
     @Query('contentType') contentType: string,
+    @Query('category') category?: string,
   ): Promise<MediaUploadUrlResponse> {
-    return this.mediaUploadService.createUploadUrl(filename, contentType);
+    return this.mediaUploadService.createUploadUrl(filename, contentType, category);
   }
 }

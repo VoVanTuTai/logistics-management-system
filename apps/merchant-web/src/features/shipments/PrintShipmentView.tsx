@@ -79,12 +79,12 @@ export function PrintShipmentView({
             <table className="print-table">
               <thead>
                 <tr>
+                  <th style={{ width: 44, textAlign: 'center' }}></th>
                   <th>Mã vận đơn</th>
                   <th>Người nhận</th>
                   <th>Dịch vụ</th>
                   <th>Trạng thái in</th>
                   <th>Ngày tạo</th>
-                  <th>Thao tác</th>
                 </tr>
               </thead>
               <tbody>
@@ -92,8 +92,24 @@ export function PrintShipmentView({
                   const isSelected =
                     normalizeCode(printSingleCode) === normalizeCode(row.shipment.code);
                   return (
-                    <tr key={row.shipment.id} className={isSelected ? 'print-row-selected' : ''}>
-                      <td className="print-code-cell">{row.shipment.code}</td>
+                    <tr
+                      key={row.shipment.id}
+                      className={isSelected ? 'print-row-selected' : ''}
+                      onClick={() => onPrintSingleCodeChange(row.shipment.code)}
+                      style={{ cursor: 'pointer' }}
+                    >
+                      <td style={{ width: 44, textAlign: 'center' }}>
+                        <input
+                          type="radio"
+                          name="selectedPrintShipment"
+                          checked={isSelected}
+                          onChange={() => onPrintSingleCodeChange(row.shipment.code)}
+                          aria-label={`Chọn đơn ${row.shipment.code} để in`}
+                        />
+                      </td>
+                      <td className="print-code-cell">
+                        <strong>{row.shipment.code}</strong>
+                      </td>
                       <td>
                         <div className="print-recipient-cell">
                           <strong>{row.receiverName}</strong>
@@ -109,18 +125,10 @@ export function PrintShipmentView({
                             isSelected ? 'print-status--pending' : 'print-status--muted'
                           }`}
                         >
-                          {isSelected ? 'Chờ in' : 'Sẵn sàng'}
+                          {isSelected ? 'Đang chọn' : 'Sẵn sàng'}
                         </span>
                       </td>
                       <td>{formatDate(row.shipment.createdAt)}</td>
-                      <td>
-                        <button
-                          className="btn btn-ghost print-row-action"
-                          onClick={() => onPrintSingleCodeChange(row.shipment.code)}
-                        >
-                          Xem
-                        </button>
-                      </td>
                     </tr>
                   );
                 })}

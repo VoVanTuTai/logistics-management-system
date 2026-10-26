@@ -1,6 +1,7 @@
 import { useQueryClient } from '@tanstack/react-query';
 import React, { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import { SlidersHorizontal, FileSpreadsheet, Copy, Check, Printer, Sparkles, Building2, Target } from 'lucide-react';
 
 import { useHubsQuery } from '../../features/masterdata/masterdata.api';
 import type { HubDto } from '../../features/masterdata/masterdata.types';
@@ -12,13 +13,14 @@ import { shipmentsClient } from '../../features/shipments/shipments.client';
 import type { ShipmentListFilters, ShipmentListItemDto } from '../../features/shipments/shipments.types';
 import { tasksClient, useCourierOptionsQuery, useTasksQuery } from '../../features/tasks/tasks.api';
 import type { TaskListItemDto } from '../../features/tasks/tasks.types';
-import { openShippingLabelPrint, resolveRouteAndCourier } from '../../printing/shippingLabelPrint';
+import { openShippingLabelPrint, resolveRouteAndCourier, type ShippingLabelPrintPayload } from '../../printing/shippingLabelPrint';
 import { getErrorMessage } from '../../services/api/errors';
 import { useAuthStore } from '../../store/authStore';
 import { useUiStore } from '../../store/uiStore';
 import { useHubScope } from '../../hooks/useHubScope';
+import { routePaths } from '../../navigation/routes';
 import { createIdempotencyKey } from '../../utils/idempotency';
-import { resolveBranchHubByProvince, resolveDestinationHub } from '../../utils/locationScope';
+import { formatHubFullAddress, resolveBranchHubByProvince, resolveDestinationHub } from '../../utils/locationScope';
 import { formatShipmentStatusLabel } from '../../utils/logisticsLabels';
 import { queryKeys } from '../../utils/queryKeys';
 import { exportShipmentsToExcel } from '../../utils/shipmentExcelExporter';
@@ -37,6 +39,7 @@ interface WalkInShipmentFormState {
   receiverPhone: string;
   receiverAddress: string;
   receiverRegion: string;
+  receiverWard?: string;
   itemType: string;
   weightKg: string;
   lengthCm: string;
@@ -48,6 +51,7 @@ interface WalkInShipmentFormState {
   deliveryNote: string;
   platform: string;
   pickupLocationCode: string;
+  payerType?: 'SENDER' | 'RECEIVER';
 }
 
 const DEFAULT_WALK_IN_FORM: WalkInShipmentFormState = {
@@ -59,6 +63,7 @@ const DEFAULT_WALK_IN_FORM: WalkInShipmentFormState = {
   receiverPhone: '',
   receiverAddress: '',
   receiverRegion: '',
+  receiverWard: '',
   itemType: '',
   weightKg: '',
   lengthCm: '',
@@ -70,6 +75,7 @@ const DEFAULT_WALK_IN_FORM: WalkInShipmentFormState = {
   deliveryNote: '',
   platform: 'OPS_WALK_IN',
   pickupLocationCode: '',
+  payerType: 'SENDER',
 };
 
 const SHIPMENT_STATUS_OPTIONS = [
@@ -184,6 +190,7 @@ function buildWalkInMetadata(
       address: form.receiverAddress.trim() || null,
       region: form.receiverRegion.trim() || null,
       province: form.receiverRegion.trim() || null,
+      ward: form.receiverWard?.trim() || null,
       hubCode: receiverHubCode,
       resolvedHubName: route.receiverHub.name,
     },
@@ -203,6 +210,7 @@ function buildWalkInMetadata(
     codAmount: toPositiveNumber(form.codAmount),
     deliveryNote: form.deliveryNote.trim() || null,
     estimatedFee: feeEstimate,
+    payerType: form.payerType || 'SENDER',
     platform: form.platform.trim() || 'OPS_WALK_IN',
     source: 'ops-web',
     operatorCode,
@@ -236,6 +244,9 @@ function buildWalkInMetadata(
       receivedAt: new Date().toISOString(),
     },
     intakeType: 'COUNTER_WALK_IN',
+    pickupClassification: 'COUNTER_DROP_OFF',
+    pickupType: 'COUNTER',
+    skipCourierPickup: true,
     initialStatus: 'PICKUP_COMPLETED',
     statusNote: `Đã tiếp nhận hàng trực tiếp tại quầy bởi ${operatorName}`,
     routing: {
@@ -625,6 +636,49 @@ export function ShipmentListPage(): React.JSX.Element {
   const pageSize = toPageNumber(searchParams.get('limit'), DEFAULT_PAGE_SIZE, 10, 100);
   const offset = toPageNumber(searchParams.get('offset'), 0, 0, 1_000_000);
   const pageNumber = Math.floor(offset / pageSize) + 1;
+
+  const currentFlow = useMemo(() => {
+    const flowParam = searchParams.get('flow');
+    if (flowParam) return flowParam;
+    if (branchGoodsFilter === 'readyForDelivery') return 'arrival';
+    if (branchGoodsFilter === 'inventoryByDay') return 'inventory';
+    if (branchGoodsFilter === 'problemOrders' || branchGoodsFilter === 'returnNeeded') return 'problem';
+    if (filters.status === 'SCAN_OUTBOUND' || filters.status === 'SEND_GOODS') return 'outbound';
+    if (filters.status === 'OUT_FOR_DELIVERY' || filters.status === 'TASK_ASSIGNED') return 'delivery';
+    return 'all';
+  }, [branchGoodsFilter, filters.status, searchParams]);
+
+  const handleFlowTabChange = (flowId: string) => {
+    const next = new URLSearchParams(searchParams);
+    next.set('offset', '0');
+    if (flowId === 'all') {
+      next.delete('flow');
+      next.delete('status');
+      next.delete('branchGoods');
+    } else if (flowId === 'arrival') {
+      next.set('flow', 'arrival');
+      next.set('branchGoods', 'readyForDelivery');
+      next.delete('status');
+    } else if (flowId === 'outbound') {
+      next.set('flow', 'outbound');
+      next.set('status', 'SCAN_OUTBOUND');
+      next.delete('branchGoods');
+    } else if (flowId === 'delivery') {
+      next.set('flow', 'delivery');
+      next.set('status', 'OUT_FOR_DELIVERY');
+      next.delete('branchGoods');
+    } else if (flowId === 'inventory') {
+      next.set('flow', 'inventory');
+      next.set('branchGoods', 'inventoryByDay');
+      next.delete('status');
+    } else if (flowId === 'problem') {
+      next.set('flow', 'problem');
+      next.set('branchGoods', 'problemOrders');
+      next.delete('status');
+    }
+    setSearchParams(next);
+  };
+
   const [qInput, setQInput] = useState(filters.q ?? '');
   const [statusInput, setStatusInput] = useState(filters.status ?? '');
   const [timeInput, setTimeInput] = useState<ShipmentTimeFilter>(timeFilter);
@@ -638,6 +692,8 @@ export function ShipmentListPage(): React.JSX.Element {
   const [senderAddressInput, setSenderAddressInput] = useState(senderAddressFilter);
   const [receiverAddressInput, setReceiverAddressInput] = useState(receiverAddressFilter);
   const [selectedShipmentCodes, setSelectedShipmentCodes] = useState<string[]>([]);
+  const [isBatchSearchOpen, setIsBatchSearchOpen] = useState(false);
+  const [copyFeedback, setCopyFeedback] = useState<string | null>(null);
 
   const [counterShipmentCode, setCounterShipmentCode] = useState('');
   const [counterLocationCode, setCounterLocationCode] = useState('');
@@ -662,7 +718,38 @@ export function ShipmentListPage(): React.JSX.Element {
   const assignedHubCodesKey = assignedHubCodes.join(',');
   const hasShipmentSearch = Boolean((filters.q ?? '').trim());
   const shipmentSearchCodes = useMemo(() => extractShipmentSearchCodes(filters.q ?? ''), [filters.q]);
+  const extractedInputCodes = useMemo(() => extractShipmentSearchCodes(qInput), [qInput]);
   const isMultiCodeSearch = shipmentSearchCodes.length > 1;
+
+  const handlePasteCodes = (
+    event: React.ClipboardEvent<HTMLInputElement | HTMLTextAreaElement>,
+  ) => {
+    const text = event.clipboardData.getData('text');
+    if (!text) return;
+    const codes = extractShipmentSearchCodes(text);
+    if (codes.length > 1) {
+      event.preventDefault();
+      setQInput(codes.join('\n'));
+      setIsBatchSearchOpen(true);
+    }
+  };
+
+  const handleCopyCodesToClipboard = async () => {
+    const codesToCopy =
+      selectedShipments.length > 0
+        ? selectedShipments.map((s) => s.shipmentCode)
+        : visibleShipments.map((s) => s.shipmentCode);
+
+    if (codesToCopy.length === 0) return;
+
+    try {
+      await navigator.clipboard.writeText(codesToCopy.join('\n'));
+      setCopyFeedback(`Đã sao chép ${codesToCopy.length} mã!`);
+      setTimeout(() => setCopyFeedback(null), 2500);
+    } catch {
+      // fallback
+    }
+  };
   const dateRange = useMemo(
     () => (hasShipmentSearch ? {} : buildCreatedAtRange(timeFilter, selectedDateFrom, selectedDateTo, today)),
     [hasShipmentSearch, selectedDateFrom, selectedDateTo, timeFilter, today],
@@ -715,16 +802,41 @@ export function ShipmentListPage(): React.JSX.Element {
   const activeHubs = hubsQuery.data ?? [];
 
   const estimatedFee = useMemo(() => estimateFee(walkInForm), [walkInForm]);
+  const [lastWalkInLabel, setLastWalkInLabel] = useState<ShippingLabelPrintPayload | null>(null);
+
+  const operatorHub = useMemo(() => {
+    const hubCode = assignedHubCodes[0];
+    if (!hubCode) return null;
+    return activeHubs.find((h) => h.code.trim().toUpperCase() === hubCode.trim().toUpperCase()) ?? null;
+  }, [activeHubs, assignedHubCodes]);
+
+  const walkInSelectedProvince = useMemo(() => {
+    if (!walkInForm.receiverRegion) return null;
+    return provinceOptions.find((p) => p.name === walkInForm.receiverRegion) ?? null;
+  }, [provinceOptions, walkInForm.receiverRegion]);
+
+  const walkInWardOptions = useMemo(() => {
+    return walkInSelectedProvince?.wards ?? [];
+  }, [walkInSelectedProvince]);
+
   const walkInReceiverHub = useMemo(
     () =>
       resolveDestinationHub(
         activeHubs,
         walkInForm.receiverRegion,
-        null,
+        walkInForm.receiverWard || null,
         walkInForm.receiverAddress,
       ),
-    [activeHubs, walkInForm.receiverRegion, walkInForm.receiverAddress],
+    [activeHubs, walkInForm.receiverRegion, walkInForm.receiverWard, walkInForm.receiverAddress],
   );
+
+  const isWalkInOverCeiling = useMemo(() => {
+    const w = toPositiveNumber(walkInForm.weightKg);
+    const l = toPositiveNumber(walkInForm.lengthCm);
+    const wi = toPositiveNumber(walkInForm.widthCm);
+    const h = toPositiveNumber(walkInForm.heightCm);
+    return w > 70 || Math.max(l, wi, h) > 150 || l + wi + h > 300;
+  }, [walkInForm.weightKg, walkInForm.lengthCm, walkInForm.widthCm, walkInForm.heightCm]);
   const pageShipments = shipmentQuery.data?.items ?? EMPTY_SHIPMENTS;
   const deliveryCourierByShipment = useMemo(
     () => buildDeliveryCourierByShipment(deliveryTasksQuery.data ?? []),
@@ -1157,12 +1269,20 @@ export function ShipmentListPage(): React.JSX.Element {
       return;
     }
 
+    if (isWalkInOverCeiling) {
+      setWalkInError(
+        'Kiện hàng vượt trần vận hành mạng lưới (Tối đa 70kg, cạnh 150cm, tổng 3 cạnh 300cm). Vui lòng hướng dẫn khách tách kiện hoặc chuyển sang vận tải FTL.',
+      );
+      return;
+    }
+
     setWalkInMessage(null);
     setWalkInError(null);
 
     try {
       const createdShipment = await createShipmentMutation.mutateAsync({
         code: walkInForm.manualCode.trim().toUpperCase() || null,
+        currentStatus: 'PICKUP_COMPLETED',
         metadata: buildWalkInMetadata(
           walkInForm,
           estimatedFee,
@@ -1191,6 +1311,44 @@ export function ShipmentListPage(): React.JSX.Element {
       }
 
       setCounterShipmentCode(createdShipment.shipmentCode);
+
+      const resolvedDelivery = resolveRouteAndCourier(
+        `${walkInForm.receiverAddress} ${walkInForm.receiverWard || ''} ${walkInForm.receiverRegion}`,
+        walkInForm.receiverWard,
+        undefined,
+        walkInReceiverHub.code,
+        false,
+      );
+
+      const labelPayload: ShippingLabelPrintPayload = {
+        brandName: 'NEXUS LOGISTICS',
+        serviceName: walkInForm.serviceType,
+        shipmentCode: createdShipment.shipmentCode,
+        senderName: walkInForm.senderName,
+        senderPhone: walkInForm.senderPhone,
+        senderAddress: walkInForm.senderAddress,
+        receiverName: walkInForm.receiverName,
+        receiverPhone: walkInForm.receiverPhone,
+        receiverAddress: `${walkInForm.receiverAddress}${walkInForm.receiverWard ? `, ${walkInForm.receiverWard}` : ''}, ${walkInForm.receiverRegion}`,
+        hubCode: walkInReceiverHub.code,
+        zoneCode: walkInForm.receiverRegion,
+        itemDescription: `${walkInForm.itemType || 'Hàng hóa'} (${walkInForm.weightKg || '0.5'}kg)`,
+        parcelNote: `Dịch vụ: ${walkInForm.serviceType} | COD: ${formatCurrency(toPositiveNumber(walkInForm.codAmount))} | ${walkInForm.payerType === 'RECEIVER' ? 'Người nhận trả cước' : 'Người gửi trả cước'}`,
+        qrValue: createdShipment.shipmentCode,
+        routeTag: walkInReceiverHub.code,
+        sortCode: `Hub đích: ${walkInReceiverHub.code}\nKhu vực: ${walkInForm.receiverRegion}`,
+        codAmountText: formatCurrency(toPositiveNumber(walkInForm.codAmount)),
+        createdAtText: new Date().toLocaleString('vi-VN'),
+        deliveryInstruction: walkInForm.deliveryNote?.trim() || 'Gọi trước khi giao.',
+        hotlineText: 'Hotline vận hành: 1900-1234',
+        pickupRouteName: `Tiếp nhận tại quầy (${pickupLocationCode})`,
+        pickupCourierId: opUsername,
+        deliveryRouteName: resolvedDelivery.routeName,
+        deliveryCourierId: resolvedDelivery.courierId,
+        declaredValueText: walkInForm.declaredValue ? formatCurrency(Number(walkInForm.declaredValue)) : undefined,
+      };
+
+      setLastWalkInLabel(labelPayload);
       setWalkInMessage(
         `Đã tạo vận đơn ${createdShipment.shipmentCode} và tiếp nhận tại quầy thành công (Trạng thái: Đã nhận hàng).`,
       );
@@ -1209,13 +1367,45 @@ export function ShipmentListPage(): React.JSX.Element {
 
   return (
     <div>
+      {/* 1. OPERATIONAL FLOW TABS (Hợp nhất Hàng đến / Hàng gửi / Hàng phát / Tồn kho) */}
+      <div style={{ display: 'flex', gap: '8px', marginBottom: '14px', flexWrap: 'wrap' }}>
+        {[
+          { id: 'all', label: '📦 Tất cả vận đơn' },
+          { id: 'arrival', label: '📥 Hàng đến (Inbound)' },
+          { id: 'outbound', label: '📤 Hàng gửi (Outbound)' },
+          { id: 'delivery', label: '🚚 Đang phát (Delivery)' },
+          { id: 'inventory', label: '🏬 Tồn kho bưu cục' },
+          { id: 'problem', label: '⚠️ Sự cố & Hoàn hàng' },
+        ].map((tab) => {
+          const isActive = currentFlow === tab.id;
+          return (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => handleFlowTabChange(tab.id)}
+              style={{
+                padding: '7px 14px',
+                borderRadius: '6px',
+                fontSize: '13px',
+                fontWeight: isActive ? 700 : 500,
+                color: isActive ? '#1e40af' : '#475569',
+                background: isActive ? '#dbeafe' : '#f8fafc',
+                border: isActive ? '1px solid #93c5fd' : '1px solid #cbd5e1',
+                cursor: 'pointer',
+                transition: 'all 0.15s ease',
+              }}
+            >
+              {tab.label}
+            </button>
+          );
+        })}
+      </div>
+
       <form onSubmit={onFilterSubmit} style={styles.systemFilterForm}>
         {/* Header Label */}
         <div style={styles.systemFilterHeader}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span className="material-symbols-outlined" style={{ fontSize: '18px', color: '#334155' }}>
-              tune
-            </span>
+            <SlidersHorizontal size={16} color="#334155" />
             <span style={{ fontSize: '14px', fontWeight: 700, color: '#0f172a', letterSpacing: '-0.2px' }}>
               BỘ LỌC THÔNG TIN VẬN ĐƠN (SYSTEM ADMIN)
             </span>
@@ -1236,16 +1426,68 @@ export function ShipmentListPage(): React.JSX.Element {
 
         {/* Row 1: Main Search & Core Attributes */}
         <div style={styles.systemFilterRow}>
-          <div style={{ flex: '2 1 280px' }}>
-            <label style={styles.systemLabel}>Mã vận đơn (Có thể dán nhiều mã)</label>
-            <input
-              type="text"
-              name="q"
-              placeholder="Mã VĐ (Nhập 1 hoặc dán nhiều mã cách nhau bằng phẩy)..."
-              value={qInput}
-              onChange={(event) => setQInput(event.target.value)}
-              style={styles.systemInput}
-            />
+          <div style={{ flex: '2 1 320px', minWidth: 280 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+              <label style={styles.systemLabel}>
+                Mã vận đơn {extractedInputCodes.length > 1 ? `(${extractedInputCodes.length} mã)` : ''}
+              </label>
+              <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                {extractedInputCodes.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setQInput('');
+                      setIsBatchSearchOpen(false);
+                    }}
+                    style={styles.batchQuickLink}
+                  >
+                    Xóa
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => setIsBatchSearchOpen((prev) => !prev)}
+                  style={styles.batchToggleBtn}
+                  title="Chuyển chế độ dán nhiều mã (tự xếp xuống dòng kiểu J&T)"
+                >
+                  {isBatchSearchOpen ? 'Thu gọn ô' : 'Dán nhiều mã (J&T)'}
+                </button>
+              </div>
+            </div>
+            {isBatchSearchOpen ? (
+              <textarea
+                name="q"
+                placeholder="Dán danh sách mã đơn từ Excel, J&T hoặc bảng (Mỗi mã 1 dòng)..."
+                value={qInput}
+                onChange={(event) => setQInput(event.target.value)}
+                onPaste={handlePasteCodes}
+                rows={4}
+                style={{
+                  ...styles.systemInput,
+                  height: 'auto',
+                  minHeight: 88,
+                  padding: '8px 10px',
+                  fontFamily: 'monospace',
+                  fontSize: 12,
+                  resize: 'vertical',
+                }}
+              />
+            ) : (
+              <input
+                type="text"
+                name="q"
+                placeholder="Mã VĐ (Nhập 1 hoặc dán nhiều mã để tự động xuống dòng)..."
+                value={qInput}
+                onChange={(event) => setQInput(event.target.value)}
+                onPaste={handlePasteCodes}
+                style={styles.systemInput}
+              />
+            )}
+            {extractedInputCodes.length > 1 && (
+              <div style={styles.batchHelperNotice}>
+                ⚡ Đang tìm kiếm <strong>{extractedInputCodes.length}</strong> mã đơn đồng thời (Tự động tách dòng).
+              </div>
+            )}
           </div>
 
           <div style={{ flex: '1 1 160px' }}>
@@ -1413,10 +1655,36 @@ export function ShipmentListPage(): React.JSX.Element {
           <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
             <button
               type="button"
+              style={{
+                ...styles.btnGhostReset,
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 6,
+                backgroundColor: copyFeedback ? '#ecfdf5' : '#ffffff',
+                borderColor: copyFeedback ? '#10b981' : '#cbd5e1',
+                color: copyFeedback ? '#059669' : '#334155',
+                fontWeight: 600,
+              }}
+              title="Sao chép toàn bộ mã vận đơn (phân tách bằng dấu xuống dòng) vào Clipboard"
+              onClick={() => void handleCopyCodesToClipboard()}
+            >
+              {copyFeedback ? <Check size={14} /> : <Copy size={14} />}
+              <span>
+                {copyFeedback ??
+                  (selectedShipments.length > 0
+                    ? `Sao chép ${selectedShipments.length} mã đã chọn`
+                    : `Sao chép ${visibleShipments.length} mã trang này`)}
+              </span>
+            </button>
+            <button
+              type="button"
               style={styles.btnExportExcel}
               onClick={() => exportShipmentsToExcel(visibleShipments, 'Danh sách Vận đơn Bưu cục', 'Quản lý Vận đơn')}
             >
-              📊 Xuất Excel (Full Fields)
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                <FileSpreadsheet size={15} />
+                <span>Xuất Excel (Full Fields)</span>
+              </span>
             </button>
             <button type="button" style={styles.btnSolidSystem} onClick={() => setIsCounterModalOpen(true)}>
               Tiếp nhận đơn hàng
@@ -1606,153 +1874,443 @@ export function ShipmentListPage(): React.JSX.Element {
 
       {isWalkInModalOpen ? (
         <div style={styles.modalOverlay} onClick={() => setIsWalkInModalOpen(false)}>
-          <div style={styles.modalCard} onClick={(event) => event.stopPropagation()}>
+          <div
+            style={{
+              ...styles.modalCard,
+              width: 'min(980px, 95vw)',
+              backgroundColor: '#f1f5f9',
+              padding: '16px',
+              gap: '12px',
+            }}
+            onClick={(event) => event.stopPropagation()}
+          >
             <div style={styles.modalHeader}>
-              <h3 style={styles.cardTitle}>Tạo đơn hàng Walk-in</h3>
-              <button type="button" style={styles.modalCloseButton} onClick={() => setIsWalkInModalOpen(false)}>
-                Đóng
-              </button>
-            </div>
-            <p style={styles.mutedText}>
-              Nhân viên Ops có thể tạo vận đơn cho khách walk-in với cấu trúc metadata đồng bộ với merchant-web.
-            </p>
-            <div style={styles.formGridMulti}>
-              <input
-                placeholder="Mã 12 số, ví dụ 333000000001"
-                value={walkInForm.manualCode}
-                onChange={(event) => setWalkInForm((prev) => ({ ...prev, manualCode: event.target.value }))}
-              />
-              <input
-                placeholder="Tên người gửi"
-                value={walkInForm.senderName}
-                onChange={(event) => setWalkInForm((prev) => ({ ...prev, senderName: event.target.value }))}
-              />
-              <input
-                placeholder="SĐT người gửi"
-                value={walkInForm.senderPhone}
-                onChange={(event) => setWalkInForm((prev) => ({ ...prev, senderPhone: event.target.value }))}
-              />
-              <input
-                placeholder="Địa chỉ người gửi"
-                value={walkInForm.senderAddress}
-                onChange={(event) => setWalkInForm((prev) => ({ ...prev, senderAddress: event.target.value }))}
-              />
-              <input
-                placeholder="Tên người nhận"
-                value={walkInForm.receiverName}
-                onChange={(event) => setWalkInForm((prev) => ({ ...prev, receiverName: event.target.value }))}
-              />
-              <input
-                placeholder="SĐT người nhận"
-                value={walkInForm.receiverPhone}
-                onChange={(event) => setWalkInForm((prev) => ({ ...prev, receiverPhone: event.target.value }))}
-              />
-              <select
-                value={walkInForm.receiverRegion}
-                onChange={(event) =>
-                  setWalkInForm((prev) => ({ ...prev, receiverRegion: event.target.value }))
-                }
-              >
-                <option value="">
-                  {locationsQuery.isLoading ? 'Đang tải tỉnh/thành...' : 'Tỉnh/Thành người nhận'}
-                </option>
-                {walkInForm.receiverRegion &&
-                !provinceOptions.some((province) => province.name === walkInForm.receiverRegion) ? (
-                  <option value={walkInForm.receiverRegion}>{walkInForm.receiverRegion}</option>
-                ) : null}
-                {provinceOptions.map((province) => (
-                  <option key={province.code} value={province.name}>
-                    {province.name}
-                  </option>
-                ))}
-              </select>
-              <input
-                placeholder="Đường + địa chỉ chi tiết người nhận"
-                value={walkInForm.receiverAddress}
-                onChange={(event) => setWalkInForm((prev) => ({ ...prev, receiverAddress: event.target.value }))}
-              />
-              <input
-                placeholder="Loại hàng"
-                value={walkInForm.itemType}
-                onChange={(event) => setWalkInForm((prev) => ({ ...prev, itemType: event.target.value }))}
-              />
-              <input
-                placeholder="Khối lượng (kg)"
-                value={walkInForm.weightKg}
-                onChange={(event) => setWalkInForm((prev) => ({ ...prev, weightKg: event.target.value }))}
-              />
-              <input
-                placeholder="Dài (cm)"
-                value={walkInForm.lengthCm}
-                onChange={(event) => setWalkInForm((prev) => ({ ...prev, lengthCm: event.target.value }))}
-              />
-              <input
-                placeholder="Rộng (cm)"
-                value={walkInForm.widthCm}
-                onChange={(event) => setWalkInForm((prev) => ({ ...prev, widthCm: event.target.value }))}
-              />
-              <input
-                placeholder="Cao (cm)"
-                value={walkInForm.heightCm}
-                onChange={(event) => setWalkInForm((prev) => ({ ...prev, heightCm: event.target.value }))}
-              />
-              <input
-                placeholder="Giá trị khai báo"
-                value={walkInForm.declaredValue}
-                onChange={(event) => setWalkInForm((prev) => ({ ...prev, declaredValue: event.target.value }))}
-              />
-              <select
-                value={walkInForm.serviceType}
-                onChange={(event) =>
-                  setWalkInForm((prev) => ({ ...prev, serviceType: event.target.value as ServiceType }))
-                }
-              >
-                <option value="STANDARD">STANDARD</option>
-                <option value="EXPRESS">EXPRESS</option>
-                <option value="SAME_DAY">SAME_DAY</option>
-              </select>
-              <input
-                placeholder="Số tiền COD"
-                value={walkInForm.codAmount}
-                onChange={(event) => setWalkInForm((prev) => ({ ...prev, codAmount: event.target.value }))}
-              />
-              <input
-                placeholder="Nền tảng (Shopee, TikTokShop, WalkIn...)"
-                value={walkInForm.platform}
-                onChange={(event) => setWalkInForm((prev) => ({ ...prev, platform: event.target.value }))}
-              />
-              <input
-                placeholder="Mã vị trí pickup (cho tạo + quét pickup)"
-                value={walkInForm.pickupLocationCode}
-                onChange={(event) =>
-                  setWalkInForm((prev) => ({ ...prev, pickupLocationCode: event.target.value }))
-                }
-              />
-            </div>
-            <textarea
-              rows={3}
-              placeholder="Ghi chú giao hàng"
-              value={walkInForm.deliveryNote}
-              onChange={(event) => setWalkInForm((prev) => ({ ...prev, deliveryNote: event.target.value }))}
-            />
-            <p style={styles.mutedText}>Cước phí dự kiến: {formatCurrency(estimatedFee)}</p>
-            <div style={styles.buttonRow}>
-              <button
-                type="button"
-                disabled={isWalkInSubmitting}
-                onClick={() => void submitWalkInShipment()}
-              >
-                {isWalkInSubmitting ? 'Đang tạo đơn...' : 'Tạo đơn'}
-              </button>
-            </div>
-            {walkInMessage ? (
-              <div role="status" style={{ ...styles.notice, ...styles.successNotice }}>
-                {walkInMessage}
+              <div>
+                <h3 style={{ ...styles.cardTitle, fontSize: '16px', color: '#0f172a' }}>
+                  Tạo đơn hàng Walk-in tại quầy bưu cục
+                </h3>
+                <p style={{ ...styles.mutedText, fontSize: '12px', marginTop: '2px' }}>
+                  Tạo vận đơn trực tiếp cho khách mang hàng đến quầy bưu cục • Tiếp nhận tự động
+                </p>
               </div>
-            ) : null}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <a
+                  href={routePaths.branchBusinessOrderCreate}
+                  target="_blank"
+                  rel="noreferrer"
+                  style={{
+                    fontSize: '12.5px',
+                    color: '#2563eb',
+                    fontWeight: 700,
+                    textDecoration: 'none',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                  }}
+                >
+                  Mở POS Bưu cục chuyên sâu ↗
+                </a>
+                <button
+                  type="button"
+                  style={styles.modalCloseButton}
+                  onClick={() => setIsWalkInModalOpen(false)}
+                >
+                  Đóng
+                </button>
+              </div>
+            </div>
+
+            {/* KHỐI 1: 2 CỘT (NGƯỜI GỬI & NGƯỜI NHẬN) */}
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
+                gap: '12px',
+              }}
+            >
+              {/* Box Người gửi */}
+              <div
+                style={{
+                  backgroundColor: '#ffffff',
+                  border: '1px solid #e2e8f0',
+                  borderRadius: '8px',
+                  padding: '12px',
+                  display: 'grid',
+                  gap: '8px',
+                }}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <strong style={{ fontSize: '12.5px', color: '#0f172a' }}>1. Khách gửi vãng lai (Thông tin người gửi)</strong>
+                  {operatorHub ? (
+                    <span
+                      style={{
+                        padding: '3px 8px',
+                        fontSize: '11px',
+                        fontWeight: 700,
+                        backgroundColor: '#eff6ff',
+                        color: '#1d4ed8',
+                        border: '1px solid #bfdbfe',
+                        borderRadius: '4px',
+                      }}
+                      title="Điểm tiếp nhận bưu phẩm tại quầy"
+                    >
+                      Bưu cục trực: [{operatorHub.code}]
+                    </span>
+                  ) : null}
+                </div>
+                <div style={{ fontSize: '11px', color: '#64748b', backgroundColor: '#f8fafc', padding: '6px 8px', borderRadius: '4px', border: '1px solid #e2e8f0' }}>
+                  ℹ️ Đơn quầy là khách vãng lai: Nhập họ tên, SĐT và địa chỉ nhà/shop của khách để giao hoàn hàng khi phát không thành công.
+                </div>
+                <input
+                  style={styles.systemInput}
+                  placeholder="Họ tên khách gửi (*)"
+                  value={walkInForm.senderName}
+                  onChange={(event) => setWalkInForm((prev) => ({ ...prev, senderName: event.target.value }))}
+                />
+                <input
+                  style={styles.systemInput}
+                  placeholder="Số điện thoại khách gửi (09xx...) (*)"
+                  value={walkInForm.senderPhone}
+                  onChange={(event) => setWalkInForm((prev) => ({ ...prev, senderPhone: event.target.value }))}
+                />
+                <input
+                  style={styles.systemInput}
+                  placeholder="Địa chỉ nhà / shop khách gửi (để shipper trả hàng nếu phát thất bại) (*)"
+                  value={walkInForm.senderAddress}
+                  onChange={(event) => setWalkInForm((prev) => ({ ...prev, senderAddress: event.target.value }))}
+                />
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                  <input
+                    style={{ ...styles.systemInput, backgroundColor: '#f8fafc', color: '#64748b' }}
+                    placeholder="Bưu cục nhận"
+                    value={walkInForm.pickupLocationCode || operatorHub?.code || ''}
+                    readOnly
+                    disabled
+                    title="Mã bưu cục quầy giao dịch tiếp nhận"
+                  />
+                  <input
+                    style={styles.systemInput}
+                    placeholder="Mã vận đơn (tùy chọn)"
+                    value={walkInForm.manualCode}
+                    onChange={(event) => setWalkInForm((prev) => ({ ...prev, manualCode: event.target.value }))}
+                  />
+                </div>
+              </div>
+
+              {/* Box Người nhận */}
+              <div
+                style={{
+                  backgroundColor: '#ffffff',
+                  border: '1px solid #e2e8f0',
+                  borderRadius: '8px',
+                  padding: '12px',
+                  display: 'grid',
+                  gap: '8px',
+                }}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <strong style={{ fontSize: '12.5px', color: '#0f172a' }}>2. Người nhận & Tuyến phát</strong>
+                  {walkInReceiverHub ? (
+                    <span
+                      style={{
+                        fontSize: '11px',
+                        fontWeight: 700,
+                        backgroundColor: '#f0fdf4',
+                        color: '#166534',
+                        border: '1px solid #bbf7d0',
+                        borderRadius: '4px',
+                        padding: '2px 6px',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '3px',
+                      }}
+                    >
+                      <Target size={12} /> Hub phát: [{walkInReceiverHub.code}]
+                    </span>
+                  ) : null}
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                  <input
+                    style={styles.systemInput}
+                    placeholder="Tên người nhận (*)"
+                    value={walkInForm.receiverName}
+                    onChange={(event) => setWalkInForm((prev) => ({ ...prev, receiverName: event.target.value }))}
+                  />
+                  <input
+                    style={styles.systemInput}
+                    placeholder="SĐT người nhận (*)"
+                    value={walkInForm.receiverPhone}
+                    onChange={(event) => setWalkInForm((prev) => ({ ...prev, receiverPhone: event.target.value }))}
+                  />
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                  <select
+                    style={styles.systemInput}
+                    value={walkInForm.receiverRegion}
+                    onChange={(event) =>
+                      setWalkInForm((prev) => ({
+                        ...prev,
+                        receiverRegion: event.target.value,
+                        receiverWard: '',
+                      }))
+                    }
+                  >
+                    <option value="">
+                      {locationsQuery.isLoading ? 'Đang tải tỉnh/thành...' : 'Chọn Tỉnh/Thành (*)'}
+                    </option>
+                    {walkInForm.receiverRegion &&
+                    !provinceOptions.some((province) => province.name === walkInForm.receiverRegion) ? (
+                      <option value={walkInForm.receiverRegion}>{walkInForm.receiverRegion}</option>
+                    ) : null}
+                    {provinceOptions.map((province) => (
+                      <option key={province.code} value={province.name}>
+                        {province.name}
+                      </option>
+                    ))}
+                  </select>
+
+                  <select
+                    style={styles.systemInput}
+                    value={walkInForm.receiverWard || ''}
+                    disabled={!walkInForm.receiverRegion || walkInWardOptions.length === 0}
+                    onChange={(event) =>
+                      setWalkInForm((prev) => ({ ...prev, receiverWard: event.target.value }))
+                    }
+                  >
+                    <option value="">
+                      {!walkInForm.receiverRegion
+                        ? 'Chọn tỉnh/thành trước'
+                        : walkInWardOptions.length === 0
+                        ? 'Không có danh sách xã'
+                        : 'Chọn Phường/Xã'}
+                    </option>
+                    {walkInWardOptions.map((ward) => (
+                      <option key={ward.code} value={ward.name}>
+                        {ward.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <input
+                  style={styles.systemInput}
+                  placeholder="Số nhà, tên đường, ngõ xóm chi tiết (*)"
+                  value={walkInForm.receiverAddress}
+                  onChange={(event) => setWalkInForm((prev) => ({ ...prev, receiverAddress: event.target.value }))}
+                />
+              </div>
+            </div>
+
+            {/* KHỐI 3: HÀNG HÓA & CƯỚC DỊCH VỤ */}
+            <div
+              style={{
+                backgroundColor: '#ffffff',
+                border: '1px solid #e2e8f0',
+                borderRadius: '8px',
+                padding: '12px',
+                display: 'grid',
+                gap: '8px',
+              }}
+            >
+              <strong style={{ fontSize: '12.5px', color: '#0f172a' }}>
+                3. Hàng hóa, Kích thước & Cước dịch vụ
+              </strong>
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))',
+                  gap: '8px',
+                }}
+              >
+                <select
+                  style={styles.systemInput}
+                  value={walkInForm.itemType}
+                  onChange={(event) => setWalkInForm((prev) => ({ ...prev, itemType: event.target.value }))}
+                >
+                  <option value="">-- Nhóm hàng hóa chuẩn Carrier --</option>
+                  <option value="Hàng thông thường (Quần áo, đồ gia dụng...)">Hàng thông thường (GENERAL)</option>
+                  <option value="Hàng dễ vỡ (Gốm sứ, thủy tinh, chất lỏng...)">Hàng dễ vỡ (FRAGILE)</option>
+                  <option value="Điện tử & Giá trị cao (Điện thoại, laptop...)">Điện tử & Giá trị cao (HIGH_VALUE)</option>
+                  <option value="Hàng cồng kềnh / nặng (Máy móc, quạt...)">Hàng cồng kềnh (BULKY)</option>
+                  <option value="Tài liệu / Thư từ bưu chính">Tài liệu / Thư từ (DOCUMENT)</option>
+                </select>
+                <input
+                  style={styles.systemInput}
+                  type="number"
+                  step="0.1"
+                  placeholder="Khối lượng (kg)"
+                  value={walkInForm.weightKg}
+                  onChange={(event) => setWalkInForm((prev) => ({ ...prev, weightKg: event.target.value }))}
+                />
+                <input
+                  style={styles.systemInput}
+                  type="number"
+                  placeholder="Dài (cm)"
+                  value={walkInForm.lengthCm}
+                  onChange={(event) => setWalkInForm((prev) => ({ ...prev, lengthCm: event.target.value }))}
+                />
+                <input
+                  style={styles.systemInput}
+                  type="number"
+                  placeholder="Rộng (cm)"
+                  value={walkInForm.widthCm}
+                  onChange={(event) => setWalkInForm((prev) => ({ ...prev, widthCm: event.target.value }))}
+                />
+                <input
+                  style={styles.systemInput}
+                  type="number"
+                  placeholder="Cao (cm)"
+                  value={walkInForm.heightCm}
+                  onChange={(event) => setWalkInForm((prev) => ({ ...prev, heightCm: event.target.value }))}
+                />
+              </div>
+
+              {isWalkInOverCeiling ? (
+                <div
+                  style={{
+                    backgroundColor: '#fef2f2',
+                    border: '1px solid #fecaca',
+                    borderRadius: '6px',
+                    padding: '8px 12px',
+                    fontSize: '12px',
+                    color: '#991b1b',
+                    fontWeight: 600,
+                  }}
+                >
+                  🚫 Kiện hàng vượt trần vận hành mạng lưới (Tối đa 70kg, cạnh 150cm, tổng 3 cạnh 300cm). Vui lòng tách kiện hoặc hướng dẫn khách dùng vận tải nguyên chuyến FTL.
+                </div>
+              ) : null}
+
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
+                  gap: '8px',
+                }}
+              >
+                <select
+                  style={styles.systemInput}
+                  value={walkInForm.serviceType}
+                  onChange={(event) =>
+                    setWalkInForm((prev) => ({ ...prev, serviceType: event.target.value as ServiceType }))
+                  }
+                >
+                  <option value="STANDARD">STANDARD (Giao chuẩn)</option>
+                  <option value="EXPRESS">EXPRESS (Giao nhanh)</option>
+                  <option value="SAME_DAY">SAME_DAY (Hỏa tốc)</option>
+                </select>
+                <input
+                  style={styles.systemInput}
+                  type="number"
+                  placeholder="Số tiền COD (VNĐ)"
+                  value={walkInForm.codAmount}
+                  onChange={(event) => setWalkInForm((prev) => ({ ...prev, codAmount: event.target.value }))}
+                />
+                <input
+                  style={styles.systemInput}
+                  type="number"
+                  placeholder="Giá trị khai báo (VNĐ)"
+                  value={walkInForm.declaredValue}
+                  onChange={(event) => setWalkInForm((prev) => ({ ...prev, declaredValue: event.target.value }))}
+                />
+                <select
+                  style={styles.systemInput}
+                  value={walkInForm.payerType || 'SENDER'}
+                  onChange={(event) =>
+                    setWalkInForm((prev) => ({
+                      ...prev,
+                      payerType: event.target.value as 'SENDER' | 'RECEIVER',
+                    }))
+                  }
+                >
+                  <option value="SENDER">Người gửi trả cước (Tại quầy)</option>
+                  <option value="RECEIVER">Người nhận trả cước (Khi giao)</option>
+                </select>
+              </div>
+
+              <input
+                style={styles.systemInput}
+                placeholder="Ghi chú giao hàng (vd: Gọi trước khi giao, giao giờ hành chính...)"
+                value={walkInForm.deliveryNote}
+                onChange={(event) => setWalkInForm((prev) => ({ ...prev, deliveryNote: event.target.value }))}
+              />
+            </div>
+
+            {/* FOOTER & TẠO ĐƠN */}
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                flexWrap: 'wrap',
+                gap: '12px',
+                paddingTop: '6px',
+                borderTop: '1px solid #cbd5e1',
+              }}
+            >
+              <div>
+                <span style={{ fontSize: '13px', color: '#475569' }}>Cước phí dự kiến: </span>
+                <strong style={{ fontSize: '18px', color: '#1d4ed8' }}>{formatCurrency(estimatedFee)}</strong>
+              </div>
+
+              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                <button
+                  type="button"
+                  style={styles.btnGhostReset}
+                  onClick={() => setIsWalkInModalOpen(false)}
+                >
+                  Hủy
+                </button>
+                <button
+                  type="button"
+                  style={{
+                    ...styles.btnPrimaryApply,
+                    padding: '0 24px',
+                    backgroundColor: isWalkInOverCeiling ? '#94a3b8' : '#2563eb',
+                    borderColor: isWalkInOverCeiling ? '#94a3b8' : '#2563eb',
+                    cursor: isWalkInOverCeiling ? 'not-allowed' : 'pointer',
+                  }}
+                  disabled={isWalkInSubmitting || isWalkInOverCeiling}
+                  onClick={() => void submitWalkInShipment()}
+                >
+                  {isWalkInSubmitting ? 'Đang tạo đơn...' : isWalkInOverCeiling ? 'Vượt trần mạng lưới' : 'Tạo đơn'}
+                </button>
+              </div>
+            </div>
+
+            {/* ALERTS & STATUS */}
             {walkInError ? (
               <div role="alert" style={{ ...styles.notice, ...styles.errorNotice }}>
                 {walkInError}
+              </div>
+            ) : null}
+
+            {walkInMessage ? (
+              <div role="status" style={{ ...styles.notice, ...styles.successNotice }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
+                  <span>{walkInMessage}</span>
+                  {lastWalkInLabel ? (
+                    <button
+                      type="button"
+                      style={{
+                        padding: '6px 12px',
+                        backgroundColor: '#0f172a',
+                        color: '#ffffff',
+                        border: 'none',
+                        borderRadius: '6px',
+                        cursor: 'pointer',
+                        fontSize: '12px',
+                        fontWeight: 700,
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                      }}
+                      onClick={() => openShippingLabelPrint(lastWalkInLabel)}
+                    >
+                      <Printer size={14} /> In ngay tem nhãn [{lastWalkInLabel.shipmentCode}]
+                    </button>
+                  ) : null}
+                </div>
               </div>
             ) : null}
           </div>
@@ -1806,6 +2364,29 @@ export function ShipmentListPage(): React.JSX.Element {
               selectedShipmentCodes={selectedShipmentCodes}
               onToggleShipment={toggleShipmentSelection}
               onToggleAllVisible={toggleAllVisibleShipments}
+              storageKeyPrefix="ops_shipment_list"
+              defaultVisibleColumns={{
+                stt: false,
+                code: true,
+                status: true,
+                parcelType: false,
+                chargeableWeight: false,
+                primaryHub: false,
+                oppositeHub: false,
+                senderName: true,
+                senderPhone: false,
+                senderAddress: false,
+                receiverName: true,
+                receiverPhone: true,
+                receiverAddress: true,
+                cod: true,
+                routeHub: true,
+                ageMinutes: false,
+                createdAt: true,
+                deliveredAt: false,
+                updatedAt: false,
+                deliveryNote: false,
+              }}
             />
           ) : null}
         </>
@@ -1951,6 +2532,35 @@ const styles: Record<string, React.CSSProperties> = {
     boxSizing: 'border-box',
     outline: 'none',
     transition: 'border-color 0.15s ease',
+  },
+  batchQuickLink: {
+    border: 'none',
+    background: 'transparent',
+    color: '#dc2626',
+    fontSize: 11,
+    fontWeight: 600,
+    cursor: 'pointer',
+    padding: '0 4px',
+    textDecoration: 'underline',
+  },
+  batchToggleBtn: {
+    border: '1px solid #cbd5e1',
+    background: '#ffffff',
+    color: '#2563eb',
+    fontSize: 11,
+    fontWeight: 600,
+    borderRadius: 4,
+    padding: '1px 6px',
+    cursor: 'pointer',
+  },
+  batchHelperNotice: {
+    marginTop: 4,
+    fontSize: 11,
+    color: '#2563eb',
+    backgroundColor: '#eff6ff',
+    padding: '3px 8px',
+    borderRadius: 6,
+    border: '1px solid #bfdbfe',
   },
   systemSelect: {
     width: '100%',

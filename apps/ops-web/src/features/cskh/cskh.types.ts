@@ -34,6 +34,21 @@ export interface CskhInternalNote {
   createdAt: string;
 }
 
+export type TicketAttachmentType = 'IMAGE' | 'VIDEO' | 'DOCUMENT';
+
+export interface TicketAttachment {
+  id: string;
+  type: TicketAttachmentType;
+  url: string;
+  thumbnailUrl?: string;
+  fileName: string;
+  fileSizeBytes?: number;
+  uploadedAt: string;
+  uploadedBy?: string;
+  minioBucket?: string;
+  minioKey?: string;
+}
+
 export interface CskhTicket {
   id: string;
   ticketCode: string;          // e.g. TCK-202609-001
@@ -61,7 +76,11 @@ export interface CskhTicket {
 
   // Linkage to Claims & Incident
   claimCode?: string;          // e.g. CLM-202609-001 if escalated
+  linkedClaimCode?: string;
   incidentDamageNote?: string;
+
+  // Media & Attachments
+  attachments?: TicketAttachment[];
 
   // Audit and notes
   notes: CskhInternalNote[];

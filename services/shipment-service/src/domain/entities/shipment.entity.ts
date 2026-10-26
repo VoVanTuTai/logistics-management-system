@@ -28,6 +28,7 @@ export interface Shipment {
 
 export interface CreateShipmentInput {
   code?: string | null;
+  currentStatus?: ShipmentCurrentStatus | null;
   metadata?: JsonValue | null;
   createdByUserId?: string | null;
   createdByType?: string | null;
@@ -63,6 +64,8 @@ export interface ShipmentListFilters {
   createdTo?: string | null;
   limit?: string | number | null;
   offset?: string | number | null;
+  externalOrderId?: string | null;
+  externalOrderCode?: string | null;
 }
 
 export interface ShipmentListPageInfo {

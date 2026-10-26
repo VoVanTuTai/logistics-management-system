@@ -7,9 +7,14 @@ dist/
 *.tsbuildinfo
 .DS_Store
 
-# Local environment files
+# Local environment files (root and all subdirectories)
 .env
 .env.*
+.env.local
+**/.env
+**/.env.*
+**/.env.local
+!**/.env.example
 !.env.example
 
 # Runtime/log artifacts

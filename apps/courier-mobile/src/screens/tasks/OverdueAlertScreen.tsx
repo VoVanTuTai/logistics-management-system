@@ -136,8 +136,9 @@ export function OverdueAlertScreen({ route }: Props): React.JSX.Element {
             <Text style={styles.ruleBannerTitle}>Quy chuẩn SLA NEXUS</Text>
           </View>
           <Text style={styles.ruleText}>
-            • Đơn tạo trước 12h trưa → Lấy trước 22h tối cùng ngày{'\n'}
-            • Đơn tạo từ 12h trưa → Lấy trước 12h trưa ngày hôm sau
+            • Đơn tạo trước 12h: Lấy trước 22h tối cùng ngày.{'\n'}
+            • Đơn tạo sau 12h: Lấy trước 12h trưa hôm sau.{'\n'}
+            • Quá giờ quy định: Tự động trừ chế tài 20.000đ/đơn vào thu nhập ca.
           </Text>
         </View>
       </View>
@@ -287,6 +288,29 @@ function SlaTaskCard({
           <Ionicons name="information-circle-outline" size={12} color={theme.colors.textMuted} />
           <Text style={styles.ruleTagText}>{sla.ruleLabel}</Text>
         </View>
+
+        {/* Penalty Notification if Overdue */}
+        {isOverdue && (
+          <View
+            style={{
+              backgroundColor: '#FEF2F2',
+              borderWidth: 1,
+              borderColor: '#FECACA',
+              borderRadius: 6,
+              paddingVertical: 6,
+              paddingHorizontal: 8,
+              marginTop: 6,
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 6,
+            }}
+          >
+            <Ionicons name="cash-outline" size={15} color="#DC2626" />
+            <Text style={{ fontSize: 11, fontWeight: '700', color: '#B91C1C' }}>
+              Chế tài quá giờ: -20.000đ trừ trực tiếp vào thu nhập ca
+            </Text>
+          </View>
+        )}
 
         {/* Action Buttons */}
         <View style={styles.actionRow}>

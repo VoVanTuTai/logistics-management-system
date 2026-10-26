@@ -345,7 +345,14 @@ export interface SettlementBatch {
 export interface FinancialLedgerEntry {
   id: string;
   occurredAt: string;
-  type: 'COD_COLLECTED' | 'SHIPPING_FEE' | 'RETURN_FEE' | 'CLAIM_COMPENSATION' | 'SETTLEMENT_PAYOUT' | 'DEBT_TOPUP';
+  type:
+    | 'COD_COLLECTED'
+    | 'SHIPPING_FEE'
+    | 'RETURN_FEE'
+    | 'CLAIM_COMPENSATION'
+    | 'PICKUP_SLA_COMPENSATION'
+    | 'SETTLEMENT_PAYOUT'
+    | 'DEBT_TOPUP';
   title: string;
   shipmentCode?: string;
   amount: number;

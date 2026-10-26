@@ -243,9 +243,12 @@
 .ops-return-list__table th,
 .ops-return-list__table td {
   border-bottom: 1px solid #e2e8f0;
-  padding: 12px 14px;
+  padding: 6px 10px;
   text-align: left;
   vertical-align: middle;
+  white-space: nowrap;
+  height: 38px;
+  box-sizing: border-box;
 }
 
 .ops-return-list__table th {
@@ -255,6 +258,9 @@
   font-weight: 800;
   letter-spacing: 0.04em;
   text-transform: uppercase;
+  position: sticky;
+  top: 0;
+  z-index: 2;
 }
 
 .ops-return-list__table tbody tr:hover {
@@ -268,6 +274,15 @@
   color: var(--ops-primary);
   font-weight: 800;
   text-decoration: none;
+  user-select: text !important;
+  -webkit-user-select: text !important;
+  cursor: text;
+}
+
+.ops-return-list__mono::selection,
+.ops-return-list__code::selection {
+  background-color: #2563eb !important;
+  color: #ffffff !important;
 }
 
 .ops-return-list__code {

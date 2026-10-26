@@ -1,5 +1,6 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import React, { useEffect, useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 
 import { authClient } from '../../../../features/auth/auth.client';
 import type { OpsUserDto } from '../../../../features/auth/auth.types';
@@ -17,15 +18,35 @@ import {
 } from '../../../../features/tasks/tasks.api';
 import type { TaskListItemDto } from '../../../../features/tasks/tasks.types';
 import { getErrorMessage } from '../../../../services/api/errors';
+import { routePaths } from '../../../../navigation/routes';
 import { useAuthStore } from '../../../../store/authStore';
 import { deriveHubScopeTokens, normalizeLocationToken } from '../../../../utils/locationScope';
 import { queryKeys } from '../../../../utils/queryKeys';
+import { CopyableShipmentCode } from '../../../shared/CopyableShipmentCode';
+import { useResizableColumns } from '../../../../hooks/useResizableColumns';
+import {
+  DEFAULT_OPS_COL_WIDTHS,
+  MIN_OPS_COL_WIDTHS,
+  getOpsStatusBadgeStyle,
+  resolveShipmentStatusLabel,
+  formatCurrency,
+  resolveChargeableWeight,
+  resolveParcelWeight,
+  resolveParcelClassification,
+  resolveServiceTag,
+  resolveFeePayer,
+  resolveInspectionPolicy,
+  ColumnVisibilityPicker,
+  useColumnVisibility,
+  styles as shipmentTableStyles,
+} from '../../../shipments/ShipmentsTable';
 import './CustomerOrderDispatchPage.css';
 
 type DispatchStatus = 'CREATED' | 'ASSIGNED' | 'COMPLETED' | 'CANCELLED';
 
 interface DispatchOrderRow {
   id: string;
+  shipment: ShipmentListItemDto | null;
   taskCode: string;
   orderCode: string;
   shipmentCode: string;
@@ -329,6 +350,7 @@ function mapTaskToDispatchRow(
 
   return {
     id: task.id,
+    shipment: shipment ?? null,
     taskCode: task.taskCode,
     orderCode: pickup?.requestCode ?? task.taskCode,
     shipmentCode: task.shipmentCode ?? '-',
@@ -590,6 +612,18 @@ export function CustomerOrderDispatchPage(): React.JSX.Element {
   const allVisibleSelected =
     paginatedOrders.length > 0 &&
     paginatedOrders.every((order) => selectedOrderIds.includes(order.id));
+  const someVisibleSelected =
+    paginatedOrders.some((order) => selectedOrderIds.includes(order.id));
+
+  const { widths, handleMouseDown, resetColumnWidth } = useResizableColumns(
+    'ops_pickup_dispatch_col_widths_v4',
+    DEFAULT_OPS_COL_WIDTHS,
+    MIN_OPS_COL_WIDTHS,
+  );
+
+  const { visibleColumns, toggleColumn, setAllColumns, resetColumns } = useColumnVisibility(
+    'ops_pickup_dispatch_visible_columns_v2',
+  );
   const loadError =
     tasksQuery.error ??
     hubsQuery.error ??
@@ -1026,92 +1060,472 @@ export function CustomerOrderDispatchPage(): React.JSX.Element {
           <div className="ops-customer-dispatch__loading">Đang tải dữ liệu điều phối...</div>
         ) : null}
 
-        <div className="ops-customer-dispatch__table-wrap">
-          <table>
+        <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 6 }}>
+          <ColumnVisibilityPicker
+            visibleColumns={visibleColumns}
+            onToggleColumn={toggleColumn}
+            onSetAllColumns={setAllColumns}
+            onResetColumns={resetColumns}
+          />
+        </div>
+        <div style={shipmentTableStyles.tableShell} className="ops-shipments-table-shell">
+          <table style={shipmentTableStyles.table}>
             <thead>
               <tr>
-                <th>
+                <th style={{ ...shipmentTableStyles.headerCell, ...shipmentTableStyles.selectCell }}>
                   <input
                     type="checkbox"
                     checked={allVisibleSelected}
+                    ref={(input) => {
+                      if (input) {
+                        input.indeterminate = someVisibleSelected && !allVisibleSelected;
+                      }
+                    }}
                     onChange={(event) => toggleAllVisible(event.target.checked)}
                     aria-label="Chọn tất cả đơn đang hiển thị"
                   />
                 </th>
-                <th>Đơn / vận đơn</th>
-                <th>Shop gửi</th>
-                <th>Địa chỉ lấy</th>
-                <th>Nguồn / dịch vụ</th>
-                <th>Tiến độ</th>
-                <th>NVGN</th>
-                <th>Thời gian</th>
-                <th>Thao tác</th>
+                {visibleColumns.code && (
+                  <th style={{ ...shipmentTableStyles.headerCell, width: widths.code, minWidth: widths.code, maxWidth: widths.code }}>
+                    <span>Mã vận đơn</span>
+                    <span
+                      className="table-col-resizer"
+                      title="Kéo chuột để chỉnh độ rộng (Nhấp đúp để đặt lại)"
+                      onMouseDown={(e) => handleMouseDown('code', e)}
+                      onDoubleClick={() => resetColumnWidth('code')}
+                    />
+                  </th>
+                )}
+                {visibleColumns.status && (
+                  <th style={{ ...shipmentTableStyles.headerCell, width: widths.status, minWidth: widths.status, maxWidth: widths.status }}>
+                    <span>Trạng thái</span>
+                    <span
+                      className="table-col-resizer"
+                      title="Kéo chuột để chỉnh độ rộng (Nhấp đúp để đặt lại)"
+                      onMouseDown={(e) => handleMouseDown('status', e)}
+                      onDoubleClick={() => resetColumnWidth('status')}
+                    />
+                  </th>
+                )}
+                {visibleColumns.parcelType && (
+                  <th style={{ ...shipmentTableStyles.headerCell, width: widths.parcelType, minWidth: widths.parcelType, maxWidth: widths.parcelType }}>
+                    <span>Loại hàng</span>
+                    <span
+                      className="table-col-resizer"
+                      title="Kéo chuột để chỉnh độ rộng (Nhấp đúp để đặt lại)"
+                      onMouseDown={(e) => handleMouseDown('parcelType', e)}
+                      onDoubleClick={() => resetColumnWidth('parcelType')}
+                    />
+                  </th>
+                )}
+                {visibleColumns.chargeableWeight && (
+                  <th style={{ ...shipmentTableStyles.headerCell, width: widths.chargeableWeight, minWidth: widths.chargeableWeight, maxWidth: widths.chargeableWeight }}>
+                    <span>KL tính cước</span>
+                    <span
+                      className="table-col-resizer"
+                      title="Kéo chuột để chỉnh độ rộng (Nhấp đúp để đặt lại)"
+                      onMouseDown={(e) => handleMouseDown('chargeableWeight', e)}
+                      onDoubleClick={() => resetColumnWidth('chargeableWeight')}
+                    />
+                  </th>
+                )}
+                {visibleColumns.senderName && (
+                  <th style={{ ...shipmentTableStyles.headerCell, width: widths.senderName, minWidth: widths.senderName, maxWidth: widths.senderName }}>
+                    <span>Người gửi</span>
+                    <span
+                      className="table-col-resizer"
+                      title="Kéo chuột để chỉnh độ rộng (Nhấp đúp để đặt lại)"
+                      onMouseDown={(e) => handleMouseDown('senderName', e)}
+                      onDoubleClick={() => resetColumnWidth('senderName')}
+                    />
+                  </th>
+                )}
+                {visibleColumns.senderPhone && (
+                  <th style={{ ...shipmentTableStyles.headerCell, width: widths.senderPhone, minWidth: widths.senderPhone, maxWidth: widths.senderPhone }}>
+                    <span>SĐT gửi</span>
+                    <span
+                      className="table-col-resizer"
+                      title="Kéo chuột để chỉnh độ rộng (Nhấp đúp để đặt lại)"
+                      onMouseDown={(e) => handleMouseDown('senderPhone', e)}
+                      onDoubleClick={() => resetColumnWidth('senderPhone')}
+                    />
+                  </th>
+                )}
+                {visibleColumns.senderAddress && (
+                  <th style={{ ...shipmentTableStyles.headerCell, width: widths.senderAddress, minWidth: widths.senderAddress, maxWidth: widths.senderAddress }}>
+                    <span>Địa chỉ gửi</span>
+                    <span
+                      className="table-col-resizer"
+                      title="Kéo chuột để chỉnh độ rộng (Nhấp đúp để đặt lại)"
+                      onMouseDown={(e) => handleMouseDown('senderAddress', e)}
+                      onDoubleClick={() => resetColumnWidth('senderAddress')}
+                    />
+                  </th>
+                )}
+                {visibleColumns.receiverName && (
+                  <th style={{ ...shipmentTableStyles.headerCell, width: widths.receiverName, minWidth: widths.receiverName, maxWidth: widths.receiverName }}>
+                    <span>Người nhận</span>
+                    <span
+                      className="table-col-resizer"
+                      title="Kéo chuột để chỉnh độ rộng (Nhấp đúp để đặt lại)"
+                      onMouseDown={(e) => handleMouseDown('receiverName', e)}
+                      onDoubleClick={() => resetColumnWidth('receiverName')}
+                    />
+                  </th>
+                )}
+                {visibleColumns.receiverPhone && (
+                  <th style={{ ...shipmentTableStyles.headerCell, width: widths.receiverPhone, minWidth: widths.receiverPhone, maxWidth: widths.receiverPhone }}>
+                    <span>SĐT nhận</span>
+                    <span
+                      className="table-col-resizer"
+                      title="Kéo chuột để chỉnh độ rộng (Nhấp đúp để đặt lại)"
+                      onMouseDown={(e) => handleMouseDown('receiverPhone', e)}
+                      onDoubleClick={() => resetColumnWidth('receiverPhone')}
+                    />
+                  </th>
+                )}
+                {visibleColumns.receiverAddress && (
+                  <th style={{ ...shipmentTableStyles.headerCell, width: widths.receiverAddress, minWidth: widths.receiverAddress, maxWidth: widths.receiverAddress }}>
+                    <span>Địa chỉ giao</span>
+                    <span
+                      className="table-col-resizer"
+                      title="Kéo chuột để chỉnh độ rộng (Nhấp đúp để đặt lại)"
+                      onMouseDown={(e) => handleMouseDown('receiverAddress', e)}
+                      onDoubleClick={() => resetColumnWidth('receiverAddress')}
+                    />
+                  </th>
+                )}
+                {visibleColumns.cod && (
+                  <th style={{ ...shipmentTableStyles.headerCell, width: widths.cod, minWidth: widths.cod, maxWidth: widths.cod }}>
+                    <span>Tiền COD & Cước</span>
+                    <span
+                      className="table-col-resizer"
+                      title="Kéo chuột để chỉnh độ rộng (Nhấp đúp để đặt lại)"
+                      onMouseDown={(e) => handleMouseDown('cod', e)}
+                      onDoubleClick={() => resetColumnWidth('cod')}
+                    />
+                  </th>
+                )}
+                {visibleColumns.routeHub && (
+                  <th style={{ ...shipmentTableStyles.headerCell, width: widths.routeHub, minWidth: widths.routeHub, maxWidth: widths.routeHub }}>
+                    <span>Tuyến phát / Hub</span>
+                    <span
+                      className="table-col-resizer"
+                      title="Kéo chuột để chỉnh độ rộng (Nhấp đúp để đặt lại)"
+                      onMouseDown={(e) => handleMouseDown('routeHub', e)}
+                      onDoubleClick={() => resetColumnWidth('routeHub')}
+                    />
+                  </th>
+                )}
+                {visibleColumns.createdAt && (
+                  <th style={{ ...shipmentTableStyles.headerCell, width: widths.createdAt, minWidth: widths.createdAt, maxWidth: widths.createdAt }}>
+                    <span>Ngày giờ tạo</span>
+                    <span
+                      className="table-col-resizer"
+                      title="Kéo chuột để chỉnh độ rộng (Nhấp đúp để đặt lại)"
+                      onMouseDown={(e) => handleMouseDown('createdAt', e)}
+                      onDoubleClick={() => resetColumnWidth('createdAt')}
+                    />
+                  </th>
+                )}
+                {visibleColumns.deliveredAt && (
+                  <th style={{ ...shipmentTableStyles.headerCell, width: widths.deliveredAt, minWidth: widths.deliveredAt, maxWidth: widths.deliveredAt }}>
+                    <span>Ngày giờ nhận hàng</span>
+                    <span
+                      className="table-col-resizer"
+                      title="Kéo chuột để chỉnh độ rộng (Nhấp đúp để đặt lại)"
+                      onMouseDown={(e) => handleMouseDown('deliveredAt', e)}
+                      onDoubleClick={() => resetColumnWidth('deliveredAt')}
+                    />
+                  </th>
+                )}
               </tr>
             </thead>
             <tbody>
-              {paginatedOrders.map((order) => (
-                <tr key={order.id}>
-                  <td>
-                    <input
-                      type="checkbox"
-                      checked={selectedOrderIds.includes(order.id)}
-                      onChange={(event) => toggleOrder(order.id, event.target.checked)}
-                      aria-label={`Chọn ${order.orderCode}`}
-                    />
-                  </td>
-                  <td className="ops-customer-dispatch__code">
-                    {order.orderCode}
-                    <small>{order.shipmentCode}</small>
-                  </td>
-                  <td>
-                    <strong>{order.senderName}</strong>
-                    <small>{order.senderPhone}</small>
-                  </td>
-                  <td>
-                    {order.pickupAddress}
-                    <small>
-                      {order.ward} · {order.district} · Hub {order.pickupHub}
-                    </small>
-                  </td>
-                  <td>
-                    <strong>{sourceLabel(order.source)}</strong>
-                    <small>
-                      {serviceLabel(order.serviceType)} · {order.parcelCount} kiện
-                    </small>
-                    <small>Pickup: {order.pickupStatus ?? '-'}</small>
-                  </td>
-                  <td>
-                    <span
-                      className={`ops-customer-dispatch__status ops-customer-dispatch__status--${order.status.toLowerCase()}`}
-                    >
-                      {statusLabel(order.status)}
-                    </span>
-                  </td>
-                  <td>
-                    {order.assignedCourierId ? (
-                      <>
-                        <strong>{order.assignedCourierName ?? order.assignedCourierId}</strong>
-                        <small>{order.assignedCourierId}</small>
-                      </>
-                    ) : (
-                      'Chưa gán'
+              {paginatedOrders.map((order) => {
+                const isSelected = selectedOrderIds.includes(order.id);
+                const shipment = order.shipment;
+                const assignedCourier = order.assignedCourierName ?? order.assignedCourierId ?? 'Chưa bàn giao';
+                const hubCode = order.pickupHub || shipment?.receiverHubCode || shipment?.destinationHubCode || '-';
+                const isDelivered = shipment?.currentStatus === 'DELIVERED' || order.status === 'COMPLETED';
+                const deliveredAt = isDelivered ? order.scheduledAt || shipment?.updatedAt : null;
+                const fullSenderAddress =
+                  shipment?.senderAddress ||
+                  [shipment?.senderWard, shipment?.senderDistrict, shipment?.senderProvince].filter(Boolean).join(', ') ||
+                  order.pickupAddress ||
+                  '-';
+                const fullReceiverAddress = shipment?.receiverAddress || shipment?.receiverRegion || '-';
+                const statusBadgeStyle = getOpsStatusBadgeStyle(shipment?.currentStatus ?? order.status);
+                const statusBadgeLabel = shipment ? resolveShipmentStatusLabel(shipment) : statusLabel(order.status);
+                const createdAt = shipment?.createdAt ?? order.requestedAt;
+
+                const chargeableWeightInfo = shipment ? resolveChargeableWeight(shipment) : {
+                  weightText: '0.5 kg',
+                  chargeableKg: 0.5,
+                  isVolumetric: false,
+                  formulaHint: 'Cân tính cước: 0.5 kg',
+                };
+                const classification = shipment ? resolveParcelClassification(shipment) : {
+                  label: 'TIÊU CHUẨN',
+                  badgeStyle: { backgroundColor: '#f1f5f9', color: '#475569', border: '1px solid #e2e8f0', fontSize: 10, fontWeight: 700, padding: '1px 5px', borderRadius: 4 },
+                };
+                const service = shipment ? resolveServiceTag(shipment) : { serviceLabel: serviceLabel(order.serviceType), platformLabel: sourceLabel(order.source) };
+                const feePayer = shipment ? resolveFeePayer(shipment) : { payerLabel: 'Shop trả', isReceiverPay: false };
+                const inspectionPolicy = shipment ? resolveInspectionPolicy(shipment) : 'Xem hàng, không thử';
+
+                return (
+                  <tr
+                    key={order.id}
+                    className={isSelected ? 'ops-customer-dispatch__row--selected' : undefined}
+                    style={isSelected ? shipmentTableStyles.selectedRow : undefined}
+                  >
+                    <td style={{ ...shipmentTableStyles.cell, ...shipmentTableStyles.selectCell }}>
+                      <input
+                        type="checkbox"
+                        checked={isSelected}
+                        onChange={(event) => toggleOrder(order.id, event.target.checked)}
+                        aria-label={`Chọn ${order.orderCode}`}
+                      />
+                    </td>
+
+                    {visibleColumns.code && (
+                      <td
+                        style={{ ...shipmentTableStyles.shipmentCodeCell, width: widths.code, maxWidth: widths.code }}
+                        className="ops-shipment-code-cell"
+                      >
+                        <span
+                          className="ops-shipment-code-text"
+                          title="Bôi đen kéo chuột để sao chép mã"
+                          style={{
+                            fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
+                            fontWeight: 700,
+                            color: 'var(--ops-primary, #0052cc)',
+                            userSelect: 'text',
+                            WebkitUserSelect: 'text',
+                            cursor: 'text',
+                            whiteSpace: 'nowrap',
+                            display: 'inline-block',
+                          }}
+                        >
+                          {order.shipmentCode && order.shipmentCode !== '-' ? order.shipmentCode : order.orderCode}
+                        </span>
+                      </td>
                     )}
-                  </td>
-                  <td>
-                    <strong>Yêu cầu: {formatDateTime(order.requestedAt)}</strong>
-                    <small>ĐP: {order.scheduledAt ? formatDateTime(order.scheduledAt) : 'Chưa'}</small>
-                  </td>
-                  <td>
-                    <button
-                      type="button"
-                      className="ops-customer-dispatch__row-action"
-                      onClick={() => toggleOrder(order.id, !selectedOrderIds.includes(order.id))}
-                    >
-                      {selectedOrderIds.includes(order.id) ? 'Bỏ chọn' : 'Chọn'}
-                    </button>
-                  </td>
-                </tr>
-              ))}
+
+                    {visibleColumns.status && (
+                      <td style={{ ...shipmentTableStyles.cell, width: widths.status, maxWidth: widths.status }}>
+                        <span style={statusBadgeStyle}>
+                          {statusBadgeLabel}
+                        </span>
+                        {shipment?.requiresLabelReprint ? (
+                          <span
+                            title="Vận đơn cần in lại tem mới"
+                            style={{ ...shipmentTableStyles.reprintBadge, marginLeft: 4 }}
+                          >
+                            In lại tem
+                          </span>
+                        ) : null}
+                        {shipment?.isOperationLocked ? (
+                          <span
+                            title="Đơn hàng đang bị khóa thao tác"
+                            style={{ ...shipmentTableStyles.lockBadge, marginLeft: 4 }}
+                          >
+                            Khóa
+                          </span>
+                        ) : null}
+                      </td>
+                    )}
+
+                    {visibleColumns.parcelType && (
+                      <td style={{ ...shipmentTableStyles.cell, width: widths.parcelType, maxWidth: widths.parcelType }}>
+                        <span style={classification.badgeStyle}>
+                          {classification.label}
+                        </span>
+                      </td>
+                    )}
+
+                    {visibleColumns.chargeableWeight && (
+                      <td style={{ ...shipmentTableStyles.cell, width: widths.chargeableWeight, maxWidth: widths.chargeableWeight }}>
+                        <span
+                          title={chargeableWeightInfo.formulaHint}
+                          style={{
+                            fontFamily: 'monospace',
+                            fontWeight: 700,
+                            fontSize: 13,
+                            color: chargeableWeightInfo.isVolumetric ? '#ea580c' : '#0f172a',
+                            whiteSpace: 'nowrap',
+                          }}
+                        >
+                          {chargeableWeightInfo.weightText}
+                        </span>
+                        {chargeableWeightInfo.isVolumetric && (
+                          <span
+                            title={chargeableWeightInfo.formulaHint}
+                            style={{
+                              fontSize: 10,
+                              color: '#ea580c',
+                              fontWeight: 700,
+                              marginLeft: 4,
+                              whiteSpace: 'nowrap',
+                            }}
+                          >
+                            📐 Thể tích IATA
+                          </span>
+                        )}
+                      </td>
+                    )}
+
+                    {visibleColumns.senderName && (
+                      <td style={{ ...shipmentTableStyles.cell, width: widths.senderName, maxWidth: widths.senderName }}>
+                        <div
+                          className="ops-cell-scrollable"
+                          title={shipment?.senderName ?? order.senderName ?? 'Không có'}
+                          style={{ width: '100%', maxWidth: '100%', fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}
+                        >
+                          {shipment?.senderName ?? order.senderName ?? 'Không có'}
+                        </div>
+                      </td>
+                    )}
+
+                    {visibleColumns.senderPhone && (
+                      <td style={{ ...shipmentTableStyles.cell, width: widths.senderPhone, maxWidth: widths.senderPhone }}>
+                        <span style={{ fontFamily: 'monospace', fontWeight: 600, whiteSpace: 'nowrap' }}>
+                          {shipment?.senderPhone ?? order.senderPhone ?? '-'}
+                        </span>
+                      </td>
+                    )}
+
+                    {visibleColumns.senderAddress && (
+                      <td style={{ ...shipmentTableStyles.cell, width: widths.senderAddress, maxWidth: widths.senderAddress }}>
+                        <div
+                          className="ops-cell-scrollable"
+                          title={fullSenderAddress}
+                          style={{
+                            width: '100%',
+                            maxWidth: '100%',
+                            fontSize: 12,
+                            color: '#334155',
+                            whiteSpace: 'nowrap',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                          }}
+                        >
+                          {fullSenderAddress}
+                        </div>
+                      </td>
+                    )}
+
+                    {visibleColumns.receiverName && (
+                      <td style={{ ...shipmentTableStyles.cell, width: widths.receiverName, maxWidth: widths.receiverName }}>
+                        <div
+                          className="ops-cell-scrollable"
+                          title={shipment?.receiverName ?? 'Không có'}
+                          style={{ width: '100%', maxWidth: '100%', fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}
+                        >
+                          {shipment?.receiverName ?? 'Không có'}
+                        </div>
+                      </td>
+                    )}
+
+                    {visibleColumns.receiverPhone && (
+                      <td style={{ ...shipmentTableStyles.cell, width: widths.receiverPhone, maxWidth: widths.receiverPhone }}>
+                        <span style={{ fontFamily: 'monospace', fontWeight: 600, whiteSpace: 'nowrap' }}>
+                          {shipment?.receiverPhone ?? '-'}
+                        </span>
+                      </td>
+                    )}
+
+                    {visibleColumns.receiverAddress && (
+                      <td style={{ ...shipmentTableStyles.cell, width: widths.receiverAddress, maxWidth: widths.receiverAddress }}>
+                        <div
+                          className="ops-cell-scrollable"
+                          title={`${fullReceiverAddress}${order.note ? ` • ${order.note}` : ''}`}
+                          style={{
+                            width: '100%',
+                            maxWidth: '100%',
+                            fontSize: 12,
+                            color: '#334155',
+                            whiteSpace: 'nowrap',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                          }}
+                        >
+                          {fullReceiverAddress}
+                        </div>
+                      </td>
+                    )}
+
+                    {visibleColumns.cod && (
+                      <td style={{ ...shipmentTableStyles.cell, width: widths.cod, maxWidth: widths.cod }}>
+                        <span
+                          title={`Cước: ${formatCurrency(shipment?.shippingFee ?? null)} • ${feePayer.payerLabel}`}
+                          style={{ fontWeight: 700, color: shipment?.codAmount ? '#059669' : '#64748b', whiteSpace: 'nowrap' }}
+                        >
+                          {formatCurrency(shipment?.codAmount ?? null)}
+                        </span>
+                      </td>
+                    )}
+
+                    {visibleColumns.routeHub && (
+                      <td style={{ ...shipmentTableStyles.cell, width: widths.routeHub, maxWidth: widths.routeHub }}>
+                        <div
+                          className="ops-cell-scrollable"
+                          title={`Hub: ${hubCode} | Shipper: ${assignedCourier}`}
+                          style={{
+                            width: '100%',
+                            maxWidth: '100%',
+                            fontSize: 12,
+                          }}
+                        >
+                          <span>Hub: <strong>{hubCode}</strong></span>
+                          <span style={{ margin: '0 4px', color: '#94a3b8' }}>•</span>
+                          <span>{assignedCourier}</span>
+                          {order.assignedCourierId ? (
+                            <Link
+                              to={routePaths.opsChatWithCourier(order.assignedCourierId)}
+                              style={{
+                                marginLeft: 6,
+                                padding: '1px 6px',
+                                fontSize: 11,
+                                fontWeight: 700,
+                                borderRadius: 4,
+                                backgroundColor: '#eff6ff',
+                                color: '#1d4ed8',
+                                border: '1px solid #bfdbfe',
+                                textDecoration: 'none',
+                              }}
+                            >
+                              Chat
+                            </Link>
+                          ) : null}
+                        </div>
+                      </td>
+                    )}
+
+                    {visibleColumns.createdAt && (
+                      <td style={{ ...shipmentTableStyles.cell, width: widths.createdAt, maxWidth: widths.createdAt }}>
+                        <span style={{ fontSize: 12, color: '#334155', whiteSpace: 'nowrap' }}>
+                          {createdAt ? formatDateTime(createdAt) : '-'}
+                        </span>
+                      </td>
+                    )}
+
+                    {visibleColumns.deliveredAt && (
+                      <td style={{ ...shipmentTableStyles.cell, width: widths.deliveredAt, maxWidth: widths.deliveredAt }}>
+                        {deliveredAt ? (
+                          <span style={{ fontSize: 12, fontWeight: 600, color: '#16a34a', whiteSpace: 'nowrap' }}>
+                            {formatDateTime(deliveredAt)}
+                          </span>
+                        ) : (
+                          <span style={{ fontSize: 12, color: '#94a3b8', fontStyle: 'italic', whiteSpace: 'nowrap' }}>
+                            Chưa nhận
+                          </span>
+                        )}
+                      </td>
+                    )}
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>

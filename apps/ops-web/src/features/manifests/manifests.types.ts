@@ -5,9 +5,13 @@ export interface ManifestListItemDto {
   originHubCode: string | null;
   destinationHubCode: string | null;
   sealedAt: string | null;
+  receivedAt?: string | null;
   createdAt?: string | null;
   updatedAt?: string | null;
   shipmentCount?: number;
+  note?: string | null;
+  sealRecord?: { sealedBy?: string | null; sealedAt?: string | null; note?: string | null } | null;
+  receiveRecord?: { receivedBy?: string | null; receivedAt?: string | null; note?: string | null } | null;
 }
 
 export interface ManifestDetailDto {

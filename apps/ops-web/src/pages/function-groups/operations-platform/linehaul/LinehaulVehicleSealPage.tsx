@@ -28,6 +28,10 @@ interface TripCreateFormState {
   tripType: LinehaulTripType;
   plannedStartAt: string;
   plannedEndAt: string;
+  vehiclePlate: string;
+  driverName: string;
+  driverPhone: string;
+  shipmentCount: number;
 }
 
 function buildDefaultForm(originHubCode: string): TripCreateFormState {
@@ -39,9 +43,13 @@ function buildDefaultForm(originHubCode: string): TripCreateFormState {
   return {
     originHubCode,
     destinationHubCode: '',
-    tripType: 'PICKUP',
+    tripType: 'DELIVERY',
     plannedStartAt: toDateTimeLocalValue(startAt),
     plannedEndAt: toDateTimeLocalValue(endAt),
+    vehiclePlate: '',
+    driverName: '',
+    driverPhone: '',
+    shipmentCount: 0,
   };
 }
 
@@ -98,6 +106,10 @@ export function LinehaulVehicleSealPage(): React.JSX.Element {
     const destinationHubCode = normalizeTripCode(form.destinationHubCode);
     const plannedStartAt = fromDateTimeLocalValue(form.plannedStartAt);
     const plannedEndAt = fromDateTimeLocalValue(form.plannedEndAt);
+    const vehiclePlate = form.vehiclePlate.trim().toUpperCase();
+    const driverName = form.driverName.trim();
+    const driverPhone = form.driverPhone.trim();
+    const shipmentCount = Number(form.shipmentCount || 0);
 
     if (!originHubCode || !destinationHubCode) {
       setActionMessage('Vui lòng nhập đủ hub đi và hub đến.');
@@ -127,20 +139,32 @@ export function LinehaulVehicleSealPage(): React.JSX.Element {
       plannedEndAt,
     });
 
+    if (vehiclePlate) createdTrip.vehiclePlate = vehiclePlate;
+    if (driverName) createdTrip.driverName = driverName;
+    if (driverPhone) createdTrip.driverPhone = driverPhone;
+    if (shipmentCount > 0) createdTrip.shipmentCount = shipmentCount;
+
+    const noteSegments = [
+      'LINEHAUL_TRIP',
+      `tripType=${form.tripType}`,
+      `originHubCode=${originHubCode}`,
+      `destinationHubCode=${destinationHubCode}`,
+      `plannedStartAt=${plannedStartAt}`,
+      `plannedEndAt=${plannedEndAt}`,
+      driverName ? `driverName=${driverName}` : null,
+      driverPhone ? `driverPhone=${driverPhone}` : null,
+      vehiclePlate ? `vehiclePlate=${vehiclePlate}` : null,
+      vehiclePlate ? `licensePlate=${vehiclePlate}` : null,
+      shipmentCount > 0 ? `shipmentCount=${shipmentCount}` : null,
+    ].filter(Boolean);
+
     try {
       await createManifestMutation.mutateAsync({
         manifestCode: createdTrip.tripCode,
         originHubCode,
         destinationHubCode,
         shipmentCodes: [],
-        note: [
-          'LINEHAUL_TRIP',
-          `tripType=${form.tripType}`,
-          `originHubCode=${originHubCode}`,
-          `destinationHubCode=${destinationHubCode}`,
-          `plannedStartAt=${plannedStartAt}`,
-          `plannedEndAt=${plannedEndAt}`,
-        ].join('|'),
+        note: noteSegments.join('|'),
       });
     } catch (error) {
       setActionMessage(getErrorMessage(error));
@@ -152,7 +176,13 @@ export function LinehaulVehicleSealPage(): React.JSX.Element {
     writeLinehaulTrips(nextTrips);
     setTrips(nextTrips);
     setCreatedTripCode(createdTrip.tripCode);
-    setActionMessage(`Đã tạo chuyến xe ${createdTrip.tripCode}. Chưa in tem vì chưa có thông tin tài xế/xe.`);
+
+    if (vehiclePlate && driverName) {
+      setActionMessage(`Đã tạo chuyến xe ${createdTrip.tripCode} (Xe: ${vehiclePlate}, Tài xế: ${driverName}, ${shipmentCount} kiện). Đã sẵn sàng in tem và kẹp chì xuất bến.`);
+    } else {
+      setActionMessage(`Đã tạo chuyến xe ${createdTrip.tripCode}. Chuyến xe chờ bổ sung tài xế/xe trước khi in tem.`);
+    }
+
     resetWithNextWindow();
   };
 
@@ -167,8 +197,8 @@ export function LinehaulVehicleSealPage(): React.JSX.Element {
           <small>LINEHAUL_TRIP_CREATE</small>
           <h2>Tạo chuyến xe</h2>
           <p>
-            Tạo kế hoạch chuyến xe trước với hub đi, hub đến, loại chuyến và thời gian dự kiến.
-            Tem xe sẽ in ở bước sau khi đã bổ sung tài xế, biển số và thông tin vận hành.
+            Tạo kế hoạch chuyến xe tải trung chuyển liên Hub với đầy đủ lộ trình, thời gian, phương tiện
+            và tài xế phụ trách. Chuyến xe sẽ được lưu vào cơ sở dữ liệu để in tem và kẹp chì niêm phong.
           </p>
         </div>
         <button
@@ -193,7 +223,7 @@ export function LinehaulVehicleSealPage(): React.JSX.Element {
         <header>
           <div>
             <h3>Thông tin chuyến xe</h3>
-            <span>Tạo kế hoạch trước, chưa in tem khi chưa có tài xế/xe</span>
+            <span>Có thể nhập ngay tài xế/biển số xe để in tem và kẹp chì nhanh chóng</span>
           </div>
           <button type="submit" disabled={createManifestMutation.isPending}>
             <Plus size={16} />
@@ -209,6 +239,7 @@ export function LinehaulVehicleSealPage(): React.JSX.Element {
               value={form.originHubCode}
               onChange={(event) => updateForm('originHubCode', event.target.value)}
               placeholder="Ví dụ: HCM01"
+              required
             />
           </label>
           <label>
@@ -218,6 +249,7 @@ export function LinehaulVehicleSealPage(): React.JSX.Element {
               value={form.destinationHubCode}
               onChange={(event) => updateForm('destinationHubCode', event.target.value)}
               placeholder="Ví dụ: HN01"
+              required
             />
           </label>
           <datalist id="ops-linehaul-hubs">
@@ -246,14 +278,50 @@ export function LinehaulVehicleSealPage(): React.JSX.Element {
               type="datetime-local"
               value={form.plannedStartAt}
               onChange={(event) => updateForm('plannedStartAt', event.target.value)}
+              required
             />
           </label>
           <label>
-            <span>Ngày giờ kết thúc</span>
+            <span>Ngày giờ kết thúc dự kiến</span>
             <input
               type="datetime-local"
               value={form.plannedEndAt}
               onChange={(event) => updateForm('plannedEndAt', event.target.value)}
+              required
+            />
+          </label>
+          <label>
+            <span>Biển số xe tải</span>
+            <input
+              value={form.vehiclePlate}
+              onChange={(event) => updateForm('vehiclePlate', event.target.value)}
+              placeholder="Ví dụ: 29C-882.14 hoặc 51D-938.22"
+            />
+          </label>
+          <label>
+            <span>Họ tên tài xế</span>
+            <input
+              value={form.driverName}
+              onChange={(event) => updateForm('driverName', event.target.value)}
+              placeholder="Ví dụ: Nguyễn Văn Tuấn"
+            />
+          </label>
+          <label>
+            <span>SĐT tài xế</span>
+            <input
+              value={form.driverPhone}
+              onChange={(event) => updateForm('driverPhone', event.target.value)}
+              placeholder="Ví dụ: 0908123456"
+            />
+          </label>
+          <label>
+            <span>Số lượng kiện hàng xếp xe</span>
+            <input
+              type="number"
+              min="0"
+              value={form.shipmentCount}
+              onChange={(event) => updateForm('shipmentCount', Number(event.target.value))}
+              placeholder="Ví dụ: 45 kiện"
             />
           </label>
         </div>
@@ -261,15 +329,15 @@ export function LinehaulVehicleSealPage(): React.JSX.Element {
           <article>
             <CheckCircle2 size={16} />
             <div>
-              <strong>Đồng bộ mã chuyến</strong>
-              <span>Mã chuyến được lưu trên hệ thống để dùng khi in tem ở bước sau.</span>
+              <strong>Đồng bộ cơ sở dữ liệu PostgreSQL</strong>
+              <span>Chuyến xe tự động lưu vào Manifest Service và đồng bộ tức thì trên toàn hệ thống các Hub.</span>
             </div>
           </article>
           <article>
             <CheckCircle2 size={16} />
             <div>
-              <strong>Thông tin tối thiểu</strong>
-              <span>Chỉ cần hub đi, hub đến, gom/phát hàng và khung thời gian chuyến.</span>
+              <strong>Quy trình khép kín</strong>
+              <span>Sau khi tạo, có thể in tem xe, kẹp seal chì niêm phong và đối soát nhận hàng tại Hub đích.</span>
             </div>
           </article>
         </div>
@@ -298,7 +366,7 @@ export function LinehaulVehicleSealPage(): React.JSX.Element {
         </header>
         {recentTrips.length === 0 ? (
           <p className="ops-linehaul-seal__empty">
-            Chưa có chuyến xe nào. Sau khi tạo, chuyến sẽ chờ bổ sung tài xế/xe trước khi in tem.
+            Chưa có chuyến xe nào. Hãy nhập thông tin bên trên để tạo chuyến xe mới.
           </p>
         ) : (
           <div className="ops-linehaul-seal__table-wrap">
@@ -308,8 +376,9 @@ export function LinehaulVehicleSealPage(): React.JSX.Element {
                   <th>Mã chuyến</th>
                   <th>Giai đoạn</th>
                   <th>Trạng thái</th>
-                  <th>Hub đi</th>
-                  <th>Hub đến</th>
+                  <th>Tuyến xe</th>
+                  <th>Tài xế & Phương tiện</th>
+                  <th>Số kiện</th>
                   <th>Loại</th>
                   <th>Bắt đầu</th>
                   <th>Kết thúc</th>
@@ -318,13 +387,29 @@ export function LinehaulVehicleSealPage(): React.JSX.Element {
               <tbody>
                 {recentTrips.map((trip) => (
                   <tr key={trip.id}>
-                    <td>{trip.tripCode}</td>
                     <td>
-                      <span className="ops-linehaul-seal__sync-badge">Kế hoạch</span>
+                      <strong>{trip.tripCode}</strong>
+                    </td>
+                    <td>
+                      <span className="ops-linehaul-seal__sync-badge">
+                        {trip.vehiclePlate && trip.driverName ? 'Đã gán xe' : 'Kế hoạch'}
+                      </span>
                     </td>
                     <td>{getLinehaulTripStatusLabel(getLinehaulTripStatus(trip))}</td>
-                    <td>{trip.originHubCode}</td>
-                    <td>{trip.destinationHubCode}</td>
+                    <td>{trip.originHubCode} ➔ {trip.destinationHubCode}</td>
+                    <td>
+                      {trip.vehiclePlate || trip.driverName ? (
+                        <span>
+                          <strong>{trip.vehiclePlate || 'Chưa có biển số'}</strong>
+                          {trip.driverName ? ` | ${trip.driverName}` : ''}
+                        </span>
+                      ) : (
+                        <span style={{ color: '#94a3b8' }}>Chưa bổ sung</span>
+                      )}
+                    </td>
+                    <td>
+                      <strong>{trip.shipmentCount ?? 0}</strong> kiện
+                    </td>
                     <td>{LINEHAUL_TRIP_TYPE_LABELS[trip.tripType]}</td>
                     <td>{formatDateTime(trip.plannedStartAt)}</td>
                     <td>{formatDateTime(trip.plannedEndAt)}</td>

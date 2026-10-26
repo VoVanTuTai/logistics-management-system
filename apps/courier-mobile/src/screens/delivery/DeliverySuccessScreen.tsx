@@ -26,6 +26,7 @@ type Props = NativeStackScreenProps<AppNavigatorParamList, 'DeliverySuccess'>;
 
 export function DeliverySuccessScreen({
   route,
+  navigation,
 }: Props): React.JSX.Element {
   const session = useAppStore((state) => state.session);
   const setGlobalError = useAppStore((state) => state.setGlobalError);
@@ -69,12 +70,22 @@ export function DeliverySuccessScreen({
         );
       } else {
         setSubmitMessage('Submit delivery success thanh cong.');
+        if (route.params.taskId) {
+          setTimeout(() => {
+            navigation.navigate('MainTabs', { screen: 'Tasks' });
+          }, 600);
+        }
       }
     } catch (error) {
       if (shouldQueueOffline(error)) {
         await enqueueDeliverySuccessOffline(payload);
         setSubmitState('SUCCESS');
         setSubmitMessage('Mat mang: action duoc enqueue va se retry sau.');
+        if (route.params.taskId) {
+          setTimeout(() => {
+            navigation.navigate('MainTabs', { screen: 'Tasks' });
+          }, 800);
+        }
         return;
       }
 

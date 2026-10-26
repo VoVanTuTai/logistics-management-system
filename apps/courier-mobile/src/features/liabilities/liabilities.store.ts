@@ -61,6 +61,22 @@ const SEED_LIABILITIES: CourierLiabilityItem[] = [
       },
     ],
   },
+  {
+    id: 'clm-019',
+    claimCode: 'CLM-PICKUP-SLA-019',
+    shipmentCode: '111595945558',
+    incidentType: 'PICKUP_OVERDUE',
+    incidentDate: '2026-10-21',
+    itemDescription: 'Kiện hàng Shop NEXUS hẹn lấy ca sáng',
+    damageDescription: 'Bỏ ca lấy hàng, trễ deadline lấy hàng > 6 giờ gây lỡ chuyến xe trung chuyển',
+    qaFinding:
+      'Bưu tá nhận lệnh lấy hàng đơn #111595945558 nhưng không đến lấy trước deadline 22:00, không thông báo trước. Hệ thống tự động phạt chế tài 25.000đ vi phạm SLA lấy hàng, chuyển bồi hoàn thẳng vào ví Shop.',
+    adjudicatedBy: 'Hệ thống SLA Tự động (Auto-Adjudicated)',
+    adjudicatedAt: '2026-10-21T22:30:00Z',
+    penaltyAmount: 25000,
+    status: 'DEDUCTED',
+    evidencePhotos: [],
+  },
 ];
 
 interface LiabilitiesState {
