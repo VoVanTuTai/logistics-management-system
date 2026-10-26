@@ -64,6 +64,8 @@ export interface ShipmentListFilters {
   createdTo?: string | null;
   limit?: string | number | null;
   offset?: string | number | null;
+  externalOrderId?: string | null;
+  externalOrderCode?: string | null;
 }
 
 export interface ShipmentListPageInfo {
