@@ -348,7 +348,7 @@ export function ShipmentDataMonitorPage({
     }
 
     setSelectedShipmentCodes((prev) => prev.filter((c) => !codeSet.has(c)));
-    showToast(`✅ Đã quét SCAN_INBOUND thành công cho ${targetCodes.length} vận đơn!`);
+    showToast(`Đã quét SCAN_INBOUND thành công cho ${targetCodes.length} vận đơn!`);
   }, [inspectingShipment, showToast]);
 
   const handleCreateDiscrepancyMemo = useCallback((shipment: ShipmentListItemDto) => {
@@ -362,7 +362,7 @@ Người lập biên bản: ${session?.user.displayName || session?.user.usernam
 Kiến nghị: Yêu cầu Hub gửi và Tài xế xe tải kiểm tra kho bãi/thùng xe trong vòng 24h.`;
 
     navigator.clipboard.writeText(memo);
-    showToast(`📋 Đã sao chép Biên bản hụt hàng cho đơn ${shipment.shipmentCode}!`);
+    showToast(`Đã sao chép Biên bản hụt hàng cho đơn ${shipment.shipmentCode}!`);
   }, [session?.user.displayName, session?.user.username, showToast]);
 
   const handlePrintThermalLabel = useCallback((shipment: ShipmentListItemDto) => {
@@ -611,7 +611,7 @@ Kiến nghị: Yêu cầu Hub gửi và Tài xế xe tải kiểm tra kho bãi/t
               className={`ops-data-monitor__summary-card ${inboundStats.missedInbound > 0 ? 'ops-data-monitor__summary-card--danger' : ''}`}
               title="CẢNH BÁO: Đơn hàng có trên bảng kê xe đến nhưng kho chưa quét SCAN_INBOUND"
             >
-              <span>⚠️ Quét sót</span>
+              <span>Quét sót</span>
               <strong>{inboundStats.missedInbound}</strong>
             </article>
           </div>
@@ -655,7 +655,7 @@ Kiến nghị: Yêu cầu Hub gửi và Tài xế xe tải kiểm tra kho bãi/t
             onClick={() => setFlowTab('EXPECTED')}
             title="1. Hàng đang trên xe tải trung chuyển từ Hub gửi về bưu cục (Cái neo đối soát gốc)"
           >
-            <span>🚚 1. Kế hoạch đến (Neo)</span>
+            <span>1. Kế hoạch đến (Neo)</span>
             <span className="ops-inbound-pill__badge">{inboundStats.expected}</span>
           </button>
 
@@ -667,7 +667,7 @@ Kiến nghị: Yêu cầu Hub gửi và Tài xế xe tải kiểm tra kho bãi/t
             onClick={() => setFlowTab('ARRIVED')}
             title="2. Đơn hàng đã dỡ xuống và quét SCAN_INBOUND nhập kho thực tế"
           >
-            <span>📦 2. Đã nhận kho</span>
+            <span>2. Đã nhận kho</span>
             <span className="ops-inbound-pill__badge">{inboundStats.arrived} ({inboundCompletionPercent}%)</span>
           </button>
 
@@ -679,7 +679,7 @@ Kiến nghị: Yêu cầu Hub gửi và Tài xế xe tải kiểm tra kho bãi/t
             onClick={() => setFlowTab('MISSED_INBOUND')}
             title="3. CẢNH BÁO QUÉT SÓT: Đơn có trên bảng kê xe đến nhưng kho chưa quét SCAN_INBOUND"
           >
-            <span>⚠️ 3. Quét sót</span>
+            <span>3. Quét sót</span>
             <span className="ops-inbound-pill__badge">{inboundStats.missedInbound}</span>
           </button>
 
@@ -691,7 +691,7 @@ Kiến nghị: Yêu cầu Hub gửi và Tài xế xe tải kiểm tra kho bãi/t
             onClick={() => setFlowTab('DELIVERING')}
             title="4. Đơn hàng đã chia tuyến cho Shipper hoặc đang đi phát"
           >
-            <span>🛵 4. Đang/Đã phát</span>
+            <span>4. Đang/Đã phát</span>
             <span className="ops-inbound-pill__badge">{inboundStats.delivering}</span>
           </button>
 
@@ -703,7 +703,7 @@ Kiến nghị: Yêu cầu Hub gửi và Tài xế xe tải kiểm tra kho bãi/t
             onClick={() => setFlowTab('MISSED_DISPATCH')}
             title="5. CẢNH BÁO PHÁT SÓT: Đơn đã quét Inbound lưu kho quá 6 giờ chưa gán bưu tá đi phát"
           >
-            <span>⏰ 5. Phát sót (&gt;6h)</span>
+            <span>5. Phát sót (&gt;6h)</span>
             <span className="ops-inbound-pill__badge">{inboundStats.missedDispatch}</span>
           </button>
         </div>
@@ -713,7 +713,7 @@ Kiến nghị: Yêu cầu Hub gửi và Tài xế xe tải kiểm tra kho bãi/t
       {mode === 'arrival' && flowTab === 'MISSED_INBOUND' && (
         <div className="ops-inbound-quick-strip ops-inbound-quick-strip--danger">
           <span>
-            ⚠️ <strong>CẢNH BÁO QUÉT SÓT ({inboundStats.missedInbound} đơn):</strong> Các đơn này có trên bảng kê xe trung chuyển nhưng bưu cục chưa bắn mã SCAN_INBOUND. Cần rà soát thùng xe trước khi ký bàn giao!
+            <strong>CẢNH BÁO QUÉT SÓT ({inboundStats.missedInbound} đơn):</strong> Các đơn này có trên bảng kê xe trung chuyển nhưng bưu cục chưa bắn mã SCAN_INBOUND. Cần rà soát thùng xe trước khi ký bàn giao!
           </span>
           <div className="ops-inbound-quick-strip__actions">
             <button
@@ -722,7 +722,7 @@ Kiến nghị: Yêu cầu Hub gửi và Tài xế xe tải kiểm tra kho bãi/t
               onClick={handleCopyMissedCodes}
               title="Sao chép toàn bộ mã đơn sót để gửi tài xế hoặc Hub tổng đối soát"
             >
-              📋 Sao chép DS mã đơn sót
+              Sao chép DS mã đơn sót
             </button>
             {selectedShipmentCodes.length > 0 && (
               <button
@@ -730,7 +730,7 @@ Kiến nghị: Yêu cầu Hub gửi và Tài xế xe tải kiểm tra kho bãi/t
                 className="ops-inbound-quick-strip__btn ops-inbound-quick-strip__btn--primary"
                 onClick={() => handleFastScanInbound(selectedShipmentCodes)}
               >
-                📥 Quét nhận nhanh ({selectedShipmentCodes.length} đơn đã chọn)
+                Quét nhận nhanh ({selectedShipmentCodes.length} đơn đã chọn)
               </button>
             )}
           </div>
@@ -740,7 +740,7 @@ Kiến nghị: Yêu cầu Hub gửi và Tài xế xe tải kiểm tra kho bãi/t
       {mode === 'arrival' && flowTab === 'MISSED_DISPATCH' && (
         <div className="ops-inbound-quick-strip ops-inbound-quick-strip--amber">
           <span>
-            ⏰ <strong>CẢNH BÁO PHÁT SÓT ({inboundStats.missedDispatch} đơn):</strong> Đơn đã quét SCAN_INBOUND lưu kho quá 6 giờ (&ge; 360 phút) chưa bàn giao bưu tá đi phát.
+            <strong>CẢNH BÁO PHÁT SÓT ({inboundStats.missedDispatch} đơn):</strong> Đơn đã quét SCAN_INBOUND lưu kho quá 6 giờ (&ge; 360 phút) chưa bàn giao bưu tá đi phát.
           </span>
           <div className="ops-inbound-quick-strip__actions">
             <button
@@ -750,7 +750,7 @@ Kiến nghị: Yêu cầu Hub gửi và Tài xế xe tải kiểm tra kho bãi/t
                 window.location.href = '/app/function-groups/branch-business/delivery-dispatch';
               }}
             >
-              🛵 Bàn giao phát bưu tá ngay
+              Bàn giao phát bưu tá ngay
             </button>
           </div>
         </div>
@@ -799,10 +799,10 @@ Kiến nghị: Yêu cầu Hub gửi và Tài xế xe tải kiểm tra kho bãi/t
               onChange={(e) => setAlertFilter(e.target.value as InboundAlertFilter)}
             >
               <option value="ALL">Tất cả cảnh báo</option>
-              <option value="STALE_6H">⚠️ Quá 6 giờ (Nguy cơ trễ)</option>
-              <option value="REPRINT_REQUIRED">🏷️ Cần in lại tem</option>
-              <option value="BULKY">📦 Hàng cồng kềnh (IATA)</option>
-              <option value="FRAGILE">🍷 Hàng dễ vỡ</option>
+              <option value="STALE_6H">Quá 6 giờ (Nguy cơ trễ)</option>
+              <option value="REPRINT_REQUIRED">Cần in lại tem</option>
+              <option value="BULKY">Hàng cồng kềnh (IATA)</option>
+              <option value="FRAGILE">Hàng dễ vỡ</option>
             </select>
           </label>
         )}
@@ -985,29 +985,29 @@ Kiến nghị: Yêu cầu Hub gửi và Tài xế xe tải kiểm tra kho bãi/t
                       color: '#475569',
                     }}
                   >
-                    📋 Copy
+                    Sao chép
                   </button>
                 </div>
                 <div style={{ marginTop: '4px', display: 'flex', alignItems: 'center', gap: '6px' }}>
                   {INBOUND_EXPECTED_SET.has(inspectingShipment.currentStatus) ? (
                     <span style={{ background: '#fee2e2', color: '#b91c1c', border: '1px solid #fca5a5', padding: '2px 8px', borderRadius: '4px', fontSize: '11px', fontWeight: 700 }}>
-                      ⚠️ CẢNH BÁO QUÉT SÓT KHO
+                      CẢNH BÁO QUÉT SÓT KHO
                     </span>
                   ) : INBOUND_ARRIVED_SET.has(inspectingShipment.currentStatus) && (minutesSince(inspectingShipment.updatedAt) ?? 0) >= 360 ? (
                     <span style={{ background: '#ffedd5', color: '#c2410c', border: '1px solid #fdba74', padding: '2px 8px', borderRadius: '4px', fontSize: '11px', fontWeight: 700 }}>
-                      ⏰ CẢNH BÁO TỒN KHO PHÁT SÓT (&gt;6H)
+                      CẢNH BÁO TỒN KHO PHÁT SÓT (&gt;6H)
                     </span>
                   ) : INBOUND_ARRIVED_SET.has(inspectingShipment.currentStatus) ? (
                     <span style={{ background: '#ecfdf5', color: '#047857', border: '1px solid #a7f3d0', padding: '2px 8px', borderRadius: '4px', fontSize: '11px', fontWeight: 700 }}>
-                      📦 ĐÃ SCAN NHẬP KHO
+                      ĐÃ SCAN NHẬP KHO
                     </span>
                   ) : INBOUND_DELIVERY_SET.has(inspectingShipment.currentStatus) ? (
                     <span style={{ background: '#f5f3ff', color: '#6d28d9', border: '1px solid #ddd6fe', padding: '2px 8px', borderRadius: '4px', fontSize: '11px', fontWeight: 700 }}>
-                      🛵 ĐANG GIAO BƯU TÁ
+                      ĐANG GIAO BƯU TÁ
                     </span>
                   ) : (
                     <span style={{ background: '#e0f2fe', color: '#0369a1', border: '1px solid #bae6fd', padding: '2px 8px', borderRadius: '4px', fontSize: '11px', fontWeight: 700 }}>
-                      🚚 HÀNG SẮP ĐẾN (TRÊN XE)
+                      HÀNG SẮP ĐẾN (TRÊN XE)
                     </span>
                   )}
                   <span style={{ fontSize: '12px', color: '#64748b' }}>
@@ -1029,7 +1029,7 @@ Kiến nghị: Yêu cầu Hub gửi và Tài xế xe tải kiểm tra kho bãi/t
               {/* Card 1: Đối soát luồng hàng đến & Chuyến xe */}
               <div className="ops-shipment-drawer__card">
                 <h4 className="ops-shipment-drawer__card-title">
-                  <span>🚚 Đối soát luồng hàng đến &amp; Vết quét</span>
+                  <span>Đối soát luồng hàng đến &amp; Vết quét</span>
                 </h4>
                 <div className="ops-shipment-drawer__grid">
                   <div className="ops-shipment-drawer__item">
@@ -1067,9 +1067,9 @@ Kiến nghị: Yêu cầu Hub gửi và Tài xế xe tải kiểm tra kho bãi/t
                   color: INBOUND_EXPECTED_SET.has(inspectingShipment.currentStatus) ? '#991b1b' : INBOUND_ARRIVED_SET.has(inspectingShipment.currentStatus) ? '#166534' : '#334155'
                 }}>
                   {INBOUND_EXPECTED_SET.has(inspectingShipment.currentStatus)
-                    ? '⚠️ Chú ý: Đơn hàng nằm trong danh sách bảng kê xe đến nhưng kho chưa bắn mã SCAN_INBOUND. Cần rà soát đáy xe hoặc lập biên bản hụt hàng với tài xế.'
+                    ? 'Chú ý: Đơn hàng nằm trong danh sách bảng kê xe đến nhưng kho chưa bắn mã SCAN_INBOUND. Cần rà soát đáy xe hoặc lập biên bản hụt hàng với tài xế.'
                     : INBOUND_ARRIVED_SET.has(inspectingShipment.currentStatus)
-                    ? `✅ Kiện hàng đã được quét SCAN_INBOUND lưu kho an toàn lúc ${formatDateTime(inspectingShipment.updatedAt)} (${minutesSince(inspectingShipment.updatedAt)} phút trước).`
+                    ? `Kiện hàng đã được quét SCAN_INBOUND lưu kho an toàn lúc ${formatDateTime(inspectingShipment.updatedAt)} (${minutesSince(inspectingShipment.updatedAt)} phút trước).`
                     : 'Kiện hàng đang trong chu trình luân chuyển.'}
                 </div>
               </div>
@@ -1077,7 +1077,7 @@ Kiến nghị: Yêu cầu Hub gửi và Tài xế xe tải kiểm tra kho bãi/t
               {/* Card 2: Thông số kiện hàng & Phân loại Carrier */}
               <div className="ops-shipment-drawer__card">
                 <h4 className="ops-shipment-drawer__card-title">
-                  <span>📦 Quy chuẩn Kiện hàng &amp; Cước phí (Carrier SOP)</span>
+                  <span>Quy chuẩn Kiện hàng &amp; Cước phí (Carrier SOP)</span>
                 </h4>
                 <div className="ops-shipment-drawer__grid">
                   <div className="ops-shipment-drawer__item">
@@ -1110,7 +1110,7 @@ Kiến nghị: Yêu cầu Hub gửi và Tài xế xe tải kiểm tra kho bãi/t
               {/* Card 3: Thông tin Giao nhận */}
               <div className="ops-shipment-drawer__card">
                 <h4 className="ops-shipment-drawer__card-title">
-                  <span>👤 Thông tin Giao nhận</span>
+                  <span>Thông tin Giao nhận</span>
                 </h4>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '12.5px' }}>
                   <div>
@@ -1139,7 +1139,7 @@ Kiến nghị: Yêu cầu Hub gửi và Tài xế xe tải kiểm tra kho bãi/t
               {/* Card 4: Lịch sử chuỗi vết quét (Chain of Custody) */}
               <div className="ops-shipment-drawer__card">
                 <h4 className="ops-shipment-drawer__card-title">
-                  <span>🔍 Lịch sử Vết quét Chuỗi hành trình (Chain of Custody)</span>
+                  <span>Lịch sử Vết quét Chuỗi hành trình (Chain of Custody)</span>
                 </h4>
                 <div className="ops-shipment-drawer__timeline">
                   <div className="ops-shipment-drawer__timeline-item">
@@ -1174,7 +1174,7 @@ Kiến nghị: Yêu cầu Hub gửi và Tài xế xe tải kiểm tra kho bãi/t
                 className="ops-shipment-drawer__btn--secondary"
                 onClick={() => handlePrintThermalLabel(inspectingShipment)}
               >
-                🏷️ In tem nhiệt
+                In tem nhiệt
               </button>
 
               {INBOUND_EXPECTED_SET.has(inspectingShipment.currentStatus) ? (
@@ -1184,14 +1184,14 @@ Kiến nghị: Yêu cầu Hub gửi và Tài xế xe tải kiểm tra kho bãi/t
                     className="ops-shipment-drawer__btn--danger"
                     onClick={() => handleCreateDiscrepancyMemo(inspectingShipment)}
                   >
-                    ⚠️ Lập biên bản hụt xe
+                    Lập biên bản hụt xe
                   </button>
                   <button
                     type="button"
                     className="ops-shipment-drawer__btn--primary"
                     onClick={() => handleFastScanInbound([inspectingShipment.shipmentCode])}
                   >
-                    📥 Xác nhận Quét Inbound ngay
+                    Xác nhận Quét Inbound ngay
                   </button>
                 </>
               ) : INBOUND_ARRIVED_SET.has(inspectingShipment.currentStatus) ? (
@@ -1202,7 +1202,7 @@ Kiến nghị: Yêu cầu Hub gửi và Tài xế xe tải kiểm tra kho bãi/t
                     window.location.href = '/app/function-groups/branch-business/delivery-dispatch';
                   }}
                 >
-                  🛵 Bàn giao phát bưu tá
+                  Bàn giao phát bưu tá
                 </button>
               ) : null}
             </div>

@@ -160,11 +160,11 @@ describe('ShipmentDataMonitorPage - Inbound Arrival Monitoring', () => {
     expect(screen.getByText('CỒNG KỀNH')).toBeInTheDocument();
 
     // Check IATA volumetric badge for the bulky parcel (50x40x30 / 6000 = 10kg > 5kg)
-    expect(screen.getByText('📐 Thể tích IATA')).toBeInTheDocument();
+    expect(screen.getByText('Thể tích IATA')).toBeInTheDocument();
     expect(screen.getByText('10.0 kg')).toBeInTheDocument();
 
     // Check overdue badge (>= 6 hours)
-    expect(screen.getByText('⚠️ Quá 6h')).toBeInTheDocument();
+    expect(screen.getByText('Quá 6h')).toBeInTheDocument();
 
     // Check label reprint badge
     expect(screen.getByText('In lại tem')).toBeInTheDocument();
@@ -184,20 +184,20 @@ describe('ShipmentDataMonitorPage - Inbound Arrival Monitoring', () => {
     await user.click(row1Checkbox);
 
     // Selection strip appears
-    expect(await screen.findByText(/✓ Đã chọn: 1 vận đơn/)).toBeInTheDocument();
+    expect(await screen.findByText(/Đã chọn: 1 vận đơn/)).toBeInTheDocument();
 
     // Click "Bỏ chọn"
     const clearButton = screen.getByRole('button', { name: 'Bỏ chọn' });
     await user.click(clearButton);
 
     // Selection strip disappears
-    expect(screen.queryByText(/✓ Đã chọn:/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Đã chọn:/)).not.toBeInTheDocument();
 
     // Select all on page via header checkbox
     const selectAllCheckbox = screen.getByLabelText('Chọn tất cả vận đơn trên trang');
     await user.click(selectAllCheckbox);
 
-    expect(await screen.findByText(/✓ Đã chọn: 2 vận đơn/)).toBeInTheDocument();
+    expect(await screen.findByText(/Đã chọn: 2 vận đơn/)).toBeInTheDocument();
   });
 
   it('renders ColumnVisibilityPicker and allows toggling columns', async () => {

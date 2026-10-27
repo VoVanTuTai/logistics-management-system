@@ -363,7 +363,7 @@ export function ClaimsLiabilityTable({
         <div className="claims-selection-strip">
           <div className="claims-selection-info">
             <span className="claims-selection-badge">
-              ✓ Đã chọn: <strong>{selectedIds.length}</strong> hồ sơ
+              Đã chọn: <strong>{selectedIds.length}</strong> hồ sơ
             </span>
             {selectedIds.length < claims.length && (
               <button

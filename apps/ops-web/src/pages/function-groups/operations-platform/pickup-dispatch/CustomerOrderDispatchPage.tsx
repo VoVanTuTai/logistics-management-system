@@ -1369,7 +1369,7 @@ export function CustomerOrderDispatchPage(): React.JSX.Element {
                               whiteSpace: 'nowrap',
                             }}
                           >
-                            📐 Thể tích IATA
+                            Thể tích IATA
                           </span>
                         )}
                       </td>

@@ -169,6 +169,7 @@ import {
   buildChangeRequestPayload,
   filterPickupRequestsByUser,
   isReturnRequestAllowed,
+  isShipmentEligibleForPickup,
   isShipmentOwnedByUser,
   mapReturnCaseToRequest,
   normalizeCreateForm,
@@ -405,6 +406,7 @@ function MerchantApp(): React.JSX.Element {
       items: [
         { id: 'returns', label: 'Yêu cầu hoàn hàng', icon: 'assignment_return' },
         { id: 'claims', label: 'Khiếu nại & Bồi thường', icon: 'gavel' },
+        { id: 'change-requests', label: 'Đổi thông tin giao', icon: 'edit_location_alt' },
       ],
     },
     {
@@ -551,6 +553,26 @@ function MerchantApp(): React.JSX.Element {
 
     return map;
   }, [pickups]);
+  const activePickupByShipmentCode = useMemo(() => {
+    const map = new Map<string, PickupRequest>();
+
+    for (const pickup of pickups) {
+      if (pickup.status === 'CANCELLED') {
+        continue;
+      }
+
+      for (const item of pickup.items) {
+        const shipmentCode = normalizeCode(item.shipmentCode);
+        if (!shipmentCode || map.has(shipmentCode)) {
+          continue;
+        }
+
+        map.set(shipmentCode, pickup);
+      }
+    }
+
+    return map;
+  }, [pickups]);
   const trackingPickupRequest = useMemo(() => {
     const code = normalizeCode(trackingShipmentRow?.shipment.code ?? trackingCurrent?.shipmentCode ?? trackingCode);
     return code ? pickupByShipmentCode.get(code) ?? null : null;
@@ -599,10 +621,10 @@ function MerchantApp(): React.JSX.Element {
   const pickupRows = useMemo(() => pickups.filter((p) => (pickupStatusFilter === 'ALL' ? true : p.status === pickupStatusFilter)), [pickups, pickupStatusFilter]);
   const pickupSelectableRows = useMemo(
     () =>
-      shipmentRows.filter(
-        (row) => !pickupByShipmentCode.has(normalizeCode(row.shipment.code)),
+      shipmentRows.filter((row) =>
+        isShipmentEligibleForPickup(row.shipment, activePickupByShipmentCode),
       ),
-    [shipmentRows, pickupByShipmentCode],
+    [shipmentRows, activePickupByShipmentCode],
   );
   const selectedPickupCodeSet = useMemo(() => {
     const codes = pickupShipmentCodes
@@ -827,8 +849,12 @@ function MerchantApp(): React.JSX.Element {
   }
 
   function resolvePickupCancelBlockReason(pickup: PickupRequest): string | null {
-    if (pickup.status !== 'REQUESTED') {
-      return 'Chỉ pickup đang REQUESTED mới được hủy';
+    if (pickup.status === 'CANCELLED') {
+      return 'Phiếu pickup đã được hủy';
+    }
+
+    if (pickup.status === 'COMPLETED') {
+      return 'Phiếu pickup đã hoàn tất lấy hàng, không thể hủy';
     }
 
     const shipmentByCode = new Map(
@@ -838,18 +864,11 @@ function MerchantApp(): React.JSX.Element {
       .map((item) => shipmentByCode.get(normalizeCode(item.shipmentCode))?.currentStatus)
       .filter((status): status is string => Boolean(status));
 
-    const hasAssignedCourier = shipmentStatuses.some(
-      (status) => status === 'TASK_ASSIGNED' || status === 'PICKUP_ASSIGNED',
-    );
-    if (hasAssignedCourier) {
-      return 'Đơn đã được phân công courier đi lấy, không thể hủy pickup';
-    }
-
     const hasReceivedAtHub = shipmentStatuses.some((status) =>
-      ['PICKUP_COMPLETED', 'PICKED_UP', 'INBOUND_AT_HUB', 'SCAN_INBOUND'].includes(status),
+      ['PICKUP_COMPLETED', 'PICKED_UP', 'INBOUND_AT_HUB', 'SCAN_INBOUND', 'DELIVERED'].includes(status),
     );
     if (hasReceivedAtHub) {
-      return 'Đơn đã nhận từ courier tại bưu cục, không thể hủy pickup';
+      return 'Kiện hàng đã được shipper nhận hoặc đã hoàn tất, không thể hủy pickup';
     }
 
     return null;
@@ -2433,27 +2452,61 @@ function MerchantApp(): React.JSX.Element {
       const selectableCodes = new Set(
         pickupSelectableRows.map((row) => normalizeCode(row.shipment.code)),
       );
-      const codes = Array.from(new Set(pickupShipmentCodes.split(/[\s,;\n]+/).map((item) => normalizeCode(item)).filter(Boolean)))
-        .filter((code) => selectableCodes.has(code));
-      if (codes.length === 0) throw new Error('Vui lòng chọn ít nhất 1 đơn hàng để yêu cầu lấy hàng');
+      const codes = Array.from(
+        new Set(
+          pickupShipmentCodes
+            .split(/[\s,;\n]+/)
+            .map((item) => normalizeCode(item))
+            .filter(Boolean),
+        ),
+      ).filter((code) => selectableCodes.has(code));
+
+      if (codes.length === 0) {
+        throw new Error('Vui lòng chọn ít nhất 1 đơn hàng hợp lệ ở trạng thái chờ lấy hàng.');
+      }
+
       const requestedRows = pickupSelectableRows.filter((row) =>
         codes.includes(normalizeCode(row.shipment.code)),
       );
-      const pickup = await request<PickupRequest>('/merchant/pickup/pickups', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          pickupCode: generatePickupCode(),
-          requesterName: pickupRequesterName.trim() || session.user.username,
-          contactPhone: pickupContactPhone.trim() || null,
-          pickupAddress: pickupAddress.trim() || profile.defaultPickupAddress || null,
-          note: `${pickupNote.trim()} | desired=${resolvePickupWindowSummary(requestedRows)}`,
-          items: codes.map((shipmentCode) => ({ shipmentCode, quantity: 1 })),
-        }),
-      }, session.accessToken);
+
+      const distinctSenderHubs = Array.from(
+        new Set(
+          requestedRows
+            .map((row) => row.senderHubCode || 'DEFAULT')
+            .filter(Boolean),
+        ),
+      );
+      if (distinctSenderHubs.length > 1) {
+        throw new Error(
+          `Không thể gom các đơn từ nhiều kho lấy hàng (${distinctSenderHubs.join(', ')}) vào cùng 1 phiếu pickup. Vui lòng chọn các đơn có cùng kho lấy hàng.`,
+        );
+      }
+
+      const senderAddress =
+        pickupAddress.trim() ||
+        requestedRows[0]?.senderAddress ||
+        profile.defaultPickupAddress ||
+        null;
+
+      const pickup = await request<PickupRequest>(
+        '/merchant/pickup/pickups',
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            pickupCode: generatePickupCode(),
+            requesterName: pickupRequesterName.trim() || session.user.username,
+            contactPhone: pickupContactPhone.trim() || null,
+            pickupAddress: senderAddress,
+            note: `${pickupNote.trim()} | desired=${resolvePickupWindowSummary(requestedRows)}`,
+            items: codes.map((shipmentCode) => ({ shipmentCode, quantity: 1 })),
+          }),
+        },
+        session.accessToken,
+      );
       setPickups((prev) => [pickup, ...prev]);
       setPickupShipmentCodes('');
-      setPickupMessage(`Đã tạo pickup ${pickup.pickupCode}`);
+      setPickupMessage(`Đã tạo thành công yêu cầu lấy hàng ${pickup.pickupCode} (${codes.length} đơn)`);
     } catch (error) {
       setPickupMessage(extractErrorMessage(error));
     } finally {
@@ -2994,6 +3047,8 @@ function MerchantApp(): React.JSX.Element {
         onSelectView={setActiveView}
         onRefreshData={() => void refreshAllData(session.accessToken, session.user)}
         onLogout={() => void handleLogout()}
+        username={session.user.displayName || session.user.username}
+        businessName={session.user.displayName || undefined}
       />
 
       <div className="main">
@@ -3004,8 +3059,11 @@ function MerchantApp(): React.JSX.Element {
           lockedSenderHub={lockedSenderHub}
           unreadNotifications={unreadNotifications}
           username={session.user.username}
+          shopName={session.user.displayName || session.user.username}
+          roles={session.user.roles}
           onSelectView={setActiveView}
         />
+
         <main className={`content ${activeView === 'change-requests' ? 'content--change' : ''} ${activeView === 'print' ? 'content--print' : ''} ${activeView === 'returns' ? 'content--returns' : ''} ${activeView === 'account' ? 'content--account' : ''} ${activeView === 'finance' ? 'content--finance' : ''}`}>
           {dataError ? <p className="message error">{dataError}</p> : null}
 
@@ -3032,37 +3090,82 @@ function MerchantApp(): React.JSX.Element {
             </div>
           ) : null}
 
-          {insights.issueRate > 20 && shipmentRows.length >= 5 ? (
-            <div className="merchant-risk-warning-banner" style={{ marginBottom: '16px', padding: '12px 16px', borderRadius: '10px', background: '#FFFBEB', border: '1px solid #FDE68A', display: 'flex', alignItems: 'center', gap: '12px', fontSize: '13px', color: '#92400E' }}>
-              <span className="material-symbols-outlined" style={{ fontSize: '22px', color: '#D97706' }}>shield_with_heart</span>
-              <div>
-                <strong>Cảnh báo rủi ro hoàn hàng ({insights.issueRate}%):</strong> Tỷ lệ giao không thành công hoặc chuyển hoàn của Shop đang cao hơn mức khuyến nghị (20%). Quý khách nên rà soát lại thông tin khách hàng, số điện thoại hoặc yêu cầu đặt cọc cước với các đơn hàng giá trị cao.
-              </div>
-            </div>
-          ) : null}
-
           {activeView === 'dashboard' ? (
-            <MerchantDashboardView
-              dashboardSearchCode={dashboardSearchCode}
-              onDashboardSearchCodeChange={setDashboardSearchCode}
-              onQuickTrackFromDashboard={quickTrackFromDashboard}
-              profile={profile}
-              merchantProfileConfig={merchantProfileConfig}
-              lockedSenderHub={lockedSenderHub}
-              selectedAccountProvinceHub={selectedAccountProvinceHub}
-              session={session}
-              resolveRouteAndCourier={resolveRouteAndCourier}
-              onNavigateView={setActiveView}
-              dashboardStats={dashboardStats}
-              dashboardInsights={dashboardInsights}
-              shipmentRows={shipmentRows}
-              recentRows={recentRows}
-              resolveShipmentStatusClass={resolveShipmentStatusClass}
-              resolveShipmentStatusLabel={resolveShipmentStatusLabel}
-              onOpenShipmentDetail={(shipmentCode) => {
-                void openShipmentDetail(shipmentCode);
-              }}
-            />
+            <>
+              {/* Dashboard Merchant Identity & Role Hero Banner */}
+              <div className="merchant-identity-banner" role="banner">
+                <div className="merchant-identity-banner__left">
+                  <div className="merchant-identity-banner__icon-wrap">
+                    <span className="material-symbols-outlined" style={{ fontSize: '24px' }}>storefront</span>
+                  </div>
+                  <div className="merchant-identity-banner__text">
+                    <div className="merchant-identity-banner__row">
+                      <strong className="merchant-identity-banner__shop-title">
+                        {session.user.displayName || session.user.username}
+                      </strong>
+                      <span className="merchant-identity-banner__role-pill">
+                        <span className="merchant-scope-pulse" aria-hidden="true" />
+                        <span>VAI TRÒ: CHỦ SHOP (MERCHANT)</span>
+                      </span>
+                      <span className="merchant-identity-banner__verified-pill">
+                        <span className="material-symbols-outlined" style={{ fontSize: '13px' }}>verified</span>
+                        <span>ĐỐI TÁC CHÍNH THỨC</span>
+                      </span>
+                    </div>
+                    <p className="merchant-identity-banner__desc">
+                      Đang thao tác tại Cổng Khách hàng NEXUS Logistics · Bưu cục chặng đầu tiếp nhận: <strong>{lockedSenderHub?.hubName || lockedSenderHub?.hubCode || 'HUB BƯU CỤC MẶC ĐỊNH'}</strong> · Hạn mức COD: <strong>Bảo hiểm 100%</strong>
+                    </p>
+                  </div>
+                </div>
+                <div className="merchant-identity-banner__right">
+                  <div className="merchant-identity-banner__stat-box">
+                    <span className="stat-label">Ví COD Thực Nhận</span>
+                    <strong className={`stat-val ${insights.netBalance >= 0 ? 'stat-val--pos' : 'stat-val--neg'}`}>
+                      {formatCurrency(insights.netBalance)}
+                    </strong>
+                  </div>
+                  <button
+                    type="button"
+                    className="btn btn-primary merchant-identity-banner__btn"
+                    onClick={() => setActiveView('create-shipment')}
+                  >
+                    <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>add_circle</span>
+                    <span>Tạo đơn nhanh</span>
+                  </button>
+                </div>
+              </div>
+
+              {insights.issueRate > 20 && shipmentRows.length >= 5 ? (
+                <div className="merchant-risk-warning-banner" style={{ marginBottom: '16px', padding: '12px 16px', borderRadius: '10px', background: '#FFFBEB', border: '1px solid #FDE68A', display: 'flex', alignItems: 'center', gap: '12px', fontSize: '13px', color: '#92400E' }}>
+                  <span className="material-symbols-outlined" style={{ fontSize: '22px', color: '#D97706' }}>shield_with_heart</span>
+                  <div>
+                    <strong>Cảnh báo rủi ro hoàn hàng ({insights.issueRate}%):</strong> Tỷ lệ giao không thành công hoặc chuyển hoàn của Shop đang cao hơn mức khuyến nghị (20%). Quý khách nên rà soát lại thông tin khách hàng, số điện thoại hoặc yêu cầu đặt cọc cước với các đơn hàng giá trị cao.
+                  </div>
+                </div>
+              ) : null}
+
+              <MerchantDashboardView
+                dashboardSearchCode={dashboardSearchCode}
+                onDashboardSearchCodeChange={setDashboardSearchCode}
+                onQuickTrackFromDashboard={quickTrackFromDashboard}
+                profile={profile}
+                merchantProfileConfig={merchantProfileConfig}
+                lockedSenderHub={lockedSenderHub}
+                selectedAccountProvinceHub={selectedAccountProvinceHub}
+                session={session}
+                resolveRouteAndCourier={resolveRouteAndCourier}
+                onNavigateView={setActiveView}
+                dashboardStats={dashboardStats}
+                dashboardInsights={dashboardInsights}
+                shipmentRows={shipmentRows}
+                recentRows={recentRows}
+                resolveShipmentStatusClass={resolveShipmentStatusClass}
+                resolveShipmentStatusLabel={resolveShipmentStatusLabel}
+                onOpenShipmentDetail={(shipmentCode) => {
+                  void openShipmentDetail(shipmentCode);
+                }}
+              />
+            </>
           ) : null}
 
           {activeView === 'create-shipment' ? (
@@ -3190,6 +3293,7 @@ function MerchantApp(): React.JSX.Element {
               pickupRows={pickupRows}
               pickups={pickups}
               pickupSelectableRows={pickupSelectableRows}
+              shipmentRows={shipmentRows}
               allPickupRowsSelected={allPickupRowsSelected}
               selectedPickupCodeSet={selectedPickupCodeSet}
               selectedPickupRows={selectedPickupRows}
@@ -3208,7 +3312,14 @@ function MerchantApp(): React.JSX.Element {
               onPickupStatusFilterChange={setPickupStatusFilter}
               onCancelPickup={(item) => {
                 if (!session) return;
-                const reason = window.prompt('Lý do hủy pickup', '') ?? '';
+                const isAssigned = resolveShipperForPickup(item) !== 'Chưa gán';
+                const confirmMsg = isAssigned
+                  ? `Phiếu lấy hàng ${item.pickupCode} đã được điều phối Shipper (${resolveShipperForPickup(item)}). Bạn có chắc chắn muốn hủy yêu cầu lấy hàng này không?`
+                  : `Bạn có chắc chắn muốn hủy phiếu lấy hàng ${item.pickupCode} không?`;
+                if (!window.confirm(confirmMsg)) {
+                  return;
+                }
+                const reason = window.prompt('Nhập lý do hủy pickup (không bắt buộc):', '') ?? '';
                 void request<PickupRequest>(
                   `/merchant/pickup/pickups/${encodeURIComponent(item.id)}/cancel`,
                   {
@@ -3217,11 +3328,21 @@ function MerchantApp(): React.JSX.Element {
                     body: JSON.stringify({ reason: reason.trim() || null }),
                   },
                   session.accessToken,
-                ).then((cancelled) =>
-                  setPickups((prev) =>
-                    prev.map((pickup) => (pickup.id === item.id ? cancelled : pickup)),
-                  ),
-                );
+                )
+                  .then((cancelled) => {
+                    setPickups((prev) =>
+                      prev.map((pickup) => (pickup.id === item.id ? cancelled : pickup)),
+                    );
+                    setPickupMessage(`Đã hủy phiếu lấy hàng ${item.pickupCode}`);
+                  })
+                  .catch((err) => {
+                    setPickupMessage(extractErrorMessage(err));
+                  });
+              }}
+              onNavigateToCreateShipment={() => setActiveView('create-shipment')}
+              onNavigateToShipmentDetail={(code) => {
+                setSelectedShipmentCode(code);
+                setActiveView('shipment-detail');
               }}
             />
           ) : null}

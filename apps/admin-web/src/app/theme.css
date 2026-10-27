@@ -430,6 +430,77 @@ th {
   font-size: 12px;
 }
 
+.admin-topbar-identity {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.admin-identity-card {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 10px;
+  border-radius: 10px;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+}
+
+.admin-identity-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #0052cc 0%, #0747a6 100%);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 13px;
+}
+
+.admin-identity-meta {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.15;
+}
+
+.admin-identity-user-line {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.admin-identity-user-line strong {
+  font-size: 12.5px;
+  color: #0f172a;
+}
+
+.admin-identity-role-label {
+  font-size: 9.5px;
+  font-weight: 700;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.admin-pulse-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #10b981;
+  box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.25);
+  animation: adminPulse 2s infinite;
+}
+
+@keyframes adminPulse {
+  0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.5); }
+  70% { transform: scale(1); box-shadow: 0 0 0 4px rgba(16, 185, 129, 0); }
+  100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+}
+
 .admin-topbar-badges {
   display: flex;
   align-items: center;
@@ -439,11 +510,145 @@ th {
 .admin-tag {
   border: 1px solid #b3d4ff;
   border-radius: 999px;
-  padding: 6px 12px;
-  font-size: 11px;
+  padding: 5px 10px;
+  font-size: 10.5px;
   font-weight: 800;
   color: #0747a6;
   background: #deebff;
+  letter-spacing: 0.03em;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.admin-tag--role {
+  background: #fef3c7;
+  color: #b45309;
+  border-color: #fde68a;
+}
+
+.admin-tag--scope {
+  background: #eff6ff;
+  color: #1d4ed8;
+  border-color: #bfdbfe;
+}
+
+.admin-tag--audit {
+  background: #ecfdf5;
+  color: #059669;
+  border-color: #a7f3d0;
+}
+
+/* Global Admin Security & Role Context Banner */
+.admin-role-banner {
+  margin-bottom: 16px;
+  padding: 12px 18px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #f8faff 0%, #edf2ff 50%, #f0f7ff 100%);
+  border: 1px solid #c7d7fe;
+  box-shadow: 0 2px 8px rgba(0, 82, 204, 0.06);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.admin-role-banner__left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+}
+
+.admin-role-banner__icon-wrap {
+  width: 42px;
+  height: 42px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+  color: #fbbf24;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-shadow: 0 4px 10px rgba(15, 23, 42, 0.25);
+}
+
+.admin-role-banner__text {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.admin-role-banner__row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.admin-role-banner__title {
+  font-size: 14.5px;
+  font-weight: 800;
+  color: #0f172a;
+  letter-spacing: -0.01em;
+}
+
+.admin-role-banner__role-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: #fef3c7;
+  border: 1px solid #fde68a;
+  color: #b45309;
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+}
+
+.admin-role-banner__scope-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  color: #1d4ed8;
+  font-size: 10px;
+  font-weight: 750;
+}
+
+.admin-role-banner__desc {
+  margin: 0;
+  font-size: 12px;
+  color: #475569;
+  line-height: 1.35;
+}
+
+.admin-role-banner__desc strong {
+  color: #0f172a;
+}
+
+.admin-role-banner__right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-left: auto;
+}
+
+.admin-role-banner__badge {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #0f172a;
+  background: #e2e8f0;
+  border: 1px solid #cbd5e1;
+  padding: 4px 10px;
+  border-radius: 6px;
 }
 
 .admin-main-panel {
@@ -1749,4 +1954,90 @@ th {
   color: #b91c1c;
   border-color: #fca5a5;
 }
+
+/* ==========================================================================
+   UNIFIED NEXUS MASTER BRAND SYSTEM (Merchant, Ops, Admin)
+   ========================================================================== */
+.nexus-brand-lockup {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+  user-select: none;
+}
+
+.nexus-brand-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.15;
+}
+
+.nexus-brand-title-line {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.nexus-brand-name {
+  font-size: 17px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: #0f172a;
+}
+
+.nexus-brand-lockup--dark .nexus-brand-name {
+  color: #ffffff;
+}
+
+.nexus-brand-logistics {
+  font-size: 15px;
+  font-weight: 500;
+  color: #0052cc;
+  letter-spacing: -0.01em;
+}
+
+.nexus-brand-lockup--dark .nexus-brand-logistics {
+  color: #93c5fd;
+}
+
+.nexus-portal-tag {
+  display: inline-flex;
+  align-items: center;
+  font-size: 9.5px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.nexus-badge--merchant {
+  background: #e0f2fe;
+  color: #0284c7;
+  border: 1px solid #bae6fd;
+}
+
+.nexus-badge--ops {
+  background: #ede9fe;
+  color: #6d28d9;
+  border: 1px solid #ddd6fe;
+}
+
+.nexus-badge--admin {
+  background: #fef3c7;
+  color: #b45309;
+  border: 1px solid #fde68a;
+}
+
+.nexus-brand-sub {
+  font-size: 11px;
+  color: #64748b;
+  font-weight: 500;
+  margin-top: 2px;
+}
+
+.nexus-brand-lockup--dark .nexus-brand-sub {
+  color: rgba(255, 255, 255, 0.7);
+}
+
 

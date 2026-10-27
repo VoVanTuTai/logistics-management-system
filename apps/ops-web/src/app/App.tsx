@@ -65,7 +65,11 @@ class AppErrorBoundary extends Component<
                 border: '1px solid #e2e8f0',
               }}
             >
-              <div style={{ fontSize: 36, marginBottom: 12 }}>🚀</div>
+              <div style={{ display: 'inline-flex', padding: 12, borderRadius: '50%', background: '#eff6ff', color: '#2563eb', marginBottom: 14 }}>
+                <svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67" />
+                </svg>
+              </div>
               <h2 style={{ fontSize: 18, fontWeight: 700, color: '#0f172a', marginBottom: 8 }}>
                 Hệ thống vừa cập nhật phiên bản mới
               </h2>

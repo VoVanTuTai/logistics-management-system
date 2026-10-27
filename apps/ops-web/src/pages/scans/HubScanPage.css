@@ -54,26 +54,24 @@
 }
 
 .hub-scan-toast__icon {
-  font-size: 1.1rem;
   flex-shrink: 0;
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
+  width: 20px;
+  height: 20px;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
 .hub-scan-toast--success .hub-scan-toast__icon {
-  background-color: #10b981;
-  color: #fff;
-  font-size: 0.8rem;
+  color: #059669;
 }
 
 .hub-scan-toast--error .hub-scan-toast__icon {
-  background-color: #ef4444;
-  color: #fff;
-  font-size: 0.8rem;
+  color: #dc2626;
+}
+
+.hub-scan-toast--info .hub-scan-toast__icon {
+  color: #2563eb;
 }
 
 .hub-scan-toast__text {
@@ -571,5 +569,140 @@
 
   .hub-scan-form__group--code {
     flex-basis: 100%;
+  }
+}
+
+/* ─── Location Locked & Select ─── */
+.hub-scan-location-locked {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #f1f5f9;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 0.875rem;
+  color: #1e293b;
+  min-height: 44px;
+}
+
+.hub-scan-location-locked__icon {
+  color: #64748b;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+}
+
+.hub-scan-location-locked__code {
+  font-family: 'Roboto Mono', monospace;
+  font-weight: 700;
+  color: var(--ops-primary, #0052cc);
+}
+
+.hub-scan-location-locked__name {
+  color: #64748b;
+  font-size: 0.8rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.hub-scan-select {
+  cursor: pointer;
+  font-weight: 600;
+}
+
+/* ─── Misrouted Sorting Alarm Banner ─── */
+.hub-scan-misrouted-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  background: #fef2f2;
+  border: 2px solid #ef4444;
+  border-radius: 12px;
+  padding: 14px 18px;
+  margin-bottom: 1.25rem;
+  color: #991b1b;
+  box-shadow: 0 4px 16px rgba(239, 68, 68, 0.15);
+  animation: misroutedPulse 1.8s infinite alternate;
+}
+
+@keyframes misroutedPulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4);
+  }
+  100% {
+    box-shadow: 0 0 0 6px rgba(239, 68, 68, 0.1);
+  }
+}
+
+.hub-scan-misrouted-banner__icon {
+  color: #ef4444;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.hub-scan-misrouted-banner__content {
+  flex: 1;
+}
+
+.hub-scan-misrouted-banner__title {
+  font-size: 1rem;
+  font-weight: 800;
+  color: #b91c1c;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.hub-scan-misrouted-banner__desc {
+  font-size: 0.9rem;
+  line-height: 1.45;
+  color: #7f1d1d;
+}
+
+.hub-scan-misrouted-target {
+  font-weight: 800;
+  color: #dc2626;
+  background: #fee2e2;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.hub-scan-misrouted-banner__action {
+  margin-top: 8px;
+  font-size: 0.85rem;
+  color: #991b1b;
+  background: rgba(239, 68, 68, 0.08);
+  padding: 6px 10px;
+  border-radius: 6px;
+}
+
+.hub-scan-misrouted-banner__dismiss {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  line-height: 1;
+  color: #ef4444;
+  cursor: pointer;
+  padding: 0 4px;
+  opacity: 0.7;
+}
+
+.hub-scan-misrouted-banner__dismiss:hover {
+  opacity: 1;
+}
+
+.hub-scan-badge--misrouted {
+  background: #fee2e2;
+  color: #b91c1c;
+  border: 1px solid #fca5a5;
+  animation: misroutedBlink 1.5s infinite;
+}
+
+@keyframes misroutedBlink {
+  50% {
+    opacity: 0.6;
   }
 }

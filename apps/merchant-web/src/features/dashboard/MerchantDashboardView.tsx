@@ -126,9 +126,14 @@ export function MerchantDashboardView({
     <section className="dashboard-layout">
       <div className="card dashboard-hero">
         <div className="dashboard-hero__copy">
-          <p className="login-kicker">Merchant performance</p>
-          <h3>Tổng quan vận hành</h3>
-          <p className="muted">
+          <div className="dashboard-hero__kicker-badge">
+            <span className="material-symbols-outlined" style={{ fontSize: '15px' }}>
+              insights
+            </span>
+            <span>BÁO CÁO HIỆU SUẤT VẬN HÀNH</span>
+          </div>
+          <h3 className="dashboard-hero__title">Tổng quan vận hành</h3>
+          <p className="dashboard-hero__desc">
             Theo dõi nhịp đơn, COD và phí vận chuyển ước tính từ các vận đơn hiện có.
           </p>
         </div>
@@ -138,14 +143,23 @@ export function MerchantDashboardView({
             void onQuickTrackFromDashboard(e);
           }}
         >
-          <input
-            className="input dashboard-search__input"
-            value={dashboardSearchCode}
-            onChange={(e) => onDashboardSearchCodeChange(e.target.value)}
-            placeholder="101000000001"
-          />
+          <div className="dashboard-search__input-wrapper">
+            <span className="material-symbols-outlined dashboard-search__icon" aria-hidden="true">
+              search
+            </span>
+            <input
+              className="input dashboard-search__input"
+              value={dashboardSearchCode}
+              onChange={(e) => onDashboardSearchCodeChange(e.target.value)}
+              placeholder="Nhập mã vận đơn (VD: 101000000001)..."
+              aria-label="Nhập mã vận đơn cần tra cứu"
+            />
+          </div>
           <button className="btn btn-primary dashboard-search__btn" type="submit">
-            Tra cứu
+            <span className="material-symbols-outlined" style={{ fontSize: '18px' }} aria-hidden="true">
+              manage_search
+            </span>
+            <span>Tra cứu</span>
           </button>
         </form>
       </div>

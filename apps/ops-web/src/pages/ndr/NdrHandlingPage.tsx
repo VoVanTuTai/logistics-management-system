@@ -647,7 +647,7 @@ export function NdrHandlingPage(): React.JSX.Element {
                       <span>Xác nhận chuyển hoàn về cho Người gửi / Shop</span>
                     </label>
                     <small style={{ fontSize: 11.5, color: '#b91c1c', marginTop: 4 }}>
-                      ⚠️ Lưu ý: Khi xác nhận chuyển hoàn, đơn hàng sẽ chuyển sang trạng thái RETURNING và bưu cục sẽ tiến hành đóng bao xuất trả về Hub gửi ban đầu.
+                      Lưu ý: Khi xác nhận chuyển hoàn, đơn hàng sẽ chuyển sang trạng thái RETURNING và bưu cục sẽ tiến hành đóng bao xuất trả về Hub gửi ban đầu.
                     </small>
                   </div>
 

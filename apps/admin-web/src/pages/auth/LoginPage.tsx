@@ -8,6 +8,7 @@ import type { LoginFormValues } from '../../features/auth/auth.types';
 import { routePaths } from '../../navigation/routes';
 import { useAuthStore } from '../../store/authStore';
 import { useUiStore } from '../../store/uiStore';
+import { NexusBrandLogo } from '../../app/NexusBrandLogo';
 import { LoginForm } from './LoginForm';
 
 export function LoginPage(): React.JSX.Element {
@@ -75,13 +76,12 @@ export function LoginPage(): React.JSX.Element {
     <div className="login-shell">
       <div className="login-layout">
         {/* Left Side: Visual Focus & Brand Identity */}
-        <section className="login-hero" style={{ background: 'linear-gradient(180deg, rgba(79, 70, 229, 0.72), rgba(67, 56, 202, 0.94))' }}>
+        <section className="login-hero" style={{ background: 'linear-gradient(180deg, rgba(31, 43, 111, 0.88), rgba(15, 23, 42, 0.96))' }}>
           <img className="login-hero-img" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAH9tY3PsZjp-XCnVG-y43-sPKhb-INEfJPNHYxHTVdm69WwoXvGDiw7DfuvmU5b3DHK_888jICATCwV5G1g3uvdjTPamNKyM8KJB2Ei4T4RBJ-M4US87urT0uP9tXDcCuNPz6FtF-nTa_G-XDYI2LyIsduJvHEffTuIOfqjWvAttJm8D15E5_GNR64ZxIKkl1kwxBKH-3LgX4daJfTkFTanBTrDiE0qwHwVdRRNZ_O-PizHz0CEsugBHSQU-6tzxan_Mxrdatluq8" alt="Logistics Background" />
-          <div className="login-hero-overlay" style={{ background: 'linear-gradient(to top, rgba(79, 70, 229, 0.8), transparent, rgba(79, 70, 229, 0.4))' }} />
+          <div className="login-hero-overlay" style={{ background: 'linear-gradient(to top, rgba(15, 23, 42, 0.9), transparent 60%, rgba(31, 43, 111, 0.4))' }} />
           <div className="login-hero-content">
             <div className="login-hero-top">
-              <span className="material-symbols-outlined brand-icon">hub</span>
-              <h1 className="brand-title">NEXUS Admin</h1>
+              <NexusBrandLogo size={40} portal="admin" theme="dark" showLabel={true} />
             </div>
             <div className="login-hero-copy">
               <h2 className="login-hero-title">Hệ thống Quản trị & Cấu hình Trung tâm</h2>
@@ -103,12 +103,8 @@ export function LoginPage(): React.JSX.Element {
         {/* Right Side: Login Form */}
         <div className="login-card">
           <div className="login-card-inner">
-            <div className="login-brand-header">
-              <div className="login-brand-logo">
-                <span className="material-symbols-outlined brand-icon" style={{ color: 'var(--stitch-primary)' }}>hub</span>
-                <span className="brand-title" style={{ color: 'var(--stitch-primary)' }}>NEXUS Admin</span>
-              </div>
-              <p className="login-kicker-label">Admin Portal</p>
+            <div className="login-brand-header" style={{ marginBottom: '24px' }}>
+              <NexusBrandLogo size={36} portal="admin" showLabel={true} />
             </div>
             
             <div className="login-header-group">

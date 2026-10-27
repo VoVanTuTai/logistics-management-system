@@ -15,6 +15,7 @@ import { hasAdminRole } from '../features/auth/auth.roles';
 import { getStoredAuthSession } from '../features/auth/auth.session';
 import { routePaths } from '../navigation/routes';
 import { useAuthStore } from '../store/authStore';
+import { NexusBrandLogo } from './NexusBrandLogo';
 import { AdminAuditLogPage } from '../pages/audit/AdminAuditLogPage';
 import { LoginPage } from '../pages/auth/LoginPage';
 import { AdminDashboardPage } from '../pages/dashboard/AdminDashboardPage';
@@ -93,12 +94,8 @@ function AdminLayout(): React.JSX.Element {
   return (
     <div className="admin-layout">
       <aside className="admin-sidebar">
-        <div className="admin-brand-header">
-          <div className="admin-brand-logo">NEXUS</div>
-          <div>
-            <h1>Admin Portal</h1>
-            <p>Quản trị hệ thống & Dữ liệu danh mục</p>
-          </div>
+        <div className="admin-brand-header" style={{ padding: '8px 0 16px' }}>
+          <NexusBrandLogo size={36} portal="admin" showLabel={true} />
         </div>
 
         <div className="admin-user-card">
@@ -151,14 +148,65 @@ function AdminLayout(): React.JSX.Element {
 
       <div className="admin-workspace">
         <header className="admin-topbar">
-          <div>
+          <div className="admin-topbar-copy">
             <h2>Trung Tâm Điều Hành Quản Trị Hệ Thống NEXUS</h2>
             <p>Khu vực quản lý danh mục toàn quốc, tài khoản người dùng và cấu hình dịch vụ dùng chung.</p>
           </div>
-          <div className="admin-topbar-badges">
-            <span className="admin-tag">⚡ SYSTEM_ADMIN</span>
+          <div className="admin-topbar-identity">
+            <div className="admin-identity-card" title={`Quản trị viên: ${session?.user.username} · Role: SYSTEM_ADMIN`}>
+              <span className="admin-identity-avatar">
+                {(session?.user.username ?? 'A')[0].toUpperCase()}
+              </span>
+              <div className="admin-identity-meta">
+                <div className="admin-identity-user-line">
+                  <strong>{session?.user.username ?? 'admin'}</strong>
+                  <span className="admin-pulse-dot" title="Hệ thống Audit Log hoạt động" />
+                </div>
+                <span className="admin-identity-role-label">QUẢN TRỊ VIÊN HỆ THỐNG</span>
+              </div>
+            </div>
+            <div className="admin-topbar-badges">
+              <span className="admin-tag admin-tag--role" title="Vai trò hệ thống cao nhất">
+                ⚡ SYSTEM_ADMIN
+              </span>
+              <span className="admin-tag admin-tag--scope" title="Phạm vi tác quyền toàn mạng lưới">
+                🌐 TOÀN QUỐC (HQ)
+              </span>
+              <span className="admin-tag admin-tag--audit" title="Nhật ký Audit Log đang ghi nhận">
+                🛡️ AUDIT ACTIVE
+              </span>
+            </div>
           </div>
         </header>
+
+        {/* Global Admin Security & Role Context Banner */}
+        <div className="admin-role-banner" role="banner">
+          <div className="admin-role-banner__left">
+            <div className="admin-role-banner__icon-wrap">
+              <span className="material-symbols-outlined" style={{ fontSize: '24px' }}>shield_lock</span>
+            </div>
+            <div className="admin-role-banner__text">
+              <div className="admin-role-banner__row">
+                <strong className="admin-role-banner__title">
+                  PHIÊN QUẢN TRỊ VIÊN TỐI CAO · {session?.user.username ?? 'admin'}
+                </strong>
+                <span className="admin-role-banner__role-pill">
+                  <span className="admin-pulse-dot" />
+                  <span>VAI TRÒ: SYSTEM_ADMIN</span>
+                </span>
+                <span className="admin-role-banner__scope-pill">
+                  <span>PHẠM VI: TOÀN QUỐC (HQ)</span>
+                </span>
+              </div>
+              <p className="admin-role-banner__desc">
+                Bạn đang thao tác với quyền Quản trị Trung tâm toàn hệ thống. Mọi thay đổi về Hub, Zone, Biểu phí, Tham số cấu hình và Ma trận phân quyền đều có hiệu lực tức thì trên toàn hệ sinh thái và được ghi lại vào <strong>Nhật ký Audit Log</strong>.
+              </p>
+            </div>
+          </div>
+          <div className="admin-role-banner__right">
+            <span className="admin-role-banner__badge">BẢO MẬT CẤP 1 (RBAC ACTIVE)</span>
+          </div>
+        </div>
 
         <main className="admin-main-panel" data-testid="admin-main">
           <Outlet />

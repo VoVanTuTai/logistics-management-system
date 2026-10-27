@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Eye, EyeOff } from 'lucide-react';
+import { Camera, ExternalLink, Eye, EyeOff, History, ImageOff, Maximize2, Search, ShieldCheck, X } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
 
 import { useNdrCasesQuery } from '../../../../features/ndr/ndr.api';
@@ -17,6 +17,7 @@ import {
   formatTrackingEventSourceLabel,
   formatTrackingEventTypeLabel,
 } from '../../../../utils/logisticsLabels';
+import { normalizeMinioMediaUrl } from '../../../../utils/minioUtils';
 import { CopyableShipmentCode } from '../../../shared/CopyableShipmentCode';
 import { LinkifiedText } from '../../../shared/LinkifiedText';
 import './ServiceQualityIntegratedLookupPage.css';
@@ -136,6 +137,91 @@ function isNotFoundError(error: unknown): boolean {
   return error instanceof ApiClientError && error.status === 404;
 }
 
+interface LookupMediaItem {
+  id: string;
+  url: string;
+  title: string;
+  source: 'POD_DELIVERY' | 'NDR_INCIDENT' | 'TIMELINE';
+  occurredAt?: string;
+}
+
+function extractAllMedia(
+  shipment: ShipmentDetailDto | null,
+  timeline: TrackingTimelineEventDto[],
+  ndrCases: NdrCaseListItemDto[] = [],
+): LookupMediaItem[] {
+  const items: LookupMediaItem[] = [];
+
+  // 1. From shipment metadata (POD photo)
+  const metaPod =
+    shipment?.metadata?.podImageUrl ||
+    shipment?.metadata?.proofOfDeliveryUrl ||
+    shipment?.metadata?.podUrl ||
+    shipment?.metadata?.deliveryPhotoUrl;
+  if (typeof metaPod === 'string' && metaPod.trim()) {
+    items.push({
+      id: 'meta-pod',
+      url: normalizeMinioMediaUrl(metaPod),
+      title: 'Ảnh ký nhận giao hàng (POD)',
+      source: 'POD_DELIVERY',
+      occurredAt: shipment?.updatedAt,
+    });
+  }
+
+  // 2. From timeline events (Driver POD / scans)
+  for (const event of timeline) {
+    if (event.note) {
+      const urlMatches = event.note.match(/https?:\/\/[^\s"'<>]+/gi);
+      if (urlMatches) {
+        for (const rawUrl of urlMatches) {
+          const isImg =
+            /\.(jpg|jpeg|png|webp|gif)($|\?)/i.test(rawUrl) ||
+            rawUrl.includes('/nexus-pod-images/') ||
+            rawUrl.includes('/deliveries/') ||
+            rawUrl.includes('/evidence/');
+          if (isImg && !items.some((existing) => existing.url === rawUrl)) {
+            items.push({
+              id: `event-${event.id}-${items.length}`,
+              url: normalizeMinioMediaUrl(rawUrl),
+              title: event.note.includes('Minh chứng')
+                ? 'Ảnh minh chứng giao hàng (POD)'
+                : `Ảnh vết quét (${event.eventType})`,
+              source: event.note.includes('Minh chứng') ? 'POD_DELIVERY' : 'TIMELINE',
+              occurredAt: event.occurredAt,
+            });
+          }
+        }
+      }
+    }
+  }
+
+  // 3. From NDR cases attachments
+  for (const ndr of ndrCases) {
+    if (Array.isArray(ndr.attachments)) {
+      ndr.attachments.forEach((att, idx) => {
+        const rawUrl =
+          typeof att === 'string'
+            ? att
+            : typeof att === 'object' && att !== null
+            ? (att as { url?: string; thumbnailUrl?: string }).url ||
+              (att as { url?: string; thumbnailUrl?: string }).thumbnailUrl
+            : null;
+        if (typeof rawUrl === 'string' && rawUrl.trim() && !items.some((existing) => existing.url === rawUrl)) {
+          items.push({
+            id: `ndr-${ndr.id}-${idx}`,
+            url: normalizeMinioMediaUrl(rawUrl),
+            title: `Ảnh sự cố (${ndr.issueType || ndr.reasonCode || 'NDR'})`,
+            source: 'NDR_INCIDENT',
+            occurredAt: ndr.updatedAt || ndr.createdAt,
+          });
+        }
+      });
+    }
+  }
+
+  return items;
+}
+
 export function ServiceQualityIntegratedLookupPage(): React.JSX.Element {
   const accessToken = useAuthStore((state) => state.session?.tokens.accessToken ?? null);
   const [searchParams] = useSearchParams();
@@ -156,6 +242,11 @@ export function ServiceQualityIntegratedLookupPage(): React.JSX.Element {
   const timelineRows = useMemo(
     () => buildTimelineRows(trackingQuery.data?.timeline ?? []),
     [trackingQuery.data?.timeline],
+  );
+  const [previewModalUrl, setPreviewModalUrl] = useState<string | null>(null);
+  const mediaList = useMemo(
+    () => extractAllMedia(shipment, timelineRows, ndrQuery.data ?? []),
+    [shipment, timelineRows, ndrQuery.data],
   );
   const isLoading = Boolean(lookupCode) && (
     shipmentDetailQuery.isLoading ||
@@ -184,14 +275,55 @@ export function ServiceQualityIntegratedLookupPage(): React.JSX.Element {
 
   return (
     <section className="ops-integrated-lookup">
-      <header className="ops-integrated-lookup__header">
-        <div>
-          <small>TRA_CUU_TICH_HOP</small>
-          <h2>Tra cứu sự cố / chất lượng</h2>
-          <p>
-            Nhập mã vận đơn để xem toàn bộ thông tin đơn hàng, hub gửi/nhận/đích,
-            người gửi, người nhận, trạng thái hiện tại và lịch sử xử lý.
+      <header className="ops-integrated-lookup__banner">
+        <div className="ops-integrated-lookup__banner-left">
+          <div className="ops-integrated-lookup__banner-badge">
+            <ShieldCheck size={13} aria-hidden="true" />
+            <span>TRA CỨU TÍCH HỢP 360°</span>
+            <span className="ops-integrated-lookup__banner-badge-dot">•</span>
+            <span>CHẤT LƯỢNG & GIÁM ĐỊNH</span>
+          </div>
+          <h2 className="ops-integrated-lookup__banner-title">
+            <span className="ops-integrated-lookup__banner-icon">
+              <Search size={18} aria-hidden="true" />
+            </span>
+            <span>Tra cứu Toàn cảnh Vận đơn & Minh chứng Giao nhận</span>
+          </h2>
+          <p className="ops-integrated-lookup__banner-desc">
+            Xem toàn bộ hành trình, thông tin người gửi/nhận, giải mã số điện thoại PII và trích xuất ảnh giao hàng thực tế (POD).
           </p>
+        </div>
+
+        <div className="ops-integrated-lookup__banner-pills">
+          <div className="ops-integrated-lookup__banner-pill ops-integrated-lookup__banner-pill--pii">
+            <div className="ops-integrated-lookup__pill-icon-wrap">
+              <Eye size={15} aria-hidden="true" />
+            </div>
+            <div className="ops-integrated-lookup__pill-content">
+              <strong>Bảo mật PII</strong>
+              <span>Ẩn/Hiện SĐT</span>
+            </div>
+          </div>
+
+          <div className="ops-integrated-lookup__banner-pill ops-integrated-lookup__banner-pill--pod">
+            <div className="ops-integrated-lookup__pill-icon-wrap">
+              <Camera size={15} aria-hidden="true" />
+            </div>
+            <div className="ops-integrated-lookup__pill-content">
+              <strong>Minh chứng POD</strong>
+              <span>Ảnh nhận hàng</span>
+            </div>
+          </div>
+
+          <div className="ops-integrated-lookup__banner-pill ops-integrated-lookup__banner-pill--audit">
+            <div className="ops-integrated-lookup__pill-icon-wrap">
+              <History size={15} aria-hidden="true" />
+            </div>
+            <div className="ops-integrated-lookup__pill-content">
+              <strong>Audit Vết Quét</strong>
+              <span>Chuỗi thao tác Hub</span>
+            </div>
+          </div>
         </div>
       </header>
 
@@ -317,6 +449,69 @@ export function ServiceQualityIntegratedLookupPage(): React.JSX.Element {
 
           <section className="ops-integrated-lookup__panel ops-integrated-lookup__panel--wide">
             <header>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Camera size={16} aria-hidden="true" style={{ color: 'var(--ops-primary, #0052cc)' }} />
+                <h3>Hình ảnh khi nhận hàng & Minh chứng giao nhận (POD)</h3>
+              </div>
+              <span>{mediaList.length} ảnh / tài liệu</span>
+            </header>
+            {mediaList.length === 0 ? (
+              <div className="ops-integrated-lookup__empty" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <ImageOff size={18} style={{ color: '#94a3b8' }} />
+                <span>
+                  {shipment.currentStatus === 'DELIVERED'
+                    ? 'Đơn hàng đã ký nhận thành công nhưng chưa phát sinh ảnh POD ngoại quan hoặc Shipper sử dụng chữ ký số.'
+                    : 'Đơn hàng chưa giao thành công. Ảnh chụp ngoại quan & biên bản khi nhận hàng (POD) sẽ hiển thị tại đây ngay khi Shipper tải lên.'}
+                </span>
+              </div>
+            ) : (
+              <div className="ops-integrated-lookup__media-grid">
+                {mediaList.map((media) => (
+                  <div
+                    key={media.id}
+                    className="ops-integrated-lookup__media-card"
+                    onClick={() => setPreviewModalUrl(media.url)}
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        setPreviewModalUrl(media.url);
+                      }
+                    }}
+                  >
+                    <div className="ops-integrated-lookup__media-thumb-wrap">
+                      <img
+                        src={media.url}
+                        alt={media.title}
+                        className="ops-integrated-lookup__media-thumb"
+                        onError={(e) => {
+                          e.currentTarget.style.display = 'none';
+                        }}
+                      />
+                      <div className="ops-integrated-lookup__media-overlay">
+                        <Maximize2 size={16} />
+                        <span>Phóng to</span>
+                      </div>
+                    </div>
+                    <div className="ops-integrated-lookup__media-info">
+                      <span className={`ops-integrated-lookup__media-tag ops-integrated-lookup__media-tag--${media.source.toLowerCase()}`}>
+                        {media.source === 'POD_DELIVERY'
+                          ? 'Ảnh giao nhận POD'
+                          : media.source === 'NDR_INCIDENT'
+                          ? 'Ảnh sự cố NDR'
+                          : 'Ảnh vết quét'}
+                      </span>
+                      <strong title={media.title}>{media.title}</strong>
+                      {media.occurredAt && <small>{formatDateTime(media.occurredAt)}</small>}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
+
+          <section className="ops-integrated-lookup__panel ops-integrated-lookup__panel--wide">
+            <header>
               <h3>Sự cố / chất lượng</h3>
               <span>{ndrQuery.data?.length ?? 0} hồ sơ</span>
             </header>
@@ -407,6 +602,38 @@ export function ServiceQualityIntegratedLookupPage(): React.JSX.Element {
             ) : null}
           </section>
         </>
+      ) : null}
+
+      {previewModalUrl ? (
+        <div className="ops-integrated-lookup__lightbox" onClick={() => setPreviewModalUrl(null)}>
+          <div className="ops-integrated-lookup__lightbox-content" onClick={(e) => e.stopPropagation()}>
+            <header className="ops-integrated-lookup__lightbox-header">
+              <h4>Ảnh minh chứng kiện hàng</h4>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <a
+                  href={previewModalUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="ops-integrated-lookup__lightbox-btn"
+                >
+                  <ExternalLink size={14} />
+                  <span>Mở tab mới</span>
+                </a>
+                <button
+                  type="button"
+                  onClick={() => setPreviewModalUrl(null)}
+                  className="ops-integrated-lookup__lightbox-close"
+                  aria-label="Đóng"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+            </header>
+            <div className="ops-integrated-lookup__lightbox-body">
+              <img src={previewModalUrl} alt="Minh chứng kiện hàng" />
+            </div>
+          </div>
+        </div>
       ) : null}
     </section>
   );

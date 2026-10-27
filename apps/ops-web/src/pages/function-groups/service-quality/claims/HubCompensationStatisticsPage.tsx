@@ -33,6 +33,9 @@ import {
   RefreshCw,
   Download,
   TrendingDown,
+  TrendingUp,
+  FileSpreadsheet,
+  Search,
   DollarSign,
   Scale,
   AlertTriangle,
@@ -454,7 +457,10 @@ export const HubCompensationStatisticsPage: React.FC = () => {
         {/* Chart 3: Monthly Trend Line Chart */}
         <div className="chart-card full-width">
           <div className="chart-header">
-            <h3 className="chart-title">📈 Xu Hướng Tỷ Lệ Thất Thoát & Chi Phí 6 Tháng Gần Nhất</h3>
+            <h3 className="chart-title" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+              <TrendingUp size={16} />
+              <span>Xu Hướng Tỷ Lệ Thất Thoát & Chi Phí 6 Tháng Gần Nhất</span>
+            </h3>
             <span className="chart-legend-tag">Toàn hệ thống logistics</span>
           </div>
           <div style={{ width: '100%', height: 260 }}>
@@ -515,7 +521,10 @@ export const HubCompensationStatisticsPage: React.FC = () => {
       <div className="hub-table-card">
         <div className="table-header-row">
           <div>
-            <h3 className="table-title">📑 Ma Trận Đối Soát Bồi Thường & Chế Tài Theo Hub</h3>
+            <h3 className="table-title" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+              <FileSpreadsheet size={16} />
+              <span>Ma Trận Đối Soát Bồi Thường & Chế Tài Theo Hub</span>
+            </h3>
             <p style={{ margin: '4px 0 0 0', fontSize: '13px', color: '#64748b' }}>
               Danh sách chi tiết tỷ lệ hỏng vỡ, số tiền phải chịu và tình trạng thu hồi chế tài của từng đơn vị.
             </p>
@@ -523,7 +532,7 @@ export const HubCompensationStatisticsPage: React.FC = () => {
 
           <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
             <div className="table-search-box">
-              <span>🔍</span>
+              <Search size={14} style={{ color: '#94a3b8' }} />
               <input
                 type="text"
                 placeholder="Tìm Hub theo mã, tên, vùng..."
@@ -545,10 +554,10 @@ export const HubCompensationStatisticsPage: React.FC = () => {
               }}
             >
               <option value="ALL">Mọi mức rủi ro</option>
-              <option value="CRITICAL">🔴 Báo động Đỏ (Critical)</option>
-              <option value="HIGH">🟠 Rủi ro Cao (High)</option>
-              <option value="MEDIUM">🟡 Rủi ro Trung bình</option>
-              <option value="LOW">🟢 Kiểm soát Tốt (Low)</option>
+              <option value="CRITICAL">Mức nghiêm trọng (Critical)</option>
+              <option value="HIGH">Mức cao (High)</option>
+              <option value="MEDIUM">Mức trung bình (Medium)</option>
+              <option value="LOW">Mức tiêu chuẩn (Low)</option>
             </select>
           </div>
         </div>
@@ -630,10 +639,10 @@ export const HubCompensationStatisticsPage: React.FC = () => {
                       </td>
                       <td>
                         <span className={`badge-risk ${hub.riskLevel}`}>
-                          {hub.riskLevel === 'CRITICAL' && '🔴 BÁO ĐỘNG ĐỎ'}
-                          {hub.riskLevel === 'HIGH' && '🟠 RỦI RO CAO'}
-                          {hub.riskLevel === 'MEDIUM' && '🟡 TRUNG BÌNH'}
-                          {hub.riskLevel === 'LOW' && '🟢 AN TOÀN'}
+                          {hub.riskLevel === 'CRITICAL' && 'BÁO ĐỘNG ĐỎ'}
+                          {hub.riskLevel === 'HIGH' && 'RỦI RO CAO'}
+                          {hub.riskLevel === 'MEDIUM' && 'TRUNG BÌNH'}
+                          {hub.riskLevel === 'LOW' && 'AN TOÀN'}
                         </span>
                       </td>
                       <td style={{ maxWidth: '200px', fontSize: '12px', color: '#475569' }}>
@@ -727,7 +736,7 @@ export const HubCompensationStatisticsPage: React.FC = () => {
               {/* Claims list of this hub */}
               <div>
                 <h4 style={{ margin: '0 0 10px 0', fontSize: '14px', color: '#0f172a' }}>
-                  📋 Danh sách các sự cố liên quan đến Hub ({claimsForSelectedHub.length} hồ sơ):
+                  Danh sách sự cố liên quan ({claimsForSelectedHub.length} hồ sơ):
                 </h4>
                 {claimsForSelectedHub.length === 0 ? (
                   <p style={{ fontSize: '13px', color: '#64748b' }}>Không có hồ sơ sự cố phát sinh tại Hub này.</p>
