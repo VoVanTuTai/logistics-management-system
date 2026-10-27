@@ -1,4 +1,5 @@
 import React from 'react';
+import { CheckCircle2, AlertCircle, Info, X } from 'lucide-react';
 
 import { useUiStore } from '../store/uiStore';
 
@@ -33,11 +34,17 @@ export function AppShell({ children }: AppShellProps): React.JSX.Element {
               onClick={() => dismissToast(toast.id)}
             >
               <span className="global-toast-icon" aria-hidden="true">
-                {toast.type === 'success' ? '✓' : toast.type === 'error' ? '!' : 'i'}
+                {toast.type === 'success' ? (
+                  <CheckCircle2 size={16} />
+                ) : toast.type === 'error' ? (
+                  <AlertCircle size={16} />
+                ) : (
+                  <Info size={16} />
+                )}
               </span>
               <span>{toast.message}</span>
               <span className="global-toast-close" aria-hidden="true">
-                ×
+                <X size={14} />
               </span>
             </button>
           ))}

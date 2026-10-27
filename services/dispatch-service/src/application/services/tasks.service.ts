@@ -1074,7 +1074,7 @@ export class TasksService {
     }
 
     const normalizedTaskType = taskType.trim().toUpperCase();
-    if (!normalizedTaskType) {
+    if (!normalizedTaskType || normalizedTaskType === 'ALL' || normalizedTaskType === 'TAT_CA') {
       return undefined;
     }
 
@@ -1095,8 +1095,18 @@ export class TasksService {
     }
 
     const normalizedStatus = status.trim().toUpperCase();
-    if (!normalizedStatus) {
+    if (!normalizedStatus || normalizedStatus === 'ALL' || normalizedStatus === 'TAT_CA') {
       return undefined;
+    }
+
+    if (normalizedStatus === 'IN_PROGRESS' || normalizedStatus === 'DELIVERING' || normalizedStatus === 'PICKED_UP') {
+      return 'ASSIGNED';
+    }
+    if (normalizedStatus === 'DONE' || normalizedStatus === 'SUCCESS') {
+      return 'COMPLETED';
+    }
+    if (normalizedStatus === 'FAILED') {
+      return 'CANCELLED';
     }
 
     if (!TASK_STATUSES.includes(normalizedStatus as (typeof TASK_STATUSES)[number])) {

@@ -13,6 +13,7 @@ import {
   Maximize2,
   X,
   Copy,
+  Ban,
 } from 'lucide-react';
 
 import { useHubsQuery } from '../../../../features/masterdata/masterdata.api';
@@ -1250,7 +1251,7 @@ export function BranchBusinessOrderCreatePage(): React.JSX.Element {
                       {availableReceiverHubs.map((hub) => (
                         <option key={hub.code} value={hub.code}>
                           [{hub.code}] {hub.name}{' '}
-                          {hub.code === autoResolvedReceiverHub?.code ? '★ Đang khớp' : ''}
+                          {hub.code === autoResolvedReceiverHub?.code ? '(Đang khớp)' : ''}
                         </option>
                       ))}
                     </>
@@ -1933,7 +1934,10 @@ export function BranchBusinessOrderCreatePage(): React.JSX.Element {
               {isSubmitting ? (
                 <span>Đang xử lý tạo đơn & tiếp nhận...</span>
               ) : operationalCeiling.isOverCeiling ? (
-                <span>🚫 VƯỢT TRẦN MẠNG LƯỚI ({operationalCeiling.ceilingReason})</span>
+                <>
+                  <Ban size={18} />
+                  <span>VƯỢT TRẦN MẠNG LƯỚI ({operationalCeiling.ceilingReason})</span>
+                </>
               ) : (
                 <>
                   <Check size={18} />

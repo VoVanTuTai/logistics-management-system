@@ -158,7 +158,7 @@ export function HqNetworkGeofenceMapPage(): React.JSX.Element {
         matchedHubCode: matchedWard.code,
         matchedHubName: matchedWard.name,
         level: 3,
-        reason: `✓ Khớp 100% ranh giới bám sát khít (${matchedWard.ward}, ${matchedWard.district}) - Không lọt đơn`,
+        reason: `Khớp 100% ranh giới bám sát khít (${matchedWard.ward}, ${matchedWard.district}) - Không lọt đơn`,
       });
       drawSimulation(lat, lng, matchedWard.latitude, matchedWard.longitude, matchedWard.name, wardColor);
       return;
@@ -241,7 +241,7 @@ export function HqNetworkGeofenceMapPage(): React.JSX.Element {
       <div style="font-size:13px; font-weight:bold; color:#0052cc;">Vị trí đơn hàng kiểm tra GPS</div>
       <div style="font-size:12px; color:#5b6b86;">Tọa độ: ${orderLat.toFixed(5)}, ${orderLng.toFixed(5)}</div>
       <div style="font-size:12px; color:#102548; margin-top:4px;">Điều phối về: <strong>${hubName}</strong></div>
-      <div style="font-size:11px; color:#059669; font-weight:600; margin-top:3px;">✓ Đã khớp vùng khít - Không lọt đơn</div>
+      <div style="font-size:11px; color:#059669; font-weight:600; margin-top:3px;">Đã khớp vùng khít - Không lọt đơn</div>
     `).openPopup();
 
     simLineRef.current = L.polyline(
@@ -467,10 +467,10 @@ export function HqNetworkGeofenceMapPage(): React.JSX.Element {
         });
 
         wardPoly.bindTooltip(
-          `<div style="font-weight:bold; color:${wardColor}; font-size:13px;">🏣 ${ward.name}</div>
+          `<div style="font-weight:bold; color:${wardColor}; font-size:13px;">${ward.name}</div>
            <div style="font-size:11px; color:#475569;">${ward.district}, ${ward.province}</div>
            <div style="font-size:10px; color:#64748b;">${ward.areaKm2} km² • Mã bưu chính: ${ward.postalCode || 'N/A'}</div>
-           <div style="font-size:10px; color:#0052cc; font-weight:700; margin-top:2px;">✓ GeoJSON chuẩn quốc gia (${ward.originalVertices} đỉnh gốc → ${ward.boundaryPolygon.length} đỉnh)</div>`,
+           <div style="font-size:10px; color:#0052cc; font-weight:700; margin-top:2px;">GeoJSON chuẩn quốc gia (${ward.originalVertices} đỉnh gốc → ${ward.boundaryPolygon.length} đỉnh)</div>`,
           { sticky: true },
         );
 
@@ -748,7 +748,7 @@ export function HqNetworkGeofenceMapPage(): React.JSX.Element {
             {simResult ? (
               <div className="hq-map-simulator-result">
                 <span className={`hq-map-sim-tag ${simResult.level === 3 ? 'matched-ward' : 'matched-province'}`}>
-                  {simResult.level === 3 ? '✓ ĐÃ KHỚP ĐA GIÁC PHƯỜNG (CẤP 3)' : '✓ ĐÃ KHỚP ĐA GIÁC TỈNH/THÀNH (CẤP 2)'}
+                  {simResult.level === 3 ? 'ĐÃ KHỚP ĐA GIÁC PHƯỜNG (CẤP 3)' : 'ĐÃ KHỚP ĐA GIÁC TỈNH/THÀNH (CẤP 2)'}
                 </span>
                 <div className="hq-map-sim-hub-name">{simResult.matchedHubName}</div>
                 <div className="hq-map-sim-hub-code">Mã phụ trách: {simResult.matchedHubCode} (Cấp {simResult.level})</div>
@@ -761,7 +761,7 @@ export function HqNetworkGeofenceMapPage(): React.JSX.Element {
               </div>
             ) : (
               <div style={{ padding: '8px', textAlign: 'center', color: '#64748b', fontSize: '0.75rem' }}>
-                👉 Chưa có điểm click. Hãy click vào bất kỳ đâu trên bản đồ Việt Nam!
+                Chưa có điểm click. Hãy click vào bất kỳ đâu trên bản đồ Việt Nam!
               </div>
             )}
           </div>

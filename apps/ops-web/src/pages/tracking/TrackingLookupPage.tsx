@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
-import { Globe2 } from 'lucide-react';
+import { Eye, Globe2 } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 import { useTrackingDetailQuery } from '../../features/tracking/tracking.api';
 import type { TrackingTimelineEventDto } from '../../features/tracking/tracking.types';
+import { routePaths } from '../../navigation/routes';
 import { useAuthStore } from '../../store/authStore';
 import { formatDateTime } from '../../utils/format';
 import { TrackingStatusHistoryTable } from './TrackingStatusHistoryTable';
@@ -115,7 +117,31 @@ export function TrackingLookupPage(): React.JSX.Element {
         <article className="ops-tracking-lookup__right-column">
           <header className="ops-tracking-lookup__log-header">
             <h3>Lịch sử trạng thái</h3>
-            {selectedShipmentCode ? <strong>{selectedShipmentCode}</strong> : null}
+            {selectedShipmentCode ? (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <strong>{selectedShipmentCode}</strong>
+                <Link
+                  to={`${routePaths.serviceQualityIntegratedLookup}?shipmentCode=${encodeURIComponent(selectedShipmentCode)}`}
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '5px',
+                    fontSize: '12px',
+                    fontWeight: 600,
+                    color: '#0052cc',
+                    background: '#edf5ff',
+                    border: '1px solid #cce0ff',
+                    borderRadius: '6px',
+                    padding: '3px 8px',
+                    textDecoration: 'none',
+                  }}
+                  title="Mở Tra cứu tích hợp: xem đầy đủ người gửi, người nhận, PII SĐT và sự cố"
+                >
+                  <Eye size={13} aria-hidden="true" />
+                  <span>Tra cứu tích hợp (Xem PII)</span>
+                </Link>
+              </div>
+            ) : null}
           </header>
 
           {!selectedShipmentCode ? (

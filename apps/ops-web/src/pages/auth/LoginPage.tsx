@@ -7,6 +7,7 @@ import { routePaths } from '../../navigation/routes';
 import { useAuthStore } from '../../store/authStore';
 import { useUiStore } from '../../store/uiStore';
 import type { LoginFormValues } from '../../features/auth/auth.types';
+import { NexusBrandLogo } from '../../app/NexusBrandLogo';
 import { LoginForm } from './LoginForm';
 
 export function LoginPage(): React.JSX.Element {
@@ -69,19 +70,7 @@ export function LoginPage(): React.JSX.Element {
           <div className="login-hero-overlay" />
           <div className="login-hero-content">
             <div className="login-hero-top">
-              <span className="ops-topbar-logo" style={{ width: '38px', height: '38px', borderRadius: '10px' }} aria-hidden="true">
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path
-                    d="M4.5 19.5V4.5L16.5 17.5V4.5"
-                    stroke="#ffffff"
-                    strokeWidth="3.2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                  <circle cx="19.5" cy="5" r="2.2" fill="#93c5fd" />
-                </svg>
-              </span>
-              <h1 className="brand-title">NEXUS Ops</h1>
+              <NexusBrandLogo size={40} portal="ops" theme="dark" showLabel={true} />
             </div>
             <div className="login-hero-copy">
               <h2 className="login-hero-title">Trung tâm Điều phối & Vận hành Nội bộ</h2>
@@ -103,23 +92,8 @@ export function LoginPage(): React.JSX.Element {
         {/* Right Side: Login Form */}
         <div className="login-card">
           <div className="login-card-inner">
-            <div className="login-brand-header">
-              <div className="login-brand-logo">
-                <span className="ops-topbar-logo" style={{ width: '30px', height: '30px', borderRadius: '8px' }} aria-hidden="true">
-                  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path
-                      d="M4.5 19.5V4.5L16.5 17.5V4.5"
-                      stroke="#ffffff"
-                      strokeWidth="3.2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                    <circle cx="19.5" cy="5" r="2.2" fill="#93c5fd" />
-                  </svg>
-                </span>
-                <span className="brand-title">NEXUS Ops</span>
-              </div>
-              <p className="login-kicker-label">Ops Portal</p>
+            <div className="login-brand-header" style={{ marginBottom: '24px' }}>
+              <NexusBrandLogo size={36} portal="ops" showLabel={true} />
             </div>
             
             <div className="login-header-group">

@@ -22,6 +22,7 @@ import { appEnv } from '../utils/env';
 import { formatHubFullAddress } from '../utils/locationScope';
 import { formatRoleLabel } from '../utils/logisticsLabels';
 import { OpsUserAccountMenu } from '../features/auth/components/OpsUserAccountMenu';
+import { NexusBrandLogo } from './NexusBrandLogo';
 import {
   Globe2,
   MessageSquare,
@@ -555,18 +556,11 @@ function DashboardLayout(): React.JSX.Element {
   const canViewBranch = canAccessOpsFeature(session?.user, 'nav.branch-business');
   const canViewFleet = canAccessOpsFeature(session?.user, 'nav.linehaul-fleet-control');
 
-  interface ClusterSubMenuItem {
-    label: string;
-    to: string;
-    keywords?: string;
-  }
-
   interface ClusterMenuItem {
     label: string;
     icon: SidebarIconName;
     to: string;
     keywords: string;
-    children?: ClusterSubMenuItem[];
   }
 
   interface MenuCluster {
@@ -660,14 +654,16 @@ function DashboardLayout(): React.JSX.Element {
             keywords: 'chot ca cuoi ngay ban giao ca sang chieu',
           },
           {
-            label: 'Tài chính & Thu hộ COD',
+            label: 'Quyết toán Thu hộ COD',
             icon: 'branch_finance_settlement' as const,
-            to: routePaths.branchBusinessFinanceCod,
-            keywords: 'quyet toan thu ho cod doi soat cong no buu cuc tai chinh dong tien',
-            children: [
-              { label: 'Quyết toán Thu hộ COD', to: `${routePaths.branchBusinessFinanceCod}?tab=cod`, keywords: 'thu tien cod nop quy' },
-              { label: 'Đối soát Công nợ Bưu cục', to: `${routePaths.branchBusinessFinanceCod}?tab=reconcile`, keywords: 'doi soat cong no khoa so' },
-            ],
+            to: `${routePaths.branchBusinessFinanceCod}?tab=cod`,
+            keywords: 'quyet toan thu ho cod nop quy buu ta shipper tai chinh dong tien',
+          },
+          {
+            label: 'Đối soát Công nợ Bưu cục',
+            icon: 'branch_finance_settlement' as const,
+            to: `${routePaths.branchBusinessFinanceCod}?tab=reconcile`,
+            keywords: 'doi soat cong no buu cuc khoa so cong no',
           },
         ],
       },
@@ -692,10 +688,10 @@ function DashboardLayout(): React.JSX.Element {
             keywords: 'dieu phoi lay hang gom don shop',
           },
           {
-            label: 'Phân vùng Shipper',
+            label: 'Phân vùng Tuyến Shipper',
             icon: 'tracking_lookup' as const,
             to: routePaths.courierAreaAssignment,
-            keywords: 'phan vung shipper tuyen buu ta khu vuc',
+            keywords: 'phan vung shipper tuyen buu ta khu vuc dai toa do',
           },
           {
             label: 'Chat với Bưu tá',
@@ -714,25 +710,28 @@ function DashboardLayout(): React.JSX.Element {
         to: routePaths.groupCapabilityPlatform,
         items: [
           {
-            label: 'Quản lý & Giám sát Chuyến xe',
+            label: 'Chuyến xe tải đường trục',
             icon: 'linehaul_transport' as const,
-            to: routePaths.linehaulTripManagement,
-            keywords: 'quan ly chuyen xe tai linehaul xuat ben niem phong kep chi seal giam sat du lieu xe',
-            children: [
-              { label: 'Chuyến xe tải', to: `${routePaths.linehaulTripManagement}?tab=trips`, keywords: 'lap chuyen xe gan tai xe' },
-              { label: 'Niêm phong & Kẹp chì', to: `${routePaths.linehaulTripManagement}?tab=seal`, keywords: 'niem phong kep chi seal xuat ben' },
-              { label: 'Giám sát Dữ liệu xe', to: `${routePaths.linehaulTripManagement}?tab=monitor`, keywords: 'radar giam sat du lieu gps' },
-            ],
+            to: `${routePaths.linehaulTripManagement}?tab=trips`,
+            keywords: 'quan ly chuyen xe tai linehaul xuat ben lap chuyen xe gan tai xe',
+          },
+          {
+            label: 'Niêm phong & Kẹp chì Seal',
+            icon: 'proof_management' as const,
+            to: `${routePaths.linehaulTripManagement}?tab=seal`,
+            keywords: 'niem phong kep chi seal xuat ben cat chi tiep nhan',
+          },
+          {
+            label: 'Giám sát Dữ liệu xe tải',
+            icon: 'monitor_data' as const,
+            to: `${routePaths.linehaulTripManagement}?tab=monitor`,
+            keywords: 'giam sat du lieu xe tai gps radar xe',
           },
           {
             label: 'Quản lý & In tem bao tải',
             icon: 'thermal_label' as const,
             to: routePaths.linehaulBagLabelManagement,
             keywords: 'quan ly in tem bao tai dong bao bagging thermal print',
-            children: [
-              { label: 'Danh sách tem bao', to: `${routePaths.linehaulBagLabelManagement}?tab=management`, keywords: 'danh sach bao tai tra cuu' },
-              { label: 'Tạo & In tem mới', to: `${routePaths.linehaulBagLabelManagement}?tab=print`, keywords: 'in tem nhiet dong bao' },
-            ],
           },
         ],
       },
@@ -744,6 +743,12 @@ function DashboardLayout(): React.JSX.Element {
         icon: 'service_proactive' as const,
         to: routePaths.groupServiceQuality,
         items: [
+          {
+            label: 'Tra cứu tích hợp',
+            icon: 'tracking_lookup' as const,
+            to: routePaths.serviceQualityIntegratedLookup,
+            keywords: 'tra cuu tich hop chi tiet don hang van don sdt che mat hinh anh pod',
+          },
           {
             label: 'Trung tâm CSKH & Khiếu nại',
             icon: 'service_care' as const,
@@ -757,28 +762,32 @@ function DashboardLayout(): React.JSX.Element {
             keywords: 'giam dinh don lac phan tich log vet thao tac mat kien cctv giai trinh',
           },
           {
-            label: 'Quản lý Đền bù & Bồi thường',
-            icon: 'metrics_action' as const,
-            to: routePaths.claimsLiabilityManagement,
-            keywords: 'ho so den bu phan dinh trach nhiem boi thuong thong ke hub che tai',
-            children: [
-              { label: 'Hồ sơ Bồi thường & Phân định', to: `${routePaths.claimsLiabilityManagement}?tab=liability`, keywords: 'phan dinh trach nhiem che tai' },
-              { label: 'Thống kê Bồi thường Hub', to: `${routePaths.claimsLiabilityManagement}?tab=statistics`, keywords: 'thong ke ty le that thoat kpi' },
-            ],
+            label: 'Hồ sơ Bồi thường & Phân định',
+            icon: 'service_weight' as const,
+            to: `${routePaths.claimsLiabilityManagement}?tab=liability`,
+            keywords: 'ho so den bu phan dinh trach nhiem boi thuong che tai',
           },
           {
-            label: 'Giao thất bại (NDR) & Chuyển hoàn',
+            label: 'Thống kê Bồi thường Hub',
+            icon: 'operation_report' as const,
+            to: `${routePaths.claimsLiabilityManagement}?tab=statistics`,
+            keywords: 'thong ke ty le that thoat kpi boi thuong',
+          },
+          {
+            label: 'Xử lý Giao thất bại (NDR)',
             icon: 'service_abnormal' as const,
-            to: routePaths.ndr,
-            keywords: 'xu ly giao that bai ndr hen lai sai dia chi chuyen hoan tra hang ve shop tao don hoan',
-            children: [
-              { label: 'Xử lý Giao thất bại (NDR)', to: `${routePaths.ndr}?tab=ndr`, keywords: 'lien he lai hen ca giao' },
-              { label: 'Quản lý Hàng chuyển hoàn', to: `${routePaths.ndr}?tab=return-block`, keywords: 'tra hang ve shop nhap kho hoan' },
-            ],
+            to: `${routePaths.ndr}?tab=ndr`,
+            keywords: 'xu ly giao that bai ndr hen lai sai dia chi',
+          },
+          {
+            label: 'Quản lý Hàng chuyển hoàn',
+            icon: 'return_block' as const,
+            to: `${routePaths.ndr}?tab=return-block`,
+            keywords: 'chuyen hoan tra hang ve shop tao don hoan nhap kho hoan',
           },
           {
             label: 'Giám sát Rủi ro & Radar SLA',
-            icon: 'service_abnormal' as const,
+            icon: 'service_proactive' as const,
             to: routePaths.serviceQualityAbnormalManagement,
             keywords: 'hang bat thuong hu hong be vo bien ban radar canh bao sla',
           },
@@ -872,7 +881,7 @@ function DashboardLayout(): React.JSX.Element {
     for (const cluster of menuClusters) {
       if (
         cluster.visible !== false &&
-        cluster.items.some((item) => pathMatches(location.pathname, item.to))
+        cluster.items.some((item) => isRouteOrTabActive(location.pathname, location.search, item.to))
       ) {
         return cluster.id;
       }
@@ -934,7 +943,7 @@ function DashboardLayout(): React.JSX.Element {
       return 'branch_warehouse';
     }
     return null;
-  }, [location.pathname, menuClusters]);
+  }, [location.pathname, location.search, menuClusters]);
 
   const [openClusters, setOpenClusters] = useState<Record<string, boolean>>({
     hq: true,
@@ -994,23 +1003,6 @@ function DashboardLayout(): React.JSX.Element {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
-  const [openSubmenus, setOpenSubmenus] = useState<Record<string, boolean>>({});
-
-  // Auto-expand submenu if any child is currently active
-  useEffect(() => {
-    menuClusters.forEach((cluster) => {
-      cluster.items.forEach((item) => {
-        if (
-          item.children?.some((child) =>
-            isRouteOrTabActive(location.pathname, location.search, child.to),
-          )
-        ) {
-          setOpenSubmenus((prev) => ({ ...prev, [item.label]: true }));
-        }
-      });
-    });
-  }, [location.pathname, location.search, menuClusters]);
-
   const [menuSearchKeyword, setMenuSearchKeyword] = useState('');
   const normalizedSearch = menuSearchKeyword.trim().toLowerCase();
   const isSearching = Boolean(normalizedSearch);
@@ -1025,12 +1017,7 @@ function DashboardLayout(): React.JSX.Element {
         const matched = cluster.items.filter(
           (item) =>
             item.label.toLowerCase().includes(normalizedSearch) ||
-            item.keywords.toLowerCase().includes(normalizedSearch) ||
-            item.children?.some(
-              (c) =>
-                c.label.toLowerCase().includes(normalizedSearch) ||
-                (c.keywords && c.keywords.toLowerCase().includes(normalizedSearch)),
-            ),
+            item.keywords.toLowerCase().includes(normalizedSearch),
         );
         return { ...cluster, items: matched };
       })
@@ -1076,7 +1063,7 @@ function DashboardLayout(): React.JSX.Element {
   const activeTabLabel = useMemo(() => {
     for (const cluster of menuClusters) {
       for (const item of cluster.items) {
-        if (pathMatches(location.pathname, item.to)) {
+        if (isRouteOrTabActive(location.pathname, location.search, item.to)) {
           return item.label;
         }
       }
@@ -1090,7 +1077,7 @@ function DashboardLayout(): React.JSX.Element {
       return 'Tra cứu hành trình';
     }
     return 'Trang chủ';
-  }, [location.pathname, menuClusters, quickTools]);
+  }, [location.pathname, location.search, menuClusters, quickTools]);
 
   const onQuickSearch = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -1119,23 +1106,9 @@ function DashboardLayout(): React.JSX.Element {
                 className="ops-topbar-brand ops-topbar-brand--button"
                 onClick={() => navigate(routePaths.dashboard)}
                 aria-label="Go to dashboard"
+                style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}
               >
-                <span className="ops-topbar-logo" aria-hidden="true">
-                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path
-                      d="M4.5 19.5V4.5L16.5 17.5V4.5"
-                      stroke="#ffffff"
-                      strokeWidth="3.2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                    <circle cx="19.5" cy="5" r="2.2" fill="#93c5fd" />
-                  </svg>
-                </span>
-                <span className="ops-topbar-brand-text">
-                  <strong>NEXUS VN</strong>
-                  <span>Logistics Control Tower</span>
-                </span>
+                <NexusBrandLogo size={32} portal="ops" showLabel={true} />
               </button>
 
               <div className="ops-topbar-actions">
@@ -1227,21 +1200,9 @@ function DashboardLayout(): React.JSX.Element {
             className="ops-func-logo ops-func-logo--button"
             onClick={() => navigate(routePaths.dashboard)}
             aria-label="Go to dashboard"
-            style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}
+            style={{ background: 'none', border: 'none', padding: '0 8px', cursor: 'pointer', display: 'inline-flex', alignItems: 'center' }}
           >
-            <span className="ops-topbar-logo" style={{ width: '30px', height: '30px', borderRadius: '8px' }} aria-hidden="true">
-              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path
-                  d="M4.5 19.5V4.5L16.5 17.5V4.5"
-                  stroke="#ffffff"
-                  strokeWidth="3.2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-                <circle cx="19.5" cy="5" r="2.2" fill="#93c5fd" />
-              </svg>
-            </span>
-            <span style={{ fontSize: '15px', fontWeight: 700, letterSpacing: '0.04em', color: '#0052cc' }}>NEXUS VN</span>
+            <NexusBrandLogo size={30} portal="ops" showLabel={true} />
           </button>
 
         <nav className="ops-func-main-nav" aria-label="Main navigation">
@@ -1490,47 +1451,25 @@ function DashboardLayout(): React.JSX.Element {
                       </div>
                       <div className="ops-func-cluster-flyout-items">
                         {cluster.items.map((item) => {
-                          const isItemActive = pathMatches(location.pathname, item.to);
-                          const hasChildren = Boolean(item.children && item.children.length > 0);
+                          const isItemActive = isRouteOrTabActive(
+                            location.pathname,
+                            location.search,
+                            item.to,
+                          );
                           return (
-                            <div key={item.label} className="ops-func-cluster-flyout-group">
-                              <button
-                                type="button"
-                                className={`ops-func-cluster-flyout-item ${
-                                  isItemActive ? 'ops-func-cluster-flyout-item--active' : ''
-                                }`}
-                                onClick={() => navigate(item.to)}
-                              >
-                                <span className="ops-func-sidebar-icon">
-                                  <SidebarIcon name={item.icon} />
-                                </span>
-                                <span>{item.label}</span>
-                              </button>
-                              {hasChildren && (
-                                <div className="ops-func-cluster-flyout-subitems">
-                                  {item.children!.map((child) => {
-                                    const isChildActive = isRouteOrTabActive(
-                                      location.pathname,
-                                      location.search,
-                                      child.to,
-                                    );
-                                    return (
-                                      <button
-                                        key={child.label}
-                                        type="button"
-                                        className={`ops-func-cluster-flyout-subitem ${
-                                          isChildActive ? 'ops-func-cluster-flyout-subitem--active' : ''
-                                        }`}
-                                        onClick={() => navigate(child.to)}
-                                      >
-                                        <span className="ops-func-sidebar-subitem-bullet" />
-                                        <span>{child.label}</span>
-                                      </button>
-                                    );
-                                  })}
-                                </div>
-                              )}
-                            </div>
+                            <button
+                              key={item.to + item.label}
+                              type="button"
+                              className={`ops-func-cluster-flyout-item ${
+                                isItemActive ? "ops-func-cluster-flyout-item--active" : ""
+                              }`}
+                              onClick={() => navigate(item.to)}
+                            >
+                              <span className="ops-func-sidebar-icon">
+                                <SidebarIcon name={item.icon} />
+                              </span>
+                              <span>{item.label}</span>
+                            </button>
                           );
                         })}
                       </div>
@@ -1582,99 +1521,26 @@ function DashboardLayout(): React.JSX.Element {
                     {isOpen ? (
                       <div className="ops-func-cluster-items">
                         {cluster.items.map((item) => {
-                          const hasChildren = Boolean(item.children && item.children.length > 0);
-                          const isSubmenuOpen = Boolean(openSubmenus[item.label]);
-                          const isItemActive = pathMatches(location.pathname, item.to);
-                          const isAnyChildActive = Boolean(
-                            item.children?.some((c) =>
-                              isRouteOrTabActive(location.pathname, location.search, c.to),
-                            ),
+                          const isItemActive = isRouteOrTabActive(
+                            location.pathname,
+                            location.search,
+                            item.to,
                           );
-                          const isHighlighted = isItemActive || isAnyChildActive;
 
                           return (
-                            <div key={item.label} className="ops-func-sidebar-item-group">
-                              <div
-                                className={`ops-func-sidebar-item ${
-                                  isHighlighted ? 'ops-func-sidebar-item--active' : ''
-                                }`}
-                                onClick={() => {
-                                  navigate(item.to);
-                                  if (hasChildren) {
-                                    setOpenSubmenus((prev) => ({
-                                      ...prev,
-                                      [item.label]: !prev[item.label],
-                                    }));
-                                  }
-                                }}
-                                role="button"
-                                tabIndex={0}
-                                onKeyDown={(e) => {
-                                  if (e.key === 'Enter' || e.key === ' ') {
-                                    e.preventDefault();
-                                    navigate(item.to);
-                                    if (hasChildren) {
-                                      setOpenSubmenus((prev) => ({
-                                        ...prev,
-                                        [item.label]: !prev[item.label],
-                                      }));
-                                    }
-                                  }
-                                }}
-                              >
-                                <span className="ops-func-sidebar-icon">
-                                  <SidebarIcon name={item.icon} />
-                                </span>
-                                <span className="ops-func-sidebar-label">{item.label}</span>
-                                {hasChildren && (
-                                  <button
-                                    type="button"
-                                    className={`ops-func-sidebar-subchevron ${
-                                      isSubmenuOpen ? 'ops-func-sidebar-subchevron--open' : ''
-                                    }`}
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      setOpenSubmenus((prev) => ({
-                                        ...prev,
-                                        [item.label]: !prev[item.label],
-                                      }));
-                                    }}
-                                    title={isSubmenuOpen ? 'Thu gọn mục con' : 'Xem mục con'}
-                                    aria-label={isSubmenuOpen ? 'Thu gọn mục con' : 'Xem mục con'}
-                                  >
-                                    <ChevronDown size={12} strokeWidth={2.2} />
-                                  </button>
-                                )}
-                              </div>
-
-                              {hasChildren && isSubmenuOpen && (
-                                <div className="ops-func-sidebar-subitems">
-                                  {item.children!.map((child) => {
-                                    const isChildActive = isRouteOrTabActive(
-                                      location.pathname,
-                                      location.search,
-                                      child.to,
-                                    );
-                                    return (
-                                      <button
-                                        key={child.label}
-                                        type="button"
-                                        className={`ops-func-sidebar-subitem ${
-                                          isChildActive ? 'ops-func-sidebar-subitem--active' : ''
-                                        }`}
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          navigate(child.to);
-                                        }}
-                                      >
-                                        <span className="ops-func-sidebar-subitem-bullet" />
-                                        <span className="ops-func-sidebar-subitem-label">{child.label}</span>
-                                      </button>
-                                    );
-                                  })}
-                                </div>
-                              )}
-                            </div>
+                            <button
+                              key={item.to + item.label}
+                              type="button"
+                              className={`ops-func-sidebar-item ${
+                                isItemActive ? "ops-func-sidebar-item--active" : ""
+                              }`}
+                              onClick={() => navigate(item.to)}
+                            >
+                              <span className="ops-func-sidebar-icon">
+                                <SidebarIcon name={item.icon} />
+                              </span>
+                              <span className="ops-func-sidebar-label">{item.label}</span>
+                            </button>
                           );
                         })}
                       </div>
@@ -2046,7 +1912,7 @@ export function AppRouter(): React.JSX.Element {
             />
             <Route
               path={routePaths.serviceQualityIntegratedLookupLeaf}
-              element={<Navigate to={routePaths.tracking} replace />}
+              element={opsModuleRoute('Tra cứu tích hợp', <ServiceQualityIntegratedLookupPage />)}
             />
             <Route
               path={routePaths.serviceQualityAbnormalManagementLeaf}

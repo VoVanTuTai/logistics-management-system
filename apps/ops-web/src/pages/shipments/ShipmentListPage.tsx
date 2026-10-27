@@ -1370,12 +1370,12 @@ export function ShipmentListPage(): React.JSX.Element {
       {/* 1. OPERATIONAL FLOW TABS (Hợp nhất Hàng đến / Hàng gửi / Hàng phát / Tồn kho) */}
       <div style={{ display: 'flex', gap: '8px', marginBottom: '14px', flexWrap: 'wrap' }}>
         {[
-          { id: 'all', label: '📦 Tất cả vận đơn' },
-          { id: 'arrival', label: '📥 Hàng đến (Inbound)' },
-          { id: 'outbound', label: '📤 Hàng gửi (Outbound)' },
-          { id: 'delivery', label: '🚚 Đang phát (Delivery)' },
-          { id: 'inventory', label: '🏬 Tồn kho bưu cục' },
-          { id: 'problem', label: '⚠️ Sự cố & Hoàn hàng' },
+          { id: 'all', label: 'Tất cả vận đơn' },
+          { id: 'arrival', label: 'Hàng đến (Inbound)' },
+          { id: 'outbound', label: 'Hàng gửi (Outbound)' },
+          { id: 'delivery', label: 'Đang phát (Delivery)' },
+          { id: 'inventory', label: 'Tồn kho bưu cục' },
+          { id: 'problem', label: 'Sự cố & Hoàn hàng' },
         ].map((tab) => {
           const isActive = currentFlow === tab.id;
           return (
@@ -1485,7 +1485,7 @@ export function ShipmentListPage(): React.JSX.Element {
             )}
             {extractedInputCodes.length > 1 && (
               <div style={styles.batchHelperNotice}>
-                ⚡ Đang tìm kiếm <strong>{extractedInputCodes.length}</strong> mã đơn đồng thời (Tự động tách dòng).
+                Đang tìm kiếm <strong>{extractedInputCodes.length}</strong> mã đơn đồng thời (Tự động tách dòng).
               </div>
             )}
           </div>
@@ -2177,7 +2177,7 @@ export function ShipmentListPage(): React.JSX.Element {
                     fontWeight: 600,
                   }}
                 >
-                  🚫 Kiện hàng vượt trần vận hành mạng lưới (Tối đa 70kg, cạnh 150cm, tổng 3 cạnh 300cm). Vui lòng tách kiện hoặc hướng dẫn khách dùng vận tải nguyên chuyến FTL.
+                  Kiện hàng vượt trần vận hành mạng lưới (Tối đa 70kg, cạnh 150cm, tổng 3 cạnh 300cm). Vui lòng tách kiện hoặc hướng dẫn khách dùng vận tải nguyên chuyến FTL.
                 </div>
               ) : null}
 
