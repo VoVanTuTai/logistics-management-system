@@ -736,7 +736,7 @@ const riskS: Record<string, React.CSSProperties> = {
 const S: Record<string, React.CSSProperties> = {
   page: { display: 'grid', gap: 14 },
   hero: {
-    border: '1px solid #c7d2fe',
+    border: '1px solid var(--admin-border)',
     borderRadius: 16,
     background: 'var(--admin-surface-soft)',
     padding: 16,
@@ -769,7 +769,7 @@ const S: Record<string, React.CSSProperties> = {
   tabInactive: {
     background: '#fff',
     color: 'var(--admin-primary)',
-    borderColor: '#c7d2fe',
+    borderColor: 'var(--admin-border)',
     padding: '8px 14px',
     borderRadius: 10,
     fontWeight: 700,
@@ -794,7 +794,7 @@ const S: Record<string, React.CSSProperties> = {
   catSelect: { minWidth: 200, padding: '8px 12px', borderRadius: 8, border: '1px solid var(--admin-border)' },
   notice: {
     margin: 0,
-    border: '1px solid #c7d2fe',
+    border: '1px solid var(--admin-border)',
     background: 'var(--admin-surface-soft)',
     color: 'var(--admin-primary)',
     borderRadius: 12,
@@ -818,7 +818,7 @@ const S: Record<string, React.CSSProperties> = {
     whiteSpace: 'nowrap',
   },
   row: { display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' },
-  secBtn: { background: '#fff', color: 'var(--admin-primary)', borderColor: '#c7d2fe', padding: '6px 12px', borderRadius: 8, fontSize: 12, fontWeight: 700 },
+  secBtn: { background: '#fff', color: 'var(--admin-primary)', borderColor: 'var(--admin-border)', padding: '6px 12px', borderRadius: 8, fontSize: 12, fontWeight: 700 },
   danBtn: { background: '#fff', color: 'var(--admin-danger)', borderColor: '#f3b6c0', padding: '6px 12px', borderRadius: 8, fontSize: 12, fontWeight: 700 },
   empty: { padding: 24, textAlign: 'center', color: 'var(--admin-muted)', background: '#fff' },
   saveBar: {

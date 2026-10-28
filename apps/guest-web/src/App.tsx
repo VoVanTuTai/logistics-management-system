@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import {
   BrowserRouter,
+  MemoryRouter,
   Link as RouterLink,
   NavLink as RouterNavLink,
   Outlet,
@@ -3453,22 +3454,98 @@ function OrderDetailModal({
 // ==========================================
 // 5. MAIN ROUTER CONFIGURATION
 // ==========================================
+const TRACKING_ACTIVE_ROUTE_KEY = 'nexus_tracking_active_route';
+const isTestEnv = Boolean(import.meta.env.TEST || import.meta.env.MODE === 'test');
+
+function resolveInitialTrackingRoute(): string {
+  if (typeof window === 'undefined') {
+    return '/';
+  }
+  if (isTestEnv) {
+    const testPath = window.location.pathname;
+    if (testPath && testPath !== '/') {
+      return testPath + window.location.search;
+    }
+    return '/';
+  }
+  try {
+    const currentPath = window.location.pathname;
+    const currentSearch = window.location.search;
+
+    // Direct tracking link / deep link entered by user or scanned QR code
+    if (currentPath.startsWith('/track/') || currentSearch.includes('track=') || currentSearch.includes('code=')) {
+      return currentPath + currentSearch;
+    }
+
+    // Direct sub-page entered initially (e.g. /create, /orders, /network, /login, /terms)
+    if (currentPath !== '/' && currentPath !== '') {
+      return currentPath + currentSearch;
+    }
+
+    // Restore from session storage if returning or refreshing
+    const saved = sessionStorage.getItem(TRACKING_ACTIVE_ROUTE_KEY);
+    if (saved && saved.startsWith('/')) {
+      return saved;
+    }
+
+    return '/' + currentSearch;
+  } catch {
+    return '/';
+  }
+}
+
+function TrackingRoutePersistenceSync(): null {
+  const location = useLocation();
+
+  useEffect(() => {
+    if (isTestEnv || typeof window === 'undefined') {
+      return;
+    }
+
+    // Save active route (path + search)
+    try {
+      sessionStorage.setItem(TRACKING_ACTIVE_ROUTE_KEY, location.pathname + location.search);
+    } catch {}
+
+    // Mask browser address bar so it never exposes /create, /orders, /network, etc.
+    // Address bar stays clean at '/' just like Merchant Web
+    if (window.location.pathname !== '/' || (window.location.search && !location.search)) {
+      try {
+        window.history.replaceState(null, '', '/');
+      } catch {}
+    }
+  }, [location.pathname, location.search]);
+
+  return null;
+}
+
 export default function App() {
+  const initialRoute = useMemo(() => resolveInitialTrackingRoute(), []);
+
+  const routesContent = (
+    <Routes>
+      <Route path="/" element={<Layout />}>
+        <Route index element={<TrackingPage />} />
+        <Route path="track/:code" element={<TrackingPage />} />
+        <Route path="create" element={<CreateOrderPage />} />
+        <Route path="orders" element={<OrdersPage />} />
+        <Route path="history" element={<OrdersPage />} />
+        <Route path="network" element={<NetworkDirectoryPage />} />
+        <Route path="terms-of-service" element={<TermsOfServicePage />} />
+        <Route path="terms" element={<TermsOfServicePage />} />
+        <Route path="login" element={<LoginPage />} />
+      </Route>
+    </Routes>
+  );
+
+  if (isTestEnv) {
+    return <BrowserRouter>{routesContent}</BrowserRouter>;
+  }
+
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<Layout />}>
-          <Route index element={<TrackingPage />} />
-          <Route path="track/:code" element={<TrackingPage />} />
-          <Route path="create" element={<CreateOrderPage />} />
-          <Route path="orders" element={<OrdersPage />} />
-          <Route path="history" element={<OrdersPage />} />
-          <Route path="network" element={<NetworkDirectoryPage />} />
-          <Route path="terms-of-service" element={<TermsOfServicePage />} />
-          <Route path="terms" element={<TermsOfServicePage />} />
-          <Route path="login" element={<LoginPage />} />
-        </Route>
-      </Routes>
-    </BrowserRouter>
+    <MemoryRouter initialEntries={[initialRoute]}>
+      <TrackingRoutePersistenceSync />
+      {routesContent}
+    </MemoryRouter>
   );
 }

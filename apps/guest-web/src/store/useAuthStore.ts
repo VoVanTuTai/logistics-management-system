@@ -55,6 +55,7 @@ export const useAuthStore = create<AuthState>((set) => ({
   logout: () => {
     try {
       localStorage.removeItem(STORAGE_KEY);
+      sessionStorage.removeItem('nexus_tracking_active_route');
     } catch {}
     set({ phone: null, token: null, user: null });
   },

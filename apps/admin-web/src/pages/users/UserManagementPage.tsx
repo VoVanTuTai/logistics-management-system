@@ -409,14 +409,31 @@ export function UserManagementPage({ roleGroup }: UserManagementPageProps): Reac
           </thead>
           <tbody>
             {(usersQuery.data ?? []).map((user) => (
-              <tr key={user.id}>
-                <td style={styles.cell}>{user.id}</td>
+              <tr key={user.id} className="admin-table-row">
+                <td style={styles.idCell}>{user.id}</td>
                 <td style={styles.cell}>{user.username}</td>
                 <td style={styles.cell}>{user.displayName ?? 'Không có'}</td>
                 <td style={styles.cell}>{user.phone ?? 'Không có'}</td>
-                <td style={styles.cell}>{user.roles.join(', ')}</td>
+                <td style={styles.cell}>
+                  <span style={styles.roleBadge}>{user.roles.join(', ')}</span>
+                </td>
                 <td style={styles.cell}>{user.hubCodes.join(', ') || 'Chưa gán'}</td>
-                <td style={styles.cell}>{user.status}</td>
+                <td style={styles.cell}>
+                  <span
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      padding: '2px 8px',
+                      borderRadius: 999,
+                      fontSize: 11,
+                      fontWeight: 700,
+                      backgroundColor: user.status === 'ACTIVE' ? '#e8f7f0' : '#fee2e2',
+                      color: user.status === 'ACTIVE' ? '#127a56' : '#b91c1c',
+                    }}
+                  >
+                    {user.status}
+                  </span>
+                </td>
                 <td style={styles.cell}>{formatDateTime(user.updatedAt)}</td>
                 <td style={{ ...styles.cell, ...styles.actionsDataCell }}>
                   <div style={styles.tableActionsCell}>
@@ -463,45 +480,92 @@ const styles: Record<string, React.CSSProperties> = {
   },
   input: {
     border: '1px solid var(--admin-border)',
-    borderRadius: 10,
-    padding: '8px 10px',
+    borderRadius: 8,
+    padding: '8px 12px',
     minWidth: 180,
+    backgroundColor: '#ffffff',
+    fontSize: 13,
   },
   editorCard: {
     border: '1px solid var(--admin-border)',
     borderRadius: 12,
-    padding: 12,
+    padding: 16,
     backgroundColor: 'var(--admin-surface-soft)',
-    marginBottom: 14,
+    marginBottom: 16,
   },
   editorTitle: {
     marginTop: 0,
+    color: 'var(--admin-navy)',
+    fontWeight: 700,
   },
   formGrid: {
     display: 'grid',
     gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
-    gap: 10,
+    gap: 12,
   },
   fieldLabel: {
     display: 'grid',
     gap: 6,
     fontSize: 13,
     fontWeight: 600,
+    color: 'var(--admin-text)',
   },
   table: {
     width: '100%',
-    borderCollapse: 'collapse',
+    borderCollapse: 'separate',
+    borderSpacing: 0,
     marginTop: 12,
+    background: 'var(--admin-surface, #ffffff)',
+    borderRadius: 8,
+    border: '1px solid var(--admin-border, #dbe2f0)',
+    boxShadow: '0 1px 3px rgba(16, 37, 72, 0.04)',
+    overflow: 'hidden',
   },
   headerCell: {
     textAlign: 'left',
-    padding: '8px 10px',
-    borderBottom: '1px solid var(--admin-border)',
+    padding: '10px 12px',
+    backgroundColor: 'var(--admin-surface-soft, #f8faff)',
+    color: 'var(--admin-navy, #1f2b6f)',
+    fontSize: 12,
+    fontWeight: 800,
+    textTransform: 'uppercase',
+    letterSpacing: '0.04em',
+    borderBottom: '1px solid #cbd5e1',
+    whiteSpace: 'nowrap',
+    position: 'sticky',
+    top: 0,
+    zIndex: 1,
   },
   cell: {
-    padding: '8px 10px',
-    borderBottom: '1px solid var(--admin-border)',
-    verticalAlign: 'top',
+    padding: '8px 12px',
+    borderBottom: '1px solid var(--admin-border, #dbe2f0)',
+    verticalAlign: 'middle',
+    fontSize: 13,
+    color: 'var(--admin-text, #102548)',
+    whiteSpace: 'nowrap',
+  },
+  idCell: {
+    padding: '8px 12px',
+    borderBottom: '1px solid var(--admin-border, #dbe2f0)',
+    verticalAlign: 'middle',
+    fontSize: 12,
+    fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
+    fontWeight: 700,
+    color: 'var(--admin-primary, #0052cc)',
+    userSelect: 'text',
+    WebkitUserSelect: 'text',
+    cursor: 'text',
+    whiteSpace: 'nowrap',
+  },
+  roleBadge: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    padding: '2px 8px',
+    borderRadius: 6,
+    fontSize: 12,
+    fontWeight: 600,
+    backgroundColor: 'var(--admin-primary-soft, #e7efff)',
+    color: 'var(--admin-primary, #0052cc)',
   },
   actionsCell: {
     display: 'flex',
@@ -525,40 +589,46 @@ const styles: Record<string, React.CSSProperties> = {
     minWidth: 146,
   },
   compactActionButton: {
-    borderRadius: 8,
-    padding: '4px 7px',
+    borderRadius: 6,
+    padding: '4px 8px',
     fontSize: 12,
+    fontWeight: 600,
     lineHeight: 1.2,
-    borderColor: 'var(--admin-border)',
+    border: '1px solid var(--admin-border)',
     backgroundColor: 'var(--admin-surface)',
     color: 'var(--admin-text)',
+    cursor: 'pointer',
   },
   compactDangerButton: {
-    borderRadius: 8,
-    padding: '4px 7px',
+    borderRadius: 6,
+    padding: '4px 8px',
     fontSize: 12,
+    fontWeight: 600,
     lineHeight: 1.2,
-    borderColor: '#fecaca',
+    border: '1px solid #fecaca',
     backgroundColor: '#fef2f2',
     color: '#b91c1c',
+    cursor: 'pointer',
   },
   compactSuccessButton: {
-    borderRadius: 8,
-    padding: '4px 7px',
+    borderRadius: 6,
+    padding: '4px 8px',
     fontSize: 12,
+    fontWeight: 600,
     lineHeight: 1.2,
-    borderColor: '#bbf7d0',
+    border: '1px solid #bbf7d0',
     backgroundColor: '#f0fdf4',
     color: '#15803d',
+    cursor: 'pointer',
   },
   successText: {
-    color: '#166534',
+    color: 'var(--admin-success, #127a56)',
     marginTop: 8,
     marginBottom: 8,
     fontWeight: 600,
   },
   errorText: {
-    color: '#b91c1c',
+    color: 'var(--admin-danger, #ba1a1a)',
     marginTop: 8,
     marginBottom: 8,
     fontWeight: 600,

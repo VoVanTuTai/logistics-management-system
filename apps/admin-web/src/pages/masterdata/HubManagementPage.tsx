@@ -770,7 +770,7 @@ export function HubManagementPage(): React.JSX.Element {
 
               return (
                 <tr key={hub.id}>
-                  <td style={styles.cell}>{hub.code}</td>
+                  <td style={{ ...styles.cell, ...styles.codeCell }}>{hub.code}</td>
                   <td style={styles.cell}>{hub.name}</td>
                   <td style={styles.cell}>
                     {isRegionalHub ? (
@@ -1139,16 +1139,34 @@ const styles: Record<string, React.CSSProperties> = {
     width: '100%',
     borderCollapse: 'collapse',
     marginTop: 12,
+    backgroundColor: '#ffffff',
+    borderRadius: 12,
+    border: '1px solid var(--admin-border)',
+    boxShadow: 'var(--admin-shadow)',
   },
   headerCell: {
     textAlign: 'left',
-    padding: '8px 10px',
-    borderBottom: '1px solid var(--admin-border)',
+    padding: '10px 12px',
+    borderBottom: '1px solid #cbd5e1',
+    backgroundColor: '#f8faff',
+    color: '#1f2b6f',
+    fontSize: 12,
+    fontWeight: 800,
+    textTransform: 'uppercase',
+    letterSpacing: '0.04em',
   },
   cell: {
-    padding: '8px 10px',
+    padding: '10px 12px',
     borderBottom: '1px solid var(--admin-border)',
-    verticalAlign: 'top',
+    verticalAlign: 'middle',
+  },
+  codeCell: {
+    fontFamily: 'var(--admin-font-mono, monospace)',
+    color: 'var(--admin-primary, #0052cc)',
+    fontWeight: 700,
+    userSelect: 'text',
+    cursor: 'text',
+    whiteSpace: 'nowrap',
   },
   actionsCell: {
     display: 'flex',

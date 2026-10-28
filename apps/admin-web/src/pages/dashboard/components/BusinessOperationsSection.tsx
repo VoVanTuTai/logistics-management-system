@@ -47,15 +47,15 @@ interface HubPerformanceItem {
 }
 
 const DONUT_COLORS = [
-  '#6366f1', // CREATED
-  '#06b6d4', // PICKUP_COMPLETED
-  '#0284c7', // SCAN_INBOUND
-  '#3b82f6', // IN_TRANSIT
-  '#8b5cf6', // READY_FOR_DELIVERY
-  '#10b981', // DELIVERED
-  '#ef4444', // NDR_CREATED
-  '#f59e0b', // RETURN_COMPLETED
-  '#64748b', // CANCELLED
+  '#0052cc', // CREATED
+  '#008da6', // PICKUP_COMPLETED
+  '#2b6fe3', // SCAN_INBOUND
+  '#0284c7', // IN_TRANSIT
+  '#4338ca', // READY_FOR_DELIVERY
+  '#127a56', // DELIVERED
+  '#ba1a1a', // NDR_CREATED
+  '#d97706', // RETURN_COMPLETED
+  '#5b6b86', // CANCELLED
 ];
 
 const DEFAULT_HUBS = [

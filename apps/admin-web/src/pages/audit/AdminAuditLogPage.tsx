@@ -559,6 +559,8 @@ const styles: Record<string, React.CSSProperties> = {
     overflowX: 'auto',
     border: '1px solid var(--admin-border)',
     borderRadius: 12,
+    backgroundColor: '#ffffff',
+    boxShadow: 'var(--admin-shadow)',
   },
   table: {
     minWidth: 1120,
@@ -585,7 +587,9 @@ const styles: Record<string, React.CSSProperties> = {
   targetIdCell: {
     width: 180,
     overflowWrap: 'anywhere',
-    fontFamily: 'monospace',
+    fontFamily: 'var(--admin-font-mono, monospace)',
+    color: 'var(--admin-primary, #0052cc)',
+    fontWeight: 600,
     fontSize: 12,
   },
   summaryCell: {
@@ -596,12 +600,12 @@ const styles: Record<string, React.CSSProperties> = {
   },
   sourceBadge: {
     display: 'inline-block',
-    border: '1px solid #c7d2fe',
+    border: '1px solid #bfdbfe',
     borderRadius: 999,
-    padding: '3px 8px',
-    color: 'var(--admin-primary-dark)',
-    background: 'var(--admin-surface-soft)',
-    fontSize: 12,
+    padding: '2px 8px',
+    color: 'var(--admin-primary, #0052cc)',
+    background: 'var(--admin-primary-soft, #e7efff)',
+    fontSize: 11,
     fontWeight: 700,
   },
   diffSummary: {
@@ -615,9 +619,10 @@ const styles: Record<string, React.CSSProperties> = {
   detailCard: {
     marginTop: 14,
     border: '1px solid var(--admin-border)',
-    borderRadius: 12,
-    padding: 12,
-    backgroundColor: 'var(--admin-surface-soft)',
+    borderRadius: 14,
+    padding: 16,
+    backgroundColor: '#f8faff',
+    boxShadow: 'var(--admin-shadow)',
     display: 'grid',
     gap: 12,
   },

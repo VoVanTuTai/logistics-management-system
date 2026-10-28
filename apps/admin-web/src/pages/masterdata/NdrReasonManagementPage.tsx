@@ -1,4 +1,4 @@
-﻿import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 
 import {
   useCreateNdrReasonMutation,
@@ -338,8 +338,8 @@ export function NdrReasonManagementPage(): React.JSX.Element {
               const parsedReason = parseNdrReasonPayload(reason.description);
 
               return (
-                <tr key={reason.id}>
-                  <td style={styles.cell}>{reason.code}</td>
+                <tr key={reason.id} className="admin-table-row">
+                  <td style={styles.codeCell}>{reason.code}</td>
                   <td style={styles.cell}>{parsedReason.name}</td>
                   <td style={styles.cell}>{parsedReason.category}</td>
                   <td style={styles.cell}>
@@ -572,17 +572,50 @@ const styles: Record<string, React.CSSProperties> = {
   },
   table: {
     width: '100%',
-    borderCollapse: 'collapse',
+    borderCollapse: 'separate',
+    borderSpacing: 0,
     marginTop: 12,
+    background: 'var(--admin-surface, #ffffff)',
+    borderRadius: 8,
+    border: '1px solid var(--admin-border, #dbe2f0)',
+    boxShadow: '0 1px 3px rgba(16, 37, 72, 0.04)',
+    overflow: 'hidden',
   },
   headerCell: {
     textAlign: 'left',
-    padding: '8px 10px',
-    borderBottom: '1px solid var(--admin-border)',
+    padding: '10px 12px',
+    backgroundColor: 'var(--admin-surface-soft, #f8faff)',
+    color: 'var(--admin-navy, #1f2b6f)',
+    fontSize: 12,
+    fontWeight: 800,
+    textTransform: 'uppercase',
+    letterSpacing: '0.04em',
+    borderBottom: '1px solid #cbd5e1',
+    whiteSpace: 'nowrap',
+    position: 'sticky',
+    top: 0,
+    zIndex: 1,
   },
   cell: {
-    padding: '8px 10px',
-    borderBottom: '1px solid var(--admin-border)',
+    padding: '8px 12px',
+    borderBottom: '1px solid var(--admin-border, #dbe2f0)',
+    verticalAlign: 'middle',
+    fontSize: 13,
+    color: 'var(--admin-text, #102548)',
+    whiteSpace: 'nowrap',
+  },
+  codeCell: {
+    padding: '8px 12px',
+    borderBottom: '1px solid var(--admin-border, #dbe2f0)',
+    verticalAlign: 'middle',
+    fontSize: 12,
+    fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
+    fontWeight: 700,
+    color: 'var(--admin-primary, #0052cc)',
+    userSelect: 'text',
+    WebkitUserSelect: 'text',
+    cursor: 'text',
+    whiteSpace: 'nowrap',
   },
   actionsCell: {
     display: 'flex',

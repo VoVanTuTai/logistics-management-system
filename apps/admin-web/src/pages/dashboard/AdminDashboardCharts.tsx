@@ -29,8 +29,8 @@ interface AdminDashboardChartsProps {
   formatCount: (value: number) => string;
 }
 
-const USER_ROLE_COLORS = ['#4f46e5', '#0891b2', '#f59e0b'];
-const STATUS_COLORS = ['#137f5d', '#b12233'];
+const USER_ROLE_COLORS = ['#0052cc', '#008da6', '#d97706'];
+const STATUS_COLORS = ['#127a56', '#ba1a1a'];
 
 export function AdminDashboardCharts({
   roleMix,
