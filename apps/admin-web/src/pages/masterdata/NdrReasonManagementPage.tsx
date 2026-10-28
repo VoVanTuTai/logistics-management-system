@@ -320,54 +320,56 @@ export function NdrReasonManagementPage(): React.JSX.Element {
       ) : null}
 
       {reasonsQuery.isSuccess && (reasonsQuery.data?.length ?? 0) > 0 ? (
-        <table style={styles.table}>
-          <thead>
-            <tr>
-              <th style={styles.headerCell}>Mã</th>
-              <th style={styles.headerCell}>Tên</th>
-              <th style={styles.headerCell}>Nhóm</th>
-              <th style={styles.headerCell}>Hen lai</th>
-              <th style={styles.headerCell}>Hoàn</th>
-              <th style={styles.headerCell}>Trạng thái</th>
-              <th style={styles.headerCell}>Cập nhật</th>
-              <th style={styles.headerCell}>Hành động</th>
-            </tr>
-          </thead>
-          <tbody>
-            {(reasonsQuery.data ?? []).map((reason) => {
-              const parsedReason = parseNdrReasonPayload(reason.description);
+        <div style={styles.tableWrapper}>
+          <table style={styles.table}>
+            <thead>
+              <tr>
+                <th style={styles.headerCell}>Mã</th>
+                <th style={styles.headerCell}>Tên</th>
+                <th style={styles.headerCell}>Nhóm</th>
+                <th style={styles.headerCell}>Hen lai</th>
+                <th style={styles.headerCell}>Hoàn</th>
+                <th style={styles.headerCell}>Trạng thái</th>
+                <th style={styles.headerCell}>Cập nhật</th>
+                <th style={styles.headerCell}>Hành động</th>
+              </tr>
+            </thead>
+            <tbody>
+              {(reasonsQuery.data ?? []).map((reason) => {
+                const parsedReason = parseNdrReasonPayload(reason.description);
 
-              return (
-                <tr key={reason.id} className="admin-table-row">
-                  <td style={styles.codeCell}>{reason.code}</td>
-                  <td style={styles.cell}>{parsedReason.name}</td>
-                  <td style={styles.cell}>{parsedReason.category}</td>
-                  <td style={styles.cell}>
-                    {parsedReason.allowReschedule ? 'CÓ' : 'KHÔNG'}
-                  </td>
-                  <td style={styles.cell}>{parsedReason.allowReturn ? 'CÓ' : 'KHÔNG'}</td>
-                  <td style={styles.cell}>
-                    <MasterdataStatusPill isActive={reason.isActive} />
-                  </td>
-                  <td style={styles.cell}>{formatDateTime(reason.updatedAt)}</td>
-                  <td style={styles.cell}>
-                    <div style={styles.actionsCell}>
-                      <button type="button" onClick={() => setSelectedReasonId(reason.id)}>
-                        Chi tiết
-                      </button>
-                      <button type="button" onClick={() => openEditModal(reason)}>
-                        Sửa
-                      </button>
-                      <button type="button" onClick={() => void onToggleStatus(reason)}>
-                        {reason.isActive ? 'Tắt' : 'Bật'}
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+                return (
+                  <tr key={reason.id} className="admin-table-row">
+                    <td style={styles.codeCell}>{reason.code}</td>
+                    <td style={styles.cell}>{parsedReason.name}</td>
+                    <td style={styles.cell}>{parsedReason.category}</td>
+                    <td style={styles.cell}>
+                      {parsedReason.allowReschedule ? 'CÓ' : 'KHÔNG'}
+                    </td>
+                    <td style={styles.cell}>{parsedReason.allowReturn ? 'CÓ' : 'KHÔNG'}</td>
+                    <td style={styles.cell}>
+                      <MasterdataStatusPill isActive={reason.isActive} />
+                    </td>
+                    <td style={styles.cell}>{formatDateTime(reason.updatedAt)}</td>
+                    <td style={styles.cell}>
+                      <div style={styles.actionsCell}>
+                        <button type="button" onClick={() => setSelectedReasonId(reason.id)}>
+                          Chi tiết
+                        </button>
+                        <button type="button" onClick={() => openEditModal(reason)}>
+                          Sửa
+                        </button>
+                        <button type="button" onClick={() => void onToggleStatus(reason)}>
+                          {reason.isActive ? 'Tắt' : 'Bật'}
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
       ) : null}
 
       {selectedReason ? (
@@ -570,16 +572,25 @@ const styles: Record<string, React.CSSProperties> = {
     width: '100%',
     resize: 'vertical',
   },
-  table: {
+  tableWrapper: {
     width: '100%',
-    borderCollapse: 'separate',
-    borderSpacing: 0,
-    marginTop: 12,
+    maxWidth: '100%',
+    overflowX: 'auto',
+    WebkitOverflowScrolling: 'touch',
     background: 'var(--admin-surface, #ffffff)',
     borderRadius: 8,
     border: '1px solid var(--admin-border, #dbe2f0)',
     boxShadow: '0 1px 3px rgba(16, 37, 72, 0.04)',
-    overflow: 'hidden',
+    marginTop: 12,
+    boxSizing: 'border-box',
+  },
+  table: {
+    width: '100%',
+    borderCollapse: 'separate',
+    borderSpacing: 0,
+    margin: 0,
+    background: 'transparent',
+    border: 'none',
   },
   headerCell: {
     textAlign: 'left',

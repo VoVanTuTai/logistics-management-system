@@ -556,7 +556,11 @@ const styles: Record<string, React.CSSProperties> = {
     gap: 8,
   },
   tableWrap: {
+    width: '100%',
+    maxWidth: '100%',
     overflowX: 'auto',
+    WebkitOverflowScrolling: 'touch',
+    boxSizing: 'border-box',
     border: '1px solid var(--admin-border)',
     borderRadius: 12,
     backgroundColor: '#ffffff',

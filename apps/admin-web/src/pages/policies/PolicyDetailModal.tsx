@@ -229,7 +229,7 @@ export function PolicyDetailModal({
               <span style={{ fontSize: 12, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', display: 'block', marginBottom: 8 }}>
                 Lịch sử các phiên bản ({policy.versions.length})
               </span>
-              <div style={{ border: '1px solid #e2e8f0', borderRadius: 10, overflow: 'hidden' }}>
+              <div style={{ border: '1px solid #e2e8f0', borderRadius: 10, overflowX: 'auto', maxWidth: '100%', boxSizing: 'border-box' }}>
                 <table className="table" style={{ margin: 0 }}>
                   <thead>
                     <tr>

@@ -375,7 +375,7 @@ export function AdminDashboardPage(): React.JSX.Element {
 
       {/* Báo cáo Mạng lưới Hub 3 Miền Toàn quốc */}
       <section style={{ backgroundColor: '#ffffff', borderRadius: '12px', border: '1px solid #e2e8f0', padding: '20px', marginBottom: '24px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '12px' }}>
           <div>
             <h3 style={{ fontSize: '18px', fontWeight: 700, color: '#0f172a', margin: '0 0 4px 0' }}>
               Báo Cáo Mạng Lưới Hub 3 Miền & Phụ Trách Phủ Sóng Toàn Quốc

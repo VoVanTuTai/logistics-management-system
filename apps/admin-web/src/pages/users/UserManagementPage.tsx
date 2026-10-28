@@ -391,76 +391,78 @@ export function UserManagementPage({ roleGroup }: UserManagementPageProps): Reac
       ) : null}
 
       {usersQuery.isSuccess && (usersQuery.data?.length ?? 0) > 0 ? (
-        <table style={styles.table}>
-          <thead>
-            <tr>
-              <th style={styles.headerCell}>
-                {roleGroup === 'SHIPPER' ? 'ID Courier' : 'ID User'}
-              </th>
-              <th style={styles.headerCell}>Tên đăng nhập</th>
-              <th style={styles.headerCell}>Tên hiển thị</th>
-              <th style={styles.headerCell}>Số điện thoại</th>
-              <th style={styles.headerCell}>Vai trò</th>
-              <th style={styles.headerCell}>Gán hub</th>
-              <th style={styles.headerCell}>Trạng thái</th>
-              <th style={styles.headerCell}>Cập nhật</th>
-              <th style={{ ...styles.headerCell, ...styles.actionsHeaderCell }}>Hành động</th>
-            </tr>
-          </thead>
-          <tbody>
-            {(usersQuery.data ?? []).map((user) => (
-              <tr key={user.id} className="admin-table-row">
-                <td style={styles.idCell}>{user.id}</td>
-                <td style={styles.cell}>{user.username}</td>
-                <td style={styles.cell}>{user.displayName ?? 'Không có'}</td>
-                <td style={styles.cell}>{user.phone ?? 'Không có'}</td>
-                <td style={styles.cell}>
-                  <span style={styles.roleBadge}>{user.roles.join(', ')}</span>
-                </td>
-                <td style={styles.cell}>{user.hubCodes.join(', ') || 'Chưa gán'}</td>
-                <td style={styles.cell}>
-                  <span
-                    style={{
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      padding: '2px 8px',
-                      borderRadius: 999,
-                      fontSize: 11,
-                      fontWeight: 700,
-                      backgroundColor: user.status === 'ACTIVE' ? '#e8f7f0' : '#fee2e2',
-                      color: user.status === 'ACTIVE' ? '#127a56' : '#b91c1c',
-                    }}
-                  >
-                    {user.status}
-                  </span>
-                </td>
-                <td style={styles.cell}>{formatDateTime(user.updatedAt)}</td>
-                <td style={{ ...styles.cell, ...styles.actionsDataCell }}>
-                  <div style={styles.tableActionsCell}>
-                    <button
-                      type="button"
-                      onClick={() => onEditUser(user)}
-                      style={styles.compactActionButton}
-                    >
-                      Sửa
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => void onToggleUserStatus(user)}
-                      style={
-                        user.status === 'ACTIVE'
-                          ? styles.compactDangerButton
-                          : styles.compactSuccessButton
-                      }
-                    >
-                      {user.status === 'ACTIVE' ? 'Vô hiệu hóa' : 'Kích hoạt lại'}
-                    </button>
-                  </div>
-                </td>
+        <div style={styles.tableWrapper}>
+          <table style={styles.table}>
+            <thead>
+              <tr>
+                <th style={styles.headerCell}>
+                  {roleGroup === 'SHIPPER' ? 'ID Courier' : 'ID User'}
+                </th>
+                <th style={styles.headerCell}>Tên đăng nhập</th>
+                <th style={styles.headerCell}>Tên hiển thị</th>
+                <th style={styles.headerCell}>Số điện thoại</th>
+                <th style={styles.headerCell}>Vai trò</th>
+                <th style={styles.headerCell}>Gán hub</th>
+                <th style={styles.headerCell}>Trạng thái</th>
+                <th style={styles.headerCell}>Cập nhật</th>
+                <th style={{ ...styles.headerCell, ...styles.actionsHeaderCell }}>Hành động</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {(usersQuery.data ?? []).map((user) => (
+                <tr key={user.id} className="admin-table-row">
+                  <td style={styles.idCell}>{user.id}</td>
+                  <td style={styles.cell}>{user.username}</td>
+                  <td style={styles.cell}>{user.displayName ?? 'Không có'}</td>
+                  <td style={styles.cell}>{user.phone ?? 'Không có'}</td>
+                  <td style={styles.cell}>
+                    <span style={styles.roleBadge}>{user.roles.join(', ')}</span>
+                  </td>
+                  <td style={styles.cell}>{user.hubCodes.join(', ') || 'Chưa gán'}</td>
+                  <td style={styles.cell}>
+                    <span
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        padding: '2px 8px',
+                        borderRadius: 999,
+                        fontSize: 11,
+                        fontWeight: 700,
+                        backgroundColor: user.status === 'ACTIVE' ? '#e8f7f0' : '#fee2e2',
+                        color: user.status === 'ACTIVE' ? '#127a56' : '#b91c1c',
+                      }}
+                    >
+                      {user.status}
+                    </span>
+                  </td>
+                  <td style={styles.cell}>{formatDateTime(user.updatedAt)}</td>
+                  <td style={{ ...styles.cell, ...styles.actionsDataCell }}>
+                    <div style={styles.tableActionsCell}>
+                      <button
+                        type="button"
+                        onClick={() => onEditUser(user)}
+                        style={styles.compactActionButton}
+                      >
+                        Sửa
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => void onToggleUserStatus(user)}
+                        style={
+                          user.status === 'ACTIVE'
+                            ? styles.compactDangerButton
+                            : styles.compactSuccessButton
+                        }
+                      >
+                        {user.status === 'ACTIVE' ? 'Vô hiệu hóa' : 'Kích hoạt lại'}
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       ) : null}
     </div>
   );
@@ -510,16 +512,25 @@ const styles: Record<string, React.CSSProperties> = {
     fontWeight: 600,
     color: 'var(--admin-text)',
   },
-  table: {
+  tableWrapper: {
     width: '100%',
-    borderCollapse: 'separate',
-    borderSpacing: 0,
-    marginTop: 12,
+    maxWidth: '100%',
+    overflowX: 'auto',
+    WebkitOverflowScrolling: 'touch',
     background: 'var(--admin-surface, #ffffff)',
     borderRadius: 8,
     border: '1px solid var(--admin-border, #dbe2f0)',
     boxShadow: '0 1px 3px rgba(16, 37, 72, 0.04)',
-    overflow: 'hidden',
+    marginTop: 12,
+    boxSizing: 'border-box',
+  },
+  table: {
+    width: '100%',
+    borderCollapse: 'separate',
+    borderSpacing: 0,
+    margin: 0,
+    background: 'transparent',
+    border: 'none',
   },
   headerCell: {
     textAlign: 'left',

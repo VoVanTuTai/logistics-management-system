@@ -745,7 +745,8 @@ export function HubManagementPage(): React.JSX.Element {
       ) : null}
 
       {hubsQuery.isSuccess && (hubsQuery.data?.length ?? 0) > 0 ? (
-        <table style={styles.table}>
+        <div style={styles.tableWrapper}>
+          <table style={styles.table}>
           <thead>
             <tr>
               <th style={styles.headerCell}>Mã hub</th>
@@ -830,6 +831,7 @@ export function HubManagementPage(): React.JSX.Element {
             })}
           </tbody>
         </table>
+        </div>
       ) : null}
 
       {selectedHub ? (
@@ -1135,14 +1137,25 @@ const styles: Record<string, React.CSSProperties> = {
     padding: '8px 10px',
     minWidth: 150,
   },
-  table: {
+  tableWrapper: {
     width: '100%',
-    borderCollapse: 'collapse',
-    marginTop: 12,
+    maxWidth: '100%',
+    overflowX: 'auto',
+    WebkitOverflowScrolling: 'touch',
     backgroundColor: '#ffffff',
     borderRadius: 12,
     border: '1px solid var(--admin-border)',
     boxShadow: 'var(--admin-shadow)',
+    marginTop: 12,
+    boxSizing: 'border-box',
+  },
+  table: {
+    width: '100%',
+    borderCollapse: 'separate',
+    borderSpacing: 0,
+    margin: 0,
+    backgroundColor: 'transparent',
+    border: 'none',
   },
   headerCell: {
     textAlign: 'left',

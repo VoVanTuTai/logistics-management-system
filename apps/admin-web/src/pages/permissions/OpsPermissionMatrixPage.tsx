@@ -802,7 +802,7 @@ const S: Record<string, React.CSSProperties> = {
     fontWeight: 700,
     fontSize: 13,
   },
-  tableWrap: { border: '1px solid var(--admin-border)', borderRadius: 14, overflow: 'auto', background: '#fff' },
+  tableWrap: { border: '1px solid var(--admin-border)', borderRadius: 14, overflow: 'auto', background: '#fff', maxWidth: '100%', boxSizing: 'border-box' },
   featCol: { minWidth: 280 },
   actCol: { width: 130, textAlign: 'center' },
   featCell: { display: 'grid', gap: 2 },

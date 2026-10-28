@@ -273,44 +273,46 @@ export function ZoneManagementPage(): React.JSX.Element {
       ) : null}
 
       {zonesQuery.isSuccess && (zonesQuery.data?.length ?? 0) > 0 ? (
-        <table style={styles.table}>
-          <thead>
-            <tr>
-              <th style={styles.headerCell}>Mã</th>
-              <th style={styles.headerCell}>Tên</th>
-              <th style={styles.headerCell}>Zone cha</th>
-              <th style={styles.headerCell}>Trạng thái</th>
-              <th style={styles.headerCell}>Cập nhật</th>
-              <th style={styles.headerCell}>Hành động</th>
-            </tr>
-          </thead>
-          <tbody>
-            {(zonesQuery.data ?? []).map((zone) => (
-              <tr key={zone.id} className="admin-table-row">
-                <td style={styles.codeCell}>{zone.code}</td>
-                <td style={styles.cell}>{zone.name}</td>
-                <td style={styles.cell}>{zone.parentCode ?? 'Không có'}</td>
-                <td style={styles.cell}>
-                  <MasterdataStatusPill isActive={zone.isActive} />
-                </td>
-                <td style={styles.cell}>{formatDateTime(zone.updatedAt)}</td>
-                <td style={styles.cell}>
-                  <div style={styles.actionsCell}>
-                    <button type="button" onClick={() => setSelectedZoneId(zone.id)}>
-                      Chi tiết
-                    </button>
-                    <button type="button" onClick={() => openEditModal(zone)}>
-                      Sửa
-                    </button>
-                    <button type="button" onClick={() => void onToggleStatus(zone)}>
-                      {zone.isActive ? 'Tắt' : 'Bật'}
-                    </button>
-                  </div>
-                </td>
+        <div style={styles.tableWrapper}>
+          <table style={styles.table}>
+            <thead>
+              <tr>
+                <th style={styles.headerCell}>Mã</th>
+                <th style={styles.headerCell}>Tên</th>
+                <th style={styles.headerCell}>Zone cha</th>
+                <th style={styles.headerCell}>Trạng thái</th>
+                <th style={styles.headerCell}>Cập nhật</th>
+                <th style={styles.headerCell}>Hành động</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {(zonesQuery.data ?? []).map((zone) => (
+                <tr key={zone.id} className="admin-table-row">
+                  <td style={styles.codeCell}>{zone.code}</td>
+                  <td style={styles.cell}>{zone.name}</td>
+                  <td style={styles.cell}>{zone.parentCode ?? 'Không có'}</td>
+                  <td style={styles.cell}>
+                    <MasterdataStatusPill isActive={zone.isActive} />
+                  </td>
+                  <td style={styles.cell}>{formatDateTime(zone.updatedAt)}</td>
+                  <td style={styles.cell}>
+                    <div style={styles.actionsCell}>
+                      <button type="button" onClick={() => setSelectedZoneId(zone.id)}>
+                        Chi tiết
+                      </button>
+                      <button type="button" onClick={() => openEditModal(zone)}>
+                        Sửa
+                      </button>
+                      <button type="button" onClick={() => void onToggleStatus(zone)}>
+                        {zone.isActive ? 'Tắt' : 'Bật'}
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       ) : null}
 
       {selectedZone ? (
@@ -424,16 +426,25 @@ const styles: Record<string, React.CSSProperties> = {
     padding: '8px 10px',
     minWidth: 150,
   },
-  table: {
+  tableWrapper: {
     width: '100%',
-    borderCollapse: 'separate',
-    borderSpacing: 0,
-    marginTop: 12,
+    maxWidth: '100%',
+    overflowX: 'auto',
+    WebkitOverflowScrolling: 'touch',
     background: 'var(--admin-surface, #ffffff)',
     borderRadius: 8,
     border: '1px solid var(--admin-border, #dbe2f0)',
     boxShadow: '0 1px 3px rgba(16, 37, 72, 0.04)',
-    overflow: 'hidden',
+    marginTop: 12,
+    boxSizing: 'border-box',
+  },
+  table: {
+    width: '100%',
+    borderCollapse: 'separate',
+    borderSpacing: 0,
+    margin: 0,
+    background: 'transparent',
+    border: 'none',
   },
   headerCell: {
     textAlign: 'left',

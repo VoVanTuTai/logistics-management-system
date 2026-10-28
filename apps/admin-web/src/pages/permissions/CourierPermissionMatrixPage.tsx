@@ -567,7 +567,7 @@ const S: Record<string, React.CSSProperties> = {
   errorNotice: { margin: 0, border: '1px solid #fecaca', background: '#fef2f2', color: '#991b1b', borderRadius: 12, padding: '8px 10px', fontWeight: 700 },
   localFallbackNotice: { margin: 0, border: '1px solid #fed7aa', background: '#fff7ed', color: '#9a3412', borderRadius: 12, padding: '8px 10px', fontWeight: 700 },
   backendErrorBar: { border: '1px solid #fecaca', background: '#fff7f7', color: '#7f1d1d', borderRadius: 12, padding: '10px 12px', display: 'flex', gap: 10, alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', fontWeight: 700 },
-  tableWrap: { border: '1px solid var(--admin-border)', borderRadius: 14, overflow: 'auto' },
+  tableWrap: { border: '1px solid var(--admin-border)', borderRadius: 14, overflow: 'auto', maxWidth: '100%', boxSizing: 'border-box' },
   featCol: { minWidth: 260 },
   actCol: { width: 120, textAlign: 'center' },
   featCell: { display: 'grid', gap: 3 },
