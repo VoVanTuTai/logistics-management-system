@@ -1,0 +1,98 @@
+@startuml
+!theme plain
+skinparam monochrome true
+skinparam sequenceMessageAlign center
+skinparam responseMessageBelowArrow true
+skinparam maxMessageSize 140
+skinparam wrapWidth 200
+skinparam BoxPadding 8
+autonumber "<b>[00]</b>"
+
+box "Boundary Layer (Giao Diện & Cổng Kết Nối)" #FFFFFF
+actor "Điều độ viên đường trục\n(Linehaul Fleet Dispatcher)" as Ops
+boundary "LinehaulTripsPage\n(apps/ops-web)" as UI
+boundary "Gateway BFF (:3000)\n(OpsLinehaulController)" as Gateway
+end box
+
+box "Control Layer (Điều Khiển & Lập Lịch Chuyến Xe)" #FFFFFF
+control "LinehaulController\n(:3013 linehaul-service)" as LinehaulCtrl
+control "TripSchedulingService\n(fleet manager)" as TripSvc
+end box
+
+box "Entity Layer (Lưu Trữ & Cơ Sở Dữ Liệu)" #FFFFFF
+entity "PostgreSQL (linehaul_db)\n[linehaul_trips & trip_manifests Table]" as LinehaulDB
+end box
+
+' GIAI ĐOẠN 1: THIẾT LẬP THÔNG TIN CHUYẾN XE ĐƯỜNG TRỤC MỚI
+Ops -> UI: Truy cập màn hình Quản lý chuyến xe (/operations/linehaul),\nbấm nút "Tạo chuyến xe mới" (handleOpenCreateModal)
+activate UI
+
+Ops -> UI: Nhập thông tin lộ trình và phương tiện:\n- Bưu cục xuất phát (originHub) & Bưu cục đích đến (destHub)\n- Biển số xe tải (vehiclePlate, ví dụ: 29C-888.99)\n- Thông tin tài xế (driverName, driverPhone)\n- Giờ xuất bến dự kiến (scheduledDeparture)
+
+Ops -> UI: Bấm nút "Lưu khởi tạo chuyến xe" (handleCreateTrip)
+
+' GIAI ĐOẠN 2: KHỞI TẠO CHUYẾN XE VÀ GÁN DANH SÁCH BAO HÀNG
+UI -> Gateway: POST /ops/linehaul/trips\n(Headers: Bearer accessToken, Body: CreateTripPayload)
+activate Gateway
+
+Gateway -> LinehaulCtrl: POST /trips
+activate LinehaulCtrl
+
+LinehaulCtrl -> TripSvc: createTrip(payload)
+activate TripSvc
+
+TripSvc -> LinehaulDB: INSERT INTO linehaul_trips (id, trip_code, origin_hub, dest_hub, vehicle_plate, driver_name, status: 'PLANNED', scheduled_departure)\nVALUES (...)
+activate LinehaulDB
+LinehaulDB --> TripSvc: Khởi tạo chuyến xe thành công (Mã chuyến TRIP-5566)
+deactivate LinehaulDB
+
+TripSvc --> LinehaulCtrl: LinehaulTripDto { id, tripCode: 'TRIP-5566', status: 'PLANNED' }
+deactivate TripSvc
+
+LinehaulCtrl --> Gateway: 201 Created (LinehaulTripDto)
+deactivate LinehaulCtrl
+
+Gateway --> UI: 201 Created
+deactivate Gateway
+
+UI -> UI: Chuyển sang màn hình Gán bao hàng lên xe (Trip Bag Loading)
+
+' GIAI ĐOẠN 3: GÁN CÁC BAO TRUNG CHUYỂN (MANIFEST MB) VÀO CHUYẾN XE
+Ops -> UI: Chọn danh sách các bao tải niêm phong (Bag Manifests) có cùng tuyến đích,\nbấm "Gán bao vào chuyến xe" (handleAssignBagsToTrip)
+
+UI -> Gateway: POST /ops/linehaul/trips/{tripId}/assign-bags\n(Body: { bagCodes: string[] })
+activate Gateway
+
+Gateway -> LinehaulCtrl: POST /trips/{tripId}/assign-bags
+activate LinehaulCtrl
+
+LinehaulCtrl -> TripSvc: assignBagsToTrip(tripId, bagCodes)
+activate TripSvc
+
+loop Duyệt từng mã bao MB
+    TripSvc -> LinehaulDB: INSERT INTO trip_manifests (trip_id, bag_code, assigned_at) VALUES ($tripId, $bagCode, NOW())
+    activate LinehaulDB
+    LinehaulDB --> TripSvc: Gán bao vào chuyến
+    deactivate LinehaulDB
+end
+
+TripSvc -> LinehaulDB: UPDATE linehaul_trips SET status = 'LOADING', total_bags = N WHERE id = $tripId
+activate LinehaulDB
+LinehaulDB --> TripSvc: Chuyển trạng thái chuyến xe sang 'ĐANG XẾP HÀNG (LOADING)'
+deactivate LinehaulDB
+
+TripSvc --> LinehaulCtrl: { success: true, tripCode: 'TRIP-5566', totalBags: N, status: 'LOADING' }
+deactivate TripSvc
+
+LinehaulCtrl --> Gateway: 200 OK
+deactivate LinehaulCtrl
+
+Gateway --> UI: 200 OK
+deactivate Gateway
+
+' GIAI ĐOẠN 4: HIỂN THỊ KẾT QUẢ VÀ IN LỆNH ĐIỀU ĐỘ XE
+UI -> UI: Cập nhật Bảng chuyến xe: Mã chuyến TRIP-5566 (Xe: 29C-888.99, Đã nạp N bao)
+UI -> UI: Hiển thị tùy chọn "In Lệnh vận chuyển & Biên bản bàn giao xe tuyến"
+
+deactivate UI
+@enduml

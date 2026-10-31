@@ -1,0 +1,137 @@
+@startuml
+!theme plain
+skinparam sequenceMessageAlign center
+skinparam responseMessageBelowArrow true
+skinparam maxMessageSize 140
+skinparam wrapWidth 200
+skinparam BoxPadding 8
+autonumber "<b>[00]</b>"
+
+
+box "Boundary Layer (Giao Diện & In Ấn)" #F8FAFC
+actor "Chủ shop / Người gửi\n(Merchant User)" as Merchant
+boundary "PrintShipmentView\n(apps/merchant-web)" as UI
+boundary "BrowserPrintPopup\n(window.open / print-dialog)" as PrintPopup
+boundary "Gateway BFF (:3000)\n(MerchantController)" as Gateway
+end box
+
+box "Control Layer (Điều Khiển In & Định Dạng)" #FFFFFF
+control "ShippingLabelPrinter\n(apps/merchant-web/printing)" as LabelPrinter
+control "QRCodeGenerator\n(client-side SVG engine)" as QRGenerator
+control "ShipmentController\n(:3002 shipment-service)" as ShipCtrl
+control "ShipmentsService\n(application service)" as ShipSvc
+end box
+
+box "Entity Layer (Dữ Liệu PostgreSQL shipment_db)" #F8FAFC
+entity "PostgreSQL (shipment_db)\n[shipments & metadata]" as ShipDB
+end box
+
+' GIAI ĐOẠN 1: TẢI GIAO DIỆN & CẤU HÌNH IN
+Merchant -> UI: Mở màn hình In tem nhãn vận đơn\n(View: 'print')
+activate UI
+
+note over UI
+  - Hiển thị danh sách vận đơn sẵn sàng in (shipmentRows)
+  - Cấu hình khổ giấy: A5 Standard, K80 Thermal (in nhiệt), 100x150mm (A6 Ecommerce)
+  - Cấu hình nội dung: Đầy đủ (Full), Rút gọn (Mini), Chỉ mã QR (QR Only)
+  - Hiển thị Bản xem trước tem nhãn (Live Preview Card)
+end note
+
+UI -> UI: Hiển thị giao diện cấu hình in & xem trước tem nhãn
+
+' GIAI ĐOẠN 2: CHẾ ĐỘ IN 1 VẬN ĐƠN ĐƠN LẺ (SINGLE PRINT)
+alt Merchant chọn in 1 vận đơn (Single Print)
+    Merchant -> UI: Chọn 1 đơn hàng từ bảng (hoặc nhập printSingleCode)\nvà nhấn nút "In 1 vận đơn" (onPrintSingle)
+
+    UI -> UI: Tìm bản ghi đơn hàng trong state:\nconst row = shipmentRows.find(r => r.shipment.code === code)
+
+    alt Không tìm thấy đơn hàng
+        UI -> UI: Báo lỗi: "Không tìm thấy shipment trong danh sách hiện tại."
+    else Tìm thấy đơn hàng hợp lệ: Tiến hành dựng dữ liệu in tem
+        UI -> LabelPrinter: buildShippingLabelPayload(row)
+        activate LabelPrinter
+
+        note over LabelPrinter
+          Quy chuẩn tem in chuẩn Carrier:
+          1. Che mờ SĐT người nhận/gửi (maskPhoneNumber: '0912 *** 678')
+          2. Che bảo mật giá cước phí Shop, chỉ hiện tiền COD
+          3. Tự động gắn tag 5 nhóm hàng (GENERAL, FRAGILE, BULKY, HIGH_VALUE, DOCUMENT)
+          4. Định dạng tuyến lấy, tuyến phát, mã phân loại Hub/Zone
+        end note
+
+        LabelPrinter -> QRGenerator: buildQrSvg(shipmentCode)
+        activate QRGenerator
+        QRGenerator --> LabelPrinter: Chuỗi SVG vector QR Code sắc nét
+        deactivate QRGenerator
+
+        LabelPrinter -> LabelPrinter: Tạo mã HTML tem in hoàn chỉnh:\nbuildSingleSheetMarkup(payload)
+        LabelPrinter --> UI: HTML Document in ấn chuẩn CSS @media print
+        deactivate LabelPrinter
+
+        UI -> PrintPopup: window.open('', '_blank')\nwrite(htmlDoc) -> document.close()
+        activate PrintPopup
+
+        alt Trình duyệt chặn mở cửa sổ Popup
+            PrintPopup --> UI: Window instance == null
+            UI -> UI: Cảnh báo: "Trình duyệt đang chặn popup in. Hãy cho phép popup rồi thử lại."
+        else Mở thành công cửa sổ In ấn
+            PrintPopup -> PrintPopup: Tự động gọi window.print() sau khi nạp DOM (onload)
+            PrintPopup -> PrintPopup: Xuất hiện hộp thoại In hệ điều hành (Printer Dialog):\nXem trước tem in nhiệt, chọn máy in A6/K80 và nhấn In
+            UI -> UI: Thông báo: "Đã mở popup in cho {shipmentCode}"
+        end
+        deactivate PrintPopup
+    end
+end
+
+' GIAI ĐOẠN 3: CHẾ ĐỘ IN NHIỀU VẬN ĐƠN HÀNG LOẠT (BULK PRINT)
+alt Merchant dán danh sách nhiều mã đơn từ Excel (Bulk Print)
+    Merchant -> UI: Dán danh sách mã đơn vào ô textarea printBulkCodes\n(Cách nhau bởi dấu phẩy hoặc xuống dòng)
+    UI -> UI: Phân tách chuỗi: parseBulkCodes(printBulkCodes)\nLọc ra printBulkPreviewRows khớp với cơ sở dữ liệu
+
+    Merchant -> UI: Nhấn nút "In nhiều vận đơn" (onPrintBulk)
+
+    alt Danh sách mã nhập rỗng hoặc không có đơn nào khớp
+        UI -> UI: Báo lỗi: "Không tìm thấy vận đơn nào phù hợp với danh sách mã đã nhập."
+    else Có đơn hàng khớp danh sách
+        UI -> LabelPrinter: openMultiShippingLabelPrint(printBulkPreviewRows)
+        activate LabelPrinter
+
+        loop Với từng đơn hàng trong danh sách
+            LabelPrinter -> LabelPrinter: buildShippingLabelPayload(row)
+            LabelPrinter -> QRGenerator: buildQrSvg(code)
+            activate QRGenerator
+            QRGenerator --> LabelPrinter: SVG QR Code
+            deactivate QRGenerator
+            LabelPrinter -> LabelPrinter: Tạo thẻ <article class="sheet"> kèm CSS ngắt trang (page-break-after: always)
+        end
+
+        LabelPrinter -> LabelPrinter: Gộp toàn bộ các trang: buildMultiLabelHtml(payloads)
+        LabelPrinter --> UI: Toàn bộ HTML cuộn tem liên tục
+        deactivate LabelPrinter
+
+        UI -> PrintPopup: window.open('', '_blank') -> write(multiHtml) -> print()
+        activate PrintPopup
+        PrintPopup -> PrintPopup: Render N trang tem liên tục trong hộp thoại In
+        deactivate PrintPopup
+
+        UI -> UI: Thông báo: "Đã mở popup in cho N vận đơn."
+    end
+end
+
+' GIAI ĐOẠN 4: TIỆN ÍCH TẢI CSV & XUẤT BẢN KÊ VẬN ĐƠN (EXPORT UTILITIES)
+alt Merchant tải danh sách hoặc xuất báo cáo PDF
+    Merchant -> UI: Bấm nút "Tải danh sách đơn" (onDownloadCsv)
+    UI -> UI: Kết xuất file CSV từ shipmentRows (Mã đơn, Người nhận, SĐT, COD, Trạng thái)
+    UI -> UI: Tự động tải file: 'danh-sach-don-hang.csv' về máy tính
+
+else Merchant xuất tài liệu PDF bản kê
+    Merchant -> UI: Bấm nút "Xuất PDF" (onExportPdf)
+    UI -> PrintPopup: Mở bảng in dạng bảng tổng hợp danh sách vận đơn (Manifest Sheet)
+    activate PrintPopup
+    PrintPopup -> PrintPopup: Render hộp thoại In/Lưu PDF bản kê giao nhận bưu cục
+    deactivate PrintPopup
+end
+
+deactivate UI
+@enduml
+

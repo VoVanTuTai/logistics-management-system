@@ -1,0 +1,128 @@
+@startuml
+!theme plain
+skinparam monochrome true
+skinparam sequenceMessageAlign center
+skinparam responseMessageBelowArrow true
+skinparam maxMessageSize 140
+skinparam wrapWidth 200
+skinparam BoxPadding 8
+autonumber "<b>[00]</b>"
+
+
+box "Boundary Layer (Giao Diện & Gateway)" #FFFFFF
+actor "Bưu tá / Shipper\n(Courier User)" as Courier
+boundary "DeliveryProofScreen\n(apps/courier-mobile)" as UI
+boundary "CameraView (POD)\n(Expo Camera)" as CamUI
+boundary "Gateway BFF (:3000)\n(CourierController)" as Gateway
+end box
+
+box "Control Layer (Điều Khiển & Nghiệp Vụ)" #FFFFFF
+control "DeliverySuccessAction\n(delivery-success.mutation)" as DeliveryCtrl
+control "DeliveryService (:3006)\n(DeliveriesController & Svc)" as DeliverySvc
+control "PaymentService (:3008)\n(CodController & SePay)" as PaymentSvc
+control "DispatchService (:3004)\n(TasksService)" as DispatchSvc
+end box
+
+box "Entity Layer (Cơ Sở Dữ Liệu)" #FFFFFF
+entity "PostgreSQL (delivery_db)\n[deliveries & pod_proofs]" as DeliveryDB
+entity "PostgreSQL (payment_db)\n[cod_records]" as PaymentDB
+entity "PostgreSQL (dispatch_db)\n[courier_tasks]" as TaskDB
+end box
+
+' GIAI ĐOẠN 1: MỞ MÀN HÌNH KÝ NHẬN & CHỤP ẢNH POD
+Courier -> UI: Mở màn hình Ký nhận phát hàng (DeliveryProofScreen)
+activate UI
+
+UI -> UI: Kiểm tra chính sách đồng kiểm (inspectionPolicy)\n& tổng tiền thu hộ COD
+UI -> UI: Render badge đồng kiểm, số tiền COD & nút chụp ảnh
+
+Courier -> CamUI: Bấm chụp ảnh bàn giao hàng hóa cho khách (takePictureAsync)
+activate CamUI
+CamUI --> UI: Trả về ảnh chứng minh giao hàng (photoUri)
+deactivate CamUI
+
+' GIAI ĐOẠN 2: XỬ LÝ THEO 2 PHƯƠNG THỨC THANH TOÁN
+alt Phương thức 1: Thanh toán tiền mặt (CASH / COD)
+    Courier -> UI: Chọn "Tiền mặt (COD)" và nhấn "Xác nhận giao hàng"
+    UI -> DeliveryCtrl: handleSubmit({ shipmentCode, podImageUrl, paymentMethod: 'COD' })
+    activate DeliveryCtrl
+
+    DeliveryCtrl -> Gateway: POST /courier/delivery/deliveries/success\n(Headers: Idempotency-Key, Bearer Token)
+    activate Gateway
+    Gateway -> DeliverySvc: recordDeliverySuccess(payload)
+    activate DeliverySvc
+    DeliverySvc -> DeliveryDB: INSERT INTO deliveries (status='DELIVERED', pod_url=...)\nUPDATE shipments SET current_status = 'DELIVERED'
+    activate DeliveryDB
+    DeliveryDB --> DeliverySvc: Đã lưu biên bản ký nhận POD
+    deactivate DeliveryDB
+    DeliverySvc --> Gateway: 200 OK (RecordDeliverySuccessResult)
+    deactivate DeliverySvc
+    Gateway --> DeliveryCtrl: 200 OK
+    deactivate Gateway
+
+    ' Thu tiền mặt COD
+    DeliveryCtrl -> Gateway: POST /courier/payment/cod/collect\n(Body: { shipmentCode, collectedAmount, paymentMethod: 'COD' })
+    activate Gateway
+    Gateway -> PaymentSvc: collectCod(payload)
+    activate PaymentSvc
+    PaymentSvc -> PaymentDB: UPDATE cod_records SET status = 'COLLECTED',\npayment_method = 'COD' WHERE shipment_code = $1
+    activate PaymentDB
+    PaymentDB --> PaymentSvc: Ghi nhận thu tiền mặt thành công
+    deactivate PaymentDB
+    PaymentSvc --> Gateway: 200 OK
+    deactivate PaymentSvc
+    Gateway --> DeliveryCtrl: 200 OK
+    deactivate Gateway
+
+    ' Cập nhật hoàn tất nhiệm vụ
+    DeliveryCtrl -> Gateway: PATCH /courier/dispatch/tasks/{taskId}/status (COMPLETED)
+    activate Gateway
+    Gateway -> DispatchSvc: updateTaskStatus(taskId, 'COMPLETED')
+    activate DispatchSvc
+    DispatchSvc -> TaskDB: UPDATE courier_tasks SET status = 'COMPLETED' WHERE id = $1
+    activate TaskDB
+    TaskDB --> DispatchSvc: Cập nhật hoàn tất
+    deactivate TaskDB
+    DispatchSvc --> Gateway: 200 OK
+    deactivate DispatchSvc
+    Gateway --> DeliveryCtrl: 200 OK
+    deactivate Gateway
+
+    DeliveryCtrl --> UI: Hoàn tất ký nhận & thu tiền mặt
+    deactivate DeliveryCtrl
+    UI -> UI: Hiển thị: "✓ Ký nhận thành công. Đã thu tiền mặt COD!"
+
+else Phương thức 2: Khách chuyển khoản ngân hàng (VietQR / SePay)
+    Courier -> UI: Chọn "Chuyển khoản (VietQR)"
+    UI -> PaymentSvc: useCompanyBankInfoQuery() -> sinh VietQR kèm cú pháp "COD {shipmentCode}"
+    activate PaymentSvc
+    PaymentSvc --> UI: Trả về hình ảnh VietQR động & thông tin thụ hưởng
+    deactivate PaymentSvc
+    UI -> UI: Render mã QR ngân hàng để khách hàng quét chuyển khoản
+
+    note over UI: Khách quét VietQR từ App ngân hàng. SePay Webhook\nxác nhận tiền vào tài khoản -> cập nhật cod_records
+
+    UI -> PaymentSvc: useCodRecordByShipmentQuery (Kiểm tra trạng thái đối soát)
+    activate PaymentSvc
+    PaymentSvc -> PaymentDB: SELECT status FROM cod_records WHERE shipment_code = $1
+    activate PaymentDB
+    PaymentDB --> PaymentSvc: status = 'COLLECTED' (Đã nhận tiền qua SePay)
+    deactivate PaymentDB
+    PaymentSvc --> UI: Trả về trạng thái đã thanh toán thành công
+    deactivate PaymentSvc
+
+    UI -> UI: Phát hiện đã nhận tiền -> Tự động hoàn tất ký nhận!
+    UI -> DeliveryCtrl: handleSubmit({ shipmentCode, podImageUrl, paymentMethod: 'BANK_TRANSFER' })
+    activate DeliveryCtrl
+    DeliveryCtrl -> Gateway: POST /deliveries/success & PATCH /tasks/{id}/status
+    activate Gateway
+    Gateway --> DeliveryCtrl: 200 OK
+    deactivate Gateway
+    DeliveryCtrl --> UI: Hoàn tất giao hàng chuyển khoản
+    deactivate DeliveryCtrl
+    UI -> UI: Hiển thị: "✓ Tiền SePay đã vào tài khoản. Giao thành công!"
+end
+
+deactivate UI
+
+@enduml

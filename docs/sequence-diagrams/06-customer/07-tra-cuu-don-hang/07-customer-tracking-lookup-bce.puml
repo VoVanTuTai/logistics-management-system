@@ -1,0 +1,92 @@
+@startuml
+!theme plain
+skinparam monochrome true
+skinparam sequenceMessageAlign center
+skinparam responseMessageBelowArrow true
+skinparam maxMessageSize 140
+skinparam wrapWidth 200
+skinparam BoxPadding 8
+autonumber "<b>[00]</b>"
+
+
+box "Boundary Layer (Giao Diện & Gateway)" #FFFFFF
+actor "Khách hàng cá nhân\n(Customer User)" as Customer
+boundary "TrackingPage / OrdersPage\n(apps/guest-web & mobile)" as UI
+boundary "Gateway BFF (:3000)\n(Public / Customer Controller)" as Gateway
+boundary "OrderDetailModal / Screen\n(Chi tiết hành trình & Tem nhãn)" as DetailUI
+end box
+
+box "Control Layer (Điều Khiển & Tra Cứu Vết Quét)" #FFFFFF
+control "TrackingController\n(:3004 tracking-service)" as TrackCtrl
+control "TrackingService\n(application service)" as TrackSvc
+control "CourierResolver\n(utils/courierResolver.ts)" as CourierRes
+end box
+
+box "Entity Layer (Lưu Trữ Dữ Liệu Vận Đơn & Vết Quét)" #FFFFFF
+entity "PostgreSQL (tracking_db)\n[shipment_trackings & scans]" as TrackDB
+entity "PostgreSQL (shipment_db)\n[shipments & routing_legs]" as ShipDB
+end box
+
+' GIAI ĐOẠN 1: NHẬP MÃ VẬN ĐƠN TRA CỨU HOẶC CHỌN ĐƠN TỪ DANH SÁCH
+alt Cách 1: Nhập mã vận đơn trên thanh tìm kiếm
+    Customer -> UI: Nhập mã bưu kiện (VD: 333577082099) & nhấn "Tra cứu"
+activate UI
+else Cách 2: Chọn từ danh sách "Đơn gửi đi" hoặc "Đơn nhận về"
+    Customer -> UI: Nhấp chọn một đơn hàng trên trang OrdersPage
+end
+
+' GIAI ĐOẠN 2: GỬI REQUEST TRUY VẤN QUA GATEWAY BFF
+UI -> Gateway: GET /public/tracking/shipments/{code}\n(kèm receiverPhone nếu cần mở khóa riêng tư)
+activate Gateway
+
+Gateway -> TrackCtrl: GET /shipments/:code
+activate TrackCtrl
+
+TrackCtrl -> TrackSvc: getUnifiedTracking(code, verificationPhone)
+activate TrackSvc
+
+' GIAI ĐOẠN 3: ĐỐI SOÁT TRẠNG THÁI & CHUỖI VẾT QUÉT
+TrackSvc -> TrackDB: SELECT * FROM shipment_trackings WHERE tracking_code = $1
+activate TrackDB
+TrackDB --> TrackSvc: Bản ghi hành trình bưu kiện
+deactivate TrackDB
+
+alt Mã vận đơn không tồn tại
+    TrackSvc --> TrackCtrl: 404 NotFoundException ("Mã vận đơn không tồn tại trên hệ thống")
+    TrackCtrl --> Gateway: 404 Not Found
+    Gateway --> UI: 404 Not Found
+    UI -> UI: Render thông báo lỗi: "Không tìm thấy thông tin đơn hàng. Vui lòng kiểm tra lại mã vận đơn."
+else Vận đơn hợp lệ: Tải lịch sử vết quét chi tiết
+    TrackSvc -> TrackDB: SELECT * FROM tracking_scans WHERE tracking_code = $1 ORDER BY scan_time ASC
+    activate TrackDB
+    TrackDB --> TrackSvc: Danh sách các mốc vết quét (Inbound, Linehaul, Outbound, Delivering)
+    deactivate TrackDB
+
+    TrackSvc -> ShipDB: SELECT sender, receiver, package, service, hubs FROM shipments WHERE code = $1
+    activate ShipDB
+    ShipDB --> TrackSvc: Chi tiết gói cước, địa chỉ bưu cục và tiền COD
+    deactivate ShipDB
+
+    TrackSvc --> TrackCtrl: UnifiedTrackingResponse { code, status, checkpoints: [...], currentHub }
+    deactivate TrackSvc
+
+    TrackCtrl --> Gateway: 200 OK (UnifiedTrackingResponse)
+    deactivate TrackCtrl
+
+    Gateway --> UI: 200 OK (Dữ liệu hành trình thời gian thực)
+    deactivate Gateway
+
+    ' GIAI ĐOẠN 4: PHÂN GIẢI THÔNG TIN BƯU TÁ PHỤ TRÁCH & HIỂN THỊ
+    UI -> CourierRes: resolveCourierForOrder(shipmentData)
+    activate CourierRes
+    CourierRes --> UI: Thông tin bưu tá giao nhận (Họ tên, SĐT liên hệ, Hub bưu cục)
+    deactivate CourierRes
+
+    UI -> DetailUI: Hiển thị giao diện chi tiết hành trình (Mở Drawer / Modal)
+    activate DetailUI
+    deactivate UI
+
+    DetailUI -> DetailUI: Render Dòng thời gian trực quan (Timeline):\n- Trạng thái hiện tại (Đang phát / Đã giao / Chờ lấy)\n- Chuỗi vết quét từng bưu cục kèm dấu thời gian\n- Thông tin liên hệ bưu tá (Nút gọi điện & Zalo)\n- Nút in phiếu gửi hàng & chia sẻ lộ trình
+    deactivate DetailUI
+end
+@enduml

@@ -1,0 +1,76 @@
+@startuml
+!theme plain
+skinparam monochrome true
+skinparam sequenceMessageAlign center
+skinparam responseMessageBelowArrow true
+skinparam maxMessageSize 140
+skinparam wrapWidth 200
+skinparam BoxPadding 8
+autonumber "<b>[00]</b>"
+
+
+box "Boundary Layer (Giao Diện & Gateway)" #FFFFFF
+actor "Bưu tá / Shipper\n(Courier User)" as Courier
+boundary "HomeScreen / TaskListScreen\n(apps/courier-mobile)" as UI
+boundary "Gateway BFF (:3000)\n(CourierController)" as Gateway
+end box
+
+box "Control Layer (Giám Sát Hạn Mức & Công Nợ)" #FFFFFF
+control "CodLimitMonitor\n(HomeScreen / TaskList logic)" as LimitMonitor
+control "PaymentService (:3008)\n(CodRecordsService)" as PaymentSvc
+end box
+
+box "Entity Layer (Cơ Sở Dữ Liệu)" #FFFFFF
+entity "PostgreSQL (payment_db)\n[cod_records Table]" as PaymentDB
+end box
+
+' GIAI ĐOẠN 1: MỞ ỨNG DỤNG & TRUY VẤN DỮ LIỆU CÔNG NỢ COD
+Courier -> UI: Mở ứng dụng trong ca làm việc (HomeScreen)
+activate UI
+
+UI -> LimitMonitor: useCodRecordsQuery({ courierId, accessToken })
+activate LimitMonitor
+
+LimitMonitor -> Gateway: GET /courier/payment/cod/courier/{courierId}\n(Headers: Bearer JWT AccessToken)
+activate Gateway
+
+Gateway -> PaymentSvc: getCodRecords(courierId)
+activate PaymentSvc
+
+PaymentSvc -> PaymentDB: SELECT * FROM cod_records\nWHERE courier_id = $1 AND payment_method = 'COD'
+activate PaymentDB
+PaymentDB --> PaymentSvc: Danh sách bản ghi COD tiền mặt (CodRecordDto[])
+deactivate PaymentDB
+
+PaymentSvc --> Gateway: 200 OK (CodRecordDto[])
+deactivate PaymentSvc
+Gateway --> LimitMonitor: 200 OK (CodRecordDto[])
+deactivate Gateway
+
+' GIAI ĐOẠN 2: TÍNH TOÁN CÔNG NỢ & ĐỐI SOÁT HẠN MỨC
+LimitMonitor -> LimitMonitor: Tính tiền mặt đang giữ (cashNeedRemit = sum collectedAmount)\nvà tiền tồn qua ngày (overdueCashAmount với collectedAt < todayStart)
+
+LimitMonitor -> LimitMonitor: Đối chiếu 2 hạn mức an toàn:\n1. Trần giữ tiền mặt: CASH_IN_HAND_LIMIT = 15.000.000đ\n2. Khóa qua ngày: isOverdueCodLocked = (overdueCashAmount > 0)
+LimitMonitor --> UI: Cập nhật trạng thái công nợ COD
+deactivate LimitMonitor
+
+' GIAI ĐOẠN 3: XỬ LÝ 3 KỊCH BẢN HẠN MỨC CÔNG NỢ
+alt Trường hợp 1: Vượt trần tiền mặt giữ trong tay >= 15.000.000đ (isCashOverLimit)
+    UI -> UI: Hiển thị Banner đỏ cảnh báo (cashLimitAlert):\n"Bạn đang giữ X đ tiền mặt COD (vượt hạn mức 15.000.000đ).\nVui lòng nộp tiền ngay qua VietQR hoặc két Hub trước khi tiếp tục giao đơn!"
+
+else Trường hợp 2: Nợ tiền COD tồn từ ngày hôm trước chưa nộp (isOverdueCodLocked)
+    UI -> UI: Hiển thị Banner đỏ khóa tài khoản (overdueLockAlert):\n"TÀI KHOẢN BỊ KHÓA: NỢ COD QUA NGÀY (còn tồn X đ tiền mặt)"
+
+    Courier -> UI: Nhấn vào một nhiệm vụ để mở chi tiết (handleOpenTask)
+    UI -> UI: Kiểm tra: isOverdueCodLocked = true
+    UI -> UI: Hiển thị Alert chặn thao tác:\n"🔒 Tài khoản bị khóa: Bạn có tiền COD thu từ ngày hôm trước\nchưa nộp. Vui lòng nộp tiền ngay để mở khóa tài khoản!"
+
+else Trường hợp 3: Công nợ an toàn (< 15 triệu đ và không nợ qua ngày)
+    UI -> UI: Render trạng thái bình thường, không hiển thị cảnh báo
+    Courier -> UI: Nhấn vào nhiệm vụ để nhận/giao hàng
+    UI -> UI: Cho phép điều hướng vào màn hình Chi tiết nhiệm vụ (TaskDetailScreen)
+end
+
+deactivate UI
+
+@enduml

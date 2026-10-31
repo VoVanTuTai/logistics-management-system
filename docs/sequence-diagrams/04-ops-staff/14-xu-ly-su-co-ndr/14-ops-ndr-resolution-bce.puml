@@ -1,0 +1,107 @@
+@startuml
+!theme plain
+skinparam monochrome true
+skinparam sequenceMessageAlign center
+skinparam responseMessageBelowArrow true
+skinparam maxMessageSize 140
+skinparam wrapWidth 200
+skinparam BoxPadding 8
+autonumber "<b>[00]</b>"
+
+box "Boundary Layer (Giao Diện & Cổng Kết Nối)" #FFFFFF
+actor "Cán bộ xử lý sự cố CSKH/Ops\n(Ops NDR Specialist)" as Ops
+boundary "NdrManagementPage\n(apps/ops-web)" as UI
+boundary "Gateway BFF (:3000)\n(OpsNdrController)" as Gateway
+end box
+
+box "Control Layer (Điều Khiển & Giải Quyết Sự Cố Phát Hàng)" #FFFFFF
+control "NdrController\n(:3007 delivery-service)" as NdrCtrl
+control "NdrService\n(exception resolution service)" as NdrSvc
+control "ShipmentStateService (:3002)\n(Lifecycle Manager)" as ShipStateSvc
+end box
+
+box "Entity Layer (Lưu Trữ & Cơ Sở Dữ Liệu)" #FFFFFF
+entity "PostgreSQL (delivery_db)\n[ndr_records & shipments Table]" as DeliveryDB
+end box
+
+' GIAI ĐOẠN 1: TRUY VẤN DANH SÁCH ĐƠN HÀNG GIAO THẤT BẠI (NDR)
+Ops -> UI: Truy cập màn hình Xử lý sự cố giao hàng (/operations/ndr),\nxem danh sách các đơn giao không thành công do bưu tá báo cáo
+activate UI
+
+UI -> Gateway: GET /ops/delivery/ndr/pending?hubCode={code}\n(Headers: Bearer accessToken)
+activate Gateway
+Gateway -> NdrCtrl: GET /ndr/pending
+activate NdrCtrl
+NdrCtrl -> DeliveryDB: SELECT * FROM ndr_records WHERE hub_code = $hubCode AND status = 'PENDING_RESOLUTION'\nORDER BY created_at DESC
+activate DeliveryDB
+DeliveryDB --> NdrCtrl: Danh sách sự cố phát hàng (Lý do: Không nghe máy, Sai địa chỉ, Hẹn lại ngày...)
+deactivate DeliveryDB
+NdrCtrl --> Gateway: 200 OK (NdrRecordDto[])
+deactivate NdrCtrl
+Gateway --> UI: 200 OK
+deactivate Gateway
+
+UI -> UI: Render Bảng sự cố NDR: Mã vận đơn, Bưu tá báo cáo, Lý do thất bại, Số lần đã phát (attemptCount / 3)
+
+' GIAI ĐOẠN 2: THỰC HIỆN ĐỐI SOÁT VÀ RA PHÁN QUYẾT XỬ LÝ
+Ops -> UI: Nhấp vào một đơn hàng để xem chi tiết bằng chứng POD thất bại,\nliên hệ người nhận xác minh và chọn hướng xử lý
+
+alt Trường hợp 1: Khách hàng hẹn lại ngày nhận (Số ca phát < 3)
+    Ops -> UI: Chọn hướng xử lý: "Lên lịch phát lại (RESCHEDULE)",\nchọn Ngày phát kế tiếp và nhập Ghi chú tuyến
+    Ops -> UI: Bấm nút "Xác nhận phát lại" (handleResolveReschedule)
+
+    UI -> Gateway: POST /ops/delivery/ndr/{ndrId}/resolve\n(Body: { resolutionType: 'RESCHEDULE', nextDeliveryDate, operatorNote })
+    activate Gateway
+
+    Gateway -> NdrCtrl: POST /ndr/{ndrId}/resolve
+    activate NdrCtrl
+    NdrCtrl -> NdrSvc: resolveNdr(ndrId, payload)
+    activate NdrSvc
+
+    NdrSvc -> DeliveryDB: UPDATE ndr_records SET status = 'RESOLVED_RESCHEDULED', resolved_at = NOW(), resolution_note = $note WHERE id = $ndrId\nUPDATE shipments SET status = 'REDELIVERY_SCHEDULED' WHERE id = $shipmentId
+    activate DeliveryDB
+    DeliveryDB --> NdrSvc: Cập nhật thành công
+    deactivate DeliveryDB
+
+    NdrSvc --> NdrCtrl: ResolutionResult { status: 'RESOLVED_RESCHEDULED', nextDeliveryDate }
+    deactivate NdrSvc
+    NdrCtrl --> Gateway: 200 OK
+    deactivate NdrCtrl
+    Gateway --> UI: 200 OK
+    deactivate Gateway
+
+    UI -> UI: Hiển thị thông báo: "Đã lên lịch phát lại đơn hàng vào ngày X!"
+
+else Trường hợp 2: Khách từ chối nhận hoặc đã phát thất bại quá 3 ca
+    Ops -> UI: Chọn hướng xử lý: "Kích hoạt chuyển hoàn về Shop (RETURN)",\nnhập Lý do kết luận chuyển hoàn
+    Ops -> UI: Bấm nút "Chuyển hoàn bưu gửi" (handleResolveReturn)
+
+    UI -> Gateway: POST /ops/delivery/ndr/{ndrId}/resolve\n(Body: { resolutionType: 'RETURN', returnReasonCode, operatorNote })
+    activate Gateway
+
+    Gateway -> NdrCtrl: POST /ndr/{ndrId}/resolve
+    activate NdrCtrl
+    NdrCtrl -> NdrSvc: resolveNdr(ndrId, payload)
+    activate NdrSvc
+
+    NdrSvc -> ShipStateSvc: initiateShipmentReturn(shipmentId, reasonCode)
+    activate ShipStateSvc
+    ShipStateSvc -> DeliveryDB: UPDATE shipments SET status = 'RETURNING', return_initiated_at = NOW() WHERE id = $shipmentId\nUPDATE ndr_records SET status = 'RESOLVED_RETURNED' WHERE id = $ndrId
+    activate DeliveryDB
+    DeliveryDB --> ShipStateSvc: Chuyển trạng thái đơn sang Đang chuyển hoàn
+    deactivate DeliveryDB
+    ShipStateSvc --> NdrSvc: Hoàn tất kích hoạt hoàn hàng
+    deactivate ShipStateSvc
+
+    NdrSvc --> NdrCtrl: ResolutionResult { status: 'RESOLVED_RETURNED' }
+    deactivate NdrSvc
+    NdrCtrl --> Gateway: 200 OK
+    deactivate NdrCtrl
+    Gateway --> UI: 200 OK
+    deactivate Gateway
+
+    UI -> UI: Hiển thị thông báo: "Đơn hàng đã được chuyển sang luồng Quản lý hoàn hàng!"
+end
+
+deactivate UI
+@enduml

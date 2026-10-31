@@ -1,0 +1,77 @@
+@startuml
+!theme plain
+skinparam monochrome true
+skinparam sequenceMessageAlign center
+skinparam responseMessageBelowArrow true
+skinparam maxMessageSize 140
+skinparam wrapWidth 200
+skinparam BoxPadding 8
+autonumber "<b>[00]</b>"
+
+box "Boundary Layer (Giao Diện & Kênh Đồng Bộ Mobile)" #FFFFFF
+actor "Quản trị viên hệ thống\n(System Admin)" as Admin
+boundary "CourierPermissionMatrixPage\n(apps/admin-web)" as UI
+boundary "Gateway BFF (:3000)\n(AdminPermissionController)" as Gateway
+boundary "CourierMobileApp\n(Ứng dụng bưu tá di động)" as MobileApp
+end box
+
+box "Control Layer (Điều Khiển & Ma Trận Quyền Hạn RBAC)" #FFFFFF
+control "PermissionController\n(:3010 auth-service)" as PermCtrl
+control "RbacPolicyService\n(security policy service)" as RbacSvc
+end box
+
+box "Entity Layer (Lưu Trữ & Cơ Sở Dữ Liệu)" #FFFFFF
+entity "PostgreSQL (auth_db)\n[role_permissions & user_overrides Table]" as AuthDB
+end box
+
+' GIAI ĐOẠN 1: MỞ MA TRẬN PHÂN QUYỀN VÀ THIẾT LẬP NGOẠI LỆ MOBILE
+Admin -> UI: Truy cập màn hình Ma trận phân quyền Mobile (/permissions/courier-matrix),\nchọn chế độ xem: Toàn mạng lưới (global) hoặc Cấu hình ngoại lệ từng bưu tá (per-user)
+activate UI
+
+Admin -> UI: Bật/Tắt các cờ tính năng đặc quyền trên ứng dụng di động:\n- Quyền ghi đè chụp ảnh POD ngoại tuyến khi mất sóng (Offline POD Override)\n- Quyền nộp tiền COD vượt trần 15 triệu trong trường hợp bão lũ khẩn cấp\n- Quyền mở seal bao khẩn cấp trực tiếp trên máy quét PDA
+
+Admin -> UI: Bấm nút "Lưu thay đổi ma trận quyền Mobile" (handleSaveMatrix)
+
+' GIAI ĐOẠN 2: CẬP NHẬT MA TRẬN VÀ GHI ĐÈ BẢN GHI PHÂN QUYỀN
+UI -> Gateway: PUT /admin/auth/permissions/courier-matrix\n(Headers: Bearer accessToken, Body: { matrix: CourierPermissionMatrix, updatedBy: adminId })
+activate Gateway
+
+Gateway -> PermCtrl: PUT /permissions/courier-matrix
+activate PermCtrl
+
+PermCtrl -> RbacSvc: updateCourierPermissionMatrix(matrix, adminId)
+activate RbacSvc
+
+RbacSvc -> AuthDB: UPSERT INTO role_permissions (role_name, permission_key, is_enabled, updated_at)\nVALUES ('COURIER', 'OFFLINE_POD_OVERRIDE', true, NOW()), ...
+activate AuthDB
+AuthDB --> RbacSvc: Lưu ma trận phân quyền vai trò
+deactivate AuthDB
+
+opt Có cấu hình ngoại lệ cho cá nhân bưu tá cụ thể
+    RbacSvc -> AuthDB: INSERT INTO user_permission_overrides (user_id, permission_key, override_value, granted_by, updated_at)\nVALUES ($courierId, 'COD_LIMIT_BYPASS', true, $adminId, NOW())\nON CONFLICT (user_id, permission_key) DO UPDATE SET override_value = true
+    activate AuthDB
+    AuthDB --> RbacSvc: Ghi nhận quyền ghi đè cá nhân
+    deactivate AuthDB
+end
+
+RbacSvc --> PermCtrl: { success: true, updatedPermissionsCount: N }
+deactivate RbacSvc
+
+' Đẩy tín hiệu cập nhật thời gian thực sang thiết bị di động
+PermCtrl -> MobileApp: Phát tín hiệu WebSocket / Push: Invalidate quyền hạn (Refresh App Permissions)
+activate MobileApp
+MobileApp --> PermCtrl: Đồng bộ quyền mới thành công
+deactivate MobileApp
+
+PermCtrl --> Gateway: 200 OK
+deactivate PermCtrl
+
+Gateway --> UI: 200 OK
+deactivate Gateway
+
+' GIAI ĐOẠN 3: PHẢN HỒI GIAO DIỆN VÀ CẬP NHẬT MA TRẬN
+UI -> UI: Cập nhật giao diện Ma trận tính năng (CourierPermissionMatrix Table):\n- Các nút Switch quyền chuyển sang trạng thái [BẬT XANH]\n- Ghi chú: Đã áp dụng quyền ngoại lệ khẩn cấp thành công
+
+UI -> UI: Hiển thị Toast thông báo: "Đã cập nhật ma trận quyền Mobile và đồng bộ tức thì sang thiết bị bưu tá!"
+deactivate UI
+@enduml

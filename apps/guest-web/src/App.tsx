@@ -104,6 +104,11 @@ import {
   type AdminUnitProvince,
   type AdminUnitWard,
 } from './utils/vietnamAdministrativeData';
+import {
+  getDefaultAddress,
+  getSavedAddresses,
+  type SavedAddress,
+} from './utils/savedAddressService';
 
 
 const PROVINCES = VIETNAM_ADMINISTRATIVE_DATA.map((p) => p.name);
@@ -1534,6 +1539,29 @@ function CreateOrderPage() {
   const [senderDistrict, setSenderDistrict] = useState(initialPrefill?.senderDistrict || 'Quận 1');
   const [senderHubCode, setSenderHubCode] = useState(initialPrefill?.senderHubCode || 'HUB-HCM-001');
 
+  // Saved Addresses State
+  const [userSavedAddresses, setUserSavedAddresses] = useState<SavedAddress[]>([]);
+  const [showAddressPicker, setShowAddressPicker] = useState(false);
+
+  useEffect(() => {
+    const ident = phone || user?.id || user?.username;
+    if (ident) {
+      const list = getSavedAddresses(ident);
+      setUserSavedAddresses(list);
+      if (!initialPrefill) {
+        const def = getDefaultAddress(ident);
+        if (def) {
+          setSenderName(def.name);
+          setSenderPhoneInput(def.phone);
+          setSenderAddress(def.addressDetail);
+          setSenderProvince(def.province);
+          if (def.ward) setSenderWard(def.ward);
+          if (def.district) setSenderDistrict(def.district);
+        }
+      }
+    }
+  }, [phone, user, initialPrefill]);
+
   // Receiver details
   const [receiverName, setReceiverName] = useState(initialPrefill?.receiverName || '');
   const [receiverPhone, setReceiverPhone] = useState(initialPrefill?.receiverPhone || '');
@@ -2135,12 +2163,70 @@ function CreateOrderPage() {
                 <MapPin className="h-4 w-4 text-blue-600" />
                 Thông Tin Người Gửi
               </div>
-              {currentSenderHub && (
-                <span className="text-[10px] font-mono font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full border border-slate-200">
-                  Hub gửi: {currentSenderHub.code}
-                </span>
-              )}
+              <div className="flex items-center gap-2">
+                {userSavedAddresses.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setShowAddressPicker((prev) => !prev)}
+                    className="text-[11px] font-bold text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 px-2.5 py-1 rounded-lg transition cursor-pointer flex items-center gap-1"
+                  >
+                    <span>Sổ địa chỉ ({userSavedAddresses.length})</span>
+                  </button>
+                )}
+                {currentSenderHub && (
+                  <span className="text-[10px] font-mono font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full border border-slate-200">
+                    Hub gửi: {currentSenderHub.code}
+                  </span>
+                )}
+              </div>
             </div>
+
+            {/* Quick Address Picker Dropdown */}
+            {showAddressPicker && userSavedAddresses.length > 0 && (
+              <div className="p-3 bg-blue-50/60 rounded-xl border border-blue-200 space-y-2 animate-in fade-in">
+                <div className="flex items-center justify-between text-xs font-bold text-blue-900 border-b border-blue-200/60 pb-1.5">
+                  <span>Chọn địa chỉ gửi đã lưu:</span>
+                  <button
+                    type="button"
+                    onClick={() => setShowAddressPicker(false)}
+                    className="text-[11px] text-slate-500 hover:text-slate-800 cursor-pointer"
+                  >
+                    Đóng
+                  </button>
+                </div>
+                <div className="grid gap-2 max-h-48 overflow-y-auto">
+                  {userSavedAddresses.map((addr) => (
+                    <div
+                      key={addr.id}
+                      onClick={() => {
+                        setSenderName(addr.name);
+                        setSenderPhoneInput(addr.phone);
+                        setSenderAddress(addr.addressDetail);
+                        setSenderProvince(addr.province);
+                        if (addr.ward) setSenderWard(addr.ward);
+                        if (addr.district) setSenderDistrict(addr.district);
+                        setShowAddressPicker(false);
+                      }}
+                      className="p-2.5 bg-white rounded-lg border border-slate-200 hover:border-blue-500 hover:bg-blue-50/30 cursor-pointer transition text-xs flex items-center justify-between"
+                    >
+                      <div>
+                        <div className="flex items-center gap-1.5">
+                          <strong className="text-slate-800">{addr.name}</strong>
+                          <span className="text-slate-400 font-mono">({addr.phone})</span>
+                          {addr.isDefault && (
+                            <span className="text-[9px] px-1.5 py-0.2 rounded-full bg-blue-100 text-blue-700 font-extrabold">
+                              Mặc định
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-slate-500 text-[11px] truncate max-w-sm mt-0.5">{addr.composedAddress}</p>
+                      </div>
+                      <span className="text-blue-600 text-[11px] font-bold shrink-0">Chọn</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
               <div>

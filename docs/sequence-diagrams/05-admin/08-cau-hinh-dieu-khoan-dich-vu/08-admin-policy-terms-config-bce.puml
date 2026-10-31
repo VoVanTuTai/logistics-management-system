@@ -1,0 +1,74 @@
+@startuml
+!theme plain
+skinparam monochrome true
+skinparam sequenceMessageAlign center
+skinparam responseMessageBelowArrow true
+skinparam maxMessageSize 140
+skinparam wrapWidth 200
+skinparam BoxPadding 8
+autonumber "<b>[00]</b>"
+
+box "Boundary Layer (Giao Diện & Cổng Kết Nối)" #FFFFFF
+actor "Quản trị viên hệ thống\n(System Admin)" as Admin
+boundary "PolicyManagementPage\n(apps/admin-web)" as UI
+boundary "PolicyFormModal\n(Hộp thoại soạn thảo điều khoản)" as ModalUI
+boundary "Gateway BFF (:3000)\n(AdminPolicyController)" as Gateway
+end box
+
+box "Control Layer (Điều Khiển & Ban Hành Chính Sách)" #FFFFFF
+control "PolicyController\n(:3001 masterdata-service)" as PolicyCtrl
+control "PolicyLifecycleService\n(governance domain service)" as PolicySvc
+end box
+
+box "Entity Layer (Lưu Trữ & Cơ Sở Dữ Liệu)" #FFFFFF
+entity "PostgreSQL (masterdata_db)\n[system_policies Table]" as MasterDB
+end box
+
+' GIAI ĐOẠN 1: SOẠN THẢO CHÍNH SÁCH VÀ ĐIỀU KHOẢN MỚI
+Admin -> UI: Truy cập màn hình Cấu hình chính sách & điều khoản (/policies),\nbấm nút "Tạo chính sách mới" (handleOpenCreateModal)
+activate UI
+
+UI -> ModalUI: Mở hộp thoại PolicyFormModal (isOpen = true)
+activate ModalUI
+deactivate UI
+
+Admin -> ModalUI: Nhập thông tin chính sách vận hành Carrier:\n- Tiêu đề: "Quy chuẩn Bảo hiểm & Bồi thường Hàng Điện tử / Dễ vỡ"\n- Danh mục: 'INSURANCE' | 'COMPENSATION' | 'CARRIER_LIMITS'\n- Phiên bản: 'v2.4.0'\n- Tham số ràng buộc: { insuranceRate: 0.5%, maxWeightKg: 70, maxDimensionCm: 150, bubbleWrapLayers: 3 }\n- Nội dung văn bản điều khoản pháp lý chi tiết
+
+Admin -> ModalUI: Bấm nút "Lưu bản thảo & Ban hành" (handleSaveAndPublish)
+
+' GIAI ĐOẠN 2: LƯU TRỮ VÀ KÍCH HOẠT HIỆU LỰC CHÍNH SÁCH
+ModalUI -> Gateway: POST /admin/masterdata/policies\n(Headers: Bearer accessToken, Body: PolicyWriteInput)
+activate Gateway
+
+Gateway -> PolicyCtrl: POST /policies
+activate PolicyCtrl
+
+PolicyCtrl -> PolicySvc: createAndPublishPolicy(payload)
+activate PolicySvc
+
+PolicySvc -> MasterDB: INSERT INTO system_policies (id, title, category, version, content_markdown, rules_json, status: 'PUBLISHED', effective_date, created_at)\nVALUES (...)
+activate MasterDB
+MasterDB --> PolicySvc: Ghi nhận bản ghi chính sách ban hành thành công
+deactivate MasterDB
+
+PolicySvc -> PolicySvc: Tự động lưu trữ (Archive) các phiên bản chính sách cũ cùng danh mục
+
+PolicySvc --> PolicyCtrl: PolicyDto { id, title, version: 'v2.4.0', status: 'PUBLISHED', effectiveDate: NOW() }
+deactivate PolicySvc
+
+PolicyCtrl --> Gateway: 201 Created (PolicyDto)
+deactivate PolicyCtrl
+
+Gateway --> ModalUI: 201 Created
+deactivate Gateway
+
+' GIAI ĐOẠN 3: ĐÓNG FORM VÀ HIỂN THỊ TRÊN BẢNG CHÍNH SÁCH
+ModalUI -> UI: Đóng modal (onClose) và làm mới danh sách chính sách
+activate UI
+deactivate ModalUI
+
+UI -> UI: Render dòng chính sách mới vào Bảng điều khoản:\n- Tiêu đề: Quy chuẩn Bảo hiểm & Bồi thường Carrier\n- Phiên bản: v2.4.0\n- Trạng thái: Badge xanh "ĐÃ BAN HÀNH (PUBLISHED)"\n- Ngày hiệu lực: Thời gian thực (NOW)
+
+UI -> UI: Hiển thị Toast thông báo: "Đã ban hành chính sách vận hành mới thành công!"
+deactivate UI
+@enduml

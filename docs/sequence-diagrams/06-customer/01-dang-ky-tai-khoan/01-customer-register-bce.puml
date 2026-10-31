@@ -1,0 +1,130 @@
+@startuml
+!theme plain
+skinparam monochrome true
+skinparam sequenceMessageAlign center
+skinparam responseMessageBelowArrow true
+skinparam maxMessageSize 140
+skinparam wrapWidth 200
+skinparam BoxPadding 8
+autonumber "<b>[00]</b>"
+
+
+box "Boundary Layer (Giao Diện & Gateway)" #FFFFFF
+actor "Khách hàng cá nhân\n(Customer User)" as Customer
+boundary "RegisterScreen / LoginPage\n(apps/customer-mobile & guest-web)" as UI
+boundary "Gateway BFF (:3000)\n(PublicController)" as Gateway
+boundary "HomeScreen / CreateOrderPage\n(Giao diện sau đăng nhập)" as TargetUI
+end box
+
+box "Control Layer (Điều Khiển & Nghiệp Vụ)" #FFFFFF
+control "useAuthStore\n(Zustand store)" as AuthStore
+control "AuthController\n(:3010 auth-service)" as AuthCtrl
+control "AuthService\n(application service)" as AuthSvc
+control "HashService\n(bcrypt digest)" as HashSvc
+end box
+
+box "Entity Layer (Lưu Trữ & Cơ Sở Dữ Liệu)" #FFFFFF
+entity "Browser LocalStorage\n[nexus_guest_auth]" as LocalStore
+entity "PostgreSQL (auth_db)\n[user_accounts & auth_sessions]" as AuthDB
+entity "Masterdata Service (:3001)\n[customer_profiles]" as MasterDB
+end box
+
+' GIAI ĐOẠN 1: NHẬP LIỆU VÀ KIỂM TRA HỢP LỆ FORM ĐĂNG KÝ
+Customer -> UI: Mở trang đăng ký (/login?tab=register),\nnhập Họ tên, Số điện thoại, Mật khẩu & Xác nhận mật khẩu
+activate UI
+
+Customer -> UI: Bấm nút "Đăng ký tài khoản" (handleRegister)
+
+alt Lỗi dữ liệu đầu vào (Validation Error)
+    UI -> UI: Kiểm tra hợp lệ: !fullName || !phone || !password || password !== confirmPassword\nHiển thị cảnh báo lỗi trực tiếp trên form
+else Dữ liệu hợp lệ: Gửi yêu cầu đăng ký
+    UI -> Gateway: POST /public/auth/auth/register-customer\n(Body: { username: phone, password, displayName: fullName, phone })
+    activate Gateway
+
+    ' GIAI ĐOẠN 2: XỬ LÝ TẠO TÀI KHOẢN TẠI AUTH SERVICE
+    Gateway -> AuthCtrl: POST /auth/register-customer (RegisterCustomerInput)
+    activate AuthCtrl
+
+    AuthCtrl -> AuthSvc: registerCustomer(input, auditContext)
+    activate AuthSvc
+
+    AuthSvc -> AuthDB: SELECT id FROM user_accounts WHERE username = $phone
+    activate AuthDB
+    AuthDB --> AuthSvc: Kiểm tra trùng lặp số điện thoại
+    deactivate AuthDB
+
+    alt Số điện thoại đã tồn tại
+        AuthSvc --> AuthCtrl: 409 ConflictException ("Username already exists.")
+        AuthCtrl --> Gateway: 409 Conflict
+        Gateway --> UI: 409 Conflict
+        UI -> UI: Render thông báo lỗi: "Số điện thoại đã được đăng ký. Vui lòng chuyển sang Đăng nhập."
+    else Số điện thoại chưa đăng ký: Khởi tạo tài khoản
+        AuthSvc -> HashSvc: digest(password)
+        activate HashSvc
+        HashSvc --> AuthSvc: passwordHash (chuỗi băm an toàn)
+        deactivate HashSvc
+
+        AuthSvc -> AuthDB: INSERT INTO user_accounts (id, username, password_hash, display_name, phone, roles: ['CUSTOMER'], status: 'ACTIVE')
+        activate AuthDB
+        AuthDB --> AuthSvc: Lưu bản ghi tài khoản thành công
+        deactivate AuthDB
+
+        AuthSvc -> MasterDB: POST /customer-profiles { userId, fullName, phone }
+        activate MasterDB
+        MasterDB --> AuthSvc: Đồng bộ hồ sơ khách hàng thành công
+        deactivate MasterDB
+
+        AuthSvc --> AuthCtrl: UserAccountView { id, username, displayName, roles: ['CUSTOMER'] }
+        deactivate AuthSvc
+
+        AuthCtrl --> Gateway: 201 Created (UserAccountView)
+        deactivate AuthCtrl
+
+        Gateway --> UI: 201 Created (Đăng ký thành công)
+        deactivate Gateway
+
+        ' GIAI ĐOẠN 3: TỰ ĐỘNG ĐĂNG NHẬP SAU ĐĂNG KÝ (AUTO LOGIN)
+        UI -> Gateway: POST /public/auth/auth/login\n(Body: { username: phone, password, roleGroup: 'CUSTOMER_APP' })
+        activate Gateway
+
+        Gateway -> AuthCtrl: POST /auth/login (LoginInput)
+        activate AuthCtrl
+
+        AuthCtrl -> AuthSvc: login(input)
+        activate AuthSvc
+
+        AuthSvc -> AuthDB: INSERT INTO auth_sessions (access_token_hash, refresh_token_hash, expires_at)
+        activate AuthDB
+        AuthDB --> AuthSvc: Phiên làm việc mới được kích hoạt
+        deactivate AuthDB
+
+        AuthSvc --> AuthCtrl: LoginResult { tokens: { accessToken, refreshToken }, user }
+        deactivate AuthSvc
+
+        AuthCtrl --> Gateway: 200 OK { tokens, user }
+        deactivate AuthCtrl
+
+        Gateway --> UI: 200 OK (Tokens & User Session)
+        deactivate Gateway
+
+        ' GIAI ĐOẠN 4: LƯU TRỮ PHIÊN & CHUYỂN HƯỚNG GIAO DIỆN
+        UI -> AuthStore: login(phone, token, user)
+        activate AuthStore
+
+        AuthStore -> LocalStore: setItem('nexus_guest_auth', JSON.stringify({ phone, token, user }))
+        activate LocalStore
+        LocalStore --> AuthStore: Ghi nhớ phiên đăng nhập khách hàng
+        deactivate LocalStore
+
+        AuthStore --> UI: State cập nhật { phone, token, user }
+        deactivate AuthStore
+
+        UI -> UI: Hiển thị Toast: "Đăng ký tài khoản thành công! Đang chuyển hướng..."
+        UI -> TargetUI: navigate('/create')
+        activate TargetUI
+        deactivate UI
+        TargetUI -> TargetUI: Render giao diện tạo đơn hàng với thông tin người gửi
+        deactivate TargetUI
+    end
+end
+@enduml

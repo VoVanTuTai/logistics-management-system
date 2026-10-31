@@ -1,0 +1,101 @@
+@startuml
+!theme plain
+skinparam monochrome true
+skinparam sequenceMessageAlign center
+skinparam responseMessageBelowArrow true
+skinparam maxMessageSize 140
+skinparam wrapWidth 200
+skinparam BoxPadding 8
+autonumber "<b>[00]</b>"
+
+box "Boundary Layer (Giao Diện Thiết Bị Cầm Tay PDA / Web)" #FFFFFF
+actor "Nhân viên dỡ hàng Hub\n(Inbound Unloading Operator)" as Ops
+boundary "BagUnsealScreen / ManifestPage\n(apps/courier-mobile PDA & ops-web)" as UI
+boundary "Gateway BFF (:3000)\n(OpsManifestController)" as Gateway
+end box
+
+box "Control Layer (Điều Khiển & Kiểm Đếm Gỡ Bao)" #FFFFFF
+control "ManifestController\n(:3012 manifest-service)" as ManifestCtrl
+control "BagManifestService\n(application service)" as ManifestSvc
+control "AudioFeedbackService\n(Âm thanh quét Beep)" as AudioSvc
+end box
+
+box "Entity Layer (Lưu Trữ & Cơ Sở Dữ Liệu)" #FFFFFF
+entity "PostgreSQL (manifest_db)\n[bag_manifests & bag_items Table]" as ManifestDB
+end box
+
+note over UI
+Nhân viên vận hành tại Hub đích sử dụng máy PDA để cắt chì seal an ninh,
+gỡ bao và kiểm đếm danh sách từng kiện hàng đổ ra bàn chia chọn
+end note
+
+' GIAI ĐOẠN 1: QUÉT MÃ BAO VÀ ĐỐI CHIẾU SỐ NIÊM PHONG CHÌ SEAL
+Ops -> UI: Bắn tia quét Mã tem bao (Mã vạch MB-xxxx) trên bao tải đến
+activate UI
+
+UI -> Gateway: GET /ops/manifest/bags/lookup?bagCode={code}\n(Headers: Bearer accessToken)
+activate Gateway
+
+Gateway -> ManifestCtrl: GET /bags/lookup
+activate ManifestCtrl
+ManifestCtrl -> ManifestSvc: getBagDetailsByCode(code)
+activate ManifestSvc
+ManifestSvc -> ManifestDB: SELECT * FROM bag_manifests WHERE bag_code = $code
+activate ManifestDB
+ManifestDB --> ManifestSvc: Trả về thông tin bao và mã seal kẹp chì đã niêm phong
+deactivate ManifestDB
+ManifestSvc --> ManifestCtrl: BagDetailDto { id, bagCode, expectedSealCode, itemCount, status: 'SEALED' }
+deactivate ManifestSvc
+ManifestCtrl --> Gateway: 200 OK (BagDetailDto)
+deactivate ManifestCtrl
+Gateway --> UI: 200 OK
+deactivate Gateway
+
+UI -> UI: Hiển thị thông tin bao: Mã MB, Số lượng dự kiến N kiện, Mã seal đối chiếu
+
+' GIAI ĐOẠN 2: CẮT SEAL VÀ XÁC NHẬN MỞ BAO
+Ops -> UI: Kiểm tra tính nguyên vẹn của kẹp chì seal, nhập Số seal thực tế cắt ra\nvà bấm "Xác nhận mở bao" (handleUnsealBag)
+
+UI -> Gateway: POST /ops/manifest/bags/{bagId}/unseal\n(Body: { actualSealCode, operatorNotes })
+activate Gateway
+
+Gateway -> ManifestCtrl: POST /bags/{bagId}/unseal
+activate ManifestCtrl
+ManifestCtrl -> ManifestSvc: unsealBag(bagId, actualSealCode)
+activate ManifestSvc
+
+alt Mã seal bị sai lệch hoặc có dấu hiệu cắt trộm
+    ManifestSvc --> ManifestCtrl: 400 BadRequestException ("Seal mismatch - Potential security breach.")
+    ManifestCtrl --> Gateway: 400 Bad Request
+    Gateway --> UI: 400 Bad Request
+    UI -> UI: Hiển thị cảnh báo đỏ: "LỆCH MÃ SEAL! Lập biên bản bất thường an ninh hàng hóa!"
+else Mã seal hợp lệ: Mở bao
+    ManifestSvc -> ManifestDB: UPDATE bag_manifests SET status = 'UNSEALED', unsealed_at = NOW(), destination_operator_id = $userId\nWHERE id = $bagId
+    activate ManifestDB
+    ManifestDB --> ManifestSvc: Bao chuyển sang trạng thái đã gỡ
+    deactivate ManifestDB
+
+    ManifestSvc --> ManifestCtrl: { success: true, status: 'UNSEALED' }
+    deactivate ManifestSvc
+    ManifestCtrl --> Gateway: 200 OK
+    deactivate ManifestCtrl
+    Gateway --> UI: 200 OK
+    deactivate Gateway
+
+    UI -> UI: Chuyển sang màn hình Kiểm đếm kiện lẻ trong bao (Item Tally Verification)
+end
+
+' GIAI ĐOẠN 3: BẮN QUÉT KIỂM ĐẾM TỪNG KIỆN HÀNG LẺ TRONG BAO
+loop Quét kiểm tra từng đơn hàng dỡ ra từ bao
+    Ops -> UI: Bắn tia quét mã vận đơn (trackingCode)
+    UI -> AudioSvc: playScanSuccessSound()
+    activate AudioSvc
+    AudioSvc --> UI: Phát âm thanh Ting xác nhận
+    deactivate AudioSvc
+    UI -> UI: Đánh dấu [Xanh] kiện hàng đã khớp trong danh sách bao
+end
+
+Ops -> UI: Bấm "Hoàn tất gỡ bao & Nhập kho chia chọn" (handleCompleteUnseal)
+UI -> UI: Hiển thị báo cáo: "Đã gỡ bao thành công: Đủ N/N kiện hàng, sẵn sàng chia chọn!"
+deactivate UI
+@enduml

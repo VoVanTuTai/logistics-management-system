@@ -1,0 +1,110 @@
+@startuml
+!theme plain
+skinparam monochrome true
+skinparam sequenceMessageAlign center
+skinparam responseMessageBelowArrow true
+skinparam maxMessageSize 140
+skinparam wrapWidth 200
+skinparam BoxPadding 8
+autonumber "<b>[00]</b>"
+
+
+box "Boundary Layer (Giao Diện & Ngân Hàng)" #FFFFFF
+actor "Bưu tá / Shipper\n(Courier User)" as Courier
+boundary "CodStatsScreen\n(apps/courier-mobile)" as UI
+boundary "Gateway BFF (:3000)\n(CourierController)" as Gateway
+boundary "App Ngân Hàng Cá Nhân\n(Mobile Banking App)" as BankApp
+end box
+
+box "Control Layer (Điều Khiển & Cổng Thanh Toán)" #FFFFFF
+control "CodStatsQueries & Mutation\n(cod.queries.ts)" as CodCtrl
+control "PaymentService (:3008)\n(DailySettlementService)" as PaymentSvc
+control "Cổng SePay Webhook\n(sepay-webhook.controller)" as SePayGateway
+end box
+
+box "Entity Layer (Cơ Sở Dữ Liệu)" #FFFFFF
+entity "PostgreSQL (payment_db)\n[settlement_batches & cod_records]" as PaymentDB
+end box
+
+' GIAI ĐOẠN 1: MỞ MÀN HÌNH THỐNG KÊ & TÍNH TOÁN CÔNG NỢ COD
+Courier -> UI: Mở màn hình Thống kê COD & Quyết toán (CodStatsScreen)
+activate UI
+
+UI -> CodCtrl: useCodSummaryQuery() & useCodRecordsQuery({ courierId })
+activate CodCtrl
+CodCtrl -> Gateway: GET /courier/payment/cod/summary/{courierId}\nGET /courier/payment/cod/courier/{courierId}
+activate Gateway
+Gateway -> PaymentSvc: getCodSummary() & getCodRecords()
+activate PaymentSvc
+PaymentSvc -> PaymentDB: SELECT * FROM cod_records WHERE courier_id = $1
+activate PaymentDB
+PaymentDB --> PaymentSvc: Danh sách bản ghi COD (cod_records record[])
+deactivate PaymentDB
+PaymentSvc --> Gateway: 200 OK (CodSummaryDto & CodRecordDto[])
+deactivate PaymentSvc
+Gateway --> CodCtrl: 200 OK
+deactivate Gateway
+CodCtrl --> UI: Cập nhật dữ liệu vào React Query Cache
+deactivate CodCtrl
+
+UI -> UI: Tính toán công nợ tiền mặt cần nộp (cashNeedRemit = cashCollected)\n& kiểm tra nợ COD tồn qua ngày (overdueCashAmount)
+UI -> UI: Render bảng tổng hợp tiền mặt đang giữ & nút "Quyết toán nộp tiền"
+
+' GIAI ĐOẠN 2: TẠO YÊU CẦU QUYẾT TOÁN & SINH MÃ VIETQR
+Courier -> UI: Bấm nút "Tạo yêu cầu quyết toán nộp tiền mặt"
+UI -> CodCtrl: createSettlementMutation.mutateAsync({ courierId, shipmentCodes, reportDate })
+activate CodCtrl
+
+CodCtrl -> Gateway: POST /courier/payment/cod/settlements\n(Body: { courierId, hubCode, reportDate, shipmentCodes })
+activate Gateway
+Gateway -> PaymentSvc: createDailySettlement(payload)
+activate PaymentSvc
+
+PaymentSvc -> PaymentDB: INSERT INTO settlement_batches\n(courier_id, total_amount, status='WAITING_PAYMENT', transfer_memo=...)
+activate PaymentDB
+PaymentDB --> PaymentSvc: Đã tạo lô quyết toán mới
+deactivate PaymentDB
+
+PaymentSvc -> PaymentSvc: Sinh liên kết VietQR động kèm cú pháp chuyển khoản:\n"REMIT {courierId} {batchId}"
+PaymentSvc --> Gateway: 201 Created (SettlementBatchDto: qrUrl, transferMemo)
+deactivate PaymentSvc
+Gateway --> CodCtrl: 201 Created
+deactivate Gateway
+CodCtrl --> UI: Hiển thị lô quyết toán WAITING_PAYMENT
+deactivate CodCtrl
+
+UI -> UI: Render mã VietQR trên màn hình & kích hoạt kiểm tra trạng thái thanh toán
+
+' GIAI ĐOẠN 3: BƯU TÁ QUÉT QR VÀ SEPAY XÁC NHẬN TIỀN VÀO
+Courier -> BankApp: Mở App Ngân hàng trên điện thoại, quét mã VietQR và xác nhận chuyển tiền
+activate BankApp
+BankApp -> SePayGateway: Chuyển khoản thành công vào tài khoản bưu chính công ty
+deactivate BankApp
+
+activate SePayGateway
+SePayGateway -> PaymentSvc: POST /webhooks/sepay (Webhook giao dịch chuyển khoản)
+deactivate SePayGateway
+activate PaymentSvc
+
+PaymentSvc -> PaymentDB: UPDATE settlement_batches SET status = 'COMPLETED' WHERE memo = $1\nUPDATE cod_records SET status = 'REMITTED' WHERE id IN (...)
+activate PaymentDB
+PaymentDB --> PaymentSvc: Cập nhật trạng thái lô & giải tỏa công nợ tiền mặt
+deactivate PaymentDB
+PaymentSvc --> PaymentSvc: Hoàn tất quyết toán tiền nộp
+deactivate PaymentSvc
+
+' GIAI ĐOẠN 4: APP PHÁT HIỆN HOÀN TẤT VÀ CẬP NHẬT GIAO DIỆN
+UI -> CodCtrl: useDailySettlementQuery (Tự động đối soát giao dịch)
+activate CodCtrl
+CodCtrl -> PaymentSvc: getDailySettlement() -> status = 'COMPLETED'
+activate PaymentSvc
+PaymentSvc --> CodCtrl: 200 OK (Batch đã thanh toán thành công)
+deactivate PaymentSvc
+CodCtrl --> UI: Trả về trạng thái hoàn tất
+deactivate CodCtrl
+
+UI -> UI: Hiển thị thông báo: "✓ Quyết toán thành công! Hệ thống SePay\nđã nhận tiền nộp, công nợ tiền mặt đã được giải tỏa."
+deactivate UI
+
+@enduml
+

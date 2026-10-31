@@ -1,0 +1,150 @@
+@startuml
+!theme plain
+skinparam sequenceMessageAlign center
+skinparam responseMessageBelowArrow true
+skinparam maxMessageSize 140
+skinparam wrapWidth 200
+skinparam BoxPadding 8
+autonumber "<b>[00]</b>"
+
+
+box "Boundary Layer (Giao Diện & Gateway)" #F8FAFC
+actor "Khách hàng / Vãng lai\n(Customer / Guest)" as User
+boundary "AiChatWidget\n(apps/guest-web UI)" as UI
+boundary "Gateway BFF (:3000)\n(AiAssistantCtrl)" as Gateway
+end box
+
+box "Control Layer (Hội Thoại, RAG & Function Calling)" #FFFFFF
+control "ChatController\n(chatbot-service :3013)" as ChatCtrl
+control "ChatService\n(chat.service.ts)" as ChatSvc
+control "LogisticsTools\n(Tools & SOP Engine)" as ToolsSvc
+control "Hybrid RAG Engine\n(Embedding & Search)" as RagEngine
+control "External LLM API\n(Gemini / OpenAI)" as LlmApi
+end box
+
+box "Entity & Downstream (Dữ Liệu & Tri Thức)" #F8FAFC
+entity "VectorStore\n(InMemory SOP)" as VectorDB
+entity "Downstream DB/Svc\n(:3002 & :3008)" as Downstream
+end box
+
+' BƯỚC 1: KHỞI TẠO TIN NHẮN TỪ PHÍA CLIENT
+User -> UI: Nhập câu hỏi (Tra cứu NX-...,\nHỏi giá cước, Khiếu nại, Gửi hàng)
+activate UI
+UI -> UI: Chuẩn bị payload { message, userId,\nsenderRole: (userId ? 'CUSTOMER' : 'GUEST') }
+UI -> Gateway: POST /api/v1/ai-assistant/message\n(Body: { message, userId, senderRole })
+activate Gateway
+
+Gateway -> Gateway: resolveServiceUrl('chatbot')\n-> CHATBOT_SERVICE_URL (:3013)
+Gateway -> ChatCtrl: POST /api/v1/chat/message\n(Body: ChatRequestDto)
+activate ChatCtrl
+
+' BƯỚC 2: VALIDATION TẠI CHAT CONTROLLER
+alt Lỗi 400: Nội dung tin nhắn rỗng (Empty Message)
+    ChatCtrl --> Gateway: 200 OK (error: 'Message is required')
+    Gateway --> UI: { error: 'Message is required' }
+    UI -> UI: Cảnh báo tin nhắn trống
+else Hợp lệ: Chuyển tiếp ChatService xử lý
+    ChatCtrl -> ChatSvc: handleMessage(dto: ChatRequestDto)
+    activate ChatSvc
+
+    ChatSvc -> ChatSvc: isGuest = (!dto.userId || role === 'GUEST')\nnormalizeVietnamese(question)
+
+    ' BƯỚC 3: PHÂN TÍCH Ý ĐỊNH VÀ GỌI LOGISTICS TOOLS (FUNCTION CALLING)
+    alt Kịch bản 1: Có mã vận đơn (Regex NX-..., 101..., 333..., SPX...)
+        ChatSvc -> ToolsSvc: trackShipment(trackingCode, isGuest)
+        activate ToolsSvc
+        ToolsSvc -> Downstream: GET /shipments/{code} (:3002)\nGET /tracking/{code}/current & timeline (:3008)
+        activate Downstream
+        Downstream --> ToolsSvc: Trạng thái, hành trình, người gửi/nhận
+        deactivate Downstream
+
+        alt Người dùng là Khách vãng lai (isGuest = true)
+            ToolsSvc -> ToolsSvc: maskVietnameseName(receiverName)\nmaskPhone(phone), maskAddress(addr)
+        else Khách hàng đã đăng nhập (isGuest = false)
+            ToolsSvc -> ToolsSvc: Giữ nguyên thông tin đầy đủ (Không che PII)
+        end
+        ToolsSvc --> ChatSvc: TrackingResult (status, timeline, shipmentCards)
+        deactivate ToolsSvc
+
+    else Kịch bản 2: Tra cứu danh sách đơn (getUserShipments)
+        alt isGuest = true (Chưa đăng nhập)
+            ChatSvc -> ChatSvc: Cảnh báo PII: Yêu cầu đăng nhập\nhoặc cung cấp mã đơn cụ thể
+        else isGuest = false (Đã đăng nhập)
+            ChatSvc -> ToolsSvc: getUserShipments(userId, limit=5)
+            activate ToolsSvc
+            ToolsSvc -> Downstream: Truy vấn đơn hàng của User
+            activate Downstream
+            Downstream --> ToolsSvc: Danh sách 5 đơn gần nhất
+            deactivate Downstream
+            ToolsSvc --> ChatSvc: userShipments (total, items)
+            deactivate ToolsSvc
+        end
+
+    else Kịch bản 3: Hỏi cước vận chuyển (isPricingQuery)
+        ChatSvc -> ChatSvc: Trích xuất cân nặng, kích thước (DxRxC)\nCân quy đổi IATA = (DxRxC)/6000\nChargeable Weight = max(Cân thực, Thể tích)
+        ChatSvc -> ToolsSvc: calculatePricing(weight, STANDARD & EXPRESS,\nfromCity, toCity, GUEST, dimensions)
+        activate ToolsSvc
+        ToolsSvc -> Downstream: GET /quotes?fromCity=...&toCity=... (:3012)
+        activate Downstream
+        Downstream --> ToolsSvc: Bảng cước (cơ sở, phụ phí, vượt nấc)
+        deactivate Downstream
+        ToolsSvc --> ChatSvc: PricingResult (stdPricing, expPricing)
+        deactivate ToolsSvc
+
+    else Kịch bản 4: Sự cố hư hỏng, bể vỡ, đền bù (isDamageOrBrokenQuery)
+        ChatSvc -> ToolsSvc: getDamageAndClaimPolicy()
+        activate ToolsSvc
+        ToolsSvc --> ChatSvc: SOP biên bản bất thường,\ngói thường 4x cước, khai giá max 30tr
+        deactivate ToolsSvc
+
+    else Kịch bản 5: Gặp người thật / Giục giao hàng (isEscalationQuery)
+        ChatSvc -> ToolsSvc: escalateToHumanAgent({ userId, reason })
+        activate ToolsSvc
+        ToolsSvc --> ChatSvc: HandoverTicket (ticketId, priority, hotline)
+        deactivate ToolsSvc
+    end
+
+    ' BƯỚC 4: TRUY XUẤT TRI THỨC NỀN RAG (HYBRID SEARCH)
+    ChatSvc -> RagEngine: getEmbedding(question) -> 768-dim
+    activate RagEngine
+    RagEngine -> VectorDB: hybridSearch(embedding, question, topK=5)
+    activate VectorDB
+    VectorDB --> RagEngine: Chunks tri thức (sourceFile, title, score)
+    deactivate VectorDB
+    RagEngine --> ChatSvc: citations: Citation[] (SOP Bưu chính, Đóng gói)
+    deactivate RagEngine
+
+    ' BƯỚC 5: GHÉP NỐI NGỮ CẢNH GROUNDED CONTEXT & GỌI LLM
+    ChatSvc -> ChatSvc: Ghép System Prompt (Luật Bưu chính, SOP)\n+ Realtime data từ Tools + Citations RAG
+
+    alt LLM Chính: Google Gemini API (gemini-3.5-flash-lite / gemini-3.8-flash)
+        ChatSvc -> LlmApi: POST ...:generateContent\n(systemInstruction, contents)
+        activate LlmApi
+        LlmApi --> ChatSvc: 200 OK (candidates text)
+        deactivate LlmApi
+    else Gemini lỗi / Không phản hồi -> Fallback sang OpenAI API
+        ChatSvc -> LlmApi: POST /v1/chat/completions\n(model: gpt-4o-mini, temperature: 0.2)
+        activate LlmApi
+        LlmApi --> ChatSvc: 200 OK (choices content)
+        deactivate LlmApi
+    else Cả hai LLM đều lỗi mạng / thiếu API Key
+        ChatSvc -> ChatSvc: generateOfflineDemoAnswer(...)\n(Offline Semantic Fallback)
+    end
+
+    ChatSvc -> ChatSvc: cleanBotFormatting(answerText)\n(Lược bỏ backtick, format bullet, link)
+    ChatSvc --> ChatCtrl: ChatResponseDto {\n  conversationId, answer, citations,\n  toolsUsed, shipmentCards, actionChips\n}
+    deactivate ChatSvc
+
+    ChatCtrl --> Gateway: 200 OK (ChatResponseDto)
+    deactivate ChatCtrl
+
+    Gateway --> UI: 200 OK (ChatResponseDto JSON)
+    deactivate Gateway
+
+    ' BƯỚC 6: RENDER KẾT QUẢ TẠI GIAO DIỆN
+    UI -> UI: Format Markdown, Render thẻ ShipmentCard,\nRender Action Chips gợi ý câu hỏi
+    UI -> UI: Render phản hồi trực quan từ Trợ lý AI
+    deactivate UI
+end
+
+@enduml

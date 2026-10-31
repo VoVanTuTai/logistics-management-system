@@ -1,0 +1,93 @@
+@startuml
+!theme plain
+skinparam monochrome true
+skinparam sequenceMessageAlign center
+skinparam responseMessageBelowArrow true
+skinparam maxMessageSize 140
+skinparam wrapWidth 200
+skinparam BoxPadding 8
+autonumber "<b>[00]</b>"
+
+box "Boundary Layer (Giao Diện & Cổng Kết Nối)" #FFFFFF
+actor "Nhân viên điều phối\n(Ops Dispatcher)" as Ops
+boundary "CustomerOrderDispatchPage\n(apps/ops-web)" as UI
+boundary "Gateway BFF (:3000)\n(OpsPickupController)" as Gateway
+boundary "CourierApp / PushChannel\n(apps/courier-mobile)" as CourierApp
+end box
+
+box "Control Layer (Điều Khiển & Phân Công Lấy Hàng)" #FFFFFF
+control "PickupController\n(:3003 pickup-service)" as PickupCtrl
+control "DispatchService\n(assignment engine)" as DispatchSvc
+control "MasterdataService (:3001)\n(Route & Courier Info)" as MasterSvc
+end box
+
+box "Entity Layer (Lưu Trữ & Cơ Sở Dữ Liệu)" #FFFFFF
+entity "PostgreSQL (pickup_db)\n[pickup_requests & assignments]" as PickupDB
+end box
+
+' GIAI ĐOẠN 1: DUYỆT DANH SÁCH YÊU CẦU LẤY & CHỌN BƯU TÁ
+Ops -> UI: Truy cập trang Điều phối lấy hàng (/operations/pickup-dispatch),\nxem danh sách các yêu cầu thu gom đang chờ (Status: REQUESTED)
+activate UI
+
+Ops -> Gateway: GET /ops/pickup/requests?status=PENDING_DISPATCH&hubCode={code}
+activate Gateway
+Gateway -> PickupCtrl: GET /requests
+activate PickupCtrl
+PickupCtrl -> PickupDB: SELECT * FROM pickup_requests WHERE hub_code = $hubCode AND status IN ('REQUESTED', 'PENDING_DISPATCH')
+activate PickupDB
+PickupDB --> PickupCtrl: Danh sách yêu cầu lấy hàng chờ xử lý
+deactivate PickupDB
+PickupCtrl --> Gateway: 200 OK (PickupRequestDto[])
+deactivate PickupCtrl
+Gateway --> UI: 200 OK (Hiển thị bảng danh sách)
+deactivate Gateway
+
+Ops -> UI: Chọn một hoặc nhiều yêu cầu lấy hàng,\nchọn Bưu tá phụ trách tuyến (courierId) từ danh sách bưu tá khả dụng
+
+Ops -> UI: Bấm nút "Phân công thu gom" (handleAssignPickup)
+
+' GIAI ĐOẠN 2: THỰC THI GÁN NHIỆM VỤ TẠI DISPATCH SERVICE
+UI -> Gateway: POST /ops/pickup/requests/{requestId}/assign\n(Headers: Bearer accessToken, Body: { courierId, pickupTimeSlot, notes })
+activate Gateway
+
+Gateway -> PickupCtrl: POST /requests/{requestId}/assign
+activate PickupCtrl
+
+PickupCtrl -> MasterSvc: getCourierProfile(courierId)
+activate MasterSvc
+MasterSvc --> PickupCtrl: CourierProfile { id, fullName, phone, activeZone }
+deactivate MasterSvc
+
+PickupCtrl -> DispatchSvc: assignPickupRequest(requestId, courierId, auditUser)
+activate DispatchSvc
+
+DispatchSvc -> PickupDB: UPDATE pickup_requests SET status = 'ASSIGNED', assigned_courier_id = $courierId, updated_at = NOW()\nWHERE id = $requestId
+activate PickupDB
+PickupDB --> DispatchSvc: Bản ghi được cập nhật
+deactivate PickupDB
+
+DispatchSvc -> PickupDB: INSERT INTO pickup_assignments (id, request_id, courier_id, assigned_at, status: 'DISPATCHED')\nVALUES (...)
+activate PickupDB
+PickupDB --> DispatchSvc: Ghi nhận phân công mới
+deactivate PickupDB
+
+DispatchSvc --> PickupCtrl: AssignmentResult { requestId, courierId, status: 'ASSIGNED' }
+deactivate DispatchSvc
+
+' Bắn tín hiệu thông báo đến ứng dụng bưu tá
+PickupCtrl -> CourierApp: Gửi thông báo nhiệm vụ mới (Push Notification: "Có đơn thu gom mới tại Shop...")
+activate CourierApp
+CourierApp --> PickupCtrl: Đã gửi thông báo
+deactivate CourierApp
+
+PickupCtrl --> Gateway: 200 OK (AssignmentResult)
+deactivate PickupCtrl
+
+Gateway --> UI: 200 OK
+deactivate Gateway
+
+' GIAI ĐOẠN 3: CẬP NHẬT GIAO DIỆN BẢNG ĐIỀU PHỐI
+UI -> UI: Cập nhật dòng dữ liệu bảng vận đơn:\n- Trạng thái: Chuyển sang badge "ĐÃ GÁN BƯU TÁ (ASSIGNED)"\n- Hiển thị tên bưu tá và số điện thoại phụ trách\n- Hiển thị Toast thông báo: "Điều phối bưu tá lấy hàng thành công!"
+
+deactivate UI
+@enduml

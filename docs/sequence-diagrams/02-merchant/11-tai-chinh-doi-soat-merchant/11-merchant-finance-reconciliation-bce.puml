@@ -1,0 +1,105 @@
+@startuml
+!theme plain
+skinparam sequenceMessageAlign center
+skinparam responseMessageBelowArrow true
+skinparam maxMessageSize 140
+skinparam wrapWidth 200
+skinparam BoxPadding 8
+autonumber "<b>[00]</b>"
+
+
+box "Boundary Layer (Giao Diện & Xuất Dữ Liệu)" #F8FAFC
+actor "Chủ shop / Người gửi\n(Merchant User)" as Merchant
+boundary "MerchantFinanceView\n(apps/merchant-web)" as UI
+boundary "SettlementBatchDetailModal\n(apps/merchant-web)" as BatchModal
+boundary "TopupVietQRModal\n(apps/merchant-web)" as TopupModal
+boundary "ExcelExportEngine\n(Browser Blob & UTF-8 BOM)" as ExportEngine
+end box
+
+box "Control Layer (Bộ Tính Toán & Đối Soát)" #FFFFFF
+control "SettlementBatchEngine\n(chu kỳ đối soát T2-T4-T6)" as BatchEngine
+control "FinancialLedgerEngine\n(sổ cái lũy kế số dư)" as LedgerEngine
+end box
+
+box "Entity Layer (Dữ Liệu Bộ Nhớ Client)" #F8FAFC
+entity "ClientFinanceState\n[shipments, claims, bankProfile]" as FinanceState
+end box
+
+' GIAI ĐOẠN 1: MỞ TAB TÀI CHÍNH & TÍNH TOÁN DÒNG TIỀN
+Merchant -> UI: Mở tab "Đối soát & Tài chính" (View: 'finance')
+activate UI
+
+UI -> FinanceState: Đọc danh sách đơn đã giao, khiếu nại, thông tin ngân hàng
+activate FinanceState
+FinanceState --> UI: Dữ liệu tài chính nền tảng
+deactivate FinanceState
+
+UI -> BatchEngine: Tính toán các kỳ đối soát định kỳ (Thứ 2 - 4 - 6)
+activate BatchEngine
+BatchEngine -> BatchEngine: Gom đơn giao thành công, tính tổng COD, cước vận chuyển,\ncước hoàn và số tiền thực nhận (netPayout = COD - cước)
+BatchEngine --> UI: Danh sách kỳ đối soát: SettlementBatch[]
+deactivate BatchEngine
+
+UI -> LedgerEngine: Tính toán sổ cái biến động tài chính (Running Balance)
+activate LedgerEngine
+LedgerEngine -> LedgerEngine: Sắp xếp giao dịch theo thời gian, tính số dư lũy kế sau mỗi GD
+LedgerEngine --> UI: Danh sách bút toán: FinancialLedgerEntry[]
+deactivate LedgerEngine
+
+UI -> UI: Hiển thị Thẻ KPI tài chính (Số dư khả dụng, COD đã thu, Cước phí),\nBảng kỳ đối soát và Bảng biến động sổ cái
+
+' GIAI ĐOẠN 2: XEM CHI TIẾT KỲ ĐỐI SOÁT (SETTLEMENT BATCH DETAIL)
+opt Merchant xem chi tiết 1 kỳ đối soát
+    Merchant -> UI: Nhấn vào 1 dòng kỳ đối soát (onSelectSettlementBatch)
+    UI -> BatchModal: Mở Modal chi tiết kỳ: setSelectedSettlementBatch(batch)
+    activate BatchModal
+    BatchModal -> BatchModal: Render toàn bộ thông tin phiên đối soát:\nMã kỳ (ST-...), Chu kỳ, Ngày chi trả, Tài khoản thụ hưởng,\nDanh sách toàn bộ các vận đơn đối soát trong kỳ
+    Merchant -> BatchModal: Bấm nút Đóng (✕)
+    deactivate BatchModal
+end
+
+' GIAI ĐOẠN 3: XUẤT BẢNG KÊ ĐỐI SOÁT RA EXCEL / CSV (EXPORT BATCH CSV)
+alt Merchant xuất bảng kê đối soát của kỳ ra Excel (exportBatchToCsv)
+    Merchant -> UI: Bấm nút "Xuất Excel / CSV" tại kỳ đối soát
+    UI -> ExportEngine: exportBatchToCsv(batch)
+    activate ExportEngine
+
+    note over ExportEngine
+      Quy chuẩn xuất file chuẩn Excel tiếng Việt:
+      - Định dạng: Chuỗi CSV chèn ký tự \uFEFF (UTF-8 BOM)
+      - Tránh hoàn toàn lỗi font tiếng Việt khi mở bằng MS Excel
+      - Nội dung: Mã vận đơn, Ngày tạo, Người nhận, SĐT, Tiền COD,
+        Cước vận chuyển, Thực nhận, Trạng thái đơn
+    end note
+
+    ExportEngine -> ExportEngine: Tạo Blob [csvContent] (MIME: 'text/csv;charset=utf-8;')\nSinh link ảo URL.createObjectURL(blob)
+    ExportEngine -> ExportEngine: Tự động tải file: "Bang_ke_doi_soat_{batchCode}.csv"
+    ExportEngine -> ExportEngine: Lưu file bảng kê đối soát về máy tính của Merchant
+    deactivate ExportEngine
+end
+
+' GIAI ĐOẠN 4: XUẤT TOÀN BỘ SỔ CÁI BIẾN ĐỘNG TÀI CHÍNH RA EXCEL (EXPORT LEDGER CSV)
+alt Merchant xuất toàn bộ lịch sử giao dịch (exportAllLedgerCsv)
+    Merchant -> UI: Bấm nút "Xuất sổ cái CSV" trên tab Sổ cái
+    UI -> ExportEngine: exportAllLedgerCsv()
+    activate ExportEngine
+
+    ExportEngine -> ExportEngine: Tạo file CSV có tiêu đề Shop, Ngày giờ xuất, Số dư hiện tại\nKèm chi tiết: Thời gian, Mã GD, Loại GD, Biến động, Số dư sau GD
+    ExportEngine -> ExportEngine: Tự động tải file: "So_cai_tai_chinh_Nexus_{YYYY-MM-DD}.csv"
+    ExportEngine -> ExportEngine: Lưu file Sổ cái tài chính về máy tính của Merchant
+    deactivate ExportEngine
+end
+
+' GIAI ĐOẠN 5: NẠP TIỀN CÔNG NỢ ÂM QUA VIETQR (KHI CHẠM HẠN MỨC -500.000Đ)
+opt Merchant nạp tiền thanh toán cước nợ âm
+    Merchant -> UI: Bấm nút "Nạp tiền cước" (onShowTopupModal)
+    UI -> TopupModal: Mở Modal nạp tiền VietQR: setShowTopupModal(true)
+    activate TopupModal
+    TopupModal -> TopupModal: Render mã QR VietQR NAPAS 247:\nSố tiền cần nạp, Nội dung chuyển khoản theo cú pháp chuẩn bưu cục
+    Merchant -> TopupModal: Bấm nút Đóng (✕)
+    deactivate TopupModal
+end
+
+deactivate UI
+@enduml
+

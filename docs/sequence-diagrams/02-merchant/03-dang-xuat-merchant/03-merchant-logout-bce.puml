@@ -1,0 +1,137 @@
+@startuml
+!theme plain
+skinparam sequenceMessageAlign center
+skinparam responseMessageBelowArrow true
+skinparam maxMessageSize 140
+skinparam wrapWidth 200
+skinparam BoxPadding 8
+autonumber "<b>[00]</b>"
+
+
+box "Boundary Layer (Giao Diện & Gateway)" #F8FAFC
+actor "Chủ shop / Người gửi\n(Merchant User)" as Merchant
+boundary "MerchantSidebar\n(apps/merchant-web UI)" as UI
+boundary "Gateway BFF (:3000)\n(MerchantController)" as Gateway
+boundary "MerchantLoginForm\n(Màn hình Đăng nhập)" as LoginUI
+end box
+
+box "Control Layer (Điều Khiển & Hủy Phiên Nghiệp Vụ)" #FFFFFF
+control "AuthController\n(:3010 auth-service)" as AuthCtrl
+control "AuthService\n(application service)" as AuthSvc
+control "HashService\n(security digest)" as HashSvc
+control "AuthOutboxService\n(transactional outbox)" as OutboxSvc
+end box
+
+box "Entity Layer (Dữ Liệu PostgreSQL auth_db)" #F8FAFC
+entity "PostgreSQL (auth_db)\n[auth_sessions Table]" as SessionDB
+entity "PostgreSQL (auth_db)\n[user_accounts Table]" as UserDB
+entity "PostgreSQL (auth_db)\n[outbox_events Table]" as OutboxDB
+end box
+
+' BƯỚC 1: KHỞI TẠO ĐĂNG XUẤT TẠI GIAO DIỆN
+note over Merchant, UI
+  Chủ shop nhấn nút "Đăng xuất"
+  (class: btn btn-danger sidebar-action)
+  tại phần chân menu MerchantSidebar
+end note
+
+Merchant -> UI: Nhấp nút "Đăng xuất" (logout icon)
+activate UI
+
+' BƯỚC 2: GỬI REQUEST HỦY PHIÊN QUA GATEWAY BFF
+UI -> Gateway: POST /merchant/auth/auth/logout\nBody: { accessToken, refreshToken }
+activate Gateway
+
+note over Gateway
+  - GatewayAuthGuard: Cho phép route công khai
+    (khớp whitelist public auth logout)
+  - GatewayRoleGuard: Passthrough route logout
+  - ServiceRegistryClient: Phân giải 'auth'
+    -> AUTH_SERVICE_URL (:3010)
+  - GatewayProxyClient.forward('merchant', ...)
+end note
+
+Gateway -> AuthCtrl: POST /auth/logout\n(Body: LogoutInput)
+activate AuthCtrl
+
+' BƯỚC 3: XỬ LÝ HỦY PHIÊN TẠI AUTH SERVICE
+AuthCtrl -> AuthSvc: logout(input: LogoutInput)
+activate AuthSvc
+
+alt Lỗi 400: Thiếu cả accessToken và refreshToken (!accessToken && !refreshToken)
+    AuthSvc --> AuthCtrl: throw BadRequestException(\n  "Yêu cầu cung cấp accessToken hoặc refreshToken để đăng xuất.")
+    AuthCtrl --> Gateway: 400 Bad Request
+    Gateway --> UI: 400 Bad Request
+
+else Hợp lệ: Tìm phiên đang hoạt động theo Hash Digest
+    AuthSvc -> HashSvc: digest(accessToken)
+    activate HashSvc
+    HashSvc --> AuthSvc: accessTokenHash
+    deactivate HashSvc
+
+    AuthSvc -> SessionDB: authSessionRepository.findActiveByAccessTokenHash(accessTokenHash)
+    activate SessionDB
+    SessionDB --> AuthSvc: AuthSession record | null
+    deactivate SessionDB
+
+    alt Phiên không tồn tại hoặc đã hết hạn (!session)
+        AuthSvc --> AuthCtrl: LogoutResult { revoked: false, sessionId: null }
+        AuthCtrl --> Gateway: 200 OK (revoked: false)
+        Gateway --> UI: 200 OK
+
+    else Phiên đang hoạt động: Thu hồi phiên đăng nhập (Revoke)
+        AuthSvc -> SessionDB: authSessionRepository.revoke(session.id, 'logout')
+        activate SessionDB
+        SessionDB --> AuthSvc: revokedSession (revokedAt = now())
+        deactivate SessionDB
+
+        AuthSvc -> UserDB: userAccountRepository.findById(revokedSession.userId)
+        activate UserDB
+        UserDB --> AuthSvc: UserAccount record
+        deactivate UserDB
+
+        ' Ghi nhận sự kiện Outbox (Transactional Outbox Pattern)
+        AuthSvc -> OutboxSvc: enqueueSessionRevoked(revokedSession, username)
+        activate OutboxSvc
+        OutboxSvc -> OutboxDB: prisma.outboxEvent.create({\n  eventType: 'auth.session.revoked',\n  payload: { sessionId, userId, username, reason: 'logout' }\n})
+        activate OutboxDB
+        OutboxDB --> OutboxSvc: OutboxEvent saved
+        deactivate OutboxDB
+        OutboxSvc --> AuthSvc: Enqueued successfully
+        deactivate OutboxSvc
+
+        AuthSvc --> AuthCtrl: LogoutResult { revoked: true, sessionId: revokedSession.id }
+        deactivate AuthSvc
+
+        AuthCtrl --> Gateway: 200 OK (LogoutResult)
+        deactivate AuthCtrl
+
+        Gateway --> UI: 200 OK ({ revoked: true, sessionId: "..." })
+        deactivate Gateway
+    end
+end
+
+' BƯỚC 4: RESET TRẠNG THÁI CLIENT & ĐIỀU HƯỚNG VỀ MÀN HÌNH ĐĂNG NHẬP
+note over UI
+  Client thực hiện cơ chế Failsafe Logout (try/catch):
+  Dù Gateway/AuthService thành công hay lỗi mạng,
+  Client luôn xóa sạch toàn bộ state cục bộ:
+  - setSession(null)
+  - setShipments([])
+  - setPickups([])
+  - setChangeRequests([])
+  - setHubLocations([])
+  - setMerchantProfileConfig(null)
+  - setActiveView('dashboard')
+end note
+
+UI -> UI: Xóa sạch session & state dữ liệu
+UI -> LoginUI: !session -> Re-render giao diện đăng nhập
+deactivate UI
+activate LoginUI
+
+LoginUI -> LoginUI: Render MerchantLoginForm (Đăng nhập lại)
+deactivate LoginUI
+
+@enduml
+

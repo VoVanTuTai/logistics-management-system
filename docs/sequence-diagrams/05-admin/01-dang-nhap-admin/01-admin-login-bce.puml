@@ -1,0 +1,118 @@
+@startuml
+!theme plain
+skinparam monochrome true
+skinparam sequenceMessageAlign center
+skinparam responseMessageBelowArrow true
+skinparam maxMessageSize 140
+skinparam wrapWidth 200
+skinparam BoxPadding 8
+autonumber "<b>[00]</b>"
+
+box "Boundary Layer (Giao Diện & Cổng Kết Nối)" #FFFFFF
+actor "Quản trị viên hệ thống\n(System Admin)" as Admin
+boundary "LoginPage / LoginForm\n(apps/admin-web)" as UI
+boundary "Gateway BFF (:3000)\n(AdminAuthController)" as Gateway
+boundary "AdminDashboardPage (/dashboard)\n(apps/admin-web)" as DashboardUI
+end box
+
+box "Control Layer (Điều Khiển & Xác Thực Quyền Hạn)" #FFFFFF
+control "useAuthStore\n(Zustand store)" as AuthStore
+control "AuthController\n(:3010 auth-service)" as AuthCtrl
+control "AuthService\n(application service)" as AuthSvc
+control "HashService\n(bcrypt digest)" as HashSvc
+end box
+
+box "Entity Layer (Lưu Trữ & Cơ Sở Dữ Liệu)" #FFFFFF
+entity "Browser LocalStorage\n[admin_auth_session]" as LocalStore
+entity "PostgreSQL (auth_db)\n[user_accounts & auth_sessions]" as AuthDB
+end box
+
+' GIAI ĐOẠN 1: NHẬP LIỆU VÀ GỬI YÊU CẦU ĐĂNG NHẬP
+Admin -> UI: Mở cổng quản trị hệ thống (/login),\nnhập Tên tài khoản và Mật khẩu quản trị
+activate UI
+
+Admin -> UI: Bấm nút "Đăng nhập trang quản trị" (useLoginMutation)
+
+alt Lỗi bỏ trống thông tin
+    UI -> UI: Kiểm tra: !username.trim() || !password.trim()\nHiển thị cảnh báo: "Vui lòng nhập đầy đủ tài khoản và mật khẩu."
+else Thông tin hợp lệ: Gửi yêu cầu xác thực
+    UI -> AuthStore: setSubmitting(true)
+    activate AuthStore
+    AuthStore --> UI: isSubmitting = true
+    deactivate AuthStore
+
+    UI -> Gateway: POST /admin/auth/auth/login\n(Body: { username, password, roleGroup: 'ADMIN_PORTAL' })
+    activate Gateway
+
+    ' GIAI ĐOẠN 2: XÁC THỰC DANH TÍNH & PHÂN QUYỀN SYSTEM_ADMIN
+    Gateway -> AuthCtrl: POST /auth/login (LoginInput)
+    activate AuthCtrl
+
+    AuthCtrl -> AuthSvc: login(input: LoginInput)
+    activate AuthSvc
+
+    AuthSvc -> AuthDB: SELECT * FROM user_accounts WHERE username = $username AND status = 'ACTIVE'
+    activate AuthDB
+    AuthDB --> AuthSvc: Trả về bản ghi tài khoản quản trị (UserAccount)
+    deactivate AuthDB
+
+    alt Tài khoản không tồn tại hoặc bị khóa
+        AuthSvc --> AuthCtrl: 401 UnauthorizedException ("Sai tên đăng nhập hoặc mật khẩu.")
+        AuthCtrl --> Gateway: 401 Unauthorized
+        Gateway --> UI: 401 Unauthorized
+        UI -> UI: Render lỗi: "Tài khoản hoặc mật khẩu không chính xác."
+    else Tài khoản hợp lệ: Đối soát mật khẩu
+        AuthSvc -> HashSvc: verify(password, user.passwordHash)
+        activate HashSvc
+        HashSvc --> AuthSvc: Kết quả băm mật khẩu bcrypt
+        deactivate HashSvc
+
+        alt Mật khẩu không chính xác
+            AuthSvc --> AuthCtrl: 401 UnauthorizedException ("Sai tên đăng nhập hoặc mật khẩu.")
+            AuthCtrl --> Gateway: 401 Unauthorized
+            Gateway --> UI: 401 Unauthorized
+            UI -> UI: Render lỗi: "Tài khoản hoặc mật khẩu không chính xác."
+        else Mật khẩu hợp lệ: Kiểm tra quyền quản trị tối cao (SYSTEM_ADMIN)
+            AuthSvc -> AuthSvc: Kiểm tra vai trò: roles ∋ 'SYSTEM_ADMIN'
+
+            alt Không có quyền Quản trị hệ thống
+                AuthSvc --> AuthCtrl: 403 ForbiddenException ("Tài khoản không có quyền truy cập cổng Quản trị.")
+                AuthCtrl --> Gateway: 403 Forbidden
+                Gateway --> UI: 403 Forbidden
+                UI -> UI: Render lỗi: "Bạn không có quyền truy cập vào cổng Quản trị hệ thống."
+            else Quyền hợp lệ: Cấp Token và Khởi tạo phiên
+                AuthSvc -> AuthDB: INSERT INTO auth_sessions (user_id, access_token_hash, expires_at)
+                activate AuthDB
+                AuthDB --> AuthSvc: Ghi nhận phiên làm việc hợp lệ
+                deactivate AuthDB
+
+                AuthSvc --> AuthCtrl: LoginResult { tokens: { accessToken, refreshToken }, user }
+                deactivate AuthSvc
+
+                AuthCtrl --> Gateway: 200 OK (LoginResult)
+                deactivate AuthCtrl
+
+                Gateway --> UI: 200 OK (LoginResponse)
+                deactivate Gateway
+
+                ' GIAI ĐOẠN 3: LƯU PHIÊN & CHUYỂN HƯỚNG VÀO TRANG QUẢN TRỊ TỔNG QUAN
+                UI -> LocalStore: persistAdminSession(session)
+                activate LocalStore
+                LocalStore --> UI: Lưu trữ phiên quản trị
+                deactivate LocalStore
+
+                UI -> AuthStore: setSession(session) & setSubmitting(false)
+                activate AuthStore
+                AuthStore --> UI: Hoàn tất cập nhật State
+                deactivate AuthStore
+
+                UI -> DashboardUI: navigate('/dashboard')
+                activate DashboardUI
+                deactivate UI
+                DashboardUI -> DashboardUI: Tải dữ liệu Bảng điều khiển quản trị toàn hệ thống
+                deactivate DashboardUI
+            end
+        end
+    end
+end
+@enduml

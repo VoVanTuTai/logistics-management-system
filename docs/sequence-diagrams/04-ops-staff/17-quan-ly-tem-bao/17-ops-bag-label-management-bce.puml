@@ -1,0 +1,69 @@
+@startuml
+!theme plain
+skinparam monochrome true
+skinparam sequenceMessageAlign center
+skinparam responseMessageBelowArrow true
+skinparam maxMessageSize 140
+skinparam wrapWidth 200
+skinparam BoxPadding 8
+autonumber "<b>[00]</b>"
+
+box "Boundary Layer (Giao Diện & Quản Lý Tem In)" #FFFFFF
+actor "Thủ kho vật tư bưu cục\n(Hub Supplies Ops)" as Ops
+boundary "BagLabelManagementPage\n(apps/ops-web)" as UI
+boundary "Gateway BFF (:3000)\n(OpsManifestController)" as Gateway
+boundary "BagThermalPrinter\n(Máy in tem nhiệt công nghiệp)" as PrintUI
+end box
+
+box "Control Layer (Điều Khiển & Cấp Phát Dải Mã Tem)" #FFFFFF
+control "ManifestController\n(:3012 manifest-service)" as ManifestCtrl
+control "BagLabelService\n(label generator service)" as LabelSvc
+end box
+
+box "Entity Layer (Lưu Trữ & Cơ Sở Dữ Liệu)" #FFFFFF
+entity "PostgreSQL (manifest_db)\n[bag_labels & bag_manifests Table]" as ManifestDB
+end box
+
+' GIAI ĐOẠN 1: YÊU CẦU CẤP PHÁT HOẶC IN LẠI TEM BAO
+Ops -> UI: Truy cập màn hình Quản lý tem bao (/operations/bag-labels),\nchọn số lượng tem cần sinh mới hoặc tìm mã bao MB cần in lại tem
+activate UI
+
+Ops -> UI: Nhập số lượng tem in (ví dụ: 50 tem), tiền tố 'MB', bưu cục sở tại (hubCode)\nvà bấm "Sinh dải tem bao mới" (handleGenerateBagLabels)
+
+' GIAI ĐOẠN 2: SINH DẢI MÃ VẠCH DUY NHẤT VÀ LƯU KHO VẬT TƯ
+UI -> Gateway: POST /ops/manifest/bag-labels/generate\n(Headers: Bearer accessToken, Body: { quantity: 50, hubCode, prefix: 'MB' })
+activate Gateway
+
+Gateway -> ManifestCtrl: POST /bag-labels/generate
+activate ManifestCtrl
+
+ManifestCtrl -> LabelSvc: generateBatchLabels(quantity, hubCode, prefix)
+activate LabelSvc
+
+loop Sinh 50 mã tem bao tuần tự độc nhất (MB-XXXXX)
+    LabelSvc -> ManifestDB: INSERT INTO bag_labels (id, label_code, hub_code, status: 'AVAILABLE', generated_at)\nVALUES (...)
+    activate ManifestDB
+    ManifestDB --> LabelSvc: Lưu trữ dải mã tem
+    deactivate ManifestDB
+end
+
+LabelSvc -> LabelSvc: Định dạng dữ liệu lệnh in tem tiêu chuẩn A6 (Code128 Barcode, QR Code, Logo Hub)
+
+LabelSvc --> ManifestCtrl: BagLabelBatchDto { generatedCount: 50, fromCode: 'MB-10001', toCode: 'MB-10050', labels }
+deactivate LabelSvc
+
+ManifestCtrl --> Gateway: 201 Created (BagLabelBatchDto)
+deactivate ManifestCtrl
+
+Gateway --> UI: 201 Created
+deactivate Gateway
+
+' GIAI ĐOẠN 3: KÍCH HOẠT MÁY IN NHIỆT VÀ CẬP NHẬT KHO TEM
+UI -> PrintUI: openBagLabelBatchPrint(labelsPayload)
+activate PrintUI
+PrintUI -> PrintUI: Máy in nhiệt cuộn xuất 50 tem bao dán sẵn (Khổ 100x150mm)
+deactivate PrintUI
+
+UI -> UI: Cập nhật Bảng tồn kho tem bao: "Đã sinh thành công 50 tem bao mới (MB-10001 đến MB-10050)!"
+deactivate UI
+@enduml

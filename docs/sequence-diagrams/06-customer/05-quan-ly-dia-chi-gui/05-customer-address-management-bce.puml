@@ -1,0 +1,116 @@
+@startuml
+!theme plain
+skinparam monochrome true
+skinparam sequenceMessageAlign center
+skinparam responseMessageBelowArrow true
+skinparam maxMessageSize 140
+skinparam wrapWidth 200
+skinparam BoxPadding 8
+autonumber "<b>[00]</b>"
+
+
+box "Boundary Layer (Giao Diện Khách Hàng)" #FFFFFF
+actor "Khách hàng cá nhân\n(Customer User)" as Customer
+boundary "CustomerAccountModal (Sổ địa chỉ)\n(apps/guest-web & mobile)" as UI
+boundary "AddressFormModal / Form\n(Thêm & Sửa địa chỉ)" as FormUI
+end box
+
+box "Control Layer (Điều Khiển Sổ Địa Chỉ)" #FFFFFF
+control "AddressService\n(savedAddressService / Store)" as AddrCtrl
+control "useAuthStore\n(Zustand store)" as AuthStore
+end box
+
+box "Entity Layer (Lưu Trữ Cục Bộ Trình Duyệt & Điện Thoại)" #FFFFFF
+entity "Local Storage / AsyncStorage\n[NEXUS_SAVED_ADDRESSES_V2_*]" as LocalStore
+end box
+
+' GIAI ĐOẠN 1: MỞ SỔ ĐỊA CHỈ VÀ TẢI DANH SÁCH
+Customer -> UI: Nhấp chọn Tab "Sổ địa chỉ gửi"
+activate UI
+
+UI -> AuthStore: Đọc định danh người dùng: identifier (phone || userId)
+activate AuthStore
+AuthStore --> UI: Trả về identifier phiên đăng nhập
+deactivate AuthStore
+
+UI -> AddrCtrl: getSavedAddresses(identifier)
+activate AddrCtrl
+
+AddrCtrl -> LocalStore: getItem('NEXUS_SAVED_ADDRESSES_V2_' + identifier)
+activate LocalStore
+LocalStore --> AddrCtrl: Trả về danh sách SavedAddress[]
+deactivate LocalStore
+
+AddrCtrl --> UI: Danh sách địa chỉ đã lưu (kèm cờ isDefault)
+deactivate AddrCtrl
+
+UI -> UI: Render danh sách địa chỉ với thẻ "Mặc định" và các nút thao tác
+
+' GIAI ĐOẠN 2: THÊM MỚI HOẶC CHỈNH SỬA ĐỊA CHỈ
+alt Khách hàng thêm mới hoặc chỉnh sửa địa chỉ
+    Customer -> UI: Nhấp nút "Thêm địa chỉ" hoặc "Chỉnh sửa"
+    UI -> FormUI: Mở form nhập liệu địa chỉ gửi (handleOpenAdd / Edit)
+    activate FormUI
+
+    Customer -> FormUI: Nhập Tên người gửi, SĐT, Tỉnh/Thành, Phường/Xã, Địa chỉ chi tiết & Tùy chọn "Đặt làm mặc định"
+    Customer -> FormUI: Bấm nút "Lưu địa chỉ" / "Cập nhật địa chỉ"
+
+    alt Lỗi bỏ trống dữ liệu bắt buộc
+        FormUI -> FormUI: Kiểm tra: !name || !phone || !addressDetail\nRender cảnh báo lỗi trực tiếp trên form
+    else Dữ liệu hợp lệ: Tiến hành lưu
+        FormUI -> AddrCtrl: saveAddress(identifier, { id, name, phone, province, ward, addressDetail, isDefault })
+        activate AddrCtrl
+
+        AddrCtrl -> AddrCtrl: Ghép chuỗi composedAddress & Hủy cờ mặc định cũ nếu isDefault = true
+        AddrCtrl -> LocalStore: setItem('NEXUS_SAVED_ADDRESSES_V2_' + identifier, JSON.stringify(updatedList))
+        activate LocalStore
+        LocalStore --> AddrCtrl: Ghi nhận bản ghi thành công
+        deactivate LocalStore
+
+        AddrCtrl --> FormUI: Trả về danh sách địa chỉ cập nhật
+        deactivate AddrCtrl
+
+        FormUI -> UI: Đóng form và làm mới danh sách (setIsEditingAddress(false))
+        deactivate FormUI
+        UI -> UI: Render danh sách mới & hiển thị Toast: "Đã lưu địa chỉ thành công!"
+    end
+
+' GIAI ĐOẠN 3: ĐẶT ĐỊA CHỈ LÀM MẶC ĐỊNH
+else Khách hàng đổi địa chỉ mặc định
+    Customer -> UI: Nhấp nút "Đặt mặc định" trên thẻ địa chỉ mong muốn
+    UI -> AddrCtrl: setDefaultAddress(identifier, addressId)
+    activate AddrCtrl
+
+    AddrCtrl -> LocalStore: Cập nhật isDefault: true cho addressId & false cho các địa chỉ khác
+    activate LocalStore
+    LocalStore --> AddrCtrl: Lưu trạng thái mặc định mới
+    deactivate LocalStore
+
+    AddrCtrl --> UI: Trả về danh sách đã cập nhật cờ mặc định
+    deactivate AddrCtrl
+
+    UI -> UI: Cập nhật huy hiệu "Mặc định" & hiển thị Toast: "Đã đổi địa chỉ mặc định!"
+
+' GIAI ĐOẠN 4: XÓA ĐỊA CHỈ KHỎI DANH BẠ
+else Khách hàng xóa địa chỉ
+    Customer -> UI: Nhấp biểu tượng thùng rác "Xóa" trên thẻ địa chỉ
+    UI -> UI: Kích hoạt hộp thoại xác nhận: "Bạn có chắc chắn muốn xóa địa chỉ này khỏi danh bạ?"
+
+    Customer -> UI: Xác nhận Đồng ý xóa (window.confirm = true)
+    UI -> AddrCtrl: deleteAddress(identifier, addressId)
+    activate AddrCtrl
+
+    AddrCtrl -> LocalStore: Lọc bỏ addressId & Tự động gán mặc định mới nếu địa chỉ xóa là mặc định
+    activate LocalStore
+    LocalStore --> AddrCtrl: Cập nhật danh bạ sau khi xóa
+    deactivate LocalStore
+
+    AddrCtrl --> UI: Trả về danh sách địa chỉ còn lại
+    deactivate AddrCtrl
+
+    UI -> UI: Làm mới giao diện & hiển thị Toast: "Đã xóa địa chỉ thành công."
+end
+
+Customer -> UI: Đóng modal (onClose) hoặc chuyển sang đặt đơn gửi
+deactivate UI
+@enduml

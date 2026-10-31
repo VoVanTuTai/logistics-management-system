@@ -1,0 +1,85 @@
+@startuml
+!theme plain
+skinparam monochrome true
+skinparam sequenceMessageAlign center
+skinparam responseMessageBelowArrow true
+skinparam maxMessageSize 140
+skinparam wrapWidth 200
+skinparam BoxPadding 8
+autonumber "<b>[00]</b>"
+
+box "Boundary Layer (Giao Diện Quầy & In Ấn)" #FFFFFF
+actor "Nhân viên quầy bưu cục\n(Counter Ops Staff)" as Ops
+boundary "BranchBusinessOrderCreatePage\n(apps/ops-web POS)" as UI
+boundary "Gateway BFF (:3000)\n(OpsShipmentController)" as Gateway
+boundary "ThermalPrintService\n(In tem A6 nhãn nhiệt)" as PrintUI
+end box
+
+box "Control Layer (Điều Khiển Đơn Hàng & Tính Cước IATA)" #FFFFFF
+control "ShipmentController\n(:3002 shipment-service)" as ShipCtrl
+control "ShipmentService\n(application service)" as ShipSvc
+control "PricingService (:3004)\n(Tariff Engine)" as PriceSvc
+control "ScanController (:3005)\n(Auto Hub Inward Scan)" as ScanCtrl
+end box
+
+box "Entity Layer (Lưu Trữ & Cơ Sở Dữ Liệu)" #FFFFFF
+entity "PostgreSQL (shipment_db)\n[shipments Table]" as ShipDB
+end box
+
+' GIAI ĐOẠN 1: TIẾP NHẬN HÀNG TẠI QUẦY & ĐỐI CHIẾU HẠN MỨC VẬT LÝ IATA
+Ops -> UI: Tiếp nhận bưu gửi từ khách vãng lai tại quầy:\n- Nhập Người gửi (SĐT, Họ tên), Người nhận (Địa chỉ 3 cấp, SĐT)\n- Cân thực tế (kg), Đo kích thước Dài x Rộng x Cao (cm)\n- Chọn loại mặt hàng: GENERAL, FRAGILE, HIGH_VALUE, BULKY, DOCUMENT\n- Tiền thu hộ COD & Hình thức thanh toán cước (CASH / VIETQR)
+activate UI
+
+Ops -> UI: Bấm nút "Tạo đơn & In phiếu gửi A6" (handleCreateShipment)
+
+alt Kiểm tra vượt trần mạng lưới bưu cục (Physical Ceiling Block)
+    UI -> UI: Kiểm tra: Cân nặng > 70kg HOẶC cạnh lớn nhất > 150cm HOẶC D+R+C > 300cm\nChặn tạo đơn: "Kiện hàng vượt trần vận tải bưu cục. Vui lòng tách kiện!"
+else Trong hạn mức mạng lưới: Tính trọng lượng quy đổi chuẩn IATA
+    UI -> UI: Tính trọng lượng tính cước: Chargeable Weight = max(Cân thực tế, (D x R x C) / 6000)\nTự động sinh Idempotency-Key chống trùng lặp
+
+    ' GIAI ĐOẠN 2: KHỞI TẠO ĐƠN VÀ ĐỊNH GIÁ TỰ ĐỘNG
+    UI -> Gateway: POST /ops/shipment/shipments\n(Headers: Idempotency-Key, Body: CreateShipmentPayload)
+    activate Gateway
+
+    Gateway -> ShipCtrl: POST /shipments
+    activate ShipCtrl
+
+    ShipCtrl -> ShipSvc: createShipment(input)
+    activate ShipSvc
+
+    ShipSvc -> PriceSvc: calculateRate({ originHub, destHub, chargeableWeight, insuranceTier })
+    activate PriceSvc
+    PriceSvc --> ShipSvc: FeeBreakdown { baseFee, insuranceFee, totalFee }
+    deactivate PriceSvc
+
+    ShipSvc -> ShipDB: INSERT INTO shipments (id, tracking_code, sender_info, receiver_info, weight, chargeable_weight, fee, status: 'CREATED', origin_hub_code)\nVALUES (...)
+    activate ShipDB
+    ShipDB --> ShipSvc: Ghi nhận đơn hàng thành công
+    deactivate ShipDB
+
+    ' Tự động quét nhận tại quầy (Auto Inbound Counter)
+    ShipSvc -> ScanCtrl: POST /scan/hub/inbound { trackingCode, hubCode: currentHub, scanType: 'COUNTER_RECEIVE' }
+    activate ScanCtrl
+    ScanCtrl --> ShipSvc: Cập nhật trạng thái đơn sang 'RECEIVED_AT_STATION'
+    deactivate ScanCtrl
+
+    ShipSvc --> ShipCtrl: ShipmentDto { id, trackingCode, status: 'RECEIVED_AT_STATION', totalFee }
+    deactivate ShipSvc
+
+    ShipCtrl --> Gateway: 201 Created (ShipmentDto)
+    deactivate ShipCtrl
+
+    Gateway --> UI: 201 Created
+    deactivate Gateway
+
+    ' GIAI ĐOẠN 3: HIỂN THỊ THÀNH CÔNG VÀ KÍCH HOẠT MÁY IN NHIỆT A6
+    UI -> UI: Render Modal xác nhận tạo đơn thành công:\n- Mã vận đơn (trackingCode)\n- Mã thanh toán VietQR (nếu chọn chuyển khoản tại quầy)
+
+    UI -> PrintUI: openShippingLabelPrint(shipmentPayload)
+    activate PrintUI
+    PrintUI -> PrintUI: Sinh tem in nhiệt khổ chuẩn A6 (100x150mm):\n- Mã vạch Code128 & QR Code\n- Mã tuyến phát (Route code)\n- Cảnh báo "HÀNG DỄ VỠ" (nếu là FRAGILE)
+    deactivate PrintUI
+end
+
+deactivate UI
+@enduml

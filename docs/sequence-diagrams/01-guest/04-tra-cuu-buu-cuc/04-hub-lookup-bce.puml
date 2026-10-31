@@ -1,0 +1,84 @@
+@startuml
+!theme plain
+skinparam sequenceMessageAlign center
+skinparam responseMessageBelowArrow true
+skinparam maxMessageSize 140
+skinparam wrapWidth 200
+skinparam BoxPadding 8
+autonumber "<b>[00]</b>"
+
+
+box "Boundary Layer (Giao Diện & Gateway)" #F8FAFC
+actor "Khách hàng / Khách vãng lai\n(Guest User)" as User
+boundary "Guest Web UI\n(apps/guest-web App.tsx)" as UI
+boundary "Gateway BFF (:3000)\n(PublicController)" as Gateway
+end box
+
+box "Control Layer (Điều Khiển & Xử Lý Nghiệp Vụ)" #FFFFFF
+control "HubsController\n(:3001 masterdata-service)" as HubCtrl
+control "HubsService\n(Application Service)" as HubSvc
+control "HubPrismaRepository\n(Data Access Repository)" as HubRepo
+end box
+
+box "Entity Layer (Dữ Liệu PostgreSQL)" #F8FAFC
+entity "PostgreSQL (masterdata_db)\n[hubs Table]" as MasterDB
+end box
+
+' BƯỚC 1: KHỞI TẠO TÌM KIẾM BƯU CỤC TẠI GIAO DIỆN
+User -> UI: Chọn Tỉnh/Thành phố, Quận/Huyện hoặc nhập từ khóa tìm kiếm (VD: "Tân Bình", "HUB-HCM") & bấm "Tìm bưu cục"
+
+' BƯỚC 2: GỬI REQUEST QUA GATEWAY BFF
+UI -> Gateway: GET /public/masterdata/hubs?isActive=true&q=Tan+Binh
+note over Gateway
+  PublicController.proxy(@All('*'))
+  GatewayProxyClient.forward('public', 'masterdata/hubs?isActive=true&q=Tan+Binh')
+  ServiceRegistryClient phân giải MASTERDATA_SERVICE_URL (:3001)
+end note
+
+Gateway -> HubCtrl: GET /hubs?isActive=true&q=Tan+Binh\n(Query: { isActive: "true", q: "Tan Binh" })
+
+' BƯỚC 3: CHUẨN HÓA DỮ LIỆU & THỰC THI TRUY VẤN TẠI SERVICE
+HubCtrl -> HubSvc: list({ isActive: "true", q: "Tan Binh" })
+HubSvc -> HubSvc: normalizeTextQuery(q, 120)\nparseBooleanQuery(isActive)
+
+HubSvc -> HubRepo: list({ isActive: true, q: "Tan Binh" })
+HubRepo -> MasterDB: prisma.hub.findMany({\n  where: {\n    isActive: true,\n    OR: [\n      { code: { contains: "Tan Binh", mode: "insensitive" } },\n      { name: { contains: "Tan Binh", mode: "insensitive" } },\n      { address: { contains: "Tan Binh", mode: "insensitive" } }\n    ]\n  },\n  orderBy: { createdAt: "desc" }\n})
+
+alt Trường hợp 1: Sự cố kết nối hoặc lỗi dịch vụ downstream (502 / 503)
+    MasterDB --> HubRepo: Connection Timeout / Database Error
+    HubRepo --> HubSvc: Throw Error
+    HubSvc --> HubCtrl: 500 Internal Server Error
+    HubCtrl --> Gateway: 502 Bad Gateway
+    Gateway --> UI: 502 Bad Gateway
+    note over UI: Fallback: masterdataApi.getHubs() catch error -> trả về mảng rỗng []
+    UI -> UI: Cảnh báo: "Không thể kết nối đến máy chủ dữ liệu bưu cục. Vui lòng thử lại sau!"
+
+else Trường hợp 2: Truy vấn thành công dữ liệu bưu cục từ cơ sở dữ liệu
+    MasterDB --> HubRepo: Danh sách bản ghi Hub records (mã, tên, cấp mạng lưới, địa chỉ, tọa độ GPS)
+    HubRepo -> HubRepo: map(record => this.toEntity(record))
+    HubRepo --> HubSvc: Hub[] entities
+    HubSvc --> HubCtrl: Hub[]
+    HubCtrl --> Gateway: 200 OK (Mảng JSON Hub[])
+    Gateway --> UI: 200 OK (Mảng Hub[])
+
+    ' BƯỚC 4: XỬ LÝ DỮ LIỆU & RENDER GIAO DIỆN CLIENT
+    note over UI
+      Client parse và chuẩn hóa (parseHubRecord):
+      1. Parse địa chỉ JSON: ward, district, province, addressDetail
+      2. Phân loại 4 cấp Hub bưu chính:
+         - Level 1: Mega Hub trung tâm khai thác liên tỉnh
+         - Level 2: Regional Hub trung chuyển vùng
+         - Level 3: Provincial Hub bưu cục tỉnh/thành
+         - Level 4: Post Office điểm gửi hàng giao dịch
+      3. Lọc danh sách bưu cục gần nhất theo vị trí người dùng
+    end note
+
+    alt 2.1: Không có bưu cục nào khớp bộ lọc tìm kiếm (Kết quả rỗng)
+        UI -> UI: Hiển thị Empty State: "Không tìm thấy điểm gửi hàng phù hợp tại khu vực đã chọn."
+    else 2.2: Tìm thấy các điểm gửi hàng phù hợp
+        UI -> UI: Hiển thị danh sách bưu cục kèm địa chỉ, giờ làm việc, hotline và định vị bản đồ số
+    end
+end
+
+@enduml
+

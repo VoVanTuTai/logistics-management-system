@@ -1,0 +1,135 @@
+@startuml
+!theme plain
+skinparam sequenceMessageAlign center
+skinparam responseMessageBelowArrow true
+skinparam maxMessageSize 140
+skinparam wrapWidth 200
+skinparam BoxPadding 8
+autonumber "<b>[00]</b>"
+
+
+box "Boundary Layer (Giao Diện & Gateway)" #F8FAFC
+actor "Chủ shop / Người gửi\n(Merchant User)" as Merchant
+boundary "TrackingLookupView\n(apps/merchant-web)" as UI
+boundary "Gateway BFF (:3000)\n(MerchantController)" as Gateway
+boundary "ShipmentDetailView\n(apps/merchant-web)" as DetailUI
+end box
+
+box "Control Layer (Nghiệp Vụ & Dịch Vụ)" #FFFFFF
+control "InternalTrackingController\n(:3006 tracking-service)" as TrackCtrl
+control "TrackingQueryProjection\n(read projection store)" as TrackProj
+control "PublicTrackingController\n(:3006 public fallback)" as PublicTrackCtrl
+control "ShipmentController\n(:3002 shipment-service)" as ShipCtrl
+end box
+
+box "Entity Layer (Dữ Liệu PostgreSQL)" #F8FAFC
+entity "PostgreSQL (tracking_db)\n[tracking_current & timeline_events]" as TrackDB
+entity "PostgreSQL (shipment_db)\n[shipments & metadata]" as ShipDB
+end box
+
+' GIAI ĐOẠN 1: TẢI GIAO DIỆN & GỢI Ý ĐƠN HÀNG GẦN ĐÂY
+Merchant -> UI: Mở tab "Tra cứu hành trình"\n(View: 'tracking')
+activate UI
+
+note over UI
+  - Hiển thị ô tìm kiếm mã vận đơn
+  - Hiển thị danh sách chip gợi ý 4 đơn hàng gần nhất
+    để tra cứu nhanh 1-click (tracking-quick-chips)
+  - 4 khối thẻ KPI tóm tắt (Trạng thái, Vị trí, Sự kiện, Thời gian)
+end note
+
+UI -> UI: Render giao diện tra cứu hành trình vận đơn
+
+' GIAI ĐOẠN 2: THỰC HIỆN TRA CỨU MÃ VẬN ĐƠN (LOOKUP TRACKING)
+alt Merchant nhập mã vận đơn hoặc nhấp chọn chip đơn gần đây
+    Merchant -> UI: Nhập mã (VD: "NX1730000001") và nhấn "Tra cứu"\n(lookupTracking)
+    UI -> UI: Kiểm tra mã đầu vào: normalizeCode(trackingCode)\nBật trackingLoading = true, reset trackingError = null
+
+    ' Gửi 2 request song song lấy Current Status và Timeline Events
+    UI -> Gateway: GET /merchant/tracking/tracking/{code}/current\n(Bearer accessToken)
+    activate Gateway
+    UI -> Gateway: GET /merchant/tracking/tracking/{code}/timeline\n(Bearer accessToken)
+
+    note over Gateway
+      - GatewayAuthGuard: Xác thực token hợp lệ
+      - GatewayRoleGuard: Cho phép quyền 'MERCHANT'
+      - GatewayProxyClient: Chuyển tiếp tới :3006 (tracking-service)
+    end note
+
+    Gateway -> TrackCtrl: GET /tracking/:shipmentCode/current
+    activate TrackCtrl
+    Gateway -> TrackCtrl: GET /tracking/:shipmentCode/timeline
+
+    TrackCtrl -> TrackProj: getCurrent(shipmentCode)
+    activate TrackProj
+    TrackProj -> TrackDB: SELECT * FROM tracking_current WHERE shipment_code = $1
+    activate TrackDB
+    TrackDB --> TrackProj: Bản ghi TrackingCurrentView
+    deactivate TrackDB
+    TrackProj --> TrackCtrl: TrackingCurrentView
+    deactivate TrackProj
+
+    TrackCtrl -> TrackProj: getTimeline(shipmentCode)
+    activate TrackProj
+    TrackProj -> TrackDB: SELECT * FROM timeline_events WHERE shipment_code = $1 ORDER BY event_at DESC
+    activate TrackDB
+    TrackDB --> TrackProj: Danh sách vết quét TimelineEventView[]
+    deactivate TrackDB
+    TrackProj --> TrackCtrl: TimelineEventView[]
+    deactivate TrackProj
+
+    TrackCtrl --> Gateway: 200 OK: Trả về Current & Timeline
+    deactivate TrackCtrl
+
+    Gateway --> UI: 200 OK: Dữ liệu vết quét và trạng thái bưu cục
+    deactivate Gateway
+
+    ' Cơ chế Fallback nếu chưa có log vết quét từ bưu tá
+    alt Không tìm thấy dữ liệu vết quét nội bộ
+        UI -> Gateway: GET /public/tracking/public/track/{code}
+        activate Gateway
+        Gateway -> PublicTrackCtrl: GET /public/track/:code
+        activate PublicTrackCtrl
+        PublicTrackCtrl --> Gateway: PublicTrackingSnapshot
+        deactivate PublicTrackCtrl
+        Gateway --> UI: Trả về snapshot công khai hoặc fallback
+        deactivate Gateway
+    end
+
+    ' GIAI ĐOẠN 3: HIỂN THỊ KẾT QUẢ TOÀN CẢNH HÀNH TRÌNH
+    UI -> UI: 1. Nạp dữ liệu vào 4 thẻ KPI tóm tắt:\n   - Trạng thái hiện tại (ĐÃ TẠO / ĐANG GIAO / ĐÃ KÝ NHẬN)\n   - Vị trí hiện tại (Mã Hub / Tên bưu cục phụ trách)\n   - Sự kiện cuối (VD: "Đã xuất kho trung chuyển Hub Cầu Giấy")\n   - Thời điểm sự kiện (formatDate)\n2. Render Cột thông tin kiện hàng (Người nhận, SĐT, COD, Dịch vụ)\n3. Render Cột dòng thời gian (Interactive Timeline) với icon chuyên dụng\n4. Tắt trackingLoading = false
+
+    UI -> UI: Render giao diện chi tiết hành trình trực quan
+
+    ' GIAI ĐOẠN 4: CÁC THAO TÁC BỔ TRỢ TỪ MÀN HÌNH TRA CỨU
+    opt Merchant sao chép mã vận đơn
+        Merchant -> UI: Bấm icon sao chép mã đơn
+        UI -> UI: navigator.clipboard.writeText(trackingCode)
+        UI -> UI: Hiển thị tooltip: "Đã sao chép mã!"
+    end
+
+    opt Merchant chuyển sang màn hình Chi tiết đơn hàng
+        Merchant -> UI: Bấm nút "Chi tiết đơn hàng" (onOpenShipmentDetail)
+        UI -> Gateway: GET /merchant/shipment/shipments/{code}
+        activate Gateway
+        Gateway -> ShipCtrl: GET /shipments/:code
+        activate ShipCtrl
+        ShipCtrl -> ShipDB: SELECT * FROM shipments WHERE code = $1
+        activate ShipDB
+        ShipDB --> ShipCtrl: Shipment detail
+        deactivate ShipDB
+        ShipCtrl --> Gateway: 200 OK: ShipmentResponse
+        deactivate ShipCtrl
+        Gateway --> UI: 200 OK
+        deactivate Gateway
+
+        UI -> DetailUI: onNavigateView('shipment-detail')
+        activate DetailUI
+        DetailUI -> DetailUI: Render màn hình Chi tiết vận đơn:\nQuản lý yêu cầu đổi địa chỉ, khiếu nại, tem phiếu gửi
+        deactivate DetailUI
+    end
+end
+
+deactivate UI
+@enduml
+

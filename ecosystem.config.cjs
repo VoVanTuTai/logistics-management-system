@@ -5,9 +5,33 @@
  */
 
 const path = require('node:path');
+const fs = require('node:fs');
+
+function loadEnvFile(envPath) {
+  if (!fs.existsSync(envPath)) return {};
+  const envConfig = {};
+  const content = fs.readFileSync(envPath, 'utf8');
+  for (const line of content.split('\n')) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith('#')) continue;
+    const eqIdx = trimmed.indexOf('=');
+    if (eqIdx === -1) continue;
+    const key = trimmed.slice(0, eqIdx).trim();
+    let val = trimmed.slice(eqIdx + 1).trim();
+    if ((val.startsWith('"') && val.endsWith('"')) || (val.startsWith("'") && val.endsWith("'"))) {
+      val = val.slice(1, -1);
+    }
+    envConfig[key] = val;
+  }
+  return envConfig;
+}
 
 const ROOT_DIR = __dirname;
 const LOG_DIR = path.join(ROOT_DIR, '.tmp/pm2-logs');
+
+const rootEnv = loadEnvFile(path.join(ROOT_DIR, '.env'));
+const gatewayEnv = loadEnvFile(path.join(ROOT_DIR, 'services/gateway-bff/.env'));
+const shipmentEnv = loadEnvFile(path.join(ROOT_DIR, 'services/shipment-service/.env'));
 
 const DB_BASE = process.env.DATABASE_URL_BASE || 'postgresql://postgres:postgres@localhost:15432';
 const dbUrl = (dbName, connectionLimit = 10, poolTimeout = 30) =>
@@ -48,11 +72,11 @@ module.exports = {
         ...commonEnv,
         PORT: 3002,
         DATABASE_URL: dbUrl('shipment_db', 15),
-        NEXUS_INTEGRATION_WEBHOOK_ENABLED: process.env.NEXUS_INTEGRATION_WEBHOOK_ENABLED || 'true',
-        NEXUS_INTEGRATION_PARTNER_CODE: process.env.NEXUS_INTEGRATION_PARTNER_CODE || 'DT_COMMERCE',
-        NEXUS_INTEGRATION_WEBHOOK_URL: process.env.NEXUS_INTEGRATION_WEBHOOK_URL || 'https://api.truongam.tech/api/v1/shipments/webhooks/nexus',
-        NEXUS_INTEGRATION_WEBHOOK_PATH: process.env.NEXUS_INTEGRATION_WEBHOOK_PATH || '/api/v1/shipments/webhooks/nexus',
-        NEXUS_INTEGRATION_WEBHOOK_SECRET: process.env.NEXUS_INTEGRATION_WEBHOOK_SECRET || '',
+        NEXUS_INTEGRATION_WEBHOOK_ENABLED: process.env.NEXUS_INTEGRATION_WEBHOOK_ENABLED || shipmentEnv.NEXUS_INTEGRATION_WEBHOOK_ENABLED || 'true',
+        NEXUS_INTEGRATION_PARTNER_CODE: process.env.NEXUS_INTEGRATION_PARTNER_CODE || shipmentEnv.NEXUS_INTEGRATION_PARTNER_CODE || 'DT_COMMERCE',
+        NEXUS_INTEGRATION_WEBHOOK_URL: process.env.NEXUS_INTEGRATION_WEBHOOK_URL || shipmentEnv.NEXUS_INTEGRATION_WEBHOOK_URL || 'https://api.truongam.tech/api/v1/shipments/webhooks/nexus',
+        NEXUS_INTEGRATION_WEBHOOK_PATH: process.env.NEXUS_INTEGRATION_WEBHOOK_PATH || shipmentEnv.NEXUS_INTEGRATION_WEBHOOK_PATH || '/api/v1/shipments/webhooks/nexus',
+        NEXUS_INTEGRATION_WEBHOOK_SECRET: process.env.NEXUS_INTEGRATION_WEBHOOK_SECRET || shipmentEnv.NEXUS_INTEGRATION_WEBHOOK_SECRET || rootEnv.NEXUS_INTEGRATION_WEBHOOK_SECRET || '',
         NEXUS_INTEGRATION_WEBHOOK_MAX_ATTEMPTS: 3,
         NEXUS_INTEGRATION_WEBHOOK_RETRY_DELAY_MS: 1000,
         PUBLIC_TRACKING_PUBLIC_URL: process.env.PUBLIC_TRACKING_PUBLIC_URL || 'https://tracking.nexus-ex.site',
@@ -309,11 +333,11 @@ module.exports = {
         S3_SECRET_KEY: 'minioadmin123',
         S3_BUCKET_NAME: 'nexus-pod-images',
         S3_FORCE_PATH_STYLE: 'true',
-        NEXUS_INTEGRATION_AUTH_ENABLED: process.env.NEXUS_INTEGRATION_AUTH_ENABLED || 'true',
-        NEXUS_INTEGRATION_PARTNER_CODE: process.env.NEXUS_INTEGRATION_PARTNER_CODE || 'DT_COMMERCE',
-        NEXUS_INTEGRATION_API_KEY: process.env.NEXUS_INTEGRATION_API_KEY || '',
-        NEXUS_INTEGRATION_API_SECRET: process.env.NEXUS_INTEGRATION_API_SECRET || '',
-        NEXUS_INTEGRATION_WEBHOOK_SECRET: process.env.NEXUS_INTEGRATION_WEBHOOK_SECRET || '',
+        NEXUS_INTEGRATION_AUTH_ENABLED: process.env.NEXUS_INTEGRATION_AUTH_ENABLED || gatewayEnv.NEXUS_INTEGRATION_AUTH_ENABLED || rootEnv.NEXUS_INTEGRATION_AUTH_ENABLED || 'true',
+        NEXUS_INTEGRATION_PARTNER_CODE: process.env.NEXUS_INTEGRATION_PARTNER_CODE || gatewayEnv.NEXUS_INTEGRATION_PARTNER_CODE || rootEnv.NEXUS_INTEGRATION_PARTNER_CODE || 'DT_COMMERCE',
+        NEXUS_INTEGRATION_API_KEY: process.env.NEXUS_INTEGRATION_API_KEY || gatewayEnv.NEXUS_INTEGRATION_API_KEY || rootEnv.NEXUS_INTEGRATION_API_KEY || '',
+        NEXUS_INTEGRATION_API_SECRET: process.env.NEXUS_INTEGRATION_API_SECRET || gatewayEnv.NEXUS_INTEGRATION_API_SECRET || rootEnv.NEXUS_INTEGRATION_API_SECRET || '',
+        NEXUS_INTEGRATION_WEBHOOK_SECRET: process.env.NEXUS_INTEGRATION_WEBHOOK_SECRET || gatewayEnv.NEXUS_INTEGRATION_WEBHOOK_SECRET || rootEnv.NEXUS_INTEGRATION_WEBHOOK_SECRET || '',
         NEXUS_INTEGRATION_REQUIRE_SHOP_MAPPING: 'false',
         NEXUS_INTEGRATION_SHOP_MAPPINGS_JSON: '[]',
         NEXUS_INTEGRATION_TIMESTAMP_SKEW_MS: 300000,

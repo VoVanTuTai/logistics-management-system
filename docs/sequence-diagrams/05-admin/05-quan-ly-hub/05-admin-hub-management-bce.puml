@@ -1,0 +1,84 @@
+@startuml
+!theme plain
+skinparam monochrome true
+skinparam sequenceMessageAlign center
+skinparam responseMessageBelowArrow true
+skinparam maxMessageSize 140
+skinparam wrapWidth 200
+skinparam BoxPadding 8
+autonumber "<b>[00]</b>"
+
+box "Boundary Layer (Giao Diện & Cổng Kết Nối)" #FFFFFF
+actor "Quản trị viên hệ thống\n(System Admin)" as Admin
+boundary "HubManagementPage\n(apps/admin-web)" as UI
+boundary "MasterdataEditorModal\n(Hộp thoại thêm/sửa Hub)" as ModalUI
+boundary "Gateway BFF (:3000)\n(AdminMasterdataController)" as Gateway
+end box
+
+box "Control Layer (Điều Khiển & Danh Mục Bưu Cục)" #FFFFFF
+control "MasterdataController\n(:3001 masterdata-service)" as MasterCtrl
+control "HubService\n(application service)" as HubSvc
+end box
+
+box "Entity Layer (Lưu Trữ & Cơ Sở Dữ Liệu)" #FFFFFF
+entity "PostgreSQL (masterdata_db)\n[hubs Table]" as MasterDB
+end box
+
+' GIAI ĐOẠN 1: MỞ FORM KHỞI TẠO BƯU CỤC MỚI
+Admin -> UI: Truy cập màn hình Quản lý bưu cục Hub (/masterdata/hubs),\nbấm nút "Thêm bưu cục mới" (handleOpenCreateModal)
+activate UI
+
+UI -> ModalUI: Mở hộp thoại MasterdataEditorModal (isOpen = true)
+activate ModalUI
+deactivate UI
+
+Admin -> ModalUI: Nhập thông tin bưu cục Hub:\n- Mã định danh bưu cục (hubCode, ví dụ: 'HUB_DN_01')\n- Tên bưu cục (name: 'Hub Khai Thác Đà Nẵng')\n- Phân cấp quản lý (level: 1 - 4)\n- Địa chỉ 3 cấp (Tỉnh/Thành, Quận/Huyện, Phường/Xã)\n- Tọa độ địa lý (latitude, longitude) & Tải trọng tối đa (kg)
+
+Admin -> ModalUI: Bấm nút "Lưu bưu cục" (handleSaveHub)
+
+' GIAI ĐOẠN 2: KIỂM TRA TRÙNG LẶP VÀ GHI DỮ LIỆU TẠI MASTERDATA SERVICE
+ModalUI -> Gateway: POST /admin/masterdata/hubs\n(Headers: Bearer accessToken, Body: CreateHubPayload)
+activate Gateway
+
+Gateway -> MasterCtrl: POST /hubs (CreateHubInput)
+activate MasterCtrl
+
+MasterCtrl -> HubSvc: createHub(input)
+activate HubSvc
+
+HubSvc -> MasterDB: SELECT id FROM hubs WHERE hub_code = $code
+activate MasterDB
+MasterDB --> HubSvc: Kiểm tra tính duy nhất của mã bưu cục
+deactivate MasterDB
+
+alt Mã bưu cục đã tồn tại
+    HubSvc --> MasterCtrl: 409 ConflictException ("Mã bưu cục đã tồn tại trong hệ thống.")
+    MasterCtrl --> Gateway: 409 Conflict
+    Gateway --> ModalUI: 409 Conflict
+    ModalUI -> ModalUI: Hiển thị cảnh báo lỗi: "Mã bưu cục đã được sử dụng. Vui lòng chọn mã khác."
+else Mã hợp lệ: Khởi tạo bưu cục mới
+    HubSvc -> MasterDB: INSERT INTO hubs (id, hub_code, name, level, address, province_code, district_code, status: 'ACTIVE', created_at)\nVALUES (...)
+    activate MasterDB
+    MasterDB --> HubSvc: Bản ghi bưu cục mới được lưu thành công
+    deactivate MasterDB
+
+    HubSvc --> MasterCtrl: HubDto { id, hubCode: 'HUB_DN_01', name, level, status: 'ACTIVE' }
+    deactivate HubSvc
+
+    MasterCtrl --> Gateway: 201 Created (HubDto)
+    deactivate MasterCtrl
+
+    Gateway --> ModalUI: 201 Created
+    deactivate Gateway
+
+    ' GIAI ĐOẠN 3: ĐÓNG HỘP THOẠI VÀ LÀM MỚI BẢNG DANH MỤC
+    ModalUI -> UI: Đóng modal (onClose) và kích hoạt làm mới bảng dữ liệu
+    activate UI
+    deactivate ModalUI
+
+    UI -> UI: Render dòng bưu cục mới vào bảng danh sách Hub:\n- Mã: HUB_DN_01\n- Tên: Hub Khai Thác Đà Nẵng\n- Cấp bậc: Cấp 2 (Vùng Miền Trung)\n- Trạng thái: Badge "ĐANG HOẠT ĐỘNG (ACTIVE)"
+
+    UI -> UI: Hiển thị Toast thông báo: "Đã thêm bưu cục Hub mới thành công!"
+    deactivate UI
+end
+@enduml

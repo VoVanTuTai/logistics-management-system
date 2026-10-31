@@ -1,0 +1,120 @@
+@startuml
+!theme plain
+skinparam monochrome true
+skinparam sequenceMessageAlign center
+skinparam responseMessageBelowArrow true
+skinparam maxMessageSize 140
+skinparam wrapWidth 200
+skinparam BoxPadding 8
+autonumber "<b>[00]</b>"
+
+
+box "Boundary Layer (Giao Diện & Gateway)" #FFFFFF
+actor "Khách hàng cá nhân\n(Customer User)" as Customer
+boundary "CreateOrderPage / Screen\n(apps/guest-web & mobile)" as UI
+boundary "Gateway BFF (:3000)\n(CustomerController)" as Gateway
+boundary "OrdersPage (/orders)\n(Danh sách đơn hàng)" as OrdersUI
+end box
+
+box "Control Layer (Điều Khiển & Nghiệp Vụ Bưu Chính)" #FFFFFF
+control "AddressService\n(savedAddressService)" as AddrCtrl
+control "ShipmentController\n(:3002 shipment-service)" as ShipCtrl
+control "ShipmentService\n(application service)" as ShipSvc
+control "PickupService (:3003)\n(Điều phối bưu tá lấy hàng)" as PickupSvc
+control "RabbitMQ (domain.events)\n[Event Bus]" as EventBus
+end box
+
+box "Entity Layer (Lưu Trữ & Cơ Sở Dữ Liệu)" #FFFFFF
+entity "Local Storage\n[Bản nháp & Sổ địa chỉ]" as LocalStore
+entity "PostgreSQL (shipment_db)\n[shipments & routing_legs]" as ShipDB
+entity "PostgreSQL (pickup_db)\n[pickup_requests & tasks]" as PickupDB
+end box
+
+' GIAI ĐOẠN 1: MỞ TRANG TẠO ĐƠN & TỰ ĐỘNG ĐIỀN ĐỊA CHỈ NGƯỜI GỬI
+Customer -> UI: Mở màn hình tạo đơn gửi hàng (/create)
+activate UI
+
+UI -> AddrCtrl: getDefaultAddress(identifier: phone || userId)
+activate AddrCtrl
+
+AddrCtrl -> LocalStore: getItem('NEXUS_SAVED_ADDRESSES_V2_' + identifier)
+activate LocalStore
+LocalStore --> AddrCtrl: Trả về danh sách địa chỉ đã lưu
+deactivate LocalStore
+
+AddrCtrl --> UI: Trả về địa chỉ mặc định (SavedAddress | null)
+deactivate AddrCtrl
+
+opt Tìm thấy địa chỉ mặc định
+    UI -> UI: Tự động điền Họ tên, SĐT, Tỉnh/Thành, Phường/Xã & Địa chỉ người gửi
+end
+
+' GIAI ĐOẠN 2: NHẬP THÔNG TIN NGƯỜI NHẬN & THÔNG SỐ KIỆN HÀNG
+Customer -> UI: Chọn hình thức lấy hàng (PICKUP: Lấy tận nhà | DROP_OFF: Gửi bưu cục)\n& nhập thông tin Người nhận (Tên, SĐT, Địa chỉ, Tỉnh/Thành, Phường/Xã)
+
+Customer -> UI: Nhập kiện hàng (Tên hàng, Cân nặng kg, Dài-Rộng-Cao cm, Tiền thu hộ COD)
+
+UI -> UI: Tự động tính cước thể tích chuẩn quốc tế IATA:\nChargeable Weight = max(Cân thực, (D x R x C) / 6000)\nCập nhật cước phí dự tính (liveFee)
+
+' GIAI ĐOẠN 3: XÁC NHẬN TẠO ĐƠN & GỬI YÊU CẦU QUA GATEWAY
+Customer -> UI: Nhấn nút "Tạo đơn hàng ngay" (handleCreateOrder)
+
+alt Lỗi bỏ trống thông tin bắt buộc
+    UI -> UI: Kiểm tra: !receiverName || !receiverPhone || !receiverAddress || (PICKUP && !senderAddress)\nRender cảnh báo lỗi: "Vui lòng điền đầy đủ thông tin người nhận và địa chỉ lấy hàng"
+else Dữ liệu hợp lệ: Gửi yêu cầu tạo vận đơn
+    UI -> Gateway: POST /customer/shipment/shipments\n(Bearer accessToken, Payload: { sender, receiver, package, pickupType, service, codAmount })
+    activate Gateway
+
+    Gateway -> ShipCtrl: POST /shipments (CreateShipmentDto)
+    activate ShipCtrl
+
+    ShipCtrl -> ShipSvc: createShipment(dto, authContext)
+    activate ShipSvc
+
+    ' GIAI ĐOẠN 4: KHỞI TẠO VẬN ĐƠN VÀ ĐIỀU PHỐI LẤY HÀNG
+    ShipSvc -> ShipSvc: Khởi tạo mã vận đơn bưu chính duy nhất (VD: 333577082099)\nTrạng thái: CREATED / PICKUP_REQUESTED
+
+    ShipSvc -> ShipDB: INSERT INTO shipments (...) & INSERT INTO routing_legs (...)
+    activate ShipDB
+    ShipDB --> ShipSvc: Ghi nhận bưu kiện thành công
+    deactivate ShipDB
+
+    opt Hình thức PICKUP (Lấy hàng tận nhà)
+        ShipSvc -> PickupSvc: POST /internal/pickup/requests\n(shipmentCode, senderAddress, senderPhone, originHubCode)
+        activate PickupSvc
+        PickupSvc -> PickupDB: INSERT INTO pickup_requests (...)
+        activate PickupDB
+        PickupDB --> PickupSvc: Khởi tạo yêu cầu bưu tá tới nhà lấy hàng
+        deactivate PickupDB
+        PickupSvc --> ShipSvc: Yêu cầu lấy hàng đã sẵn sàng
+        deactivate PickupSvc
+    end
+
+    ShipSvc -> EventBus: publish('shipment.created' & 'pickup.requested')
+    activate EventBus
+    EventBus --> ShipSvc: Đã phát thông điệp sự kiện
+    deactivate EventBus
+
+    ShipSvc --> ShipCtrl: ShipmentResponse { code: "333577082099", status: "CREATED", ... }
+    deactivate ShipSvc
+
+    ShipCtrl --> Gateway: 201 Created (ShipmentResponse)
+    deactivate ShipCtrl
+
+    Gateway --> UI: 201 Created { code: "333577082099" }
+    deactivate Gateway
+
+    ' GIAI ĐOẠN 5: DỌN DẸP BẢN NHÁP & ĐIỀU HƯỚNG DANH SÁCH ĐƠN HÀNG
+    UI -> LocalStore: removeItem('nexus_draft_quote') & removeItem('nexus_draft_order')
+    activate LocalStore
+    LocalStore --> UI: Dọn dẹp bản nháp thành công
+    deactivate LocalStore
+
+    UI -> UI: Hiển thị Toast thông báo: "Tạo vận đơn #333577082099 thành công! Đang chuyển đến danh sách đơn hàng..."
+    UI -> OrdersUI: navigate('/orders')
+    activate OrdersUI
+    deactivate UI
+    OrdersUI -> OrdersUI: Render bảng danh sách đơn hàng mới tại tab "Đơn gửi đi"
+    deactivate OrdersUI
+end
+@enduml

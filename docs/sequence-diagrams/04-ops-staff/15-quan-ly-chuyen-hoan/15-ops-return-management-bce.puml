@@ -1,0 +1,106 @@
+@startuml
+!theme plain
+skinparam monochrome true
+skinparam sequenceMessageAlign center
+skinparam responseMessageBelowArrow true
+skinparam maxMessageSize 140
+skinparam wrapWidth 200
+skinparam BoxPadding 8
+autonumber "<b>[00]</b>"
+
+box "Boundary Layer (Giao Diện & Cổng Kết Nối)" #FFFFFF
+actor "Nhân viên quản lý hoàn hàng\n(Return Ops Specialist)" as Ops
+boundary "ReturnManagementPage\n(apps/ops-web)" as UI
+boundary "Gateway BFF (:3000)\n(OpsReturnController)" as Gateway
+end box
+
+box "Control Layer (Điều Khiển & Luân Chuyển Hàng Hoàn)" #FFFFFF
+control "ReturnController\n(:3002 shipment-service)" as ReturnCtrl
+control "ReturnWorkflowService\n(application service)" as ReturnSvc
+control "TrackingEventService (:3006)\n(Reverse Audit Emitter)" as TrackSvc
+end box
+
+box "Entity Layer (Lưu Trữ & Cơ Sở Dữ Liệu)" #FFFFFF
+entity "PostgreSQL (shipment_db)\n[return_requests & shipments Table]" as ShipDB
+end box
+
+' GIAI ĐOẠN 1: THEO DÕI HÀNG CHUYỂN HOÀN VÀ ĐIỀU PHỐI VỀ SHOP
+Ops -> UI: Truy cập màn hình Quản lý chuyển hoàn (/operations/returns),\nxem danh sách các kiện hàng đang trong luồng hoàn (Status: RETURNING)
+activate UI
+
+UI -> Gateway: GET /ops/shipment/returns?status=RETURNING&hubCode={code}\n(Headers: Bearer accessToken)
+activate Gateway
+Gateway -> ReturnCtrl: GET /returns
+activate ReturnCtrl
+ReturnCtrl -> ShipDB: SELECT * FROM shipments WHERE status = 'RETURNING' AND origin_hub_code = $hubCode
+activate ShipDB
+ShipDB --> ReturnCtrl: Danh sách các đơn hàng chuyển hoàn về bưu cục gốc
+deactivate ShipDB
+ReturnCtrl --> Gateway: 200 OK (ReturnShipmentDto[])
+deactivate ReturnCtrl
+Gateway --> UI: 200 OK
+deactivate Gateway
+
+UI -> UI: Render Bảng chuyển hoàn: Mã vận đơn, Shop người gửi, Cước hoàn dự kiến, Bưu tá hoàn trả
+
+' GIAI ĐOẠN 2: XUẤT ĐƠN CHO BƯU TÁ ĐI PHÁT TRẢ SHOP
+Ops -> UI: Chọn đơn hàng cần trả về Shop, chọn Bưu tá phụ trách tuyến trả hàng (courierId)\nvà bấm "Xuất phát trả về Shop" (handleDispatchReturn)
+
+UI -> Gateway: POST /ops/shipment/returns/{returnId}/dispatch\n(Body: { courierId, notes })
+activate Gateway
+
+Gateway -> ReturnCtrl: POST /returns/{returnId}/dispatch
+activate ReturnCtrl
+ReturnCtrl -> ReturnSvc: dispatchReturnDelivery(returnId, courierId)
+activate ReturnSvc
+
+ReturnSvc -> ShipDB: UPDATE shipments SET status = 'OUT_FOR_RETURN', current_courier_id = $courierId, updated_at = NOW()\nWHERE id = $shipmentId
+activate ShipDB
+ShipDB --> ReturnSvc: Chuyển trạng thái đơn sang 'Đang phát trả (OUT_FOR_RETURN)'
+deactivate ShipDB
+
+ReturnSvc -> TrackSvc: emitEvent('OUT_FOR_RETURN', { trackingCode, courierId })
+activate TrackSvc
+TrackSvc --> ReturnSvc: Ghi nhận sự kiện vết quét chuyển hoàn
+deactivate TrackSvc
+
+ReturnSvc --> ReturnCtrl: { success: true, status: 'OUT_FOR_RETURN' }
+deactivate ReturnSvc
+ReturnCtrl --> Gateway: 200 OK
+deactivate ReturnCtrl
+Gateway --> UI: 200 OK
+deactivate Gateway
+
+UI -> UI: Cập nhật dòng trạng thái: Chuyển sang badge "ĐANG PHÁT TRẢ SHOP"
+
+' GIAI ĐOẠN 3: XÁC NHẬN BÀN GIAO THÀNH CÔNG VỀ SHOP (RETURN DELIVERED)
+Ops -> UI: Khi bưu tá trả hàng thành công về Shop, kiểm tra Biên bản ký nhận,\nbấm "Xác nhận đã trả hàng hoàn" (handleConfirmReturnDelivered)
+
+UI -> Gateway: POST /ops/shipment/returns/{returnId}/confirm-delivered\n(Body: { returnFeeCollected, proofSignatureUrl })
+activate Gateway
+
+Gateway -> ReturnCtrl: POST /returns/{returnId}/confirm-delivered
+activate ReturnCtrl
+ReturnCtrl -> ReturnSvc: confirmReturnDelivered(returnId, payload)
+activate ReturnSvc
+
+ReturnSvc -> ShipDB: UPDATE shipments SET status = 'RETURNED_TO_SENDER', returned_at = NOW(), return_fee = $fee\nWHERE id = $shipmentId
+activate ShipDB
+ShipDB --> ReturnSvc: Đơn hàng hoàn tất chu kỳ chuyển hoàn
+deactivate ShipDB
+
+ReturnSvc -> TrackSvc: emitEvent('RETURNED_TO_SENDER', { trackingCode })
+activate TrackSvc
+TrackSvc --> ReturnSvc: Ghi nhận vết hoàn thành
+deactivate TrackSvc
+
+ReturnSvc --> ReturnCtrl: { success: true, status: 'RETURNED_TO_SENDER' }
+deactivate ReturnSvc
+ReturnCtrl --> Gateway: 200 OK
+deactivate ReturnCtrl
+Gateway --> UI: 200 OK
+deactivate Gateway
+
+UI -> UI: Hiển thị thông báo: "Đơn hàng đã hoàn trả thành công về Shop người gửi!"
+deactivate UI
+@enduml

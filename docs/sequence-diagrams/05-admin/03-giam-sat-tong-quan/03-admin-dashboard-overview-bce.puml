@@ -1,0 +1,71 @@
+@startuml
+!theme plain
+skinparam monochrome true
+skinparam sequenceMessageAlign center
+skinparam responseMessageBelowArrow true
+skinparam maxMessageSize 140
+skinparam wrapWidth 200
+skinparam BoxPadding 8
+autonumber "<b>[00]</b>"
+
+box "Boundary Layer (Giao Diện & Cổng Kết Nối)" #FFFFFF
+actor "Quản trị viên hệ thống\n(System Admin)" as Admin
+boundary "AdminDashboardPage\n(apps/admin-web)" as UI
+boundary "Gateway BFF (:3000)\n(AdminReportingController)" as Gateway
+end box
+
+box "Control Layer (Điều Khiển & Thống Kê Nền Tảng)" #FFFFFF
+control "AdminDashboardController\n(React Query hook)" as HookCtrl
+control "ReportingController\n(:3009 reporting-service)" as ReportCtrl
+control "PlatformMetricsService\n(aggregation service)" as MetricSvc
+end box
+
+box "Entity Layer (Lưu Trữ & Cơ Sở Dữ Liệu)" #FFFFFF
+entity "PostgreSQL (reporting_db)\n[platform_kpis & hub_network_status]" as ReportDB
+end box
+
+' GIAI ĐOẠN 1: MỞ TRANG ĐIỀU HÀNH TỔNG QUAN NỀN TẢNG
+Admin -> UI: Truy cập Bảng điều khiển Quản trị hệ thống (/dashboard),\nchọn chu kỳ giám sát (Toàn thời gian, Tháng này, Tuần này)
+activate UI
+
+UI -> HookCtrl: useAdminPlatformSummaryQuery(period)
+activate HookCtrl
+
+HookCtrl -> Gateway: GET /admin/reporting/platform/summary?period={period}\n(Headers: Bearer accessToken)
+activate Gateway
+
+' GIAI ĐOẠN 2: THỐNG KÊ TOÀN DIỆN MẠNG LƯỚI TẠI REPORTING SERVICE
+Gateway -> ReportCtrl: GET /platform/summary
+activate ReportCtrl
+
+ReportCtrl -> MetricSvc: aggregatePlatformOverview(period)
+activate MetricSvc
+
+MetricSvc -> ReportDB: SELECT SUM(total_shipments) AS totalShipments,\n       SUM(active_shipments) AS activeShipments,\n       SUM(total_revenue) AS totalRevenue,\n       SUM(cod_circulation) AS totalCodInCirculation,\n       AVG(on_time_rate) AS avgOnTimeRate\nFROM platform_kpis WHERE period = $period
+activate ReportDB
+ReportDB --> MetricSvc: Dữ liệu vận hành & tài chính toàn quốc
+deactivate ReportDB
+
+MetricSvc -> ReportDB: SELECT role, COUNT(id) AS userCount FROM user_accounts GROUP BY role
+activate ReportDB
+ReportDB --> MetricSvc: Cơ cấu tài khoản: Ops, Courier, Merchant, Customer
+deactivate ReportDB
+
+MetricSvc --> ReportCtrl: PlatformOverviewDto { totalShipments, totalRevenue, totalCodInCirculation, avgOnTimeRate, userCounts, activeHubsCount }
+deactivate MetricSvc
+
+ReportCtrl --> Gateway: 200 OK (PlatformOverviewDto)
+deactivate ReportCtrl
+
+Gateway --> HookCtrl: 200 OK (PlatformOverviewDto)
+deactivate Gateway
+
+HookCtrl --> UI: Cập nhật dữ liệu thời gian thực
+deactivate HookCtrl
+
+' GIAI ĐOẠN 3: HIỂN THỊ CHỈ SỐ VÀ TRỰC QUAN HÓA TOÀN HỆ THỐNG
+UI -> UI: Render Khối chỉ số kinh doanh cốt lõi (BusinessOperationsSection):\n- Tổng đơn hàng toàn mạng lưới & Đơn đang xử lý\n- Tổng doanh thu cước & Dòng tiền COD đang lưu thông\n- Tỷ lệ giao hàng đúng hẹn SLA toàn quốc (On-time Delivery %)\n- Số lượng tài khoản người dùng theo nhóm vai trò
+
+UI -> UI: Render Biểu đồ tăng trưởng sản lượng (AdminDashboardCharts) &\nBản đồ nhiệt trạng thái hoạt động các Hub trên cả nước
+deactivate UI
+@enduml

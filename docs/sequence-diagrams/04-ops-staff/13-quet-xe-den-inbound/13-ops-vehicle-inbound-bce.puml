@@ -1,0 +1,100 @@
+@startuml
+!theme plain
+skinparam monochrome true
+skinparam sequenceMessageAlign center
+skinparam responseMessageBelowArrow true
+skinparam maxMessageSize 140
+skinparam wrapWidth 200
+skinparam BoxPadding 8
+autonumber "<b>[00]</b>"
+
+box "Boundary Layer (Giao Diện Thiết Bị Cầm Tay PDA / Web)" #FFFFFF
+actor "Giám sát dỡ hàng Dock đích\n(Dest Dock Inbound Ops)" as Ops
+boundary "VehicleInboundScreen\n(apps/courier-mobile PDA & ops-web)" as UI
+boundary "Gateway BFF (:3000)\n(OpsScanController)" as Gateway
+end box
+
+box "Control Layer (Điều Khiển & Quét Nhập Bến Xe Tuyến)" #FFFFFF
+control "ScanController\n(:3005 scan-service)" as ScanCtrl
+control "InboundScanProcessor\n(audit domain service)" as InboundSvc
+control "LinehaulService (:3013)\n(Trip State Manager)" as LinehaulSvc
+control "AudioFeedbackService\n(Âm thanh quét Beep)" as AudioSvc
+end box
+
+box "Entity Layer (Lưu Trữ & Cơ Sở Dữ Liệu)" #FFFFFF
+entity "PostgreSQL (scan_db)\n[scan_events & vehicle_arrivals Table]" as ScanDB
+end box
+
+note over UI
+Nhân viên vận hành tại cửa Dock Hub đích sử dụng thiết bị PDA để kiểm tra chì seal cửa xe,
+xác nhận xe cập bến an toàn và bắn quét nhập kho từng bao hàng hạ từ thùng xe
+end note
+
+' GIAI ĐOẠN 1: XE TẢI CẬP CỬA DOCK & ĐỐI CHIẾU CHÌ SEAL NIÊM PHONG
+Ops -> UI: Mở màn hình Quét xe đến (VehicleInboundScreen),\nbắn tia quét Mã tem xe tải hoặc Biển kiểm soát cập bến
+activate UI
+
+UI -> Gateway: GET /ops/scan/vehicle/inbound-check?plate={plate}\n(Headers: Bearer accessToken)
+activate Gateway
+
+Gateway -> ScanCtrl: GET /vehicle/inbound-check
+activate ScanCtrl
+ScanCtrl -> LinehaulSvc: getIncomingTripByPlate(plate)
+activate LinehaulSvc
+LinehaulSvc --> ScanCtrl: IncomingTripDto { tripCode: 'TRIP-5566', originHub: 'HUB_MIEN_BAC', expectedTruckSeal: 'SEAL-TRUCK-99', expectedBags: N }
+deactivate LinehaulSvc
+ScanCtrl --> Gateway: 200 OK (IncomingTripDto)
+deactivate ScanCtrl
+Gateway --> UI: 200 OK
+deactivate Gateway
+
+UI -> UI: Hiển thị thông tin đối soát: Chuyến TRIP-5566, Mã seal niêm phong xuất bến: SEAL-TRUCK-99
+
+Ops -> UI: Kiểm tra tính nguyên vẹn chì seal cửa xe tải, nhập Mã seal thực tế\nvà bấm "Xác nhận mở niêm phong hạ tải" (handleVerifyTruckSeal)
+
+' GIAI ĐOẠN 2: BẮN QUÉT KIỂM ĐẾM TỪNG BAO HÀNG HẠ TỪ THÙNG XE
+loop Quét kiểm đếm từng bao dỡ xuống sàn kho
+    Ops -> UI: Bắn tia quét mã vạch trên từng bao hàng (Mã MB-xxxx)
+    UI -> AudioSvc: playScanSuccessSound()
+    activate AudioSvc
+    AudioSvc --> UI: Âm thanh Beep xác nhận bao hợp lệ
+    deactivate AudioSvc
+    UI -> UI: Đánh dấu bao đã nhập kho (Received: k / N bao)
+end
+
+' GIAI ĐOẠN 3: XÁC NHẬN XE HOÀN TẤT NHẬP BẾN
+Ops -> UI: Bấm nút "Xác nhận hoàn tất nhập bến xe" (handleConfirmInbound)
+
+UI -> Gateway: POST /ops/scan/vehicle/inbound\n(Body: { tripCode: 'TRIP-5566', vehiclePlate: '29C-888.99', arrivalSealCode, receivedBags: string[] })
+activate Gateway
+
+Gateway -> ScanCtrl: POST /vehicle/inbound
+activate ScanCtrl
+
+ScanCtrl -> InboundSvc: processVehicleInbound(payload, operatorId)
+activate InboundSvc
+
+InboundSvc -> ScanDB: INSERT INTO scan_events (scan_type: 'VEHICLE_INBOUND', trip_code, vehicle_plate, hub_code: destHub, operator_id, created_at)\nVALUES (...)
+activate ScanDB
+ScanDB --> InboundSvc: Ghi nhận sự kiện vết quét Inbound thành công
+deactivate ScanDB
+
+InboundSvc -> LinehaulSvc: markTripCompleted(tripCode, arrivalSealCode)
+activate LinehaulSvc
+LinehaulSvc -> LinehaulSvc: Chuyển trạng thái chuyến xe sang 'ARRIVED_COMPLETED (ĐÃ CẬP BẾN)'\nCập nhật trạng thái toàn bộ bao hàng sang 'ARRIVED_AT_HUB'
+LinehaulSvc --> InboundSvc: Xác nhận hoàn tất chuyến xe
+deactivate LinehaulSvc
+
+InboundSvc --> ScanCtrl: { success: true, tripCode: 'TRIP-5566', status: 'ARRIVED_COMPLETED', totalBagsReceived: N }
+deactivate InboundSvc
+
+ScanCtrl --> Gateway: 200 OK
+deactivate ScanCtrl
+
+Gateway --> UI: 200 OK
+deactivate Gateway
+
+' GIAI ĐOẠN 4: PHẢN HỒI GIAO DIỆN VÀ ĐIỀU HƯỚNG SANG KHÂU MỞ BAO
+UI -> UI: Hiển thị thông báo: "XÁC NHẬN XE ĐÃ CẬP BẾN THÀNH CÔNG!"\nĐã nhập kho đủ N/N bao hàng, chuyển hướng sang khâu Gỡ bao chia chọn
+deactivate UI
+@enduml

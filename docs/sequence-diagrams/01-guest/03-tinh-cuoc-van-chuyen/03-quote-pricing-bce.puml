@@ -1,0 +1,105 @@
+@startuml
+!theme plain
+skinparam sequenceMessageAlign center
+skinparam responseMessageBelowArrow true
+skinparam maxMessageSize 140
+skinparam wrapWidth 200
+skinparam BoxPadding 8
+autonumber "<b>[00]</b>"
+
+
+box "Boundary Layer (Giao Diện & Gateway)" #F8FAFC
+actor "Khách hàng / Khách vãng lai\n(Guest / Customer)" as User
+boundary "Guest Web UI\n(apps/guest-web App.tsx)" as UI
+boundary "Gateway BFF (:3000)\n(PublicController)" as Gateway
+end box
+
+box "Control Layer (Điều Khiển & Động Cơ Tính Cước)" #FFFFFF
+control "QuotesController\n(:3012 pricing-service)" as QuoteCtrl
+control "PricingService\n(Core Rating Engine)" as PriceSvc
+end box
+
+box "Entity Layer (Thực Thể & Mô Hình Báo Giá)" #F8FAFC
+entity "PricingQuote\n(Domain Aggregate)" as QuoteEntity
+end box
+
+' BƯỚC 1: KHỞI TẠO TÍNH CƯỚC TẠI GIAO DIỆN
+User -> UI: Nhập Tỉnh gửi, Tỉnh nhận, Trọng lượng thực (kg), Kích thước D-R-C (cm), Loại dịch vụ & bấm "Tính cước"
+
+' BƯỚC 2: RÀNG BUỘC KIỂM TRA ĐẦU VÀO TẠI CLIENT
+alt Trường hợp 1: Dữ liệu nhập không hợp lệ (Trọng lượng <= 0 hoặc thiếu tỉnh thành)
+    note over UI
+      Kiểm tra tại Form tính cước (App.tsx):
+      - Cân nặng <= 0 hoặc không phải số hợp lệ
+      - Thiếu thông tin tỉnh/thành phố gửi hoặc nhận
+    end note
+    UI -> UI: Cảnh báo: "Vui lòng nhập đầy đủ thông tin lộ trình và trọng lượng bưu gửi hợp lệ."
+
+else Trường hợp 2: Dữ liệu hợp lệ, gửi yêu cầu báo giá cước qua Gateway BFF
+    UI -> Gateway: POST /public/pricing/quotes\n{\n  serviceType: "STANDARD",\n  sender: { province: "TP. Hồ Chí Minh" },\n  receiver: { province: "Hà Nội" },\n  package: { weightKg: 2.5, dimensionsCm: { length: 30, width: 20, height: 10 } }\n}
+    note over Gateway
+      PublicController.proxy(@All('*'))
+      GatewayProxyClient.forward('public', 'pricing/quotes')
+      ServiceRegistryClient phân giải PRICING_SERVICE_URL (:3012)
+    end note
+
+    Gateway -> QuoteCtrl: POST /quotes\n(Body: PricingQuoteInput)
+    QuoteCtrl -> PriceSvc: quote(input)
+
+    ' BƯỚC 3: XỬ LÝ CHUẨN HÓA DỮ LIỆU & ĐỊNH TUYẾN VÙNG CƯỚC (ZONE)
+    PriceSvc -> PriceSvc: normalizeProvince(originProvince)\nnormalizeProvince(destProvince)
+    note over PriceSvc
+      Phân loại vùng cước (resolveZone):
+      - Cùng tỉnh: INTRA_PROVINCE (Phụ phí: 0 VND)
+      - Trục Hà Nội <-> Đà Nẵng <-> TP.HCM: METRO_CORRIDOR (Phụ phí: 7.000 VND)
+      - Khác tỉnh liên miền: INTER_PROVINCE (Phụ phí: 12.000 VND)
+    end note
+
+    ' BƯỚC 4: THUẬT TOÁN TÍNH CƯỚC IATA V/6000 & KIỂM TRA TRẦN VẬT LÝ
+    PriceSvc -> PriceSvc: actualWeightKg = normalizeNonNegativeNumber(weightKg)\nvolumetricWeightKg = round((length * width * height) / 6000)\nchargeableWeightKg = max(actualWeightKg, volumetricWeightKg)
+    
+    note over PriceSvc
+      Quy chuẩn IATA / Carrier SOP:
+      - Trọng lượng tính cước: max(Cân thực, Cân thể tích V/6000)
+      - Làm tròn nấc 0.5kg gần nhất (roundWeight)
+      - Kiểm soát 3 tầng trần vật lý (Standard <= 20kg, Bulky 21-70kg, Overlimit > 70kg)
+    end note
+
+    ' BƯỚC 5: TÍNH CÁC HẠNG MỤC PHÍ TRONG BIỂU CƯỚC (BREAKDOWN)
+    PriceSvc -> PriceSvc: Tính phí dịch vụ cơ sở: baseFee (STANDARD: 18k, EXPRESS: 28k, SAME_DAY: 42k)
+    PriceSvc -> PriceSvc: Tính phụ phí vượt cân: extraHalfKgUnits * extraHalfKgFee
+    PriceSvc -> PriceSvc: Tính phụ phí vùng miền: ZONE_SURCHARGES[zone]
+    PriceSvc -> PriceSvc: Tính bảo hiểm khai giá: declaredValue > 0 ? declaredValue * 0.2% : 0
+    PriceSvc -> PriceSvc: Tính phí thu hộ COD: codAmount > 0 ? clamp(codAmount * 0.5%, 5k, 35k) : 0
+
+    ' BƯỚC 6: XÁC ĐỊNH PHÂN TẦNG KHÁCH HÀNG & CHIẾT KHẤU THƯƠNG MẠI
+    note over PriceSvc
+      resolveCustomerTier:
+      - Khách vãng lai / Cá nhân (GUEST): 0% chiết khấu
+      - Shop tiêu chuẩn (STANDARD): Chiết khấu 5%
+      - VIP Doanh nghiệp (VIP_ENTERPRISE): Chiết khấu 15%
+    end note
+    PriceSvc -> PriceSvc: subtotalFee = sum(breakdown)\ntotalFee = max(0, subtotalFee - discountAmount)
+    PriceSvc -> PriceSvc: resolveReturnPolicy(totalFee, customerTier)\n(Guest/Standard: 50% cước hoàn, VIP: Miễn phí 0 VND)
+
+    ' BƯỚC 7: KHỞI TẠO THỰC THỂ PRICING QUOTE
+    PriceSvc -> QuoteEntity: Khởi tạo PricingQuote {\n  quoteId: randomUUID(),\n  quoteVersion: "NEXUS_RATES_2026_05",\n  totalFee,\n  chargeableWeightKg,\n  validUntil: expiresAt,\n  breakdown: [...]\n}
+    QuoteEntity --> PriceSvc: PricingQuote aggregate instance
+    PriceSvc --> QuoteCtrl: PricingQuote
+    QuoteCtrl --> Gateway: 200 OK (PricingQuote Payload)
+    Gateway --> UI: 200 OK (PricingQuoteResponse)
+
+    ' BƯỚC 8: LƯU BẢN NHÁP & RENDER KẾT QUẢ TRÊN GIAO DIỆN
+    note over UI
+      1. Lưu bản nháp vào LocalStorage: localStorage.setItem('nexus_draft_quote', ...)
+      2. Render kết quả tính cước trực quan:
+         - Tổng cước phí (totalFee VND)
+         - Trọng lượng tính cước IATA (chargeableWeightKg)
+         - Bảng phân tách chi tiết cước (Breakdown)
+         - Thời gian dự kiến giao hàng (SLA)
+    end note
+    UI -> UI: Render kết quả tính cước trực quan & hiển thị nút "Tạo đơn với cước này"
+end
+
+@enduml
+

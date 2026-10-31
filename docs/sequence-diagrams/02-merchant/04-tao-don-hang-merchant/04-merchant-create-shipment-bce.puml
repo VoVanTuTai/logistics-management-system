@@ -1,0 +1,155 @@
+@startuml
+!theme plain
+skinparam sequenceMessageAlign center
+skinparam responseMessageBelowArrow true
+skinparam maxMessageSize 140
+skinparam wrapWidth 200
+skinparam BoxPadding 8
+autonumber "<b>[00]</b>"
+
+
+box "Boundary Layer (Giao Diện & Gateway)" #F8FAFC
+actor "Chủ shop / Người gửi\n(Merchant User)" as Merchant
+boundary "CreateShipmentView\n(apps/merchant-web)" as UI
+boundary "Gateway BFF (:3000)\n(MerchantController)" as Gateway
+boundary "ShipmentDetailView\n(apps/merchant-web)" as DetailUI
+end box
+
+box "Control Layer (Nghiệp Vụ & Dịch Vụ)" #FFFFFF
+control "PricingController / Svc\n(:3012 pricing-service)" as PricingCtrl
+control "ShipmentController\n(:3002 shipment-service)" as ShipCtrl
+control "ShipmentsService\n(application service)" as ShipSvc
+control "PickupController / Svc\n(:3003 pickup-service)" as PickupCtrl
+control "ShipmentOutboxService\n(transactional outbox)" as OutboxSvc
+end box
+
+box "Entity Layer (Dữ Liệu PostgreSQL & Outbox)" #F8FAFC
+entity "PostgreSQL (shipment_db)\n[shipments & metadata]" as ShipDB
+entity "PostgreSQL (shipment_db)\n[outbox_events Table]" as OutboxDB
+entity "PostgreSQL (pickup_db)\n[pickup_orders Table]" as PickupDB
+end box
+
+' GIAI ĐOẠN 1: MỞ FORM & BÁO GIÁ CƯỚC THỜI GIAN THỰC (REAL-TIME QUOTE)
+Merchant -> UI: Mở màn hình Tạo đơn hàng\n(View: 'create-shipment')
+activate UI
+
+note over UI
+  - Hiển thị Kho lấy hàng cố định theo hợp đồng:
+    shopName, contactPhone, defaultPickupAddress, lockedSenderHub
+  - Tự động khóa địa chỉ kho gửi để đảm bảo
+    điều phối tài xế bưu cục chính xác
+end note
+
+Merchant -> UI: Nhập thông tin người nhận (Tên, SĐT, Tỉnh/Thành,\nchọn Bưu cục phát, Địa chỉ chi tiết, Ghi chú)
+Merchant -> UI: Nhập thông số kiện hàng (Loại hàng, Gói cước,\nQuyền đồng kiểm, Tiền COD, Cân nặng kg, Dài-Rộng-Cao cm)
+
+UI -> UI: Tự động tính trọng lượng quy đổi thể tích IATA:\nVolumetric Weight = (Dài x Rộng x Cao) / 6000\nKhối lượng tính cước = max(Cân thực, Cân thể tích)
+
+' Báo giá cước tự động thời gian thực
+UI -> Gateway: POST /merchant/pricing/quotes\n(Bearer accessToken, Payload: { serviceType, sender, receiver, package, codAmount })
+activate Gateway
+
+note over Gateway
+  - GatewayAuthGuard: Xác thực token hợp lệ
+  - GatewayRoleGuard: Kiểm tra vai trò 'MERCHANT'
+  - GatewayProxyClient: Điều hướng tới :3012 (pricing-service)
+end note
+
+Gateway -> PricingCtrl: POST /pricing/quotes\n(Body: QuoteRequestDto)
+activate PricingCtrl
+
+PricingCtrl -> PricingCtrl: Kiểm tra 3 tầng trần vật lý:\n- Tầng 1: Tiêu chuẩn (<=20kg, cạnh <=60cm)\n- Tầng 2: Cồng kềnh (21-70kg, cạnh 61-150cm)\n- Tầng 3: Vượt trần (>70kg, cạnh >150cm, D+R+C >300cm)\nÁp dụng chính sách 5 nhóm mặt hàng (GENERAL, FRAGILE, BULKY, HIGH_VALUE, DOCUMENT)
+
+PricingCtrl --> Gateway: 200 OK: PricingQuoteResponse\n{ totalFee, chargeableWeightKg, breakdown: [...] }
+deactivate PricingCtrl
+
+Gateway --> UI: 200 OK: Trả kết quả báo giá cước chi tiết
+deactivate Gateway
+
+UI -> UI: Hiển thị tóm tắt cước phí, chi tiết bóc tách\n(Cước cơ bản, phụ phí vượt nấc, bảo hiểm) trên thẻ Tóm tắt đơn hàng
+
+' GIAI ĐOẠN 2: THỰC HIỆN TẠO ĐƠN & TIỀN KIỂM TRA ĐIỀU KIỆN
+Merchant -> UI: Nhấn nút "Tạo đơn hàng" (withPickup=false)\nHOẶC "Tạo đơn & Yêu cầu lấy ngay" (withPickup=true)
+
+alt Kiểm tra số dư công nợ âm vượt hạn mức (netBalance < -500.000đ)
+    UI -> UI: Phát hiện isNegativeBalanceLocked = true\nHiển thị thông báo nợ cước & mở Modal VietQR nạp tiền
+    UI -> UI: Báo lỗi: "Số dư công nợ vượt hạn mức âm tối đa -500.000đ. Vui lòng thanh toán cước..."
+else Thiếu thông tin kho lấy hàng hoặc địa chỉ nhận
+    UI -> UI: Kiểm tra !effectiveSenderAddress || !receiverAddressDetail
+    UI -> UI: Báo lỗi: "Vui lòng nhập đầy đủ địa chỉ kho lấy và người nhận."
+else Hợp lệ: Gửi yêu cầu tạo đơn hàng lên hệ thống
+    UI -> UI: Chuẩn hóa dữ liệu CreateShipmentForm\n(Gắn tọa độ GPS kho gửi & bưu cục nhận)
+
+    ' GIAI ĐOẠN 3: GỬI REQUEST QUA GATEWAY BFF VÀ LƯU ĐƠN
+    UI -> Gateway: POST /merchant/shipment/shipments\n(Bearer accessToken, Body: { pickupLatitude, deliveryLatitude, metadata: {...} })
+    activate Gateway
+
+    note over Gateway
+      - GatewayAuthGuard: Giải mã session người dùng
+      - GatewayRoleGuard: Cho phép quyền 'MERCHANT'
+      - GatewayProxyClient: Chuyển tiếp tới :3002 (shipment-service)
+    end note
+
+    Gateway -> ShipCtrl: POST /shipments\n(Body: CreateShipmentInput, Headers: x-user-id, x-user-role)
+    activate ShipCtrl
+
+    ShipCtrl -> ShipSvc: create(input: CreateShipmentInput)
+    activate ShipSvc
+
+    ShipSvc -> ShipSvc: 1. Áp dụng bảng cước chốt chặn qua PricingClientService\n2. Bổ sung tọa độ GPS và thông tin người sở hữu (createdByUserId, createdByType='MERCHANT')\n3. Xác định trạng thái ban đầu: currentStatus = 'CREATED'\n4. Tự động sinh mã vận đơn duy nhất (VD: "NX1730000001")
+
+    ShipSvc -> ShipDB: INSERT INTO shipments (...) VALUES (...)\nINSERT INTO shipment_metadata (...) VALUES (...)
+    activate ShipDB
+    ShipDB --> ShipSvc: Bản ghi đơn hàng đã lưu thành công
+    deactivate ShipDB
+
+    ShipSvc -> OutboxSvc: enqueueShipmentCreated(shipment)
+    activate OutboxSvc
+    OutboxSvc -> OutboxDB: INSERT INTO outbox_events (eventType: 'ShipmentCreated', aggregateId, payload)
+    activate OutboxDB
+    OutboxDB --> OutboxSvc: Ghi nhận Outbox Event thành công
+    deactivate OutboxDB
+    OutboxSvc --> ShipSvc: Outbox enqueued
+    deactivate OutboxSvc
+
+    ShipSvc --> ShipCtrl: Trả về đối tượng Shipment hoàn chỉnh
+    deactivate ShipSvc
+
+    ShipCtrl --> Gateway: 201 Created: ShipmentResponse
+    deactivate ShipCtrl
+
+    Gateway --> UI: 201 Created: Trả về đơn hàng mới tạo
+    deactivate Gateway
+
+    ' GIAI ĐOẠN 4: YÊU CẦU LẤY HÀNG NGAY (NẾU withPickup == true)
+    alt Merchant chọn "Tạo đơn & Yêu cầu lấy ngay" (withPickup == true)
+        UI -> Gateway: POST /merchant/pickup/pickups\n(Bearer accessToken, Body: { pickupCode, requesterName, contactPhone, pickupAddress, items: [{ shipmentCode, quantity: 1 }] })
+        activate Gateway
+
+        Gateway -> PickupCtrl: POST /pickups\n(Body: CreatePickupInput)
+        activate PickupCtrl
+
+        PickupCtrl -> PickupCtrl: Tạo lịch điều phối thu gom tại kho Merchant
+        PickupCtrl -> PickupDB: INSERT INTO pickup_orders (...) VALUES (...)
+        activate PickupDB
+        PickupDB --> PickupCtrl: Lưu thành công phiếu yêu cầu lấy hàng
+        deactivate PickupDB
+
+        PickupCtrl --> Gateway: 201 Created: PickupResponse
+        deactivate PickupCtrl
+
+        Gateway --> UI: 201 Created: Trả về thông tin phiếu gom hàng (pickupCode)
+        deactivate Gateway
+    end
+
+    ' GIAI ĐOẠN 5: HOÀN TẤT & ĐIỀU HƯỚNG GIAO DIỆN
+    UI -> UI: 1. Cập nhật cache đơn hàng nội bộ (upsertShipment)\n2. Reset form tạo đơn về mặc định\n3. Gán selectedShipmentCode = created.code\n4. Chuyển hướng sang giao diện 'shipment-detail'
+    UI -> DetailUI: onNavigateView('shipment-detail')
+    activate DetailUI
+    DetailUI -> DetailUI: Render màn hình Chi tiết vận đơn vừa tạo\n(Mã vận đơn, Trạng thái 'Đã tạo', Tem QR/Barcode, Lịch trình bưu phẩm)
+    deactivate DetailUI
+end
+
+deactivate UI
+@enduml
+

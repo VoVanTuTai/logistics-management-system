@@ -1,0 +1,96 @@
+@startuml
+!theme plain
+skinparam monochrome true
+skinparam sequenceMessageAlign center
+skinparam responseMessageBelowArrow true
+skinparam maxMessageSize 140
+skinparam wrapWidth 200
+skinparam BoxPadding 8
+autonumber "<b>[00]</b>"
+
+
+box "Boundary Layer (Giao Diện Ứng Dụng & Hệ Điều Hành)" #FFFFFF
+actor "Bưu tá / Shipper\n(Courier User)" as Courier
+boundary "TaskDetailScreen\n(apps/courier-mobile)" as UI
+boundary "Linking API\n(React Native Linking)" as NativeLinking
+boundary "Ứng dụng Hệ điều hành\n(Phone Dialer / SMS / Google Maps)" as ExternalApps
+end box
+
+box "Control Layer (Bộ Điều Khiển & Xử Lý Tiện Ích)" #FFFFFF
+control "ContactHandler\n(handleContactAction)" as ContactCtrl
+control "DirectionsUtil\n(directions.ts)" as DirectionsCtrl
+end box
+
+box "Entity Layer (Dữ Liệu Vận Đơn & Địa Chỉ)" #FFFFFF
+entity "ShipmentMetadata\n[sender/receiver phone, coords, address]" as ShipmentMeta
+end box
+
+' GIAI ĐOẠN 1: TẢI THÔNG TIN LIÊN HỆ TỪ METADATA
+Courier -> UI: Mở chi tiết nhiệm vụ (TaskDetailScreen)
+activate UI
+
+UI -> ShipmentMeta: Trích xuất thông tin liên hệ:\n- Người gửi: senderPhone, pickupAddress\n- Người nhận: receiverPhone, deliveryAddress\n- Tọa độ GPS: (latitude, longitude)
+activate ShipmentMeta
+ShipmentMeta --> UI: Dữ liệu liên hệ & tọa độ điểm đến
+deactivate ShipmentMeta
+
+UI -> UI: Render thông tin khách hàng kèm các nút tương tác:\n[Gọi điện], [Nhắn tin SMS], [Chỉ đường Google Maps]
+
+' GIAI ĐOẠN 2: THỰC HIỆN CÁC THAO TÁC LIÊN HỆ & ĐIỀU HƯỚNG
+alt Trường hợp 1: Bưu tá gọi điện thoại cho khách (Phone Call)
+    Courier -> UI: Nhấn nút hoặc icon "Gọi điện" (handleContactAction('call'))
+    UI -> ContactCtrl: handleContactAction('call', rawPhone)
+    activate ContactCtrl
+
+    ContactCtrl -> ContactCtrl: normalizePhone(rawPhone) -> loại bỏ ký tự lạ
+    ContactCtrl -> NativeLinking: Linking.openURL('tel:${phone}')
+    activate NativeLinking
+
+    NativeLinking -> ExternalApps: Kích hoạt Intent / URL Scheme 'tel:'
+    activate ExternalApps
+    ExternalApps -> ExternalApps: Mở Trình quay số điện thoại Native (Phone Dialer)\nvới số khách đã điền sẵn để bưu tá bấm gọi
+    deactivate ExternalApps
+    deactivate NativeLinking
+    deactivate ContactCtrl
+
+else Trường hợp 2: Bưu tá gửi tin nhắn SMS cho khách (Text SMS)
+    Courier -> UI: Nhấn nút "Nhắn tin SMS" (handleContactAction('sms'))
+    UI -> ContactCtrl: handleContactAction('sms', rawPhone)
+    activate ContactCtrl
+
+    ContactCtrl -> ContactCtrl: normalizePhone(rawPhone)
+    ContactCtrl -> NativeLinking: Linking.openURL('sms:${phone}')
+    activate NativeLinking
+
+    NativeLinking -> ExternalApps: Kích hoạt Intent / URL Scheme 'sms:'
+    activate ExternalApps
+    ExternalApps -> ExternalApps: Mở Ứng dụng Tin nhắn Native (SMS Messages App)\nsẵn sàng soạn tin nhắn gửi khách hàng
+    deactivate ExternalApps
+    deactivate NativeLinking
+    deactivate ContactCtrl
+
+else Trường hợp 3: Bưu tá mở chỉ đường bản đồ (Google Maps Navigation)
+    Courier -> UI: Nhấn nút "Chỉ đường" (handleOpenDirections())
+    UI -> DirectionsCtrl: openGoogleMapsDirections(navigationDestination)
+    activate DirectionsCtrl
+
+    DirectionsCtrl -> DirectionsCtrl: resolveShipmentNavigationDestination(taskType, metadata)\n-> Ưu tiên tọa độ (lat, lng), dự phòng địa chỉ text
+
+    alt Có tọa độ GPS hợp lệ (lat, lng)
+        DirectionsCtrl -> NativeLinking: Linking.openURL('https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}')
+    else Chỉ có địa chỉ dạng chuỗi văn bản (address)
+        DirectionsCtrl -> NativeLinking: Linking.openURL('https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(address)}')
+    end
+    activate NativeLinking
+
+    NativeLinking -> ExternalApps: Mở Google Maps / Apple Maps qua Deep Link
+    activate ExternalApps
+    ExternalApps -> ExternalApps: Hiển thị lộ trình điều hướng thời gian thực từ vị trí hiện tại\nđến địa chỉ lấy/giao hàng
+    deactivate ExternalApps
+    deactivate NativeLinking
+    deactivate DirectionsCtrl
+end
+
+deactivate UI
+
+@enduml
