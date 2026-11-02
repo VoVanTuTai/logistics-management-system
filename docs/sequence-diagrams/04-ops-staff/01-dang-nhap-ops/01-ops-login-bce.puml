@@ -1,0 +1,118 @@
+@startuml
+!theme plain
+skinparam monochrome true
+skinparam sequenceMessageAlign center
+skinparam responseMessageBelowArrow true
+skinparam maxMessageSize 140
+skinparam wrapWidth 200
+skinparam BoxPadding 8
+autonumber "<b>[00]</b>"
+
+box "Boundary Layer (Giao Diện & Cổng Kết Nối)" #FFFFFF
+actor "Nhân viên vận hành\n(Ops Staff User)" as Ops
+boundary "LoginPage / LoginForm\n(apps/ops-web)" as UI
+boundary "Gateway BFF (:3000)\n(OpsAuthController)" as Gateway
+boundary "OperationsPlatformPage (/dashboard)\n(apps/ops-web)" as DashboardUI
+end box
+
+box "Control Layer (Điều Khiển & Xác Thực Quyền Hạn)" #FFFFFF
+control "useAuthStore\n(Zustand store)" as AuthStore
+control "AuthController\n(:3010 auth-service)" as AuthCtrl
+control "AuthService\n(application service)" as AuthSvc
+control "HashService\n(bcrypt digest)" as HashSvc
+end box
+
+box "Entity Layer (Lưu Trữ & Cơ Sở Dữ Liệu)" #FFFFFF
+entity "Browser LocalStorage\n[ops_auth_session]" as LocalStore
+entity "PostgreSQL (auth_db)\n[user_accounts & auth_sessions]" as AuthDB
+end box
+
+' GIAI ĐOẠN 1: NHẬP LIỆU VÀ KIỂM TRA ĐẦU VÀO FORM ĐĂNG NHẬP
+Ops -> UI: Mở cổng vận hành (/login), nhập Tên đăng nhập và Mật khẩu
+activate UI
+
+Ops -> UI: Bấm nút "Đăng nhập hệ thống" (useLoginMutation)
+
+alt Lỗi bỏ trống thông tin
+    UI -> UI: Kiểm tra: !username.trim() || !password.trim()\nHiển thị lỗi: "Tên đăng nhập và mật khẩu là bắt buộc."
+else Thông tin hợp lệ: Gửi yêu cầu xác thực
+    UI -> AuthStore: setSubmitting(true) & clearAuthError()
+    activate AuthStore
+    AuthStore --> UI: Trạng thái đang gửi (isSubmitting = true)
+    deactivate AuthStore
+
+    UI -> Gateway: POST /ops/auth/auth/login\n(Body: { username, password, roleGroup: 'OPS_PORTAL' })
+    activate Gateway
+
+    ' GIAI ĐOẠN 2: XÁC THỰC DANH TÍNH & KIỂM TRA NHÓM QUYỀN OPS TẠI AUTH SERVICE
+    Gateway -> AuthCtrl: POST /auth/login (LoginInput)
+    activate AuthCtrl
+
+    AuthCtrl -> AuthSvc: login(input: LoginInput)
+    activate AuthSvc
+
+    AuthSvc -> AuthDB: SELECT * FROM user_accounts WHERE username = $username AND status = 'ACTIVE'
+    activate AuthDB
+    AuthDB --> AuthSvc: Trả về thông tin tài khoản nhân viên (UserAccount)
+    deactivate AuthDB
+
+    alt Tài khoản không tồn tại hoặc bị vô hiệu hóa
+        AuthSvc --> AuthCtrl: 401 UnauthorizedException ("Sai tên đăng nhập hoặc mật khẩu.")
+        AuthCtrl --> Gateway: 401 Unauthorized
+        Gateway --> UI: 401 Unauthorized
+        UI -> UI: Render lỗi: "Sai tên đăng nhập hoặc mật khẩu. Vui lòng kiểm tra lại."
+    else Tài khoản hợp lệ: Đối chiếu mật khẩu
+        AuthSvc -> HashSvc: verify(password, user.passwordHash)
+        activate HashSvc
+        HashSvc --> AuthSvc: Kết quả đối soát mã băm bcrypt
+        deactivate HashSvc
+
+        alt Mật khẩu không chính xác
+            AuthSvc --> AuthCtrl: 401 UnauthorizedException ("Sai tên đăng nhập hoặc mật khẩu.")
+            AuthCtrl --> Gateway: 401 Unauthorized
+            Gateway --> UI: 401 Unauthorized
+            UI -> UI: Render lỗi: "Sai tên đăng nhập hoặc mật khẩu. Vui lòng kiểm tra lại."
+        else Mật khẩu hợp lệ: Kiểm tra nhóm quyền OPS_ALLOWED_ROLES
+            AuthSvc -> AuthSvc: Kiểm tra vai trò: roles ∩ {'SYSTEM_ADMIN', 'OPS_ADMIN', 'OPS_VIEWER', 'OPS_MANAGER'}
+
+            alt Tài khoản không thuộc quyền vận hành bưu cục
+                AuthSvc --> AuthCtrl: 403 ForbiddenException ("Tài khoản không thuộc nhóm quyền OPS.")
+                AuthCtrl --> Gateway: 403 Forbidden
+                Gateway --> UI: 403 Forbidden
+                UI -> UI: Render lỗi: "Tài khoản không thuộc nhóm quyền OPS. Vui lòng đăng nhập đúng cổng."
+            else Phân quyền hợp lệ: Cấp Token và Khởi tạo phiên
+                AuthSvc -> AuthDB: INSERT INTO auth_sessions (user_id, access_token_hash, expires_at)
+                activate AuthDB
+                AuthDB --> AuthSvc: Ghi nhận phiên làm việc hợp lệ
+                deactivate AuthDB
+
+                AuthSvc --> AuthCtrl: LoginResult { tokens: { accessToken, refreshToken }, user }
+                deactivate AuthSvc
+
+                AuthCtrl --> Gateway: 200 OK (LoginResult)
+                deactivate AuthCtrl
+
+                Gateway --> UI: 200 OK (LoginResponse)
+                deactivate Gateway
+
+                ' GIAI ĐOẠN 3: LƯU PHIÊN LÀM VIỆC & ĐIỀU HƯỚNG VÀO DASHBOARD
+                UI -> LocalStore: persistAuthSession(session)
+                activate LocalStore
+                LocalStore --> UI: Lưu trữ thành công
+                deactivate LocalStore
+
+                UI -> AuthStore: setSession(session) & setSubmitting(false)
+                activate AuthStore
+                AuthStore --> UI: Cập nhật ngữ cảnh phiên thành công
+                deactivate AuthStore
+
+                UI -> DashboardUI: navigate('/dashboard')
+                activate DashboardUI
+                deactivate UI
+                DashboardUI -> DashboardUI: Khởi tạo dữ liệu màn hình Giám sát vận hành bưu cục
+                deactivate DashboardUI
+            end
+        end
+    end
+end
+@enduml

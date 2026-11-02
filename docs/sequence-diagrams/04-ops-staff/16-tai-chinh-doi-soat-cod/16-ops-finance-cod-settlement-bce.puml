@@ -1,0 +1,87 @@
+@startuml
+!theme plain
+skinparam monochrome true
+skinparam sequenceMessageAlign center
+skinparam responseMessageBelowArrow true
+skinparam maxMessageSize 140
+skinparam wrapWidth 200
+skinparam BoxPadding 8
+autonumber "<b>[00]</b>"
+
+box "Boundary Layer (Giao Diện Thủ Quỹ & Kế Toán)" #FFFFFF
+actor "Thủ quỹ / Kế toán bưu cục\n(Branch Cashier / Accountant)" as Ops
+boundary "CodSettlementPage\n(apps/ops-web)" as UI
+boundary "Gateway BFF (:3000)\n(OpsPaymentController)" as Gateway
+boundary "CashReceiptPrinter\n(In phiếu thu tiền mặt)" as PrintUI
+end box
+
+box "Control Layer (Điều Khiển & Đối Soát Giải Ngân COD)" #FFFFFF
+control "PaymentController\n(:3008 payment-service)" as PaymentCtrl
+control "CodSettlementService\n(reconciliation domain service)" as SettleSvc
+end box
+
+box "Entity Layer (Lưu Trữ & Cơ Sở Dữ Liệu)" #FFFFFF
+entity "PostgreSQL (payment_db)\n[cod_records & cod_settlements Table]" as PaymentDB
+end box
+
+' GIAI ĐOẠN 1: ĐỐI CHIẾU TIỀN THU HỘ COD CỦA BƯU TÁ
+Ops -> UI: Truy cập màn hình Đối soát tài chính COD (/finance/cod-settlement),\nchọn Bưu tá nộp tiền (courierId) hoặc xem danh sách các ca nộp chờ duyệt
+activate UI
+
+UI -> Gateway: GET /ops/payment/cod/courier/{courierId}/pending\n(Headers: Bearer accessToken)
+activate Gateway
+Gateway -> PaymentCtrl: GET /cod/courier/{courierId}/pending
+activate PaymentCtrl
+PaymentCtrl -> PaymentDB: SELECT * FROM cod_records WHERE courier_id = $courierId AND status = 'COLLECTED_NEED_REMIT'
+activate PaymentDB
+PaymentDB --> PaymentCtrl: Danh sách các đơn đã thu tiền COD mặt chưa nộp
+deactivate PaymentDB
+PaymentCtrl --> Gateway: 200 OK (CodRecordDto[])
+deactivate PaymentCtrl
+Gateway --> UI: 200 OK
+deactivate Gateway
+
+UI -> UI: Hiển thị Tổng tiền mặt thực tế cần nộp: X đồng (kèm danh sách mã đơn chi tiết)
+
+' GIAI ĐOẠN 2: THỦ QUỸ ĐẾM TIỀN & XÁC NHẬN NHẬP KÉT BƯU CỤC
+Ops -> UI: Kiểm đếm tiền mặt bưu tá nộp tại quầy, nhập Số tiền thực nhận,\nchọn Hình thức thu (TIỀN MẶT TẠI KÉT / ĐỐI SOÁT VIETQR KHỚP LỆNH)\nvà bấm nút "Duyệt nộp tiền COD" (handleApproveRemittance)
+
+UI -> Gateway: POST /ops/payment/cod/remittance/{remittanceId}/approve\n(Body: { courierId, approvedAmount, paymentMethod: 'CASH', cashierNotes })
+activate Gateway
+
+Gateway -> PaymentCtrl: POST /cod/remittance/{remittanceId}/approve
+activate PaymentCtrl
+
+PaymentCtrl -> SettleSvc: approveCashRemittance(payload, cashierId)
+activate SettleSvc
+
+SettleSvc -> PaymentDB: UPDATE cod_records SET status = 'REMITTED_TO_HUB', remitted_at = NOW(), cashier_id = $cashierId\nWHERE courier_id = $courierId AND status = 'COLLECTED_NEED_REMIT'
+activate PaymentDB
+PaymentDB --> SettleSvc: Đánh dấu tiền đã nộp vào két Hub an toàn
+deactivate PaymentDB
+
+SettleSvc -> PaymentDB: INSERT INTO cod_settlements (id, receipt_code, courier_id, amount, settled_at, status: 'COMPLETED')\nVALUES (...)
+activate PaymentDB
+PaymentDB --> SettleSvc: Tạo biên lai thu tiền hợp lệ (Mã phiếu REC-COD-7788)
+deactivate PaymentDB
+
+SettleSvc -> SettleSvc: Giải phóng công nợ bưu tá (debt = 0) và tự động gỡ khóa nợ qua ngày (Unlock Overdue COD)
+
+SettleSvc --> PaymentCtrl: SettlementResult { receiptCode: 'REC-COD-7788', amount, status: 'COMPLETED' }
+deactivate SettleSvc
+
+PaymentCtrl --> Gateway: 200 OK (SettlementResult)
+deactivate PaymentCtrl
+
+Gateway --> UI: 200 OK
+deactivate Gateway
+
+' GIAI ĐOẠN 3: HIỂN THỊ PHẢN HỒI VÀ IN PHIẾU THU TIỀN
+UI -> PrintUI: In Phiếu thu tiền COD (Phiếu thu số REC-COD-7788, Số tiền X đồng)
+activate PrintUI
+PrintUI -> PrintUI: Đẩy lệnh in phiếu thu 2 liên (Thủ quỹ lưu & Bưu tá lưu)
+deactivate PrintUI
+
+UI -> UI: Cập nhật công nợ bưu tá về 0đ: "Đã duyệt nộp tiền COD thành công cho bưu tá!"
+deactivate UI
+@enduml

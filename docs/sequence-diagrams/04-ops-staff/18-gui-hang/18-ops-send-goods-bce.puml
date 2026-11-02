@@ -1,0 +1,92 @@
+@startuml
+!theme plain
+skinparam monochrome true
+skinparam sequenceMessageAlign center
+skinparam responseMessageBelowArrow true
+skinparam maxMessageSize 140
+skinparam wrapWidth 200
+skinparam BoxPadding 8
+autonumber "<b>[00]</b>"
+
+box "Boundary Layer (Giao Diện Thiết Bị Cầm Tay PDA)" #FFFFFF
+actor "Nhân viên xuất hàng sàn kho\n(Floor Dispatch Ops)" as Ops
+boundary "SendGoodsScreen\n(apps/courier-mobile PDA)" as UI
+boundary "Gateway BFF (:3000)\n(OpsScanController)" as Gateway
+end box
+
+box "Control Layer (Điều Khiển & Xử Lý Quét Gửi Hàng)" #FFFFFF
+control "ScanController\n(:3005 scan-service)" as ScanCtrl
+control "SendGoodsProcessor\n(hub transit processor)" as SendSvc
+control "AudioFeedbackService\n(Âm thanh quét Beep)" as AudioSvc
+end box
+
+box "Entity Layer (Lưu Trữ & Cơ Sở Dữ Liệu)" #FFFFFF
+entity "PostgreSQL (scan_db)\n[scan_events & hub_inventory Table]" as ScanDB
+end box
+
+note over UI
+Tính năng hỗ trợ nhân viên vận hành thao tác bằng thiết bị di động / máy quét cầm tay PDA
+tại sàn kho để quét gửi (xuất luân chuyển) từng bao hàng hoặc kiện hàng rời sang tuyến đích
+end note
+
+' GIAI ĐOẠN 1: CHỌN LOẠI MẶT HÀNG GỬI VÀ BƯU CỤC ĐÍCH
+Ops -> UI: Mở màn hình Gửi hàng (SendGoodsScreen) trên máy PDA,\nchọn Loại bưu gửi cần chuyển: 'BAG' (Bao hàng) hoặc 'SHIPMENT' (Kiện rời),\nchọn Bưu cục đích chuyển đến (destHubCode)
+activate UI
+
+UI -> UI: Kích hoạt ống kính quét Camera / Đầu đọc Laser Barcode PDA
+
+' GIAI ĐOẠN 2: BẮN TIA QUÉT MÃ BƯU GỬI VÀ GỬI LÊN HỆ THỐNG
+loop Quét liên tục từng bao hàng hoặc kiện rời xuất kho
+    Ops -> UI: Bắn tia quét mã vạch trên bưu gửi (Mã MB-xxxx hoặc NEX-xxxx)
+
+    UI -> Gateway: POST /ops/scan/hub/send-goods\n(Headers: Idempotency-Key, Body: { itemType: 'BAG' | 'SHIPMENT', scanCode, destHubCode, operatorId })\n[submitHubScanAction]
+    activate Gateway
+
+    Gateway -> ScanCtrl: POST /hub/send-goods
+    activate ScanCtrl
+
+    ScanCtrl -> SendSvc: processSendGoods(payload)
+    activate SendSvc
+
+    alt Sai tuyến đích hoặc mã không tồn tại trong hệ thống
+        SendSvc --> ScanCtrl: 400 BadRequestException ("Sai luồng tuyến đích quy định!")
+        ScanCtrl --> Gateway: 400 Bad Request
+        Gateway --> UI: 400 Bad Request
+        UI -> AudioSvc: playScanWarningSound()
+        activate AudioSvc
+        AudioSvc --> UI: Phát âm thanh cảnh báo Bíp kéo dài (Error tone)
+        deactivate AudioSvc
+        UI -> UI: Hiển thị Banner đỏ cảnh báo: "BẮN SAI TUYẾN ĐÍCH! Không được xuất hàng này!"
+    else Đúng tuyến hợp lệ: Ghi nhận xuất gửi
+        SendSvc -> ScanDB: INSERT INTO scan_events (scan_type: 'SEND_GOODS_OUT', item_type, scan_code, origin_hub, dest_hub, operator_id, created_at)\nVALUES (...)
+        activate ScanDB
+        ScanDB --> SendSvc: Ghi nhận sự kiện thành công
+        deactivate ScanDB
+
+        SendSvc -> ScanDB: UPDATE hub_inventory SET status = 'DISPATCHED_TRANSIT', dispatched_at = NOW()\nWHERE item_code = $scanCode
+        activate ScanDB
+        ScanDB --> SendSvc: Cập nhật tồn kho bưu cục
+        deactivate ScanDB
+
+        SendSvc --> ScanCtrl: { success: true, itemCode: scanCode, status: 'DISPATCHED_TRANSIT' }
+        deactivate SendSvc
+
+        ScanCtrl --> Gateway: 200 OK
+        deactivate ScanCtrl
+
+        Gateway --> UI: 200 OK
+        deactivate Gateway
+
+        UI -> AudioSvc: playScanSuccessSound()
+        activate AudioSvc
+        AudioSvc --> UI: Phát âm thanh Ting thành công
+        deactivate AudioSvc
+
+        UI -> UI: Tăng bộ đếm sản lượng xuất gửi (+1) và thêm vào danh sách đã xuất
+    end
+end
+
+Ops -> UI: Bấm "Hoàn tất ca xuất gửi"
+UI -> UI: Hiển thị Tổng kết ca: "Đã xuất gửi thành công N kiện/bao đến bưu cục đích!"
+deactivate UI
+@enduml

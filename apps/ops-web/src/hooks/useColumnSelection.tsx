@@ -135,7 +135,7 @@ export function useColumnSelection(
         });
       }, 1200);
 
-      const msg = `✓ Đã sao chép ${values.length} giá trị cột "${label}" (dán được vào Excel)`;
+      const msg = `Đã sao chép ${values.length} giá trị cột "${label}" (dán được vào Excel)`;
       showToast(msg);
       onCopySuccess?.(values.length, colKey, label);
     },
@@ -296,7 +296,7 @@ export function useColumnSelection(
         if (activeCells.length > 0 && dragStartRef.current) {
           const colKey = dragStartRef.current.colKey;
           const label = labels[colKey] || colKey;
-          showToast(`✓ Đã bôi đen ${activeCells.length} ô cột "${label}". Nhấn Ctrl+C để sao chép`);
+          showToast(`Đã bôi đen ${activeCells.length} ô cột "${label}". Nhấn Ctrl+C để sao chép`);
         }
       }
     };
@@ -323,7 +323,7 @@ export function useColumnSelection(
         e.preventDefault();
 
         const label = (colKey && labels[colKey]) || colKey || 'cột';
-        showToast(`✓ Đã sao chép ${values.length} dòng cột "${label}" (dán được vào Excel)`);
+        showToast(`Đã sao chép ${values.length} dòng cột "${label}" (dán được vào Excel)`);
         if (colKey) {
           onCopySuccess?.(values.length, colKey, label);
         }
@@ -519,7 +519,7 @@ export function initGlobalColumnSelection() {
       if (activeCells && activeCells.length > 0 && activeTable) {
         const th = activeTable.querySelectorAll<HTMLTableCellElement>('thead th')[activeColIndex];
         const headerLabel = th ? (th.innerText || th.textContent || '').replace(/Sao chép.*$/i, '').trim() : 'cột';
-        displayGlobalToast(`✓ Đã bôi đen ${activeCells.length} ô cột "${headerLabel}". Nhấn Ctrl+C để sao chép`);
+        displayGlobalToast(`Đã bôi đen ${activeCells.length} ô cột "${headerLabel}". Nhấn Ctrl+C để sao chép`);
       }
     }
   });
@@ -544,7 +544,7 @@ export function initGlobalColumnSelection() {
       const th = activeTable.querySelectorAll<HTMLTableCellElement>('thead th')[activeColIndex];
       const headerLabel = th ? th.innerText.replace(/Sao chép.*$/i, '').trim() : 'cột';
 
-      displayGlobalToast(`✓ Đã sao chép ${values.length} dòng cột "${headerLabel}" (dán được vào Excel)`);
+      displayGlobalToast(`Đã sao chép ${values.length} dòng cột "${headerLabel}" (dán được vào Excel)`);
     }
   });
 
@@ -595,6 +595,6 @@ export function initGlobalColumnSelection() {
     }, 1200);
 
     const headerLabel = th.innerText.trim();
-    displayGlobalToast(`✓ Đã sao chép ${values.length} giá trị cột "${headerLabel}" (dán được vào Excel)`);
+    displayGlobalToast(`Đã sao chép ${values.length} giá trị cột "${headerLabel}" (dán được vào Excel)`);
   });
 }

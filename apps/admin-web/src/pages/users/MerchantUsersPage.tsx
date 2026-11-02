@@ -919,68 +919,85 @@ export function MerchantUsersPage(): React.JSX.Element {
       ) : null}
 
       {merchantsQuery.isSuccess && merchantUsers.length > 0 ? (
-        <table style={styles.table}>
-          <thead>
-            <tr>
-              <th style={styles.headerCell}>Mã merchant</th>
-              <th style={styles.headerCell}>Họ tên</th>
-              <th style={styles.headerCell}>Số điện thoại</th>
-              <th style={styles.headerCell}>CCCD</th>
-              <th style={styles.headerCell}>Khu vực</th>
-              <th style={styles.headerCell}>Hub mặc định</th>
-              <th style={styles.headerCell}>Trạng thái</th>
-              <th style={styles.headerCell}>Cập nhật</th>
-              <th style={{ ...styles.headerCell, ...styles.actionsHeaderCell }}>Hành động</th>
-            </tr>
-          </thead>
-          <tbody>
-            {merchantUsers.map((user) => {
-              const merchantProfile = profileByUsername.get(user.username);
-              const regionLabel =
-                merchantProfile?.regionLabel ??
-                (merchantProfile?.regionCode
-                  ? resolveRegionLabel(merchantProfile.regionCode)
-                  : 'Không có');
-              const defaultHubCode =
-                merchantProfile?.defaultHubCode ?? user.hubCodes[0] ?? 'Không có';
+        <div style={styles.tableWrapper}>
+          <table style={styles.table}>
+            <thead>
+              <tr>
+                <th style={styles.headerCell}>Mã merchant</th>
+                <th style={styles.headerCell}>Họ tên</th>
+                <th style={styles.headerCell}>Số điện thoại</th>
+                <th style={styles.headerCell}>CCCD</th>
+                <th style={styles.headerCell}>Khu vực</th>
+                <th style={styles.headerCell}>Hub mặc định</th>
+                <th style={styles.headerCell}>Trạng thái</th>
+                <th style={styles.headerCell}>Cập nhật</th>
+                <th style={{ ...styles.headerCell, ...styles.actionsHeaderCell }}>Hành động</th>
+              </tr>
+            </thead>
+            <tbody>
+              {merchantUsers.map((user) => {
+                const merchantProfile = profileByUsername.get(user.username);
+                const regionLabel =
+                  merchantProfile?.regionLabel ??
+                  (merchantProfile?.regionCode
+                    ? resolveRegionLabel(merchantProfile.regionCode)
+                    : 'Không có');
+                const defaultHubCode =
+                  merchantProfile?.defaultHubCode ?? user.hubCodes[0] ?? 'Không có';
 
-              return (
-                <tr key={user.id}>
-                  <td style={styles.cell}>{user.username}</td>
-                  <td style={styles.cell}>{user.displayName ?? 'Không có'}</td>
-                  <td style={styles.cell}>{user.phone ?? 'Không có'}</td>
-                  <td style={styles.cell}>{merchantProfile?.citizenId ?? 'Không có'}</td>
-                  <td style={styles.cell}>{regionLabel}</td>
-                  <td style={styles.cell}>{defaultHubCode}</td>
-                  <td style={styles.cell}>{user.status}</td>
-                  <td style={styles.cell}>{formatDateTime(user.updatedAt)}</td>
-                  <td style={{ ...styles.cell, ...styles.actionsDataCell }}>
-                    <div style={styles.tableActionsCell}>
-                      <button
-                        type="button"
-                        onClick={() => onEditUser(user)}
-                        style={styles.compactActionButton}
+                return (
+                  <tr key={user.id} className="admin-table-row">
+                    <td style={styles.idCell}>{user.username}</td>
+                    <td style={styles.cell}>{user.displayName ?? 'Không có'}</td>
+                    <td style={styles.cell}>{user.phone ?? 'Không có'}</td>
+                    <td style={styles.cell}>{merchantProfile?.citizenId ?? 'Không có'}</td>
+                    <td style={styles.cell}>{regionLabel}</td>
+                    <td style={styles.cell}>{defaultHubCode}</td>
+                    <td style={styles.cell}>
+                      <span
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          padding: '2px 8px',
+                          borderRadius: 999,
+                          fontSize: 11,
+                          fontWeight: 700,
+                          backgroundColor: user.status === 'ACTIVE' ? '#e8f7f0' : '#fee2e2',
+                          color: user.status === 'ACTIVE' ? '#127a56' : '#b91c1c',
+                        }}
                       >
-                        Sửa
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => void onToggleUserStatus(user)}
-                        style={
-                          user.status === 'ACTIVE'
-                            ? styles.compactDangerButton
-                            : styles.compactSuccessButton
-                        }
-                      >
-                        {user.status === 'ACTIVE' ? 'Vô hiệu hóa' : 'Kích hoạt lại'}
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+                        {user.status}
+                      </span>
+                    </td>
+                    <td style={styles.cell}>{formatDateTime(user.updatedAt)}</td>
+                    <td style={{ ...styles.cell, ...styles.actionsDataCell }}>
+                      <div style={styles.tableActionsCell}>
+                        <button
+                          type="button"
+                          onClick={() => onEditUser(user)}
+                          style={styles.compactActionButton}
+                        >
+                          Sửa
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => void onToggleUserStatus(user)}
+                          style={
+                            user.status === 'ACTIVE'
+                              ? styles.compactDangerButton
+                              : styles.compactSuccessButton
+                          }
+                        >
+                          {user.status === 'ACTIVE' ? 'Vô hiệu hóa' : 'Kích hoạt lại'}
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
       ) : null}
     </div>
   );
@@ -1049,20 +1066,61 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: 13,
     fontWeight: 600,
   },
+  tableWrapper: {
+    width: '100%',
+    maxWidth: '100%',
+    overflowX: 'auto',
+    WebkitOverflowScrolling: 'touch',
+    background: 'var(--admin-surface, #ffffff)',
+    borderRadius: 8,
+    border: '1px solid var(--admin-border, #dbe2f0)',
+    boxShadow: '0 1px 3px rgba(16, 37, 72, 0.04)',
+    marginTop: 12,
+    boxSizing: 'border-box',
+  },
   table: {
     width: '100%',
-    borderCollapse: 'collapse',
-    marginTop: 12,
+    borderCollapse: 'separate',
+    borderSpacing: 0,
+    margin: 0,
+    background: 'transparent',
+    border: 'none',
   },
   headerCell: {
     textAlign: 'left',
-    padding: '8px 10px',
-    borderBottom: '1px solid var(--admin-border)',
+    padding: '10px 12px',
+    backgroundColor: 'var(--admin-surface-soft, #f8faff)',
+    color: 'var(--admin-navy, #1f2b6f)',
+    fontSize: 12,
+    fontWeight: 800,
+    textTransform: 'uppercase',
+    letterSpacing: '0.04em',
+    borderBottom: '1px solid #cbd5e1',
+    whiteSpace: 'nowrap',
+    position: 'sticky',
+    top: 0,
+    zIndex: 1,
   },
   cell: {
-    padding: '8px 10px',
-    borderBottom: '1px solid var(--admin-border)',
-    verticalAlign: 'top',
+    padding: '8px 12px',
+    borderBottom: '1px solid var(--admin-border, #dbe2f0)',
+    verticalAlign: 'middle',
+    fontSize: 13,
+    color: 'var(--admin-text, #102548)',
+    whiteSpace: 'nowrap',
+  },
+  idCell: {
+    padding: '8px 12px',
+    borderBottom: '1px solid var(--admin-border, #dbe2f0)',
+    verticalAlign: 'middle',
+    fontSize: 12,
+    fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
+    fontWeight: 700,
+    color: 'var(--admin-primary, #0052cc)',
+    userSelect: 'text',
+    WebkitUserSelect: 'text',
+    cursor: 'text',
+    whiteSpace: 'nowrap',
   },
   actionsCell: {
     display: 'flex',

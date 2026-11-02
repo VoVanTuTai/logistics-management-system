@@ -1,0 +1,74 @@
+@startuml
+!theme plain
+skinparam monochrome true
+skinparam sequenceMessageAlign center
+skinparam responseMessageBelowArrow true
+skinparam maxMessageSize 140
+skinparam wrapWidth 200
+skinparam BoxPadding 8
+autonumber "<b>[00]</b>"
+
+box "Boundary Layer (Giao Diện & Gateway)" #FFFFFF
+actor "Khách hàng cá nhân\n(Customer User)" as Customer
+boundary "EstimatePriceModal / Form\n(apps/guest-web & Mobile)" as UI
+boundary "Gateway BFF (:3000)\n(CustomerController)" as Gateway
+end box
+
+box "Control Layer (Điều Khiển & Động Cơ Tính Cước)" #FFFFFF
+control "QuoteController\n(:3012 pricing-service)" as QuoteCtrl
+control "PricingService\n(Core Rating Engine)" as PriceSvc
+end box
+
+box "Entity Layer (Thực Thể & Báo Giá)" #FFFFFF
+entity "PricingQuote\n(Domain Aggregate)" as QuoteEntity
+end box
+
+' GIAI ĐOẠN 1: NHẬP THÔNG TIN VÀ KIỂM TRA ĐẦU VÀO
+Customer -> UI: Nhập Tỉnh/Quận gửi, Tỉnh/Quận nhận, Cân nặng (kg),\nKích thước (D-R-C cm), Chọn gói dịch vụ & bấm "Ước tính cước"
+activate UI
+
+alt Lỗi dữ liệu đầu vào (Trọng lượng <= 0 hoặc thiếu địa chỉ)
+    UI -> UI: Kiểm tra !weightKg || weightKg <= 0 || !destProvince\nHiển thị cảnh báo lỗi hợp lệ dữ liệu trên màn hình
+else Dữ liệu hợp lệ: Gửi yêu cầu tính cước & thời gian giao
+    UI -> Gateway: POST /customer/pricing/quotes\n(Bearer accessToken, Body: { originProvince, destProvince, weightKg, length, width, height, serviceType })
+    activate Gateway
+
+    Gateway -> QuoteCtrl: POST /quotes (Body: PricingQuoteInput)
+    activate QuoteCtrl
+
+    QuoteCtrl -> PriceSvc: quote(input)
+    activate PriceSvc
+
+    ' GIAI ĐOẠN 2: THUẬT TOÁN TÍNH CƯỚC IATA & THỜI GIAN GIAO SLA
+    PriceSvc -> PriceSvc: normalizeProvince(originProvince)\nnormalizeProvince(destProvince)
+
+    PriceSvc -> PriceSvc: actualWeight = normalizeNonNegativeNumber(weightKg)\nvolumetricWeight = (length * width * height) / 6000\nchargeableWeight = max(actualWeight, volumetricWeight)
+
+    PriceSvc -> PriceSvc: resolveZone(origin, dest) -> Vùng nội tỉnh / Liên tỉnh / Trục Bắc Nam
+    PriceSvc -> PriceSvc: calculateBaseFee(serviceType, chargeableWeight, zone)\n(STANDARD, EXPRESS, SAME_DAY)
+
+    PriceSvc -> PriceSvc: calculateSlaDeliveryTime(zone, serviceType):\n- STANDARD: 48h - 72h\n- EXPRESS: 24h - 36h\n- SAME_DAY: 6h - 12h
+
+    ' GIAI ĐOẠN 3: TẠO AGGREGATE PRICING QUOTE & TRẢ VỀ CLIENT
+    PriceSvc -> QuoteEntity: Khởi tạo PricingQuote {\n  quoteId, totalFee, chargeableWeight,\n  breakdown, estimatedDeliveryHours, slaRange\n}
+    activate QuoteEntity
+    QuoteEntity --> PriceSvc: PricingQuote instance
+    deactivate QuoteEntity
+
+    PriceSvc --> QuoteCtrl: PricingQuote
+    deactivate PriceSvc
+
+    QuoteCtrl --> Gateway: 200 OK (PricingQuoteDto)
+    deactivate QuoteCtrl
+
+    Gateway --> UI: 200 OK (PricingQuoteDto)
+    deactivate Gateway
+
+    ' GIAI ĐOẠN 4: HIỂN THỊ KẾT QUẢ VÀ THỜI GIAN DỰ KIẾN
+    UI -> UI: Render chi tiết cước phí bưu phẩm (Cước chính, Phụ phí IATA)\n& Thời gian dự kiến phát hàng (SLA Delivery Banner)
+    UI -> UI: Hiển thị nút "Tạo đơn với cước này" (Chuyển tiếp thông tin sang CreateOrderPage)
+end
+
+deactivate UI
+@enduml
+

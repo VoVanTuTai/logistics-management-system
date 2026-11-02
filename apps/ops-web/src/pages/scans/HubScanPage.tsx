@@ -1,5 +1,16 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { Package, ArrowDownToLine, ArrowUpFromLine } from 'lucide-react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  Package,
+  ArrowDownToLine,
+  ArrowUpFromLine,
+  AlertTriangle,
+  ScanBarcode,
+  Lock,
+  CheckCircle2,
+  AlertCircle,
+  Info,
+  ArrowRight,
+} from 'lucide-react';
 
 import {
   useInboundScanMutation,
@@ -11,6 +22,8 @@ import type {
   HubScanResultDto,
   HubScanType,
 } from '../../features/scans/scans.types';
+import { shipmentsClient } from '../../features/shipments/shipments.client';
+import { useHubsQuery } from '../../features/masterdata/masterdata.hooks';
 import { getErrorMessage } from '../../services/api/errors';
 import { useAuthStore } from '../../store/authStore';
 import { createIdempotencyKey } from '../../utils/idempotency';
@@ -28,20 +41,29 @@ function getAudioCtx(): AudioContext {
   return audioCtxRef.current;
 }
 
-function playBeep(type: 'success' | 'error') {
+function playBeep(type: 'success' | 'error' | 'misrouted') {
   try {
     const ctx = getAudioCtx();
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
     osc.connect(gain);
     gain.connect(ctx.destination);
-    gain.gain.value = 0.18;
+    gain.gain.value = 0.2;
 
     if (type === 'success') {
       osc.frequency.value = 880;
       osc.type = 'sine';
       osc.start();
       osc.stop(ctx.currentTime + 0.12);
+    } else if (type === 'misrouted') {
+      // 2-tone alarm buzzer: frequency ramp down from 700Hz to 260Hz for misrouted sorting
+      osc.frequency.setValueAtTime(700, ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(260, ctx.currentTime + 0.45);
+      osc.type = 'sawtooth';
+      gain.gain.setValueAtTime(0.3, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.45);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.45);
     } else {
       osc.frequency.value = 300;
       osc.type = 'square';
@@ -62,6 +84,18 @@ interface ScanHistoryItem {
   timestamp: string;
   result: HubScanResultDto;
   isNew: boolean;
+  isMisrouted?: boolean;
+  targetHubCode?: string;
+  targetHubName?: string;
+}
+
+/* ─── Misrouted Alert Model ─── */
+interface MisroutedAlertData {
+  shipmentCode: string;
+  destinationHubCode: string;
+  destinationHubName: string;
+  currentHubCode: string;
+  receiverAddress?: string;
 }
 
 /* ─── Toast model ─── */
@@ -76,8 +110,52 @@ let toastIdCounter = 0;
 export function HubScanPage(): React.JSX.Element {
   const session = useAuthStore((state) => state.session);
   const accessToken = session?.tokens.accessToken ?? null;
-  const assignedHubCodes = session?.user.hubCodes ?? [];
-  const defaultLocationCode = assignedHubCodes[0] ?? '';
+  const isSystemAdmin = (session?.user.roles ?? []).some(
+    (r) => r === 'SYSTEM_ADMIN' || r === 'HQ_OPS' || r === 'HQ_MANAGER',
+  );
+  const assignedHubCodes = useMemo(
+    () => (session?.user.hubCodes ?? []).map((c) => c.trim().toUpperCase()).filter(Boolean),
+    [session?.user.hubCodes],
+  );
+
+  // Load official hubs list and scope to user permissions
+  const hubsQuery = useHubsQuery(accessToken, {});
+  const availableHubs = useMemo(() => {
+    const rawList =
+      hubsQuery.data && hubsQuery.data.length > 0
+        ? hubsQuery.data
+        : [
+            { code: 'HCM-001', name: 'Bưu cục Tân Bình / TP.HCM' },
+            { code: '07913W001', name: 'Bưu cục Phường 13 - Tân Bình' },
+            { code: '07901W001', name: 'Bưu cục Phường Bến Thành / Q1' },
+            { code: '003079B001', name: 'Kho Tỉnh TP. Hồ Chí Minh' },
+            { code: 'HN-001', name: 'Bưu cục Đống Đa / Hà Nội' },
+            { code: '00101W001', name: 'Bưu cục Tràng Tiền / Hoàn Kiếm' },
+            { code: '001001B001', name: 'Kho Tỉnh Hà Nội' },
+            { code: 'DN-001', name: 'Bưu cục Hải Châu / Đà Nẵng' },
+          ];
+
+    if (!isSystemAdmin && assignedHubCodes.length > 0) {
+      const allowedSet = new Set(assignedHubCodes);
+      const filtered = rawList.filter((h) => allowedSet.has(h.code.trim().toUpperCase()));
+      if (filtered.length > 0) return filtered;
+      return assignedHubCodes.map((code) => ({ code, name: `Bưu cục ${code}` }));
+    }
+
+    return rawList;
+  }, [hubsQuery.data, isSystemAdmin, assignedHubCodes]);
+
+  const availableHubsMap = useMemo(() => {
+    const map = new Map<string, string>();
+    availableHubs.forEach((h) => map.set(h.code.toUpperCase(), h.name));
+    return map;
+  }, [availableHubs]);
+
+  const defaultLocationCode = useMemo(() => {
+    if (assignedHubCodes.length > 0) return assignedHubCodes[0];
+    if (availableHubs.length > 0) return availableHubs[0].code;
+    return 'HCM-001';
+  }, [assignedHubCodes, availableHubs]);
 
   const pickupMutation = usePickupScanMutation(accessToken);
   const inboundMutation = useInboundScanMutation(accessToken);
@@ -89,8 +167,16 @@ export function HubScanPage(): React.JSX.Element {
   const [note, setNote] = useState('');
   const [scanHistory, setScanHistory] = useState<ScanHistoryItem[]>([]);
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
+  const [misroutedAlert, setMisroutedAlert] = useState<MisroutedAlertData | null>(null);
 
   const shipmentInputRef = useRef<HTMLInputElement>(null);
+
+  // Sync default locationCode when availableHubs loaded
+  useEffect(() => {
+    if (availableHubs.length > 0 && (!locationCode || !availableHubs.some((h) => h.code === locationCode))) {
+      setLocationCode(defaultLocationCode);
+    }
+  }, [availableHubs, defaultLocationCode, locationCode]);
 
   // Auto-focus shipment code input on mount & after each scan
   useEffect(() => {
@@ -152,7 +238,7 @@ export function HubScanPage(): React.JSX.Element {
     }
 
     if (!trimmedLocation) {
-      addToast('error', 'Vui lòng nhập mã vị trí Hub.');
+      addToast('error', 'Vui lòng chọn bưu cục quét.');
       playBeep('error');
       return;
     }
@@ -166,6 +252,40 @@ export function HubScanPage(): React.JSX.Element {
     };
 
     try {
+      // ─── 1. Kiểm tra Bắn Nhầm Tuyến / Sai Đích Đến (Misrouted Sorting Detection) ───
+      let isMisrouted = false;
+      let targetHubCode = '';
+      let targetHubName = '';
+      let receiverAddr = '';
+
+      if (scanType === 'INBOUND') {
+        try {
+          const listRes = await shipmentsClient.listPage(accessToken, {
+            shipmentCode: trimmedCode,
+            limit: 1,
+          });
+          const matchedShipment =
+            listRes.items.find((s) => s.shipmentCode.toUpperCase() === trimmedCode) ||
+            listRes.items[0];
+
+          if (matchedShipment) {
+            targetHubCode = (
+              matchedShipment.destinationHubCode ||
+              matchedShipment.receiverHubCode ||
+              ''
+            ).trim().toUpperCase();
+            receiverAddr = matchedShipment.receiverAddress || '';
+
+            if (targetHubCode && targetHubCode !== trimmedLocation.toUpperCase()) {
+              isMisrouted = true;
+              targetHubName = availableHubsMap.get(targetHubCode) || targetHubCode;
+            }
+          }
+        } catch {
+          // Gracefully continue with scan
+        }
+      }
+
       let result: HubScanResultDto;
 
       if (scanType === 'PICKUP') {
@@ -184,17 +304,36 @@ export function HubScanPage(): React.JSX.Element {
         timestamp: new Date().toISOString(),
         result,
         isNew: true,
+        isMisrouted,
+        targetHubCode: isMisrouted ? targetHubCode : undefined,
+        targetHubName: isMisrouted ? targetHubName : undefined,
       };
 
       setScanHistory((prev) => [newItem, ...prev]);
       setShipmentCode('');
       setNote('');
-      addToast('success', `✓ ${formatScanTypeLabel(scanType)} mã ${trimmedCode} thành công.`);
-      playBeep('success');
+
+      if (isMisrouted) {
+        playBeep('misrouted');
+        setMisroutedAlert({
+          shipmentCode: trimmedCode,
+          destinationHubCode: targetHubCode,
+          destinationHubName: targetHubName,
+          currentHubCode: trimmedLocation,
+          receiverAddress: receiverAddr,
+        });
+        addToast(
+          'error',
+          `Cảnh báo phân loại: Đơn ${trimmedCode} có đích phát là [${targetHubCode}], khác bưu cục hiện tại [${trimmedLocation}]!`,
+        );
+      } else {
+        playBeep('success');
+        addToast('success', `Đã ghi nhận ${formatScanTypeLabel(scanType).toLowerCase()} mã ${trimmedCode}.`);
+      }
       focusShipmentInput();
     } catch (error) {
       const msg = getErrorMessage(error);
-      addToast('error', `✗ Quét thất bại mã ${trimmedCode}: ${msg}`);
+      addToast('error', `Quét thất bại mã ${trimmedCode}: ${msg}`);
       playBeep('error');
       focusShipmentInput();
     }
@@ -210,7 +349,13 @@ export function HubScanPage(): React.JSX.Element {
         {toasts.map((toast) => (
           <div key={toast.id} className={`hub-scan-toast hub-scan-toast--${toast.type}`}>
             <span className="hub-scan-toast__icon">
-              {toast.type === 'success' ? '✓' : toast.type === 'error' ? '✗' : 'ℹ'}
+              {toast.type === 'success' ? (
+                <CheckCircle2 size={16} />
+              ) : toast.type === 'error' ? (
+                <AlertCircle size={16} />
+              ) : (
+                <Info size={16} />
+              )}
             </span>
             <span className="hub-scan-toast__text">{toast.text}</span>
             <button
@@ -229,10 +374,7 @@ export function HubScanPage(): React.JSX.Element {
       <header className="hub-scan-header">
         <div className="hub-scan-header__info">
           <h2 className="hub-scan-header__title">
-            <svg viewBox="0 0 24 24" className="hub-scan-header__icon" aria-hidden="true">
-              <rect x="3" y="4" width="18" height="16" rx="2" fill="none" stroke="currentColor" strokeWidth="1.8"/>
-              <path d="M7 8h2v8H7zM10 8h1v8h-1zM12 8h2v8h-2zM15 8h1v8h-1zM17 8h1v8h-1z" fill="currentColor"/>
-            </svg>
+            <ScanBarcode size={24} className="hub-scan-header__icon" aria-hidden="true" />
             Vận hành quét Hub
           </h2>
           <p className="hub-scan-header__desc">
@@ -250,6 +392,39 @@ export function HubScanPage(): React.JSX.Element {
           </div>
         </div>
       </header>
+
+      {/* ─── Misrouted Sorting Alarm Banner ─── */}
+      {misroutedAlert && (
+        <div className="hub-scan-misrouted-banner" role="alert">
+          <div className="hub-scan-misrouted-banner__icon">
+            <AlertTriangle size={24} />
+          </div>
+          <div className="hub-scan-misrouted-banner__content">
+            <div className="hub-scan-misrouted-banner__title">
+              Cảnh báo phân loại: Sai đích đến của kiện hàng
+            </div>
+            <div className="hub-scan-misrouted-banner__desc">
+              Kiện hàng <strong>{misroutedAlert.shipmentCode}</strong> có bưu cục đích phát là{' '}
+              <span className="hub-scan-misrouted-target">
+                {misroutedAlert.destinationHubCode} ({misroutedAlert.destinationHubName})
+              </span>
+              {misroutedAlert.receiverAddress ? ` [Địa chỉ: ${misroutedAlert.receiverAddress}]` : ''},
+              nhưng đang quét INBOUND tại bưu cục sở tại <strong>{misroutedAlert.currentHubCode}</strong>!
+            </div>
+            <div className="hub-scan-misrouted-banner__action">
+              <strong>Chỉ dẫn nghiệp vụ:</strong> Vui lòng tách riêng kiện hàng này sang lồng hàng chuyển tiếp, <strong>không xếp vào kệ phát</strong> của bưu tá bưu cục này!
+            </div>
+          </div>
+          <button
+            type="button"
+            className="hub-scan-misrouted-banner__dismiss"
+            onClick={() => setMisroutedAlert(null)}
+            title="Đóng cảnh báo"
+          >
+            ×
+          </button>
+        </div>
+      )}
 
       {/* ─── Scan Form ─── */}
       <form className="hub-scan-form" onSubmit={(e) => void onSubmit(e)} autoComplete="off">
@@ -307,17 +482,31 @@ export function HubScanPage(): React.JSX.Element {
 
           <div className="hub-scan-form__group hub-scan-form__group--location">
             <label className="hub-scan-form__label" htmlFor="locationCodeInput">
-              Mã vị trí Hub <span className="hub-scan-form__required">*</span>
+              Bưu cục quét <span className="hub-scan-form__required">*</span>
             </label>
-            <input
-              id="locationCodeInput"
-              type="text"
-              className="hub-scan-input"
-              placeholder="VD: HUB-HCM-001"
-              value={locationCode}
-              onChange={(e) => setLocationCode(e.target.value)}
-              disabled={isSubmitting}
-            />
+            {!isSystemAdmin && assignedHubCodes.length <= 1 ? (
+              <div className="hub-scan-location-locked">
+                <Lock size={13} className="hub-scan-location-locked__icon" aria-hidden="true" />
+                <span className="hub-scan-location-locked__code">{locationCode}</span>
+                <span className="hub-scan-location-locked__name">
+                  {availableHubsMap.get(locationCode) || 'Bưu cục sở tại'}
+                </span>
+              </div>
+            ) : (
+              <select
+                id="locationCodeInput"
+                className="hub-scan-input hub-scan-select"
+                value={locationCode}
+                onChange={(e) => setLocationCode(e.target.value)}
+                disabled={isSubmitting}
+              >
+                {availableHubs.map((h) => (
+                  <option key={h.code} value={h.code}>
+                    {h.code} - {h.name}
+                  </option>
+                ))}
+              </select>
+            )}
           </div>
 
           <div className="hub-scan-form__group hub-scan-form__group--note">
@@ -347,9 +536,7 @@ export function HubScanPage(): React.JSX.Element {
                 </>
               ) : (
                 <>
-                  <svg viewBox="0 0 24 24" aria-hidden="true" style={{ width: 18, height: 18 }}>
-                    <path d="M5 12h14M12 5l7 7-7 7" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
+                  <ArrowRight size={16} aria-hidden="true" />
                   Gửi quét
                 </>
               )}
@@ -380,10 +567,7 @@ export function HubScanPage(): React.JSX.Element {
 
         {scanHistory.length === 0 ? (
           <div className="hub-scan-history__empty">
-            <svg viewBox="0 0 24 24" className="hub-scan-history__empty-icon" aria-hidden="true">
-              <rect x="3" y="4" width="18" height="16" rx="2" fill="none" stroke="currentColor" strokeWidth="1.5"/>
-              <path d="M7 8h2v8H7zM10 8h1v8h-1zM12 8h2v8h-2zM15 8h1v8h-1zM17 8h1v8h-1z" fill="currentColor" opacity="0.2"/>
-            </svg>
+            <ScanBarcode size={36} className="hub-scan-history__empty-icon" strokeWidth={1.5} aria-hidden="true" />
             <p>Chưa có kết quả quét nào. Hãy quét mã vận đơn ở form phía trên.</p>
           </div>
         ) : (
@@ -397,6 +581,11 @@ export function HubScanPage(): React.JSX.Element {
                   <span className={`hub-scan-badge hub-scan-badge--${item.scanType.toLowerCase()}`}>
                     {formatScanTypeLabel(item.scanType)}
                   </span>
+                  {item.isMisrouted && (
+                    <span className="hub-scan-badge hub-scan-badge--misrouted" style={{ marginLeft: 6, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                      <AlertTriangle size={11} /> Sai đích ({item.targetHubCode})
+                    </span>
+                  )}
                 </div>
                 <div className="hub-scan-history__item-info">
                   <span className="hub-scan-history__item-code">{item.shipmentCode}</span>
@@ -405,7 +594,7 @@ export function HubScanPage(): React.JSX.Element {
                   </span>
                 </div>
                 <div className="hub-scan-history__item-status">
-                  <span className="hub-scan-history__item-ok">✓ Thành công</span>
+                  <span className="hub-scan-history__item-ok">Thành công</span>
                 </div>
               </div>
             ))}

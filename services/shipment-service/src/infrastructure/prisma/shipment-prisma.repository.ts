@@ -14,9 +14,41 @@ import type {
   ShipmentListPage,
   UpdateShipmentInput,
 } from '../../domain/entities/shipment.entity';
-import type { ShipmentCurrentStatus } from '../../domain/entities/shipment-status.entity';
+import {
+  SHIPMENT_CURRENT_STATUSES,
+  type ShipmentCurrentStatus,
+} from '../../domain/entities/shipment-status.entity';
 import { ShipmentRepository } from '../../domain/repositories/shipment.repository';
 import { PrismaService } from './prisma.service';
+
+const VALID_PRISMA_STATUS_SET = new Set<string>(SHIPMENT_CURRENT_STATUSES);
+
+const PRISMA_STATUS_ALIASES: Record<string, PrismaShipmentCurrentStatus> = {
+  PICKED_UP: 'PICKUP_COMPLETED',
+  INBOUND_AT_HUB: 'SCAN_INBOUND',
+  OUTBOUND_FROM_HUB: 'SCAN_OUTBOUND',
+  OUT_FOR_DELIVERY: 'SEND_GOODS',
+  DELIVERING: 'SEND_GOODS',
+  BAGGED: 'IN_TRANSIT',
+  PENDING: 'CREATED',
+};
+
+function resolvePrismaShipmentStatus(
+  raw?: string | null,
+): PrismaShipmentCurrentStatus | undefined {
+  if (!raw) return undefined;
+  const upper = raw.trim().toUpperCase();
+  if (!upper || upper === 'ALL' || upper === 'TAT_CA') {
+    return undefined;
+  }
+  if (VALID_PRISMA_STATUS_SET.has(upper)) {
+    return upper as PrismaShipmentCurrentStatus;
+  }
+  if (PRISMA_STATUS_ALIASES[upper]) {
+    return PRISMA_STATUS_ALIASES[upper];
+  }
+  return undefined;
+}
 
 const ARRIVED_UNSIGNED_STATUSES: PrismaShipmentCurrentStatus[] = [
   'MANIFEST_RECEIVED',
@@ -316,8 +348,11 @@ export class ShipmentPrismaRepository extends ShipmentRepository {
     const externalOrderId = normalizeString(filters.externalOrderId);
     const externalOrderCode = normalizeString(filters.externalOrderCode);
 
-    if (status) {
-      where.currentStatus = status as PrismaShipmentCurrentStatus;
+    const resolvedStatus = resolvePrismaShipmentStatus(status);
+    if (resolvedStatus) {
+      where.currentStatus = resolvedStatus;
+    } else if (status && !['ALL', 'TAT_CA'].includes(status.trim().toUpperCase())) {
+      where.code = '__NO_MATCHING_STATUS__';
     }
 
     if (createdByUserId) {

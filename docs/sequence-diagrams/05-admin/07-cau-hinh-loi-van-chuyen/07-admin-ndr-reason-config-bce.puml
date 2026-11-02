@@ -1,0 +1,70 @@
+@startuml
+!theme plain
+skinparam monochrome true
+skinparam sequenceMessageAlign center
+skinparam responseMessageBelowArrow true
+skinparam maxMessageSize 140
+skinparam wrapWidth 200
+skinparam BoxPadding 8
+autonumber "<b>[00]</b>"
+
+box "Boundary Layer (Giao Diện & Cổng Kết Nối)" #FFFFFF
+actor "Quản trị viên hệ thống\n(System Admin)" as Admin
+boundary "NdrReasonManagementPage\n(apps/admin-web)" as UI
+boundary "Gateway BFF (:3000)\n(AdminMasterdataController)" as Gateway
+boundary "CourierMobile & OpsWeb\n(Đồng bộ danh mục bưu phẩm)" as ClientApps
+end box
+
+box "Control Layer (Điều Khiển & Danh Mục Sự Cố Giao Hàng)" #FFFFFF
+control "MasterdataController\n(:3001 masterdata-service)" as MasterCtrl
+control "NdrReasonConfigService\n(exception catalog service)" as NdrConfigSvc
+end box
+
+box "Entity Layer (Lưu Trữ & Cơ Sở Dữ Liệu)" #FFFFFF
+entity "PostgreSQL (masterdata_db)\n[ndr_reasons Table]" as MasterDB
+end box
+
+' GIAI ĐOẠN 1: THIẾT LẬP MÃ SỰ CỐ GIAO HÀNG (NDR REASON) MỚI
+Admin -> UI: Truy cập màn hình Cấu hình lỗi vận chuyển (/masterdata/ndr-reasons),\nbấm nút "Thêm mã lý do thất bại mới" (handleCreateNdrReason)
+activate UI
+
+Admin -> UI: Nhập tham số danh mục sự cố phát hàng:\n- Mã lỗi (code, ví dụ: 'CUSTOMER_REJECTED_DAMAGED')\n- Tên hiển thị (name: 'Khách từ chối nhận do hộp móp vỡ')\n- Phân nhóm (category: 'CUSTOMER' | 'ADDRESS' | 'COURIER' | 'SYSTEM')\n- Cho phép hẹn phát lại (allowReschedule: true / false)\n- Cho phép kích hoạt chuyển hoàn ngay (allowReturn: true / false)\n- Thứ tự ưu tiên hiển thị (sortOrder: 10)
+
+Admin -> UI: Bấm nút "Lưu mã lỗi vận chuyển" (handleSaveNdrReason)
+
+' GIAI ĐOẠN 2: LƯU TRỮ VÀO CƠ SỞ DỮ LIỆU DÙNG CHUNG TOÀN MẠNG LƯỚI
+UI -> Gateway: POST /admin/masterdata/ndr-reasons\n(Headers: Bearer accessToken, Body: NdrReasonWriteInput)
+activate Gateway
+
+Gateway -> MasterCtrl: POST /ndr-reasons
+activate MasterCtrl
+
+MasterCtrl -> NdrConfigSvc: createNdrReason(input)
+activate NdrConfigSvc
+
+NdrConfigSvc -> MasterDB: INSERT INTO ndr_reasons (id, code, name, category, description, allow_reschedule, allow_return, sort_order, is_active, created_at)\nVALUES (...)
+activate MasterDB
+MasterDB --> NdrConfigSvc: Lưu bản ghi mã lỗi thành công
+deactivate MasterDB
+
+NdrConfigSvc --> MasterCtrl: NdrReasonDto { id, code, name, category, allowReschedule, allowReturn, isActive: true }
+deactivate NdrConfigSvc
+
+MasterCtrl --> Gateway: 201 Created (NdrReasonDto)
+deactivate MasterCtrl
+
+Gateway --> UI: 201 Created
+deactivate Gateway
+
+' Đồng bộ danh mục sang các ứng dụng vệ tinh
+Gateway -> ClientApps: Invalidate cache danh mục lý do giao thất bại (Cache Evict: 'ndr_reasons')
+activate ClientApps
+ClientApps --> Gateway: Xác nhận làm mới danh mục trên ứng dụng Shipper & Ops
+deactivate ClientApps
+
+' GIAI ĐOẠN 3: HIỂN THỊ PHẢN HỒI THÀNH CÔNG TRÊN BẢNG CẤU HÌNH
+UI -> UI: Render dòng mã lỗi mới vào Bảng danh mục sự cố:\n- Mã: CUSTOMER_REJECTED_DAMAGED\n- Nhóm: KHÁCH HÀNG (CUSTOMER)\n- Cho phép phát lại: [Có] | Cho phép hoàn: [Có]\n- Trạng thái: Badge xanh "HOẠT ĐỘNG"
+
+UI -> UI: Hiển thị Toast thông báo: "Đã thêm mã lý do sự cố giao hàng mới thành công!"
+deactivate UI
+@enduml

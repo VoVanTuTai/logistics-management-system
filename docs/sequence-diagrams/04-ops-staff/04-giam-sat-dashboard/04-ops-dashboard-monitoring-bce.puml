@@ -1,0 +1,69 @@
+@startuml
+!theme plain
+skinparam monochrome true
+skinparam sequenceMessageAlign center
+skinparam responseMessageBelowArrow true
+skinparam maxMessageSize 140
+skinparam wrapWidth 200
+skinparam BoxPadding 8
+autonumber "<b>[00]</b>"
+
+box "Boundary Layer (Giao Diện & Cổng Kết Nối)" #FFFFFF
+actor "Nhân viên vận hành\n(Ops Staff User)" as Ops
+boundary "DashboardPage\n(apps/ops-web)" as UI
+boundary "Gateway BFF (:3000)\n(OpsReportingController)" as Gateway
+end box
+
+box "Control Layer (Điều Khiển & Thống Kê Chỉ Số)" #FFFFFF
+control "DashboardFiltersForm\n(React Query hook)" as FormHook
+control "ReportingController\n(:3009 reporting-service)" as ReportCtrl
+control "MetricsService\n(aggregation service)" as MetricsSvc
+end box
+
+box "Entity Layer (Lưu Trữ & Cơ Sở Dữ Liệu)" #FFFFFF
+entity "PostgreSQL (reporting_db)\n[daily_metrics & kpi_snapshots]" as ReportDB
+end box
+
+' GIAI ĐOẠN 1: MỞ TRANG HOẶC THAY ĐỔI BỘ LỌC GIÁM SÁT
+Ops -> UI: Truy cập màn hình Giám sát vận hành (/dashboard)\nhoặc chọn khoảng ngày (fromDate, toDate), mã bưu cục (hubCode)
+activate UI
+
+UI -> FormHook: useDashboardKpisQuery({ hubCode, fromDate, toDate })
+activate FormHook
+
+FormHook -> Gateway: GET /ops/reporting/kpi/summary?hubCode={code}&fromDate={from}&toDate={to}\n(Headers: Bearer accessToken)
+activate Gateway
+
+' GIAI ĐOẠN 2: TẬP HỢP DỮ LIỆU VẬN HÀNH TẠI REPORTING SERVICE
+Gateway -> ReportCtrl: GET /kpi/summary
+activate ReportCtrl
+
+ReportCtrl -> MetricsSvc: calculateHubKpis(queryFilters)
+activate MetricsSvc
+
+MetricsSvc -> ReportDB: SELECT SUM(shipments_created) AS shipmentsCreated,\n       SUM(pickups_completed) AS pickupsCompleted,\n       SUM(deliveries_delivered) AS deliveriesDelivered,\n       SUM(deliveries_failed) AS deliveriesFailed,\n       SUM(ndr_created) AS ndrCreated,\n       SUM(scans_inbound) AS scansInbound,\n       SUM(scans_outbound) AS scansOutbound\nFROM daily_metrics WHERE hub_code = $hubCode AND metric_date BETWEEN $from AND $to
+activate ReportDB
+ReportDB --> MetricsSvc: Dữ liệu tổng hợp chỉ số vận hành
+deactivate ReportDB
+
+MetricsSvc -> MetricsSvc: Tính toán tỷ lệ giao thành công: successRate = delivered / (delivered + failed)\nvà tỷ lệ sự cố: failureRate = failed / attempts
+
+MetricsSvc --> ReportCtrl: DashboardKpiDto { shipmentsCreated, pickupsCompleted, deliveriesDelivered, deliveriesFailed, ndrCreated, scansInbound, scansOutbound, successRate }
+deactivate MetricsSvc
+
+ReportCtrl --> Gateway: 200 OK (DashboardKpiDto)
+deactivate ReportCtrl
+
+Gateway --> FormHook: 200 OK (DashboardKpiDto)
+deactivate Gateway
+
+FormHook --> UI: Cập nhật dữ liệu KPIs thời gian thực
+deactivate FormHook
+
+' GIAI ĐOẠN 3: HIỂN THỊ TRỰC QUAN HÓA TRÊN DASHBOARD
+UI -> UI: Render Thẻ chỉ số tổng quan (KPI Summary Cards):\n- Tổng đơn tạo mới (shipmentsCreated)\n- Lấy hàng hoàn tất (pickupsCompleted)\n- Giao hàng thành công (deliveriesDelivered)\n- Sự cố giao hàng (ndrCreated)\n- Tỷ lệ hoàn thành (successRate %)
+
+UI -> UI: Render Biểu đồ xu hướng vận hành (DashboardTrendChart) &\nBiểu đồ cơ cấu sản lượng theo trạng thái (DashboardPieChart)
+
+deactivate UI
+@enduml

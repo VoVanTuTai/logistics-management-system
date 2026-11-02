@@ -1,0 +1,86 @@
+@startuml
+!theme plain
+skinparam monochrome true
+skinparam sequenceMessageAlign center
+skinparam responseMessageBelowArrow true
+skinparam maxMessageSize 140
+skinparam wrapWidth 200
+skinparam BoxPadding 8
+autonumber "<b>[00]</b>"
+
+box "Boundary Layer (Giao Diện Web / Thiết Bị Di Động PDA)" #FFFFFF
+actor "Nhân viên điều phối phát\n(Ops Delivery Dispatcher)" as Ops
+boundary "BranchDeliveryDispatchPage / DeliveryDispatchScreen\n(apps/ops-web & courier-mobile PDA)" as UI
+boundary "Gateway BFF (:3000)\n(OpsDeliveryController)" as Gateway
+boundary "CourierTaskListScreen\n(apps/courier-mobile)" as CourierApp
+end box
+
+box "Control Layer (Điều Khiển & Khởi Tạo Chuyến Phát)" #FFFFFF
+control "DeliveryController\n(:3007 delivery-service)" as DeliveryCtrl
+control "DeliveryTaskService\n(domain service)" as TaskSvc
+control "TrackingEventService (:3006)\n(Audit Trail Emitter)" as TrackSvc
+end box
+
+box "Entity Layer (Lưu Trữ & Cơ Sở Dữ Liệu)" #FFFFFF
+entity "PostgreSQL (delivery_db)\n[delivery_tasks & shipments Table]" as DeliveryDB
+end box
+
+note over UI
+Tính năng hỗ trợ điều phối trên máy tính quầy chi nhánh (apps/ops-web)
+hoặc cầm máy PDA quét gán đơn trực tiếp tại bàn phân loại (DeliveryDispatchScreen)
+end note
+
+' GIAI ĐOẠN 1: QUÉT CHỌN ĐƠN HÀNG VÀ CHỈ ĐỊNH BƯU TÁ PHÁT
+Ops -> UI: Truy cập màn hình Điều phối phát hàng,\nquét mã vận đơn hoặc tích chọn danh sách đơn hàng đã cập bến bưu cục (Status: ARRIVED_AT_STATION)
+activate UI
+
+Ops -> UI: Chọn Bưu tá phụ trách tuyến phát (courierId) và Bấm nút "Xuất phát hàng" (handleDispatch)
+
+' GIAI ĐOẠN 2: TẠO NHIỆM VỤ GIAO HÀNG & CHUYỂN TRẠNG THÁI OUT_FOR_DELIVERY
+UI -> Gateway: POST /ops/delivery/tasks/dispatch\n(Headers: Bearer accessToken, Body: { trackingCodes: string[], courierId, hubCode })
+activate Gateway
+
+Gateway -> DeliveryCtrl: POST /tasks/dispatch
+activate DeliveryCtrl
+
+DeliveryCtrl -> TaskSvc: dispatchDeliveries(trackingCodes, courierId, hubCode)
+activate TaskSvc
+
+loop Duyệt từng mã vận đơn trong danh sách
+    TaskSvc -> DeliveryDB: INSERT INTO delivery_tasks (id, tracking_code, courier_id, hub_code, status: 'ASSIGNED', attempt_count: 0)\nVALUES (...)
+    activate DeliveryDB
+    DeliveryDB --> TaskSvc: Ghi nhận nhiệm vụ giao hàng mới
+    deactivate DeliveryDB
+
+    TaskSvc -> DeliveryDB: UPDATE shipments SET status = 'OUT_FOR_DELIVERY', current_courier_id = $courierId, updated_at = NOW()\nWHERE tracking_code = $code
+    activate DeliveryDB
+    DeliveryDB --> TaskSvc: Đơn hàng chuyển trạng thái Đang đi phát
+    deactivate DeliveryDB
+
+    TaskSvc -> TrackSvc: emitEvent('OUT_FOR_DELIVERY', { trackingCode, courierId, hubCode })
+    activate TrackSvc
+    TrackSvc --> TaskSvc: Ghi nhận vết hành trình thời gian thực
+    deactivate TrackSvc
+end
+
+TaskSvc --> DeliveryCtrl: DispatchResult { dispatchedCount: N, courierId, status: 'SUCCESS' }
+deactivate TaskSvc
+
+' Bắn tín hiệu đẩy đơn vào danh sách nhiệm vụ của app Shipper
+DeliveryCtrl -> CourierApp: Đồng bộ nhiệm vụ phát mới vào tab "Giao hàng"
+activate CourierApp
+CourierApp --> DeliveryCtrl: Xác nhận nhận nhiệm vụ
+deactivate CourierApp
+
+DeliveryCtrl --> Gateway: 200 OK (DispatchResult)
+deactivate DeliveryCtrl
+
+Gateway --> UI: 200 OK
+deactivate Gateway
+
+' GIAI ĐOẠN 3: HIỂN THỊ KẾT QUẢ ĐIỀU PHỐI VÀ IN PHIẾU BÀN GIAO
+UI -> UI: Hiển thị thông báo: "Đã xuất N đơn hàng cho bưu tá đi phát!"
+UI -> UI: Render Bảng tổng hợp chuyến phát kèm tùy chọn "In biên bản bàn giao ca phát"
+
+deactivate UI
+@enduml

@@ -16,6 +16,9 @@ import {
   Phone,
   AlertCircle,
   ExternalLink,
+  MapPin,
+  Star,
+  Home,
 } from 'lucide-react';
 import { Link as RouterLink } from 'react-router-dom';
 import { CustomerUser } from '../store/useAuthStore';
@@ -26,6 +29,14 @@ import {
   saveCustomerBankAccount,
   deleteCustomerBankAccount,
 } from '../utils/bankAccountService';
+import {
+  SavedAddress,
+  getSavedAddresses,
+  saveAddress,
+  setDefaultAddress,
+  deleteAddress,
+} from '../utils/savedAddressService';
+import { VIETNAM_ADMINISTRATIVE_DATA } from '../utils/vietnamAdministrativeData';
 
 interface CustomerAccountModalProps {
   isOpen: boolean;
@@ -42,7 +53,7 @@ export const CustomerAccountModal: React.FC<CustomerAccountModalProps> = ({
   phone,
   onLogout,
 }) => {
-  const [activeTab, setActiveTab] = useState<'profile' | 'bank'>('profile');
+  const [activeTab, setActiveTab] = useState<'profile' | 'addresses' | 'bank'>('profile');
   const [bankAccount, setBankAccount] = useState<CustomerBankAccount | null>(null);
   const [isEditingBank, setIsEditingBank] = useState(false);
   const [selectedBankCode, setSelectedBankCode] = useState(POPULAR_BANKS[0].code);
@@ -53,17 +64,30 @@ export const CustomerAccountModal: React.FC<CustomerAccountModalProps> = ({
   const [copiedAccount, setCopiedAccount] = useState(false);
   const [showConfirmLogout, setShowConfirmLogout] = useState(false);
 
+  // Addresses State
+  const [addresses, setAddresses] = useState<SavedAddress[]>([]);
+  const [isEditingAddress, setIsEditingAddress] = useState(false);
+  const [editingAddressId, setEditingAddressId] = useState<string | null>(null);
+  const [addressName, setAddressName] = useState('');
+  const [addressPhone, setAddressPhone] = useState('');
+  const [addressProvince, setAddressProvince] = useState(VIETNAM_ADMINISTRATIVE_DATA[0].name);
+  const [addressWard, setAddressWard] = useState(VIETNAM_ADMINISTRATIVE_DATA[0].wards[0].displayName);
+  const [addressDetail, setAddressDetail] = useState('');
+  const [addressIsDefault, setAddressIsDefault] = useState(false);
+  const [addressFormError, setAddressFormError] = useState<string | null>(null);
+  const [addressFormSuccess, setAddressFormSuccess] = useState<string | null>(null);
+
   const identifier = phone || user?.id || user?.username || '';
 
-  // Load bank account when modal opens
+  // Load bank account and addresses when modal opens
   useEffect(() => {
     if (isOpen && identifier) {
-      const saved = getCustomerBankAccount(identifier);
-      setBankAccount(saved);
-      if (saved) {
-        setSelectedBankCode(saved.bankCode);
-        setAccountNumber(saved.accountNumber);
-        setAccountHolder(saved.accountHolder);
+      const savedBank = getCustomerBankAccount(identifier);
+      setBankAccount(savedBank);
+      if (savedBank) {
+        setSelectedBankCode(savedBank.bankCode);
+        setAccountNumber(savedBank.accountNumber);
+        setAccountHolder(savedBank.accountHolder);
         setIsEditingBank(false);
       } else {
         setSelectedBankCode(POPULAR_BANKS[0].code);
@@ -73,6 +97,13 @@ export const CustomerAccountModal: React.FC<CustomerAccountModalProps> = ({
       }
       setBankFormError(null);
       setBankFormSuccess(null);
+
+      // Load addresses
+      const list = getSavedAddresses(identifier);
+      setAddresses(list);
+      setIsEditingAddress(false);
+      setAddressFormError(null);
+      setAddressFormSuccess(null);
     }
   }, [isOpen, identifier, user?.displayName]);
 
@@ -134,6 +165,82 @@ export const CustomerAccountModal: React.FC<CustomerAccountModalProps> = ({
     }
   };
 
+  // Address Handlers
+  const handleOpenAddAddress = () => {
+    setEditingAddressId(null);
+    setAddressName(user?.displayName || '');
+    setAddressPhone(phone || user?.phone || '');
+    setAddressProvince(VIETNAM_ADMINISTRATIVE_DATA[0].name);
+    setAddressWard(VIETNAM_ADMINISTRATIVE_DATA[0].wards[0].displayName);
+    setAddressDetail('');
+    setAddressIsDefault(addresses.length === 0);
+    setAddressFormError(null);
+    setIsEditingAddress(true);
+  };
+
+  const handleOpenEditAddress = (item: SavedAddress) => {
+    setEditingAddressId(item.id);
+    setAddressName(item.name);
+    setAddressPhone(item.phone);
+    setAddressProvince(item.province);
+    setAddressWard(item.ward);
+    setAddressDetail(item.addressDetail);
+    setAddressIsDefault(item.isDefault);
+    setAddressFormError(null);
+    setIsEditingAddress(true);
+  };
+
+  const handleSaveAddress = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!addressName.trim()) {
+      setAddressFormError('Vui lòng nhập họ và tên người gửi.');
+      return;
+    }
+    if (!addressPhone.trim()) {
+      setAddressFormError('Vui lòng nhập số điện thoại người gửi.');
+      return;
+    }
+    if (!addressDetail.trim()) {
+      setAddressFormError('Vui lòng nhập địa chỉ chi tiết (số nhà, tên đường).');
+      return;
+    }
+
+    const composed = `${addressDetail.trim()}, ${addressWard}, ${addressProvince}`;
+    const updated = saveAddress(identifier, {
+      id: editingAddressId || undefined,
+      name: addressName.trim(),
+      phone: addressPhone.trim(),
+      province: addressProvince,
+      ward: addressWard,
+      addressDetail: addressDetail.trim(),
+      composedAddress: composed,
+      isDefault: addressIsDefault,
+    });
+
+    setAddresses(updated);
+    setIsEditingAddress(false);
+    setEditingAddressId(null);
+    setAddressFormError(null);
+    setAddressFormSuccess('Đã lưu địa chỉ thành công!');
+    setTimeout(() => setAddressFormSuccess(null), 3000);
+  };
+
+  const handleSetDefaultAddress = (id: string) => {
+    const updated = setDefaultAddress(identifier, id);
+    setAddresses(updated);
+    setAddressFormSuccess('Đã đổi địa chỉ mặc định!');
+    setTimeout(() => setAddressFormSuccess(null), 2500);
+  };
+
+  const handleDeleteAddress = (id: string) => {
+    if (window.confirm('Bạn có chắc chắn muốn xóa địa chỉ này khỏi danh bạ?')) {
+      const updated = deleteAddress(identifier, id);
+      setAddresses(updated);
+      setAddressFormSuccess('Đã xóa địa chỉ thành công.');
+      setTimeout(() => setAddressFormSuccess(null), 2500);
+    }
+  };
+
   const displayName = user?.displayName || phone || 'Khách hàng';
   const displayPhone = phone || user?.phone || 'Chưa cập nhật';
   const displayRole = user?.roles?.join(', ') || 'CUSTOMER';
@@ -176,11 +283,11 @@ export const CustomerAccountModal: React.FC<CustomerAccountModalProps> = ({
         </div>
 
         {/* Tab Switcher */}
-        <div className="flex border-b border-slate-200 bg-slate-50/70 px-6 shrink-0">
+        <div className="flex border-b border-slate-200 bg-slate-50/70 px-6 shrink-0 overflow-x-auto">
           <button
             type="button"
             onClick={() => setActiveTab('profile')}
-            className={`flex items-center gap-2 py-3 px-3 text-xs font-bold border-b-2 transition cursor-pointer ${
+            className={`flex items-center gap-2 py-3 px-3 text-xs font-bold border-b-2 transition cursor-pointer shrink-0 ${
               activeTab === 'profile'
                 ? 'border-blue-600 text-blue-700 bg-white shadow-2xs'
                 : 'border-transparent text-slate-500 hover:text-slate-800'
@@ -192,8 +299,24 @@ export const CustomerAccountModal: React.FC<CustomerAccountModalProps> = ({
 
           <button
             type="button"
+            onClick={() => setActiveTab('addresses')}
+            className={`flex items-center gap-2 py-3 px-3 text-xs font-bold border-b-2 transition cursor-pointer shrink-0 ${
+              activeTab === 'addresses'
+                ? 'border-blue-600 text-blue-700 bg-white shadow-2xs'
+                : 'border-transparent text-slate-500 hover:text-slate-800'
+            }`}
+          >
+            <MapPin className="h-4 w-4" />
+            <span>Sổ địa chỉ gửi</span>
+            <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-slate-200 text-slate-700 font-bold">
+              {addresses.length}
+            </span>
+          </button>
+
+          <button
+            type="button"
             onClick={() => setActiveTab('bank')}
-            className={`flex items-center gap-2 py-3 px-3 text-xs font-bold border-b-2 transition cursor-pointer ${
+            className={`flex items-center gap-2 py-3 px-3 text-xs font-bold border-b-2 transition cursor-pointer shrink-0 ${
               activeTab === 'bank'
                 ? 'border-blue-600 text-blue-700 bg-white shadow-2xs'
                 : 'border-transparent text-slate-500 hover:text-slate-800'
@@ -213,6 +336,20 @@ export const CustomerAccountModal: React.FC<CustomerAccountModalProps> = ({
 
         {/* Modal Body */}
         <div className="p-6 overflow-y-auto space-y-4 text-slate-800 text-xs">
+          {addressFormSuccess && (
+            <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl flex items-center gap-2 text-xs font-semibold animate-in fade-in">
+              <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
+              <span>{addressFormSuccess}</span>
+            </div>
+          )}
+
+          {addressFormError && (
+            <div className="p-3 bg-red-50 border border-red-200 text-red-700 rounded-xl flex items-center gap-2 text-xs font-semibold animate-in fade-in">
+              <AlertCircle className="h-4 w-4 text-red-600 shrink-0" />
+              <span>{addressFormError}</span>
+            </div>
+          )}
+
           {bankFormSuccess && (
             <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl flex items-center gap-2 text-xs font-semibold animate-in fade-in">
               <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
@@ -311,7 +448,223 @@ export const CustomerAccountModal: React.FC<CustomerAccountModalProps> = ({
             </div>
           )}
 
-          {/* TAB 2: TÀI KHOẢN NGÂN HÀNG */}
+          {/* TAB 2: SỔ ĐỊA CHỈ GỬI */}
+          {activeTab === 'addresses' && (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between pb-1">
+                <div>
+                  <h4 className="font-bold text-slate-900 text-sm">Danh bạ địa chỉ lấy hàng</h4>
+                  <p className="text-[11px] text-slate-500">
+                    Lưu các địa chỉ thường xuyên gửi hàng để tự động điền nhanh khi tạo vận đơn.
+                  </p>
+                </div>
+                {!isEditingAddress && (
+                  <button
+                    type="button"
+                    onClick={handleOpenAddAddress}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs transition shadow-xs cursor-pointer"
+                  >
+                    <Plus className="h-3.5 w-3.5" />
+                    <span>Thêm địa chỉ</span>
+                  </button>
+                )}
+              </div>
+
+              {isEditingAddress ? (
+                <form onSubmit={handleSaveAddress} className="space-y-3 bg-slate-50 p-4 rounded-xl border border-slate-200">
+                  <div className="font-bold text-slate-800 border-b border-slate-200 pb-2">
+                    {editingAddressId ? 'Chỉnh sửa địa chỉ gửi' : 'Thêm địa chỉ gửi mới'}
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-700 mb-1">Họ và tên người gửi *</label>
+                      <input
+                        type="text"
+                        required
+                        value={addressName}
+                        onChange={(e) => setAddressName(e.target.value)}
+                        placeholder="VD: Nguyễn Văn A"
+                        className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs font-medium focus:ring-2 focus:ring-blue-500 focus:outline-hidden"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-700 mb-1">Số điện thoại *</label>
+                      <input
+                        type="tel"
+                        required
+                        value={addressPhone}
+                        onChange={(e) => setAddressPhone(e.target.value)}
+                        placeholder="VD: 0901234567"
+                        className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs font-medium focus:ring-2 focus:ring-blue-500 focus:outline-hidden font-mono"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-700 mb-1">Tỉnh / Thành phố *</label>
+                      <select
+                        value={addressProvince}
+                        onChange={(e) => {
+                          const p = e.target.value;
+                          setAddressProvince(p);
+                          const prov = VIETNAM_ADMINISTRATIVE_DATA.find((item) => item.name === p);
+                          if (prov && prov.wards.length > 0) {
+                            setAddressWard(prov.wards[0].displayName);
+                          }
+                        }}
+                        className="w-full px-2.5 py-2 bg-white border border-slate-300 rounded-lg text-xs font-medium focus:ring-2 focus:ring-blue-500 focus:outline-hidden"
+                      >
+                        {VIETNAM_ADMINISTRATIVE_DATA.map((prov) => (
+                          <option key={prov.name} value={prov.name}>
+                            {prov.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-700 mb-1">Phường / Xã / Quận *</label>
+                      <select
+                        value={addressWard}
+                        onChange={(e) => setAddressWard(e.target.value)}
+                        className="w-full px-2.5 py-2 bg-white border border-slate-300 rounded-lg text-xs font-medium focus:ring-2 focus:ring-blue-500 focus:outline-hidden"
+                      >
+                        {(
+                          VIETNAM_ADMINISTRATIVE_DATA.find((item) => item.name === addressProvince)?.wards || []
+                        ).map((w) => (
+                          <option key={w.code} value={w.displayName}>
+                            {w.displayName}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-700 mb-1">Địa chỉ chi tiết (số nhà, tên đường) *</label>
+                    <input
+                      type="text"
+                      required
+                      value={addressDetail}
+                      onChange={(e) => setAddressDetail(e.target.value)}
+                      placeholder="VD: 123 Nguyễn Huệ, Chung cư A, Phòng 402"
+                      className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs font-medium focus:ring-2 focus:ring-blue-500 focus:outline-hidden"
+                    />
+                  </div>
+
+                  <label className="flex items-center gap-2 cursor-pointer pt-1">
+                    <input
+                      type="checkbox"
+                      checked={addressIsDefault}
+                      onChange={(e) => setAddressIsDefault(e.target.checked)}
+                      className="rounded border-slate-300 text-blue-600 focus:ring-blue-500 h-4 w-4"
+                    />
+                    <span className="text-xs font-bold text-slate-700">Đặt làm địa chỉ lấy hàng mặc định</span>
+                  </label>
+
+                  <div className="pt-2 flex items-center justify-end gap-2 border-t border-slate-200">
+                    <button
+                      type="button"
+                      onClick={() => setIsEditingAddress(false)}
+                      className="px-3.5 py-1.5 rounded-lg border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 font-bold transition cursor-pointer"
+                    >
+                      Hủy
+                    </button>
+                    <button
+                      type="submit"
+                      className="px-4 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-bold transition shadow-xs cursor-pointer flex items-center gap-1.5"
+                    >
+                      <Check className="h-3.5 w-3.5" />
+                      <span>{editingAddressId ? 'Cập nhật địa chỉ' : 'Lưu địa chỉ'}</span>
+                    </button>
+                  </div>
+                </form>
+              ) : (
+                <div className="space-y-3">
+                  {addresses.length === 0 ? (
+                    <div className="text-center py-8 bg-slate-50 rounded-xl border border-dashed border-slate-300 p-6">
+                      <MapPin className="h-8 w-8 text-slate-400 mx-auto mb-2" />
+                      <h4 className="font-bold text-slate-700">Chưa có địa chỉ nào được lưu</h4>
+                      <p className="text-slate-500 text-[11px] mt-1 max-w-xs mx-auto">
+                        Thêm địa chỉ người gửi để tự động điền nhanh chóng mỗi khi bạn đặt đơn lấy hàng tận nhà.
+                      </p>
+                      <button
+                        type="button"
+                        onClick={handleOpenAddAddress}
+                        className="mt-3.5 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-600 text-white font-bold text-xs shadow-xs hover:bg-blue-700 transition cursor-pointer"
+                      >
+                        <Plus className="h-3.5 w-3.5" />
+                        <span>Thêm địa chỉ ngay</span>
+                      </button>
+                    </div>
+                  ) : (
+                    addresses.map((item) => (
+                      <div
+                        key={item.id}
+                        className={`p-3.5 rounded-xl border transition ${
+                          item.isDefault
+                            ? 'bg-blue-50/40 border-blue-300 ring-1 ring-blue-400/30'
+                            : 'bg-white border-slate-200 hover:border-slate-300'
+                        }`}
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="space-y-1 flex-1">
+                            <div className="flex items-center gap-2">
+                              <strong className="text-slate-900 font-bold">{item.name}</strong>
+                              <span className="text-slate-400">•</span>
+                              <span className="font-mono text-slate-700 font-bold">{item.phone}</span>
+                              {item.isDefault && (
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-blue-100 text-blue-800 border border-blue-200">
+                                  <Star className="h-3 w-3 fill-blue-600 text-blue-600" />
+                                  Mặc định
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-slate-600 text-[11px] leading-relaxed flex items-start gap-1.5 pt-0.5">
+                              <MapPin className="h-3.5 w-3.5 text-slate-400 shrink-0 mt-0.5" />
+                              <span>{item.composedAddress}</span>
+                            </p>
+                          </div>
+
+                          <div className="flex items-center gap-1 shrink-0">
+                            {!item.isDefault && (
+                              <button
+                                type="button"
+                                onClick={() => handleSetDefaultAddress(item.id)}
+                                className="px-2 py-1 rounded-md text-[10px] font-bold text-slate-600 hover:text-blue-700 hover:bg-blue-50 transition border border-slate-200 cursor-pointer"
+                                title="Đặt làm mặc định"
+                              >
+                                Đặt mặc định
+                              </button>
+                            )}
+                            <button
+                              type="button"
+                              onClick={() => handleOpenEditAddress(item)}
+                              className="p-1.5 rounded-md text-slate-400 hover:text-blue-600 hover:bg-slate-100 transition cursor-pointer"
+                              title="Chỉnh sửa"
+                            >
+                              <Edit3 className="h-3.5 w-3.5" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteAddress(item.id)}
+                              className="p-1.5 rounded-md text-slate-400 hover:text-red-600 hover:bg-red-50 transition cursor-pointer"
+                              title="Xóa địa chỉ"
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* TAB 3: TÀI KHOẢN NGÂN HÀNG */}
           {activeTab === 'bank' && (
             <div className="space-y-4">
               <div className="p-3 bg-blue-50 border border-blue-200 rounded-xl text-blue-900 text-[11px] leading-relaxed flex items-start gap-2">

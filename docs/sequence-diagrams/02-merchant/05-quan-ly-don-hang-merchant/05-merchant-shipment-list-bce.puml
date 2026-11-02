@@ -1,0 +1,173 @@
+@startuml
+!theme plain
+skinparam sequenceMessageAlign center
+skinparam responseMessageBelowArrow true
+skinparam maxMessageSize 140
+skinparam wrapWidth 200
+skinparam BoxPadding 8
+autonumber "<b>[00]</b>"
+
+
+box "Boundary Layer (Giao Diện & Gateway)" #F8FAFC
+actor "Chủ shop / Người gửi\n(Merchant User)" as Merchant
+boundary "ShipmentListView\n(apps/merchant-web)" as UI
+boundary "Gateway BFF (:3000)\n(MerchantController)" as Gateway
+boundary "PrintShipmentView / Detail\n(apps/merchant-web)" as SubUI
+end box
+
+box "Control Layer (Nghiệp Vụ & Dịch Vụ)" #FFFFFF
+control "ShipmentController\n(:3002 shipment-service)" as ShipCtrl
+control "ShipmentsService\n(application service)" as ShipSvc
+control "PickupController / Svc\n(:3003 pickup-service)" as PickupCtrl
+control "ShipmentOutboxService\n(transactional outbox)" as OutboxSvc
+end box
+
+box "Entity Layer (Dữ Liệu PostgreSQL & Outbox)" #F8FAFC
+entity "PostgreSQL (shipment_db)\n[shipments & metadata]" as ShipDB
+entity "PostgreSQL (shipment_db)\n[outbox_events Table]" as OutboxDB
+entity "PostgreSQL (pickup_db)\n[pickup_orders Table]" as PickupDB
+end box
+
+' GIAI ĐOẠN 1: TẢI DANH SÁCH ĐƠN HÀNG & PHÂN QUYỀN CHỦ SỞ HỮU (OWNER SCOPING)
+Merchant -> UI: Mở tab "Danh sách shipment" (View: 'shipments')
+activate UI
+
+note over UI: Tải song song: Vận đơn của Shop & Phiếu yêu cầu lấy hàng
+
+UI -> Gateway: GET /merchant/shipment/shipments & /merchant/pickup/pickups (Bearer accessToken)
+activate Gateway
+
+note over Gateway: GatewayAuthGuard & RoleGuard (Role: 'MERCHANT') -> proxy :3002, :3003
+
+Gateway -> ShipCtrl: GET /shipments (Headers: x-user-id, x-user-role)
+activate ShipCtrl
+Gateway -> PickupCtrl: GET /pickups (Headers: x-user-id, x-user-role)
+activate PickupCtrl
+
+ShipCtrl -> ShipCtrl: Gán scope: effectiveFilters.createdByUserId = ownerContext.createdByUserId\n(Bảo mật đa khách thuê: Shop chỉ xem đơn của chính mình)
+
+ShipCtrl -> ShipSvc: list(effectiveFilters)
+activate ShipSvc
+ShipSvc -> ShipDB: SELECT * FROM shipments WHERE created_by_user_id = $1 ORDER BY created_at DESC
+activate ShipDB
+ShipDB --> ShipSvc: Danh sách đơn hàng & metadata
+deactivate ShipDB
+ShipSvc --> ShipCtrl: Shipment[]
+deactivate ShipSvc
+ShipCtrl --> Gateway: 200 OK: Shipment[]
+deactivate ShipCtrl
+
+PickupCtrl -> PickupDB: SELECT * FROM pickup_orders WHERE requester_user_id = $1
+activate PickupDB
+PickupDB --> PickupCtrl: Danh sách phiếu lấy hàng
+deactivate PickupDB
+PickupCtrl --> Gateway: 200 OK: PickupRequest[]
+deactivate PickupCtrl
+
+Gateway --> UI: 200 OK: Dữ liệu đơn hàng & pickups
+deactivate Gateway
+
+UI -> UI: Render bảng chuẩn SOP Carrier (38px single-line, font Monospace sao chép cột dọc)
+UI -> UI: Hiển thị bảng danh sách vận đơn trực quan
+
+' GIAI ĐOẠN 2: BỘ LỌC TÌM KIẾM & CHẾ ĐỘ DÁN NHIỀU MÃ J&T
+alt Tìm kiếm hoặc Dán nhiều mã vận đơn từ Excel (J&T style)
+    Merchant -> UI: Nhập từ khóa HOẶC dán danh sách mã đơn từ Excel/bảng
+    UI -> UI: Tự động tách dòng (isBatchMode = true) & lọc nhanh client-side (filteredRows)
+    UI -> UI: Cập nhật bảng: "⚡ Đang lọc N mã vận đơn đồng thời"
+else Lọc theo Trạng thái / Dịch vụ / Khoảng thời gian
+    Merchant -> UI: Chọn tab Trạng thái (TẤT CẢ, ĐÃ TẠO, CHỜ LẤY, KÝ NHẬN, ĐÃ HỦY) hoặc Gói cước
+    UI -> UI: Lọc danh sách visibleRows theo tiêu chí đã chọn
+    UI -> UI: Hiển thị danh sách đơn thỏa mãn bộ lọc
+end
+
+' GIAI ĐOẠN 3: THAO TÁC HÀNG LOẠT (BATCH ACTIONS TRÊN CÁC ĐƠN ĐÃ CHỌN)
+opt Merchant chọn nhiều đơn (toggleSelectAll / toggleSelectOne)
+    Merchant -> UI: Tích chọn các ô Checkbox đơn hàng -> Thanh công cụ: "Đã chọn N đơn"
+
+    alt Thao tác 1: Sao chép mã hàng loạt (handleCopyAllCodes)
+        Merchant -> UI: Nhấn "Sao chép N mã đã chọn"
+        UI -> UI: Ghi chuỗi mã đơn phân tách dấu xuống dòng vào Clipboard
+        UI -> UI: Phản hồi: "Đã chép N mã!"
+    else Thao tác 2: In tem nhãn hàng loạt (onPrintShipment)
+        Merchant -> UI: Nhấn "In tem (N)"
+        UI -> SubUI: Mở màn hình In tem A6/A7 (PrintShipmentView)
+        activate SubUI
+        SubUI -> SubUI: Render bản in tem Carrier: QR/Barcode, che SĐT & bảo mật giá cước Shop
+        deactivate SubUI
+    else Thao tác 3: Tạo yêu cầu lấy hàng hàng loạt (Batch Pickup)
+        Merchant -> UI: Nhấn "Tạo Pickup (N)"
+        UI -> Gateway: POST /merchant/pickup/pickups (Gom các đơn đã chọn)
+        activate Gateway
+        Gateway -> PickupCtrl: POST /pickups
+        activate PickupCtrl
+        PickupCtrl -> PickupDB: INSERT INTO pickup_orders (...)
+        activate PickupDB
+        PickupDB --> PickupCtrl: Đã lưu phiếu gom
+        deactivate PickupDB
+        PickupCtrl --> Gateway: 201 Created
+        deactivate PickupCtrl
+        Gateway --> UI: 201 Created
+        deactivate Gateway
+        UI -> UI: Thông báo: "Đã tạo yêu cầu lấy hàng thành công cho các đơn đã chọn."
+    end
+end
+
+' GIAI ĐOẠN 4: THAO TÁC ĐƠN LẺ & HỦY ĐƠN HÀNG (SINGLE ROW ACTIONS)
+alt Xem chi tiết hành trình vận đơn (Tracking Detail)
+    Merchant -> UI: Nhấp đúp mã đơn HOẶC bấm nút "Chi tiết"
+    UI -> Gateway: GET /merchant/shipment/shipments/{code}
+    activate Gateway
+    Gateway -> ShipCtrl: GET /shipments/:code -> ShipSvc.getByCode(code) -> ShipDB
+    activate ShipCtrl
+    ShipCtrl --> Gateway: 200 OK: ShipmentResponse
+    deactivate ShipCtrl
+    Gateway --> UI: 200 OK: Trả về chi tiết đơn hàng
+    deactivate Gateway
+    UI -> SubUI: onNavigateView('shipment-detail')
+    activate SubUI
+    SubUI -> SubUI: Render giao diện Chi tiết đơn hàng (Nhật ký hành trình, Vết quét bưu cục)
+    deactivate SubUI
+
+else Hủy đơn hàng khi chưa bàn giao cho bưu tá (Cancel Shipment)
+    Merchant -> UI: Bấm nút "Hủy đơn" tại dòng đơn hàng (onCancelShipment)
+    UI -> UI: Kiểm tra trạng thái: Chỉ cho phép hủy nếu currentStatus in ['CREATED', 'WAITING_PICKUP']
+
+    UI -> Gateway: POST /merchant/shipment/shipments/{code}/cancel\n(Bearer accessToken, Body: { reason: "Shop yêu cầu hủy" })
+    activate Gateway
+
+    Gateway -> ShipCtrl: POST /shipments/:code/cancel (Body: CancelShipmentInput)
+    activate ShipCtrl
+
+    ShipCtrl -> ShipSvc: cancel(code, body)
+    activate ShipSvc
+
+    ShipSvc -> ShipDB: UPDATE shipments SET current_status = 'CANCELLED', updated_at = NOW() WHERE code = $1
+    activate ShipDB
+    ShipDB --> ShipSvc: Cập nhật thành công
+    deactivate ShipDB
+
+    ShipSvc -> OutboxSvc: enqueueShipmentCancelled(shipment)
+    activate OutboxSvc
+    OutboxSvc -> OutboxDB: INSERT INTO outbox_events (eventType: 'ShipmentCancelled', ...)
+    activate OutboxDB
+    OutboxDB --> OutboxSvc: Ghi nhận event Outbox
+    deactivate OutboxDB
+    OutboxSvc --> ShipSvc: Outbox enqueued
+    deactivate OutboxSvc
+
+    ShipSvc --> ShipCtrl: Shipment (status: 'CANCELLED')
+    deactivate ShipSvc
+
+    ShipCtrl --> Gateway: 200 OK: ShipmentResponse (currentStatus: 'CANCELLED')
+    deactivate ShipCtrl
+
+    Gateway --> UI: 200 OK: Đơn hàng đã hủy
+    deactivate Gateway
+
+    UI -> UI: Cập nhật danh sách: Đổi nhãn sang "ĐÃ HỦY", vô hiệu hóa các nút điều phối
+    UI -> UI: Thông báo: "Hủy đơn hàng {code} thành công."
+end
+
+deactivate UI
+@enduml

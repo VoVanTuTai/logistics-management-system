@@ -1,0 +1,85 @@
+@startuml
+!theme plain
+skinparam monochrome true
+skinparam sequenceMessageAlign center
+skinparam responseMessageBelowArrow true
+skinparam maxMessageSize 140
+skinparam wrapWidth 200
+skinparam BoxPadding 8
+autonumber "<b>[00]</b>"
+
+box "Boundary Layer (Giao Diện & Cổng Kết Nối)" #FFFFFF
+actor "Nhân viên vận hành\n(Ops Staff User)" as Ops
+boundary "TrackingLookupPage\n(apps/ops-web)" as UI
+boundary "Gateway BFF (:3000)\n(OpsTrackingController)" as Gateway
+boundary "TrackingDetailPage\n(Chi tiết lộ trình vết quét)" as DetailUI
+end box
+
+box "Control Layer (Điều Khiển & Truy Vấn Hành Trình)" #FFFFFF
+control "TrackingLookupController\n(React Query hook)" as LookupCtrl
+control "TrackingController\n(:3006 tracking-service)" as TrackingCtrl
+control "TrackingService\n(domain service)" as TrackingSvc
+end box
+
+box "Entity Layer (Lưu Trữ & Cơ Sở Dữ Liệu)" #FFFFFF
+entity "PostgreSQL (tracking_db)\n[tracking_events & shipments_cache]" as TrackingDB
+end box
+
+' GIAI ĐOẠN 1: NHẬP MÃ VẬN ĐƠN VÀ GỬI YÊU CẦU TRA CỨU
+Ops -> UI: Nhập Mã vận đơn (trackingCode) vào thanh tìm kiếm,\nbấm nút "Tra cứu hành trình" (handleLookup)
+activate UI
+
+alt Mã vận đơn bỏ trống
+    UI -> UI: Kiểm tra: !trackingCode.trim()\nHiển thị cảnh báo: "Vui lòng nhập mã vận đơn hợp lệ."
+else Mã hợp lệ: Gửi yêu cầu truy vấn
+    UI -> LookupCtrl: useTrackingTimelineQuery(trackingCode)
+    activate LookupCtrl
+
+    LookupCtrl -> Gateway: GET /ops/tracking/shipments/{trackingCode}/timeline\n(Headers: Bearer accessToken)
+    activate Gateway
+
+    ' GIAI ĐOẠN 2: TRUY VẤN CHUỖI VẾT QUÉT AUDIT TẠI TRACKING SERVICE
+    Gateway -> TrackingCtrl: GET /shipments/{trackingCode}/timeline
+    activate TrackingCtrl
+
+    TrackingCtrl -> TrackingSvc: getShipmentTimeline(trackingCode)
+    activate TrackingSvc
+
+    TrackingSvc -> TrackingDB: SELECT * FROM tracking_events WHERE tracking_code = $code\nORDER BY event_time ASC
+    activate TrackingDB
+    TrackingDB --> TrackingSvc: Danh sách các sự kiện vết quét (TrackingEvent[])
+    deactivate TrackingDB
+
+    alt Không tìm thấy vận đơn
+        TrackingSvc --> TrackingCtrl: 404 NotFoundException ("Shipment tracking not found.")
+        TrackingCtrl --> Gateway: 404 Not Found
+        Gateway --> LookupCtrl: 404 Not Found
+        LookupCtrl --> UI: Không tìm thấy dữ liệu vận đơn
+        UI -> UI: Hiển thị EmptyState: "Không tìm thấy dữ liệu vận đơn. Vui lòng kiểm tra lại mã đơn."
+    else Tìm thấy vận đơn: Tổng hợp lộ trình
+        TrackingSvc -> TrackingSvc: Ghép nối chuỗi sự kiện chuỗi cung ứng:\n- Tạo đơn -> Lấy hàng -> Nhập Hub -> Đóng bao -> Xe trung chuyển -> Xuất trạm -> Giao hàng / NDR
+
+        TrackingSvc --> TrackingCtrl: TrackingTimelineDto { trackingCode, currentStatus, senderInfo, receiverInfo, events }
+        deactivate TrackingSvc
+
+        TrackingCtrl --> Gateway: 200 OK (TrackingTimelineDto)
+        deactivate TrackingCtrl
+
+        Gateway --> LookupCtrl: 200 OK (TrackingTimelineDto)
+        deactivate Gateway
+
+        LookupCtrl --> DetailUI: Chuyển dữ liệu sang màn hình chi tiết
+        deactivate LookupCtrl
+
+        ' GIAI ĐOẠN 3: HIỂN THỊ DÒNG THỜI GIAN LỘ TRÌNH VẾT QUÉT (TIMELINE)
+        activate DetailUI
+        DetailUI -> DetailUI: Render Thẻ tóm tắt vận đơn:\n- Mã vận đơn (Monospace copyable)\n- Trạng thái hiện tại (StatusBadge ngang)\n- Bưu cục hiện tại (currentHubCode)
+
+        DetailUI -> DetailUI: Render Bảng hành trình Domino (TrackingTimelineTable):\n- Mốc thời gian (eventTime ISO)\n- Loại thao tác: PICKUP, INBOUND, OUTBOUND, OUT_FOR_DELIVERY, DELIVERED\n- Địa điểm quét: Tên Bưu cục / Hub khai thác\n- Nhân viên thao tác & Thiết bị (operatorName)
+
+        deactivate DetailUI
+    end
+end
+
+deactivate UI
+@enduml

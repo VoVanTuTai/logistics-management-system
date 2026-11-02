@@ -233,7 +233,7 @@ describe('E2E Automated Test Suite: 4-Tier Ops Scope & Courier Geofence Polygon 
 
       // Check Header & Drawing Button
       expect(screen.getByText(/Quản lý Phân vùng Nội bộ & Phân công Tuyến Shipper/i)).toBeInTheDocument();
-      expect(screen.getByText(/✏️ Vẽ Dải Toạ Độ Mới Cho Shipper/i)).toBeInTheDocument();
+      expect(screen.getByText(/Vẽ dải toạ độ tuyến/i)).toBeInTheDocument();
 
       // Check Tab "Dải Toạ Độ Đã Vẽ"
       const customZonesTab = screen.getByRole('button', { name: /Dải Toạ Độ Đã Vẽ/i });
@@ -260,7 +260,7 @@ describe('E2E Automated Test Suite: 4-Tier Ops Scope & Courier Geofence Polygon 
         </AppProviders>
       );
 
-      const startDrawBtn = screen.getByText(/✏️ Vẽ Dải Toạ Độ Mới Cho Shipper/i);
+      const startDrawBtn = screen.getByText(/Vẽ dải toạ độ tuyến/i);
       await user.click(startDrawBtn);
 
       // Verify drawing mode banner appears
@@ -268,7 +268,7 @@ describe('E2E Automated Test Suite: 4-Tier Ops Scope & Courier Geofence Polygon 
       expect(screen.getByText(/Hủy vẽ/i)).toBeInTheDocument();
 
       // Verify Drawing Form is rendered in sidebar
-      expect(screen.getByText(/✏️ Thiết lập Tuyến Dải Toạ Độ Mới/i)).toBeInTheDocument();
+      expect(screen.getByText(/Thiết lập Tuyến Dải Toạ Độ/i)).toBeInTheDocument();
       expect(screen.getByText(/Tên Tuyến \/ Dải Toạ Độ:/i)).toBeInTheDocument();
       expect(screen.getByText(/Shipper phụ trách tuyến:/i)).toBeInTheDocument();
       expect(screen.getByText(/Lưu Tuyến Dải Toạ Độ/i)).toBeInTheDocument();

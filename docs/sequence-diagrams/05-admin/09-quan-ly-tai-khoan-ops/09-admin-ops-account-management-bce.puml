@@ -1,0 +1,95 @@
+@startuml
+!theme plain
+skinparam monochrome true
+skinparam sequenceMessageAlign center
+skinparam responseMessageBelowArrow true
+skinparam maxMessageSize 140
+skinparam wrapWidth 200
+skinparam BoxPadding 8
+autonumber "<b>[00]</b>"
+
+box "Boundary Layer (Giao Diện & Cổng Kết Nối)" #FFFFFF
+actor "Quản trị viên hệ thống\n(System Admin)" as Admin
+boundary "OpsUsersPage\n(apps/admin-web)" as UI
+boundary "UserEditorModal\n(Hộp thoại tạo/sửa tài khoản)" as ModalUI
+boundary "Gateway BFF (:3000)\n(AdminUserController)" as Gateway
+end box
+
+box "Control Layer (Điều Khiển & Quản Lý Nhân Sự Ops)" #FFFFFF
+control "UserAccountController\n(:3010 auth-service)" as UserCtrl
+control "UserManagementService\n(identity service)" as UserSvc
+control "HashService\n(bcrypt digest)" as HashSvc
+end box
+
+box "Entity Layer (Lưu Trữ & Cơ Sở Dữ Liệu)" #FFFFFF
+entity "PostgreSQL (auth_db)\n[user_accounts, roles & user_hubs Table]" as AuthDB
+end box
+
+' GIAI ĐOẠN 1: MỞ FORM TẠO TÀI KHOẢN NHÂN VIÊN VẬN HÀNH
+Admin -> UI: Truy cập màn hình Quản lý tài khoản Ops (/users/ops),\nbấm nút "Tạo tài khoản Ops mới" (handleOpenCreateModal)
+activate UI
+
+UI -> ModalUI: Mở hộp thoại UserEditorModal (isOpen = true)
+activate ModalUI
+deactivate UI
+
+Admin -> ModalUI: Nhập thông tin nhân sự vận hành:\n- Tên đăng nhập (username: 'ops_hanoi_quanly')\n- Mật khẩu khởi tạo tạm thời (tempPassword)\n- Họ và tên (fullName: 'Nguyễn Văn Minh')\n- Số điện thoại liên hệ (phone: '0988776655')\n- Phân quyền vai trò (roles: ['OPS_MANAGER'])\n- Gán bưu cục trực thuộc (assignedHubCodes: ['HUB_HN_01'])
+
+Admin -> ModalUI: Bấm nút "Lưu khởi tạo tài khoản" (handleSaveUser)
+
+' GIAI ĐOẠN 2: BĂM MẬT KHẨU VÀ GHI DỮ LIỆU PHÂN QUYỀN TẠI AUTH SERVICE
+ModalUI -> Gateway: POST /admin/auth/users/ops\n(Headers: Bearer accessToken, Body: CreateOpsUserInput)
+activate Gateway
+
+Gateway -> UserCtrl: POST /users/ops
+activate UserCtrl
+
+UserCtrl -> UserSvc: createOpsAccount(input)
+activate UserSvc
+
+UserSvc -> AuthDB: SELECT id FROM user_accounts WHERE username = $username
+activate AuthDB
+AuthDB --> UserSvc: Kiểm tra trùng lặp tên tài khoản
+deactivate AuthDB
+
+alt Tên tài khoản đã tồn tại
+    UserSvc --> UserCtrl: 409 ConflictException ("Tên đăng nhập đã tồn tại.")
+    UserCtrl --> Gateway: 409 Conflict
+    Gateway --> ModalUI: 409 Conflict
+    ModalUI -> ModalUI: Hiển thị cảnh báo lỗi: "Tên đăng nhập đã được sử dụng."
+else Tài khoản hợp lệ: Băm mật khẩu và khởi tạo
+    UserSvc -> HashSvc: digest(tempPassword)
+    activate HashSvc
+    HashSvc --> UserSvc: passwordHash (chuỗi băm bcrypt an toàn)
+    deactivate HashSvc
+
+    UserSvc -> AuthDB: INSERT INTO user_accounts (id, username, password_hash, display_name, phone, status: 'ACTIVE', created_at)\nVALUES (...)
+    activate AuthDB
+    AuthDB --> UserSvc: Ghi nhận tài khoản người dùng
+    deactivate AuthDB
+
+    UserSvc -> AuthDB: INSERT INTO user_roles (user_id, role_name) VALUES ($userId, 'OPS_MANAGER')\nINSERT INTO user_hubs (user_id, hub_code) VALUES ($userId, 'HUB_HN_01')
+    activate AuthDB
+    AuthDB --> UserSvc: Ghi nhận quyền hạn và bưu cục phụ trách
+    deactivate AuthDB
+
+    UserSvc --> UserCtrl: AdminUserDto { id, username, displayName, roles: ['OPS_MANAGER'], hubCodes: ['HUB_HN_01'], status: 'ACTIVE' }
+    deactivate UserSvc
+
+    UserCtrl --> Gateway: 201 Created (AdminUserDto)
+    deactivate UserCtrl
+
+    Gateway --> ModalUI: 201 Created
+    deactivate Gateway
+
+    ' GIAI ĐOẠN 3: ĐÓNG MODAL VÀ CẬP NHẬT DANH SÁCH NHÂN SỰ
+    ModalUI -> UI: Đóng modal (onClose) và làm mới danh sách
+    activate UI
+    deactivate ModalUI
+
+    UI -> UI: Render dòng nhân viên mới vào Bảng tài khoản Ops:\n- Tên tài khoản: ops_hanoi_quanly (Nguyễn Văn Minh)\n- Vai trò: Quản trị Bưu cục (OPS_MANAGER)\n- Bưu cục phụ trách: Hub Hà Nội 01 (HUB_HN_01)\n- Trạng thái: Badge xanh "HOẠT ĐỘNG"
+
+    UI -> UI: Hiển thị Toast thông báo: "Đã tạo tài khoản nhân viên vận hành mới thành công!"
+    deactivate UI
+end
+@enduml

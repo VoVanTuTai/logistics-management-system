@@ -372,7 +372,7 @@ export function CustomerServiceTicketsTable({
         <div className="cskh-selection-strip">
           <div className="cskh-selection-info">
             <span className="cskh-selection-badge">
-              ✓ Đã chọn: <strong>{selectedIds.length}</strong> Ticket
+              Đã chọn: <strong>{selectedIds.length}</strong> Ticket
             </span>
             {selectedIds.length < tickets.length && (
               <button
@@ -862,7 +862,7 @@ export function CustomerServiceTicketsTable({
                           )}
                           {(t.linkedClaimCode || t.claimCode) && (
                             <span className="cskh-claim-link-badge" title="Đã chuyển sang Hồ sơ bồi thường">
-                              ⚡ CLM: {t.linkedClaimCode || t.claimCode}
+                              CLM: {t.linkedClaimCode || t.claimCode}
                             </span>
                           )}
                         </div>

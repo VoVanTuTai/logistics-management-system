@@ -511,12 +511,12 @@ function buildLabelHtml(payload: ShippingLabelPrintPayload): string {
               <span class="badge-tag">NHÓM: ${escapeHtml(payload.fragileCategory.toUpperCase())}</span>
             ` : ''}
             ${payload.packagingWaiver ? `
-              <span class="badge-tag badge-tag--waiver">⚠️ MIỄN TRỪ BỂ VỠ (WAIVER)</span>
+              <span class="badge-tag badge-tag--waiver">[WAIVER] MIỄN TRỪ BỂ VỠ</span>
             ` : (payload.isFragile && payload.packagingStandardMet) ? `
-              <span class="badge-tag badge-tag--sop">✓ CHUẨN ĐÓNG GÓI SOP</span>
+              <span class="badge-tag badge-tag--sop">[SOP] CHUẨN ĐÓNG GÓI</span>
             ` : ''}
             ${payload.insuranceTier === 'COMPREHENSIVE_100' ? `
-              <span class="badge-tag badge-tag--insurance">🛡️ BẢO HIỂM 100% (${escapeHtml(payload.declaredValueText || 'ĐÃ KHAI GIÁ')})</span>
+              <span class="badge-tag badge-tag--insurance">[BH 100%] BẢO HIỂM TOÀN DIỆN (${escapeHtml(payload.declaredValueText || 'ĐÃ KHAI GIÁ')})</span>
             ` : `
               <span class="badge-tag">HẠN MỨC ĐỀN BÙ: Đ.25 LUẬT BƯU CHÍNH</span>
             `}
@@ -570,7 +570,7 @@ function buildLabelHtml(payload: ShippingLabelPrintPayload): string {
           <div class="text">${escapeHtml(payload.parcelNote || '-')}</div>
           ${payload.isFragile ? `<div class="text" style="font-weight:800;">[!] HÀNG DỄ VỠ - Phân loại: ${escapeHtml(payload.fragileCategory || 'Tiêu chuẩn')}</div>` : ''}
           ${payload.packagingWaiver ? `<div class="text" style="font-weight:800;">[!] ĐÃ KÝ MIỄN TRỪ BỂ VỠ: Thùng ngoài nguyên vẹn miễn trừ bên trong</div>` : ''}
-          ${payload.insuranceTier === 'COMPREHENSIVE_100' ? `<div class="text" style="font-weight:800;">[🛡️] BẢO HIỂM 100%: Khai giá ${escapeHtml(payload.declaredValueText || 'Đã khai')}${payload.insuranceFeeText ? ` (Phí BH: ${escapeHtml(payload.insuranceFeeText)})` : ''}</div>` : ''}
+          ${payload.insuranceTier === 'COMPREHENSIVE_100' ? `<div class="text" style="font-weight:800;">[BH 100%] BẢO HIỂM TOÀN DIỆN: Khai giá ${escapeHtml(payload.declaredValueText || 'Đã khai')}${payload.insuranceFeeText ? ` (Phí BH: ${escapeHtml(payload.insuranceFeeText)})` : ''}</div>` : ''}
         </div>
         <div class="qr-box">
           ${qr}

@@ -67,14 +67,17 @@ const COURIER_COLOR_PRESETS = [
 ];
 
 // Fallback Hub Coordinates
+// Fallback Hub Coordinates
 const HUB_COORDINATE_MAP: Record<string, { lat: number; lng: number; name: string; province: string; district: string; radiusKm: number }> = {
   // Trọng điểm TP. Hồ Chí Minh
   'HCM-001': { lat: 10.8010, lng: 106.6570, name: 'Bưu cục Tân Bình / TP.HCM', province: 'Thành phố Hồ Chí Minh', district: 'Quận Tân Bình', radiusKm: 15 },
+  '07913W001': { lat: 10.8035, lng: 106.6436, name: 'Bưu cục Phường 13 - Tân Bình', province: 'Thành phố Hồ Chí Minh', district: 'Quận Tân Bình', radiusKm: 15 },
   '003079B001': { lat: 10.7715, lng: 106.6932, name: 'Kho Tỉnh TP. Hồ Chí Minh', province: 'Thành phố Hồ Chí Minh', district: 'Quận 1', radiusKm: 25 },
   '07901W001': { lat: 10.7715, lng: 106.6932, name: 'Bưu cục Phường Bến Thành / Q1', province: 'Thành phố Hồ Chí Minh', district: 'Quận 1', radiusKm: 8 },
   '07903W001': { lat: 10.7891, lng: 106.6775, name: 'Bưu cục Phường 13 / Q3', province: 'Thành phố Hồ Chí Minh', district: 'Quận 3', radiusKm: 8 },
   '07905W001': { lat: 10.7538, lng: 106.6782, name: 'Bưu cục Phường 2 / Q5', province: 'Thành phố Hồ Chí Minh', district: 'Quận 5', radiusKm: 8 },
   '07912W001': { lat: 10.8670, lng: 106.6960, name: 'Bưu cục An Phú Đông / Q12', province: 'Thành phố Hồ Chí Minh', district: 'Quận 12', radiusKm: 10 },
+  '07401W001': { lat: 10.9032, lng: 106.7725, name: 'Bưu cục TP. Dĩ An / Bình Dương', province: 'Bình Dương', district: 'TP. Dĩ An', radiusKm: 12 },
 
   // Trọng điểm Hà Nội
   'HN-001': { lat: 21.0285, lng: 105.8544, name: 'Bưu cục Đống Đa / Hà Nội', province: 'Thành phố Hà Nội', district: 'Quận Đống Đa', radiusKm: 15 },
@@ -93,6 +96,88 @@ const HUB_COORDINATE_MAP: Record<string, { lat: number; lng: number; name: strin
   '003': { lat: 10.7715, lng: 106.6932, name: 'Trung tâm Vận hành Miền Nam', province: 'Thành phố Hồ Chí Minh', district: 'Quận 1', radiusKm: 50 },
   '000HQ001': { lat: 21.0285, lng: 105.8544, name: 'HQ NEXUS Toàn Quốc', province: 'Thành phố Hà Nội', district: 'Quận Hoàn Kiếm', radiusKm: 100 },
 };
+
+// Realistic Default Pre-assigned Couriers for Production Demo
+const DEFAULT_REALISTIC_ASSIGNMENTS: Record<string, Array<{ ward: string; courierId: string; colorHex: string; zoneName: string }>> = {
+  'HCM-001': [
+    { ward: 'Phường 13', courierId: '30002019', colorHex: '#2563eb', zoneName: 'Tuyến Tân Bình A - Cộng Hòa / E-Town' },
+    { ward: 'Phường 12', courierId: '30002019', colorHex: '#2563eb', zoneName: 'Tuyến Tân Bình A - Hoàng Hoa Thám' },
+    { ward: 'Phường 14', courierId: '30002019', colorHex: '#2563eb', zoneName: 'Tuyến Tân Bình A - Bàu Cát / Đồng Đen' },
+    { ward: 'Phường 2', courierId: '30002020', colorHex: '#10b981', zoneName: 'Tuyến Tân Bình B - Sân Bay Tân Sơn Nhất' },
+    { ward: 'Phường 15', courierId: '30002020', colorHex: '#10b981', zoneName: 'Tuyến Tân Bình B - Phan Huy Ích / Tân Trụ' },
+    { ward: 'Phường 1', courierId: '30002021', colorHex: '#8b5cf6', zoneName: 'Tuyến Tân Bình C - Hoàng Văn Thụ / Lăng Cha Cả' },
+    { ward: 'Phường 3', courierId: '30002021', colorHex: '#8b5cf6', zoneName: 'Tuyến Tân Bình C - Phạm Văn Hai / Bờ Kênh' },
+    { ward: 'Phường 4', courierId: '30002021', colorHex: '#8b5cf6', zoneName: 'Tuyến Tân Bình C - Út Tịch / Triển Lãm' },
+    { ward: 'Phường 5', courierId: '30002022', colorHex: '#f59e0b', zoneName: 'Tuyến Tân Bình D - CMT8 / Chợ Phạm Văn Hai' },
+    { ward: 'Phường 6', courierId: '30002022', colorHex: '#f59e0b', zoneName: 'Tuyến Tân Bình D - Bắc Hải / Cư Xá' },
+    { ward: 'Phường 7', courierId: '30002022', colorHex: '#f59e0b', zoneName: 'Tuyến Tân Bình D - Bành Văn Trân' },
+    // Phường 8, 9, 10, 11 are unassigned by default so the user can demonstrate assigning in real-time!
+  ],
+  '07913W001': [
+    { ward: 'Phường 13', courierId: '30002019', colorHex: '#2563eb', zoneName: 'Tuyến Tân Bình A - Cộng Hòa / E-Town' },
+    { ward: 'Phường 12', courierId: '30002019', colorHex: '#2563eb', zoneName: 'Tuyến Tân Bình A - Hoàng Hoa Thám' },
+    { ward: 'Phường 14', courierId: '30002019', colorHex: '#2563eb', zoneName: 'Tuyến Tân Bình A - Bàu Cát / Đồng Đen' },
+    { ward: 'Phường 2', courierId: '30002020', colorHex: '#10b981', zoneName: 'Tuyến Tân Bình B - Sân Bay Tân Sơn Nhất' },
+    { ward: 'Phường 15', courierId: '30002020', colorHex: '#10b981', zoneName: 'Tuyến Tân Bình B - Phan Huy Ích / Tân Trụ' },
+    { ward: 'Phường 1', courierId: '30002021', colorHex: '#8b5cf6', zoneName: 'Tuyến Tân Bình C - Hoàng Văn Thụ / Lăng Cha Cả' },
+    { ward: 'Phường 3', courierId: '30002021', colorHex: '#8b5cf6', zoneName: 'Tuyến Tân Bình C - Phạm Văn Hai / Bờ Kênh' },
+    { ward: 'Phường 4', courierId: '30002021', colorHex: '#8b5cf6', zoneName: 'Tuyến Tân Bình C - Út Tịch / Triển Lãm' },
+    { ward: 'Phường 5', courierId: '30002022', colorHex: '#f59e0b', zoneName: 'Tuyến Tân Bình D - CMT8 / Chợ Phạm Văn Hai' },
+    { ward: 'Phường 6', courierId: '30002022', colorHex: '#f59e0b', zoneName: 'Tuyến Tân Bình D - Bắc Hải / Cư Xá' },
+    { ward: 'Phường 7', courierId: '30002022', colorHex: '#f59e0b', zoneName: 'Tuyến Tân Bình D - Bành Văn Trân' },
+  ],
+  '07901W001': [
+    { ward: 'Phường Bến Thành', courierId: '30002015', colorHex: '#3b82f6', zoneName: 'Tuyến Q1 A - Chợ Bến Thành' },
+    { ward: 'Phường Bến Nghé', courierId: '30002015', colorHex: '#3b82f6', zoneName: 'Tuyến Q1 A - Phố Đi Bộ / Nhà Hát' },
+    { ward: 'Phường Phạm Ngũ Lão', courierId: '30002016', colorHex: '#10b981', zoneName: 'Tuyến Q1 B - Phố Tây Bùi Viện' },
+    { ward: 'Phường Đa Kao', courierId: '30002016', colorHex: '#10b981', zoneName: 'Tuyến Q1 B - Đinh Tiên Hoàng' },
+    { ward: 'Phường Tân Định', courierId: '30002016', colorHex: '#10b981', zoneName: 'Tuyến Q1 B - Chợ Tân Định' },
+  ],
+};
+
+// Realistic Preset Addresses for Production Demo
+const DEMO_PRESET_ADDRESSES = [
+  {
+    label: '142 Cộng Hòa, Phường 13, Tân Bình, TP.HCM',
+    lat: 10.8035,
+    lng: 106.6436,
+    ward: 'Phường 13',
+    hubCode: 'HCM-001',
+    description: 'Tòa nhà E-Town Cộng Hòa, Tân Bình',
+  },
+  {
+    label: 'Ga Quốc Tế Tân Sơn Nhất, Phường 2, Tân Bình, TP.HCM',
+    lat: 10.8185,
+    lng: 106.6605,
+    ward: 'Phường 2',
+    hubCode: 'HCM-001',
+    description: 'Cảng Hàng Không Quốc Tế Tân Sơn Nhất',
+  },
+  {
+    label: 'Chợ Tân Bình, 172 Lý Thường Kiệt, Phường 8, Tân Bình',
+    lat: 10.7870,
+    lng: 106.6580,
+    ward: 'Phường 8',
+    hubCode: 'HCM-001',
+    description: 'Trung tâm bán sỉ Chợ Tân Bình',
+  },
+  {
+    label: 'Chợ Bến Thành, Lê Lợi, Phường Bến Thành, Quận 1',
+    lat: 10.7715,
+    lng: 106.6932,
+    ward: 'Phường Bến Thành',
+    hubCode: '07901W001',
+    description: 'Biểu tượng trung tâm Quận 1, TP.HCM',
+  },
+  {
+    label: 'Bưu điện Trung tâm Hà Nội, Phường Tràng Tiền, Hoàn Kiếm',
+    lat: 21.0245,
+    lng: 105.8575,
+    ward: 'Phường Tràng Tiền',
+    hubCode: '00101W001',
+    description: 'Khu vực Bờ Hồ Hoàn Kiếm, Hà Nội',
+  },
+];
 
 type ViewTabType = 'MAP' | 'CUSTOM_ZONES' | 'ROSTER' | 'COURIER_MATRIX';
 
@@ -120,7 +205,9 @@ export function CourierAreaAssignmentPage(): React.JSX.Element {
   const [formIsActive, setFormIsActive] = useState<boolean>(true);
   const [formZoneName, setFormZoneName] = useState<string>('');
 
-  // Simulator State
+  // Simulator State & Demo Presets
+  const [simMode, setSimMode] = useState<'GPS_CLICK' | 'ADDRESS_PRESET'>('GPS_CLICK');
+  const [simAddressInput, setSimAddressInput] = useState<string>('');
   const [simLat, setSimLat] = useState<number | ''>('');
   const [simLng, setSimLng] = useState<number | ''>('');
   const [simResult, setSimResult] = useState<{
@@ -152,10 +239,12 @@ export function CourierAreaAssignmentPage(): React.JSX.Element {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<any>(null);
   const wardLayersGroupRef = useRef<any>(null);
+  const wardLabelsGroupRef = useRef<any>(null);
   const customZonesLayerRef = useRef<any>(null);
   const drawingLayerRef = useRef<any>(null);
   const hubMarkerGroupRef = useRef<any>(null);
   const simMarkerRef = useRef<any>(null);
+  const simLineRef = useRef<any>(null);
   const [leafletLoaded, setLeafletLoaded] = useState(false);
 
   // API Queries
@@ -270,25 +359,46 @@ export function CourierAreaAssignmentPage(): React.JSX.Element {
     }
   }, []);
 
-  // Hub List
+  // Hub List with Strict Operations Scope Enforcement
   const availableHubs = useMemo(() => {
-    if (hubsQuery.data && hubsQuery.data.length > 0) {
-      return hubsQuery.data;
+    const rawHubs =
+      hubsQuery.data && hubsQuery.data.length > 0
+        ? hubsQuery.data
+        : Object.entries(HUB_COORDINATE_MAP).map(([code, meta]) => ({
+            id: code,
+            code,
+            name: meta.name,
+            level: 2,
+            latitude: meta.lat,
+            longitude: meta.lng,
+            address: `${meta.district}, ${meta.province}`,
+            district: meta.district,
+            ward: '',
+            isActive: true,
+            coverageRadiusKm: meta.radiusKm,
+          }));
+
+    // If not SYSTEM_ADMIN or HQ_OPS, lock strictly to the user's assigned Hubs
+    const canManageAllHubs =
+      isSystemAdmin || (session?.user.roles ?? []).some((r) => r === 'HQ_OPS' || r === 'HQ_MANAGER');
+
+    if (!canManageAllHubs && userHubCodes.length > 0) {
+      const allowedSet = new Set(userHubCodes.map((c) => c.trim().toUpperCase()));
+      const filtered = rawHubs.filter((h) => allowedSet.has(h.code.trim().toUpperCase()));
+      if (filtered.length > 0) {
+        return filtered;
+      }
     }
-    return Object.entries(HUB_COORDINATE_MAP).map(([code, meta]) => ({
-      id: code,
-      code,
-      name: meta.name,
-      level: 2,
-      latitude: meta.lat,
-      longitude: meta.lng,
-      address: `${meta.district}, ${meta.province}`,
-      district: meta.district,
-      ward: '',
-      isActive: true,
-      coverageRadiusKm: meta.radiusKm,
-    }));
-  }, [hubsQuery.data]);
+
+    return rawHubs;
+  }, [hubsQuery.data, isSystemAdmin, session?.user.roles, userHubCodes]);
+
+  // Sync activeHubCode if not in availableHubs
+  useEffect(() => {
+    if (availableHubs.length > 0 && !availableHubs.some((h) => h.code === activeHubCode)) {
+      setActiveHubCode(availableHubs[0].code);
+    }
+  }, [availableHubs, activeHubCode]);
 
   // Current Hub Info & Center Coordinates
   const currentHubInfo = useMemo(() => {
@@ -313,10 +423,37 @@ export function CourierAreaAssignmentPage(): React.JSX.Element {
       ...EXPANDED_WARD_HUBS,
     ];
 
-    // Priority filter: Wards matching current hub province/district, or nearby within radius
+    const cleanDistrict = (d: string) =>
+      d?.toLowerCase().replace(/^(quận|huyện|thị xã|tp\.?|thành phố)\s+/i, '').trim() || '';
+
+    const targetDistrict = cleanDistrict(currentHubInfo.district);
+
+    // 1st Priority: Match exact district cadastral boundaries (e.g. all 15 wards of Tân Bình or all 10 wards of Q1)
+    if (targetDistrict) {
+      const districtWards = allWards.filter(
+        (w) => cleanDistrict(w.district) === targetDistrict
+      );
+      if (districtWards.length > 0) {
+        // De-duplicate by ward name
+        const seenNames = new Set<string>();
+        const uniqueWards: Array<OfficialWardBoundary | LocalWardHubItem> = [];
+        districtWards.forEach((w) => {
+          const normName = w.name.toLowerCase().trim();
+          if (!seenNames.has(normName)) {
+            seenNames.add(normName);
+            uniqueWards.push(w);
+          }
+        });
+        // Sort naturally (Phường 1, Phường 2... Phường 15)
+        return uniqueWards.sort((a, b) =>
+          a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' })
+        );
+      }
+    }
+
+    // 2nd Priority: Radius proximity match
     const hubLat = currentHubInfo.lat;
     const hubLng = currentHubInfo.lng;
-
     const matched = allWards.filter((w) => {
       const centroid = calculatePolygonCentroid(w.boundaryPolygon);
       const distKm = Math.hypot(centroid[0] - hubLat, centroid[1] - hubLng) * 111;
@@ -324,29 +461,65 @@ export function CourierAreaAssignmentPage(): React.JSX.Element {
     });
 
     if (matched.length > 0) {
-      return matched;
+      const seenNames = new Set<string>();
+      return matched.filter((w) => {
+        const normName = w.name.toLowerCase().trim();
+        if (seenNames.has(normName)) return false;
+        seenNames.add(normName);
+        return true;
+      });
     }
 
-    // Fallback: take wards matching province or top wards
-    return allWards.slice(0, 30);
+    // Fallback: take top wards
+    return allWards.slice(0, 15);
   }, [currentHubInfo]);
 
   // Assignment Map by Ward Name / Code
   const assignmentLookup = useMemo(() => {
     const map = new Map<string, CourierAreaAssignmentDto>();
+
+    // 1. Seed with baseline realistic assignments for production demo
+    const defaults = DEFAULT_REALISTIC_ASSIGNMENTS[activeHubCode] || [];
+    defaults.forEach((item, idx) => {
+      const assignmentDto: CourierAreaAssignmentDto = {
+        id: `mock-assignment-${activeHubCode}-${idx}`,
+        hubCode: activeHubCode,
+        province: currentHubInfo.province,
+        district: currentHubInfo.district,
+        ward: item.ward,
+        courierId: item.courierId,
+        colorHex: item.colorHex,
+        zoneName: item.zoneName,
+        isActive: true,
+        createdAt: '2026-01-01T00:00:00.000Z',
+        updatedAt: '2026-01-01T00:00:00.000Z',
+      };
+      const key = `${currentHubInfo.province}_${currentHubInfo.district}_${item.ward}`.toLowerCase();
+      map.set(key, assignmentDto);
+      map.set(item.ward.toLowerCase(), assignmentDto);
+      map.set(item.ward.toLowerCase().replace(/^phường\s+/i, 'p. '), assignmentDto);
+    });
+
+    // 2. Override with live server assignments from DB
     (assignmentsQuery.data ?? []).forEach((item) => {
       const key = `${item.province}_${item.district}_${item.ward}`.toLowerCase();
       map.set(key, item);
       map.set(item.ward.toLowerCase(), item);
+      map.set(item.ward.toLowerCase().replace(/^phường\s+/i, 'p. '), item);
     });
     return map;
-  }, [assignmentsQuery.data]);
+  }, [assignmentsQuery.data, activeHubCode, currentHubInfo]);
 
   // Assign courier color map for consistent styling
   const courierColorMap = useMemo(() => {
     const map = new Map<string, string>();
     availableCouriers.forEach((c, idx) => {
       map.set(c.courierId, COURIER_COLOR_PRESETS[idx % COURIER_COLOR_PRESETS.length]);
+    });
+    // Add default realistic assignment colors
+    const defaults = DEFAULT_REALISTIC_ASSIGNMENTS[activeHubCode] || [];
+    defaults.forEach((a) => {
+      if (a.colorHex) map.set(a.courierId, a.colorHex);
     });
     // Overlay custom saved colors from DB
     (assignmentsQuery.data ?? []).forEach((a) => {
@@ -355,7 +528,7 @@ export function CourierAreaAssignmentPage(): React.JSX.Element {
       }
     });
     return map;
-  }, [availableCouriers, assignmentsQuery.data]);
+  }, [availableCouriers, assignmentsQuery.data, activeHubCode]);
 
   // KPI Metrics Calculation
   const metrics = useMemo(() => {
@@ -419,6 +592,7 @@ export function CourierAreaAssignmentPage(): React.JSX.Element {
       }).addTo(map);
 
       wardLayersGroupRef.current = L.layerGroup().addTo(map);
+      wardLabelsGroupRef.current = L.layerGroup().addTo(map);
       customZonesLayerRef.current = L.layerGroup().addTo(map);
       drawingLayerRef.current = L.layerGroup().addTo(map);
       hubMarkerGroupRef.current = L.layerGroup().addTo(map);
@@ -458,7 +632,7 @@ export function CourierAreaAssignmentPage(): React.JSX.Element {
     }).addTo(hubMarkerGroupRef.current);
 
     radiusCircle.bindTooltip(
-      `<div style="font-weight:700; color:#1d4ed8;">🎯 Bán kính phục vụ: ${currentHubInfo.radiusKm} km</div>`,
+      `<div style="font-weight:700; color:#1d4ed8;">Bán kính phục vụ: ${currentHubInfo.radiusKm} km</div>`,
       { sticky: true }
     );
 
@@ -468,14 +642,16 @@ export function CourierAreaAssignmentPage(): React.JSX.Element {
       html: `
         <div style="
           position: relative; display: flex; align-items: center; justify-content: center;
-          width: 38px; height: 38px; border-radius: 9999px; background: #1d4ed8; color: #ffffff;
+          width: 36px; height: 36px; border-radius: 9999px; background: #1d4ed8; color: #ffffff;
           box-shadow: 0 4px 14px rgba(29, 78, 216, 0.4); border: 2.5px solid #ffffff; cursor: pointer;
         ">
-          <span style="font-size: 16px;">🏢</span>
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 21h18M5 21V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16M9 9h1M9 13h1M9 17h1M14 9h1M14 13h1M14 17h1"/>
+          </svg>
         </div>
       `,
-      iconSize: [38, 38],
-      iconAnchor: [19, 19],
+      iconSize: [36, 36],
+      iconAnchor: [18, 18],
     });
 
     const hubMarker = L.marker([currentHubInfo.lat, currentHubInfo.lng], { icon: hubIcon }).addTo(
@@ -484,7 +660,7 @@ export function CourierAreaAssignmentPage(): React.JSX.Element {
 
     hubMarker.bindPopup(`
       <div style="font-family: inherit; padding: 4px;">
-        <h4 style="margin:0 0 4px 0; color:#1e293b; font-size:14px;">🏢 ${currentHubInfo.name}</h4>
+        <h4 style="margin:0 0 4px 0; color:#1e293b; font-size:14px; font-weight:700;">${currentHubInfo.name}</h4>
         <div style="font-size:12px; color:#475569;">Mã Hub: <strong>${currentHubInfo.code}</strong></div>
         <div style="font-size:12px; color:#64748b;">Bán kính điều phối: ${currentHubInfo.radiusKm} km</div>
       </div>
@@ -557,14 +733,14 @@ export function CourierAreaAssignmentPage(): React.JSX.Element {
         subZone.bindTooltip(
           `<div style="font-family: inherit; font-size: 12px;">
             <div style="font-weight: 700; color: ${zoneColor}; font-size: 13px;">
-              📍 Dải toạ độ: ${zone.zoneName || zone.ward}
+              Dải toạ độ: ${zone.zoneName || zone.ward}
             </div>
             <div style="color: #475569; font-size: 11px;">${zone.district}, ${zone.province}</div>
             <div style="margin-top: 4px; padding-top: 4px; border-top: 1px solid #e2e8f0;">
-              <strong>Shipper:</strong> ${courierObj?.label || zone.courierId}
+              <strong>Bưu tá:</strong> ${courierObj?.label || zone.courierId}
             </div>
             <div style="font-size: 10px; color: #64748b; margin-top: 2px;">
-              📐 ${zone.boundaryPolygon.length} điểm toạ độ khép kín
+              ${zone.boundaryPolygon.length} điểm toạ độ khép kín
             </div>
           </div>`,
           { sticky: true },
@@ -582,13 +758,17 @@ export function CourierAreaAssignmentPage(): React.JSX.Element {
     });
   }, [customDrawnZones, leafletLoaded, allCouriersMap]);
 
-  // 7. Render Ward Polygons & Courier Zones on Map
   useEffect(() => {
     if (!leafletLoaded || !mapRef.current || !wardLayersGroupRef.current) return;
     const L = (window as any).L;
     if (!L) return;
 
     wardLayersGroupRef.current.clearLayers();
+    if (wardLabelsGroupRef.current) {
+      wardLabelsGroupRef.current.clearLayers();
+    }
+
+    const allCoords: [number, number][] = [];
 
     hubWards.forEach((ward) => {
       const key = `${ward.province}_${ward.district}_${ward.name}`.toLowerCase();
@@ -602,6 +782,11 @@ export function CourierAreaAssignmentPage(): React.JSX.Element {
         ? assignment?.colorHex || courierColorMap.get(courierId!) || '#10b981'
         : '#f59e0b'; // Amber for unassigned
 
+      // Collect coordinates for auto-fit bounds
+      if (Array.isArray(ward.boundaryPolygon)) {
+        ward.boundaryPolygon.forEach((pt) => allCoords.push(pt));
+      }
+
       const poly = L.polygon(ward.boundaryPolygon, {
         color: isSelected ? '#ffffff' : isAssigned ? zoneColor : '#ef4444',
         weight: isSelected ? 3.5 : isAssigned ? 2 : 1.8,
@@ -613,14 +798,14 @@ export function CourierAreaAssignmentPage(): React.JSX.Element {
       const tooltipContent = `
         <div style="font-family: inherit; font-size: 12px;">
           <div style="font-weight: 700; color: ${isAssigned ? zoneColor : '#dc2626'}; font-size: 13px;">
-            ${isAssigned ? '🚚 ' : '⚠️ '}${ward.name}
+            ${ward.name}
           </div>
           <div style="color: #475569; font-size: 11px;">${ward.district}, ${ward.province}</div>
           <div style="margin-top: 4px; padding-top: 4px; border-top: 1px solid #e2e8f0;">
             ${
               isAssigned
-                ? `<strong>Shipper:</strong> ${courier ? courier.label : courierId}`
-                : `<span style="color:#dc2626; font-weight:600;">Chưa phân công Shipper</span>`
+                ? `<strong>Bưu tá:</strong> ${courier ? courier.label : courierId}`
+                : `<span style="color:#dc2626; font-weight:600;">Chưa phân công bưu tá</span>`
             }
           </div>
         </div>
@@ -649,7 +834,36 @@ export function CourierAreaAssignmentPage(): React.JSX.Element {
       });
 
       poly.addTo(wardLayersGroupRef.current);
+
+      // Render permanent centroid label badge on the map
+      if (wardLabelsGroupRef.current && Array.isArray(ward.boundaryPolygon) && ward.boundaryPolygon.length >= 3) {
+        const centroid = calculatePolygonCentroid(ward.boundaryPolygon);
+        const wardShort = ward.name.replace(/^phường\s+/i, 'P.');
+        const courierShort = courier?.name || courierId;
+        const badgeHtml = `
+          <div class="ward-map-badge ${isAssigned ? 'assigned' : 'unassigned'}">
+            <span class="ward-map-badge-title">${wardShort}</span>
+            <span class="ward-map-badge-sub" style="color: ${isAssigned ? zoneColor : '#b45309'}">
+              ${isAssigned ? courierShort : 'Chưa gán'}
+            </span>
+          </div>
+        `;
+        const badgeIcon = L.divIcon({
+          className: 'custom-ward-label-container',
+          html: badgeHtml,
+          iconSize: [80, 26],
+          iconAnchor: [40, 13],
+        });
+        const labelMarker = L.marker(centroid, { icon: badgeIcon, interactive: false });
+        labelMarker.addTo(wardLabelsGroupRef.current);
+      }
     });
+
+    // Auto-fit bounds if we have coordinates
+    if (mapRef.current && allCoords.length > 0) {
+      const bounds = L.latLngBounds(allCoords);
+      mapRef.current.fitBounds(bounds, { padding: [35, 35], maxZoom: 14 });
+    }
   }, [leafletLoaded, hubWards, assignmentLookup, selectedWard, allCouriersMap, courierColorMap]);
 
   // Handle Select Ward from Map or Table
@@ -756,7 +970,7 @@ export function CourierAreaAssignmentPage(): React.JSX.Element {
     mapRef.current.fitBounds(bounds, { padding: [50, 50] });
   };
 
-  // Helper for rendering simulation marker
+  // Helper for rendering simulation marker and dashed transit line to Hub
   const renderSimMarker = (lat: number, lng: number) => {
     if (!mapRef.current) return;
     const L = (window as any).L;
@@ -767,13 +981,71 @@ export function CourierAreaAssignmentPage(): React.JSX.Element {
     } else {
       const simIcon = L.divIcon({
         className: 'sim-gps-marker',
-        html: `<div style="background: #ef4444; width: 16px; height: 16px; border-radius: 50%; border: 2px solid #ffffff; box-shadow: 0 0 10px rgba(239, 68, 68, 0.8); animation: pulse 1.5s infinite;"></div>`,
+        html: `<div style="background: #ef4444; width: 14px; height: 14px; border-radius: 50%; border: 2.5px solid #ffffff; box-shadow: 0 0 12px rgba(239, 68, 68, 0.9); animation: pulse 1.5s infinite;"></div>`,
         iconSize: [16, 16],
         iconAnchor: [8, 8],
       });
 
       simMarkerRef.current = L.marker([lat, lng], { icon: simIcon }).addTo(mapRef.current);
     }
+
+    // Connect line to hub center
+    const hubCenter: [number, number] = [currentHubInfo.lat, currentHubInfo.lng];
+    if (simLineRef.current) {
+      simLineRef.current.setLatLngs([[lat, lng], hubCenter]);
+    } else {
+      simLineRef.current = L.polyline([[lat, lng], hubCenter], {
+        color: '#2563eb',
+        weight: 2,
+        dashArray: '6, 6',
+        opacity: 0.75,
+      }).addTo(mapRef.current);
+    }
+  };
+
+  const handleSelectPresetAddress = (preset: (typeof DEMO_PRESET_ADDRESSES)[number]) => {
+    setSimAddressInput(preset.label);
+    if (preset.hubCode && preset.hubCode !== activeHubCode) {
+      setActiveHubCode(preset.hubCode);
+    }
+    if (mapRef.current) {
+      mapRef.current.flyTo([preset.lat, preset.lng], 14, { duration: 0.8 });
+    }
+    setTimeout(() => {
+      handleMapClickSimulate(preset.lat, preset.lng);
+    }, 200);
+  };
+
+  const handleSimulateCustomAddress = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!simAddressInput.trim()) return;
+
+    const matchedPreset = DEMO_PRESET_ADDRESSES.find(
+      (p) =>
+        p.label.toLowerCase().includes(simAddressInput.toLowerCase()) ||
+        p.ward.toLowerCase().includes(simAddressInput.toLowerCase()),
+    );
+    if (matchedPreset) {
+      handleSelectPresetAddress(matchedPreset);
+      return;
+    }
+
+    const matchedWard = hubWards.find((w) =>
+      simAddressInput.toLowerCase().includes(w.name.toLowerCase()),
+    );
+    if (matchedWard && Array.isArray(matchedWard.boundaryPolygon) && matchedWard.boundaryPolygon.length > 0) {
+      const centroid = calculatePolygonCentroid(matchedWard.boundaryPolygon);
+      if (mapRef.current) {
+        mapRef.current.flyTo(centroid, 14, { duration: 0.8 });
+      }
+      setTimeout(() => {
+        handleMapClickSimulate(centroid[0], centroid[1]);
+      }, 200);
+      return;
+    }
+
+    // Default to hub with small offset
+    handleMapClickSimulate(currentHubInfo.lat + 0.006, currentHubInfo.lng + 0.006);
   };
 
   // 8. Handle Map Click for GPS Point-in-Polygon & Auto-Dispatch Simulation
@@ -796,7 +1068,7 @@ export function CourierAreaAssignmentPage(): React.JSX.Element {
 
     if (matchedCustomZone) {
       const courier = allCouriersMap.get(matchedCustomZone.courierId);
-      const simulatedLog = `🤖 [Hệ thống tự động điều phối - Geofence Tọa Độ] Tọa độ điểm lấy hàng (${lat.toFixed(5)}, ${lng.toFixed(5)}) nằm chính xác trong Dải toạ độ đã vẽ [${matchedCustomZone.zoneName || matchedCustomZone.ward}] ➔ Tự động gán ngay cho Shipper: ${matchedCustomZone.courierId} (${courier?.label || 'Shipper'}).`;
+      const simulatedLog = `[Hệ thống tự động điều phối - Geofence Tọa độ] Tọa độ điểm lấy hàng (${lat.toFixed(5)}, ${lng.toFixed(5)}) nằm chính xác trong Dải toạ độ đã vẽ [${matchedCustomZone.zoneName || matchedCustomZone.ward}] ➔ Tự động gán ngay cho Shipper: ${matchedCustomZone.courierId} (${courier?.label || 'Shipper'}).`;
 
       setSimResult({
         lat,
@@ -835,8 +1107,8 @@ export function CourierAreaAssignmentPage(): React.JSX.Element {
         : null;
 
       const simulatedLog = isAssigned
-        ? `🤖 [Hệ thống tự động điều phối - Địa giới Phường] Tọa độ (${lat.toFixed(5)}, ${lng.toFixed(5)}) rơi vào ${matchedWard.name}, ${matchedWard.district} ➔ Gán Shipper: ${assignment?.courierId} (${courier?.label || 'Shipper'}) thuộc Hub ${activeHubCode}.`
-        : `⚠️ [Cảnh báo Điều phối] Tọa độ rơi vào ${matchedWard.name}, ${matchedWard.district} chưa được phân công dải toạ độ hoặc Shipper phụ trách ➔ Đơn chuyển vào hàng đợi điều phối thủ công.`;
+        ? `[Hệ thống tự động điều phối - Địa giới Phường] Tọa độ (${lat.toFixed(5)}, ${lng.toFixed(5)}) rơi vào ${matchedWard.name}, ${matchedWard.district} ➔ Gán Shipper: ${assignment?.courierId} (${courier?.label || 'Shipper'}) thuộc Hub ${activeHubCode}.`
+        : `[Cảnh báo điều phối] Tọa độ rơi vào ${matchedWard.name}, ${matchedWard.district} chưa được phân công dải toạ độ hoặc Shipper phụ trách ➔ Đơn chuyển vào hàng đợi điều phối thủ công.`;
 
       setSimResult({
         lat,
@@ -859,7 +1131,7 @@ export function CourierAreaAssignmentPage(): React.JSX.Element {
         courierId: null,
         courierName: null,
         isAutoDispatched: false,
-        simulatedLog: `⚠️ Tọa độ (${lat.toFixed(4)}, ${lng.toFixed(4)}) nằm ngoài ranh giới phục vụ của Hub ${activeHubCode}. Đơn hàng cần chuyển tiếp sang bưu cục phụ trách khác.`,
+        simulatedLog: `[Cảnh báo] Tọa độ (${lat.toFixed(4)}, ${lng.toFixed(4)}) nằm ngoài ranh giới phục vụ của Hub ${activeHubCode}. Đơn hàng cần chuyển tiếp sang bưu cục phụ trách khác.`,
       });
     }
   };
@@ -969,7 +1241,7 @@ export function CourierAreaAssignmentPage(): React.JSX.Element {
 
         <div className="hub-selector-group" style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
           <div>
-            <label>🏢 Bưu cục đang quản lý:</label>
+            <label>Bưu cục vận hành:</label>
             <select
               value={activeHubCode}
               onChange={(e) => {
@@ -1014,19 +1286,6 @@ export function CourierAreaAssignmentPage(): React.JSX.Element {
               )
             </span>
           </label>
-        </div>
-      </div>
-
-      {/* 2. Educational Banner */}
-      <div className="hub-guide-banner">
-        <div className="hub-guide-icon">
-          <Zap size={22} />
-        </div>
-        <div className="hub-guide-content">
-          <h4>Cơ chế Điều phối Tự động Thông minh (System Auto-Dispatch Engine)</h4>
-          <p>
-            Khi đơn hàng mới phát sinh hoặc được quét nhập kho tại bưu cục đích, hệ thống sẽ tự động quét tọa độ GPS & địa chỉ Phường/Xã đối chiếu với bản đồ phân vùng bên dưới. Đơn hàng sẽ được <strong>tự động gán ngay cho Shipper phụ trách tuyến</strong> và ghi nhận trên hành trình là <strong>[Hệ thống tự động điều phối]</strong> mà không cần nhân viên Ops thao tác thủ công.
-          </p>
         </div>
       </div>
 
@@ -1229,14 +1488,14 @@ export function CourierAreaAssignmentPage(): React.JSX.Element {
                     className="hub-btn-draw-start"
                   >
                     <Pencil size={15} />
-                    ✏️ Vẽ Dải Toạ Độ Mới Cho Shipper
+                    Vẽ dải toạ độ tuyến
                   </button>
                 </>
               )}
             </div>
 
             <div className="hub-map-action-tip">
-              <span>{isDrawingMode ? '🎯 Hãy nhấp chuột vào các góc đường, khu phố trên bản đồ để tạo thành đa giác khép kín' : '💡 Click vào đa giác Phường để gán Shipper | Click để thử giả lập GPS điều phối'}</span>
+              <span>{isDrawingMode ? 'Nhấp chuột vào các góc đường trên bản đồ để tạo thành đa giác khép kín.' : 'Nhấp đa giác Phường để phân công bưu tá | Nhấp điểm bất kỳ để thử nghiệm điều phối GPS.'}</span>
             </div>
 
             <div ref={mapContainerRef} className="hub-map-canvas" />
@@ -1246,22 +1505,22 @@ export function CourierAreaAssignmentPage(): React.JSX.Element {
               <div className="hub-legend-title">Chú giải Bản đồ Phân vùng</div>
               <div className="hub-legend-item">
                 <div className="hub-legend-color-box" style={{ background: '#2563eb' }} />
-                <span>🏢 Tâm Hub & Bán kính phục vụ</span>
+                <span>Tâm bưu cục & Bán kính phục vụ</span>
               </div>
               <div className="hub-legend-item">
                 <div className="hub-legend-color-box" style={{ background: '#0284c7', border: '1.5px solid #ffffff' }} />
-                <span>📍 Dải toạ độ đã vẽ ({customDrawnZones.length} tuyến)</span>
+                <span>Dải toạ độ đã vẽ ({customDrawnZones.length} tuyến)</span>
               </div>
               <div className="hub-legend-item">
                 <div className="hub-legend-color-box" style={{ background: '#10b981' }} />
-                <span>🟢 Phường ĐÃ phân công Shipper</span>
+                <span>Phường đã phân công bưu tá</span>
               </div>
               <div className="hub-legend-item">
                 <div
                   className="hub-legend-color-box"
                   style={{ background: '#f59e0b', border: '1px dashed #ef4444' }}
                 />
-                <span>🔴 Phường CHƯA phân công (Cần gán)</span>
+                <span>Phường chưa phân công</span>
               </div>
             </div>
           </div>
@@ -1272,7 +1531,7 @@ export function CourierAreaAssignmentPage(): React.JSX.Element {
             {isDrawingMode ? (
               <div className="hub-card-panel hub-draw-panel-active">
                 <div className="hub-panel-title" style={{ color: '#0284c7' }}>
-                  <span>✏️ Thiết lập Tuyến Dải Toạ Độ Mới</span>
+                  <span>Thiết lập Tuyến Dải Toạ Độ Mới</span>
                   <span style={{ fontSize: '11px', background: '#e0f2fe', color: '#0369a1', padding: '2px 6px', borderRadius: 4 }}>
                     {drawnPoints.length} điểm chấm
                   </span>
@@ -1319,7 +1578,7 @@ export function CourierAreaAssignmentPage(): React.JSX.Element {
                     </select>
                     {availableCouriers.length === 0 && (
                       <div style={{ marginTop: 6, fontSize: 11, color: '#dc2626' }}>
-                        ⚠️ CSDL chưa có tài khoản Shipper {filterByActiveHub ? `thuộc bưu cục ${activeHubCode}` : ''}. Vui lòng tạo tài khoản nhân sự trước khi gán tuyến.
+                        Chưa có tài khoản Shipper {filterByActiveHub ? `thuộc bưu cục ${activeHubCode}` : ''}. Vui lòng tạo tài khoản nhân sự trước khi gán tuyến.
                       </div>
                     )}
                   </div>
@@ -1360,9 +1619,9 @@ export function CourierAreaAssignmentPage(): React.JSX.Element {
 
                   <div style={{ marginTop: 12, padding: 10, background: '#f8fafc', borderRadius: 8, fontSize: 11, color: '#64748b' }}>
                     {drawnPoints.length < 3 ? (
-                      <span style={{ color: '#dc2626' }}>⚠️ Cần chấm thêm ít nhất {3 - drawnPoints.length} điểm trên bản đồ để tạo thành đa giác khép kín.</span>
+                      <span style={{ color: '#dc2626' }}>Cần thêm ít nhất {3 - drawnPoints.length} điểm trên bản đồ để tạo thành đa giác khép kín.</span>
                     ) : (
-                      <span style={{ color: '#059669' }}>✅ Đã có {drawnPoints.length} điểm. Sẵn sàng lưu đa giác khép kín ({drawnPoints.length + 1} toạ độ).</span>
+                      <span style={{ color: '#059669' }}>Đã xác định {drawnPoints.length} điểm toạ độ. Sẵn sàng lưu đa giác khép kín ({drawnPoints.length + 1} toạ độ).</span>
                     )}
                   </div>
 
@@ -1390,7 +1649,7 @@ export function CourierAreaAssignmentPage(): React.JSX.Element {
             ) : (
               <div className="hub-card-panel">
                 <div className="hub-panel-title">
-                  <span>📝 Phân công Tuyến Shipper (Theo Phường)</span>
+                  <span>Phân công Tuyến Bưu tá (Theo Phường)</span>
                   {selectedWard && (
                     <span style={{ fontSize: '11px', color: '#2563eb', fontWeight: 600 }}>
                       {selectedWard.name}
@@ -1449,7 +1708,7 @@ export function CourierAreaAssignmentPage(): React.JSX.Element {
                     </select>
                     {availableCouriers.length === 0 && (
                       <div style={{ marginTop: 6, fontSize: 11, color: '#dc2626' }}>
-                        ⚠️ CSDL chưa có tài khoản Shipper {filterByActiveHub ? `thuộc bưu cục ${activeHubCode}` : ''}.
+                        Chưa có tài khoản Shipper {filterByActiveHub ? `thuộc bưu cục ${activeHubCode}` : ''}.
                       </div>
                     )}
                   </div>
@@ -1525,19 +1784,117 @@ export function CourierAreaAssignmentPage(): React.JSX.Element {
 
             {/* Live Point-in-Polygon & Dispatch Simulator */}
             <div className="hub-simulator-card">
-              <h4>
-                <Zap size={18} />
-                Giả lập Điều phối GPS Tự động
-              </h4>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                <h4 style={{ margin: 0 }}>
+                  Thử nghiệm Điều phối Tuyến (Geofence Engine)
+                </h4>
+                <span className="hub-sim-zero-cost-badge">
+                  Thuật toán Ray-Casting (Local)
+                </span>
+              </div>
               <p>
-                Nhấp vào vị trí bất kỳ trên bản đồ để kiểm tra phân giải tọa độ Point-in-Polygon và xem trước quyết định điều phối tự động của hệ thống.
+                Kiểm tra so khớp Point-in-Polygon và phân quyền điều phối tự động tức thời theo thời gian thực mà <strong>không tốn chi phí gọi Google Maps API</strong>.
               </p>
+
+              {/* Demo Mode Tabs */}
+              <div className="hub-sim-demo-tabs">
+                <button
+                  type="button"
+                  className={`hub-sim-demo-tab-btn ${simMode === 'GPS_CLICK' ? 'active' : ''}`}
+                  onClick={() => setSimMode('GPS_CLICK')}
+                >
+                  <Compass size={13} />
+                  Chấm GPS trên bản đồ
+                </button>
+                <button
+                  type="button"
+                  className={`hub-sim-demo-tab-btn ${simMode === 'ADDRESS_PRESET' ? 'active' : ''}`}
+                  onClick={() => setSimMode('ADDRESS_PRESET')}
+                >
+                  <MapPin size={13} />
+                  Địa chỉ thực tế mẫu (1-Click)
+                </button>
+              </div>
+
+              {/* 1-Click Demo Presets */}
+              {simMode === 'ADDRESS_PRESET' && (
+                <div style={{ marginBottom: 12 }}>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 6 }}>
+                    Chọn nhanh địa chỉ thực tế để demo:
+                  </div>
+                  <div className="hub-sim-demo-presets">
+                    {DEMO_PRESET_ADDRESSES.map((preset, idx) => (
+                      <button
+                        key={idx}
+                        type="button"
+                        className="hub-sim-preset-btn"
+                        onClick={() => handleSelectPresetAddress(preset)}
+                      >
+                        <span className="hub-sim-preset-btn-name">{preset.label}</span>
+                        <span className="hub-sim-preset-btn-desc">{preset.description}</span>
+                      </button>
+                    ))}
+                  </div>
+
+                  <form onSubmit={handleSimulateCustomAddress} style={{ display: 'flex', gap: 6, marginTop: 8 }}>
+                    <input
+                      type="text"
+                      className="hub-form-input"
+                      style={{ fontSize: 12, padding: '7px 10px', background: '#0f172a', borderColor: '#334155', color: '#f8fafc' }}
+                      placeholder="Hoặc gõ địa chỉ / tên phường..."
+                      value={simAddressInput}
+                      onChange={(e) => setSimAddressInput(e.target.value)}
+                    />
+                    <button
+                      type="submit"
+                      className="hub-btn-primary"
+                      style={{ fontSize: 12, padding: '7px 12px', whiteSpace: 'nowrap' }}
+                    >
+                      Kiểm tra
+                    </button>
+                  </form>
+                </div>
+              )}
+
+              {/* 5-Step Pipeline Breakdown */}
+              <div className="hub-sim-step-list">
+                <div className={`hub-sim-step-item ${simResult ? 'active' : ''}`}>
+                  <span className="hub-sim-step-dot" />
+                  <span className="hub-sim-step-text">
+                    1. Điểm lấy/giao: {simResult ? `${simResult.lat.toFixed(4)}, ${simResult.lng.toFixed(4)}` : 'Chờ điểm thử nghiệm'}
+                  </span>
+                </div>
+                <div className={`hub-sim-step-item ${simResult ? 'active' : ''}`}>
+                  <span className="hub-sim-step-dot" />
+                  <span className="hub-sim-step-text">
+                    2. Bán kính Hub trực thuộc: {currentHubInfo.name} ({currentHubInfo.radiusKm} km)
+                  </span>
+                </div>
+                <div className={`hub-sim-step-item ${simResult ? 'active' : ''}`}>
+                  <span className="hub-sim-step-dot" />
+                  <span className="hub-sim-step-text">
+                    3. Quét đa giác Ray-casting: {simResult ? simResult.wardName : 'Chưa quét'}
+                  </span>
+                </div>
+                <div className={`hub-sim-step-item ${simResult?.courierId ? 'active' : ''}`}>
+                  <span className="hub-sim-step-dot" />
+                  <span className="hub-sim-step-text">
+                    4. Khớp Shipper trực tuyến: {simResult?.courierName || 'Chưa gán'}
+                  </span>
+                </div>
+                <div className={`hub-sim-step-item ${simResult?.isAutoDispatched ? 'active' : ''}`}>
+                  <span className="hub-sim-step-dot" />
+                  <span className="hub-sim-step-text">
+                    5. Lệnh điều phối thời gian thực: {simResult?.isAutoDispatched ? 'Thành công (Tự động)' : 'Chờ xác nhận'}
+                  </span>
+                </div>
+              </div>
 
               {simResult && (
                 <div className="hub-sim-result-box">
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <span style={{ fontSize: 11, color: '#94a3b8' }}>
-                      📍 Tọa độ: {simResult.lat.toFixed(5)}, {simResult.lng.toFixed(5)}
+                      Tọa độ: {simResult.lat.toFixed(5)}, {simResult.lng.toFixed(5)}
                     </span>
                     {simResult.isAutoDispatched ? (
                       <span className="hub-sim-badge-success">
@@ -1550,18 +1907,20 @@ export function CourierAreaAssignmentPage(): React.JSX.Element {
                     )}
                   </div>
 
-                  <div style={{ fontSize: 13, fontWeight: 700, color: '#ffffff' }}>
-                    🗺️ {simResult.wardName} - {simResult.district}
+                  <div style={{ fontSize: 13, fontWeight: 700, color: '#ffffff', marginTop: 4 }}>
+                    {simResult.wardName} - {simResult.district}
                   </div>
 
                   {simResult.courierId && (
-                    <div style={{ fontSize: 12, color: '#38bdf8' }}>
-                      🚚 Shipper tiếp nhận: <strong>{simResult.courierName || simResult.courierId}</strong>
+                    <div style={{ fontSize: 12, color: '#38bdf8', marginTop: 2 }}>
+                      Bưu tá tiếp nhận: <strong>{simResult.courierName || simResult.courierId}</strong>
                     </div>
                   )}
 
-                  <div style={{ marginTop: 6 }}>
-                    <div style={{ fontSize: 11, color: '#94a3b8', marginBottom: 4 }}>Mô phỏng Ghi chú Hành trình đơn:</div>
+                  <div style={{ marginTop: 8 }}>
+                    <div style={{ fontSize: 11, color: '#94a3b8', marginBottom: 4 }}>
+                      Mô phỏng Ghi chú Hành trình đơn:
+                    </div>
                     <div className="hub-sim-log-preview">
                       {simResult.simulatedLog}
                     </div>
@@ -1594,7 +1953,7 @@ export function CourierAreaAssignmentPage(): React.JSX.Element {
               className="hub-btn-draw-start"
             >
               <Pencil size={15} />
-              ✏️ Vẽ Dải Toạ Độ Mới
+              Vẽ Dải Toạ Độ Mới
             </button>
           </div>
 
@@ -1676,7 +2035,7 @@ export function CourierAreaAssignmentPage(): React.JSX.Element {
                               fontWeight: 600,
                             }}
                           >
-                            📐 {zone.boundaryPolygon.length} điểm khép kín
+                            {zone.boundaryPolygon.length} điểm khép kín
                           </span>
                         </td>
                         <td>
@@ -1799,11 +2158,11 @@ export function CourierAreaAssignmentPage(): React.JSX.Element {
                       <td>
                         {isAssigned ? (
                           <span style={{ padding: '3px 8px', borderRadius: 999, background: '#ecfdf5', color: '#059669', fontSize: 11, fontWeight: 600 }}>
-                            🟢 Đã phân công
+                            Đã phân công
                           </span>
                         ) : (
                           <span style={{ padding: '3px 8px', borderRadius: 999, background: '#fef2f2', color: '#dc2626', fontSize: 11, fontWeight: 600 }}>
-                            🔴 Chưa phân công
+                            Chưa phân công
                           </span>
                         )}
                       </td>
@@ -1829,7 +2188,7 @@ export function CourierAreaAssignmentPage(): React.JSX.Element {
                       </td>
                       <td>
                         {isAssigned ? (
-                          <span style={{ color: '#16a34a', fontWeight: 600, fontSize: 12 }}>🤖 Bật</span>
+                          <span style={{ color: '#16a34a', fontWeight: 600, fontSize: 12 }}>Bật</span>
                         ) : (
                           <span style={{ color: '#94a3b8', fontSize: 12 }}>Tắt</span>
                         )}

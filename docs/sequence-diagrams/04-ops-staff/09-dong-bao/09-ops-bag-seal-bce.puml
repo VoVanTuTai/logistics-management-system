@@ -1,0 +1,120 @@
+@startuml
+!theme plain
+skinparam monochrome true
+skinparam sequenceMessageAlign center
+skinparam responseMessageBelowArrow true
+skinparam maxMessageSize 140
+skinparam wrapWidth 200
+skinparam BoxPadding 8
+autonumber "<b>[00]</b>"
+
+box "Boundary Layer (Giao Diện Thiết Bị Cầm Tay PDA / Web)" #FFFFFF
+actor "Nhân viên phân loại kho\n(Hub Sorting Operator)" as Ops
+boundary "BagSealScreen / ManifestPage\n(apps/courier-mobile PDA & ops-web)" as UI
+boundary "Gateway BFF (:3000)\n(OpsManifestController)" as Gateway
+boundary "BagLabelPrinter\n(In tem bao nhiệt A6)" as PrintUI
+end box
+
+box "Control Layer (Điều Khiển & Đóng Bao Trung Chuyển)" #FFFFFF
+control "ManifestController\n(:3012 manifest-service)" as ManifestCtrl
+control "BagManifestService\n(application service)" as ManifestSvc
+control "AudioFeedbackService\n(Âm thanh quét Beep)" as AudioSvc
+end box
+
+box "Entity Layer (Lưu Trữ & Cơ Sở Dữ Liệu)" #FFFFFF
+entity "PostgreSQL (manifest_db)\n[bag_manifests & bag_items Table]" as ManifestDB
+end box
+
+note over UI
+Nhân viên vận hành thao tác bằng máy quét PDA cầm tay tại sàn chia chọn Hub
+để gom các kiện lẻ vào bao tải trung chuyển chuyên dụng (Manifest MB)
+end note
+
+' GIAI ĐOẠN 1: KHỞI TẠO BAO TRUNG CHUYỂN MỚI
+Ops -> UI: Mở màn hình Đóng bao (BagSealScreen),\nchọn Bưu cục đích đến (destinationHubCode)
+activate UI
+
+Ops -> UI: Bấm "Khởi tạo bao mới" (handleCreateBag)
+UI -> Gateway: POST /ops/manifest/bags\n(Body: { originHubCode, destinationHubCode, bagType: 'STANDARD_BAG' })
+activate Gateway
+
+Gateway -> ManifestCtrl: POST /bags
+activate ManifestCtrl
+ManifestCtrl -> ManifestSvc: createBagManifest(payload)
+activate ManifestSvc
+
+ManifestSvc -> ManifestDB: INSERT INTO bag_manifests (id, bag_code, origin_hub_code, dest_hub_code, status: 'OPEN', item_count: 0)\nVALUES (...)
+activate ManifestDB
+ManifestDB --> ManifestSvc: Khởi tạo bao thành công (Mã bao MB-xxxx)
+deactivate ManifestDB
+
+ManifestSvc --> ManifestCtrl: BagManifestDto { id, bagCode: 'MB-78901', status: 'OPEN' }
+deactivate ManifestSvc
+ManifestCtrl --> Gateway: 201 Created (BagManifestDto)
+deactivate ManifestCtrl
+Gateway --> UI: 201 Created
+deactivate Gateway
+
+UI -> UI: Hiển thị giao diện quét nạp đơn: Mã bao MB-78901 (Trạng thái: Đang mở)
+
+' GIAI ĐOẠN 2: BẮN QUÉT CÁC ĐƠN HÀNG LẺ VÀO BAO
+loop Quét liên tục từng kiện hàng lẻ vào bao
+    Ops -> UI: Bắn tia quét mã vạch trên kiện hàng (Barcode/QR)
+    UI -> Gateway: POST /ops/manifest/bags/{bagId}/items\n(Body: { trackingCode })
+    activate Gateway
+
+    Gateway -> ManifestCtrl: POST /bags/{bagId}/items
+    activate ManifestCtrl
+    ManifestCtrl -> ManifestSvc: addItemToBag(bagId, trackingCode)
+    activate ManifestSvc
+
+    ManifestSvc -> ManifestDB: INSERT INTO bag_items (id, bag_id, tracking_code, added_at) VALUES (...)\nUPDATE bag_manifests SET item_count = item_count + 1 WHERE id = $bagId
+    activate ManifestDB
+    ManifestDB --> ManifestSvc: Ghi nhận kiện hàng vào bao
+    deactivate ManifestDB
+
+    ManifestSvc --> ManifestCtrl: { success: true, currentCount: N }
+    deactivate ManifestSvc
+    ManifestCtrl --> Gateway: 200 OK
+    deactivate ManifestCtrl
+    Gateway --> UI: 200 OK
+    deactivate Gateway
+
+    UI -> AudioSvc: playScanSuccessSound()
+    activate AudioSvc
+    AudioSvc --> UI: Phát âm thanh Beep thành công
+    deactivate AudioSvc
+    UI -> UI: Tăng bộ đếm kiện (+1) và cập nhật danh sách hiển thị
+end
+
+' GIAI ĐOẠN 3: KẸP CHÌ SEAL AN NINH & KHÓA NIÊM PHONG BAO
+Ops -> UI: Nhập / Quét Mã số chì niêm phong seal an ninh (sealCode),\nnhập Cân tổng bao (kg) và bấm "Niêm phong đóng bao" (handleSealBag)
+
+UI -> Gateway: POST /ops/manifest/bags/{bagId}/seal\n(Body: { sealCode, totalWeightKg })
+activate Gateway
+
+Gateway -> ManifestCtrl: POST /bags/{bagId}/seal
+activate ManifestCtrl
+ManifestCtrl -> ManifestSvc: sealBag(bagId, sealCode, totalWeightKg)
+activate ManifestSvc
+
+ManifestSvc -> ManifestDB: UPDATE bag_manifests SET status = 'SEALED', seal_code = $sealCode, total_weight = $weight, sealed_at = NOW()\nWHERE id = $bagId
+activate ManifestDB
+ManifestDB --> ManifestSvc: Bao hàng đã được niêm phong hoàn tất
+deactivate ManifestDB
+
+ManifestSvc --> ManifestCtrl: BagManifestDto { bagCode, sealCode, status: 'SEALED', itemCount }
+deactivate ManifestSvc
+ManifestCtrl --> Gateway: 200 OK
+deactivate ManifestCtrl
+Gateway --> UI: 200 OK
+deactivate Gateway
+
+UI -> PrintUI: In tem bao nhiệt A6 (Mã vạch bao MB, Số Seal chì, Bưu cục đích)
+activate PrintUI
+PrintUI -> PrintUI: Đẩy lệnh in tem dán ngoài bao tải
+deactivate PrintUI
+
+UI -> UI: Hiển thị thông báo: "Đã niêm phong bao MB-78901 thành công (N kiện)!"
+deactivate UI
+@enduml

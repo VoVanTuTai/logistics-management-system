@@ -1,0 +1,70 @@
+@startuml
+!theme plain
+skinparam monochrome true
+skinparam sequenceMessageAlign center
+skinparam responseMessageBelowArrow true
+skinparam maxMessageSize 140
+skinparam wrapWidth 200
+skinparam BoxPadding 8
+autonumber "<b>[00]</b>"
+
+box "Boundary Layer (Giao Diện & Cổng Kết Nối)" #FFFFFF
+actor "Quản trị viên hệ thống\n(System Admin)" as Admin
+boundary "ZoneManagementPage\n(apps/admin-web)" as UI
+boundary "Gateway BFF (:3000)\n(AdminMasterdataController)" as Gateway
+end box
+
+box "Control Layer (Điều Khiển & Phân Vùng Cước Zone)" #FFFFFF
+control "MasterdataController\n(:3001 masterdata-service)" as MasterCtrl
+control "ZoneService\n(pricing zone domain service)" as ZoneSvc
+end box
+
+box "Entity Layer (Lưu Trữ & Cơ Sở Dữ Liệu)" #FFFFFF
+entity "PostgreSQL (masterdata_db)\n[zones & zone_provinces Table]" as MasterDB
+end box
+
+' GIAI ĐOẠN 1: MỞ FORM THIẾT LẬP VÙNG CƯỚC ZONE MỚI
+Admin -> UI: Truy cập màn hình Quản lý phân vùng cước (/masterdata/zones),\nbấm nút "Tạo vùng Zone mới" (handleCreateZone)
+activate UI
+
+Admin -> UI: Nhập thông tin vùng cước:\n- Mã vùng (zoneCode, ví dụ: 'ZONE_LIEN_MIEN_BAC_NAM')\n- Tên vùng (name: 'Vùng Vận Chuyển Liên Miền Trục Chính')\n- Hệ số phụ phí vùng xa (rateMultiplier: 1.15)\n- Chọn danh sách Tỉnh/Thành phố trực thuộc vùng (provinceCodes: ['HN', 'HCM', 'DN', ...])
+
+Admin -> UI: Bấm nút "Lưu cấu hình vùng cước" (handleSaveZone)
+
+' GIAI ĐOẠN 2: LƯU TRỮ VÙNG ZONE VÀ GÁN LIÊN KẾT ĐỊA PHƯƠNG
+UI -> Gateway: POST /admin/masterdata/zones\n(Headers: Bearer accessToken, Body: CreateZonePayload)
+activate Gateway
+
+Gateway -> MasterCtrl: POST /zones
+activate MasterCtrl
+
+MasterCtrl -> ZoneSvc: createZoneWithProvinces(payload)
+activate ZoneSvc
+
+ZoneSvc -> MasterDB: INSERT INTO zones (id, zone_code, name, rate_multiplier, status: 'ACTIVE', created_at)\nVALUES (...)
+activate MasterDB
+MasterDB --> ZoneSvc: Khởi tạo bản ghi Zone mới thành công
+deactivate MasterDB
+
+loop Gán từng Tỉnh/Thành vào vùng cước
+    ZoneSvc -> MasterDB: INSERT INTO zone_provinces (zone_id, province_code, mapped_at) VALUES ($zoneId, $provCode, NOW())
+    activate MasterDB
+    MasterDB --> ZoneSvc: Ghi nhận liên kết địa phương
+    deactivate MasterDB
+end
+
+ZoneSvc --> MasterCtrl: ZoneDto { id, zoneCode, name, provinceCount: N, status: 'ACTIVE' }
+deactivate ZoneSvc
+
+MasterCtrl --> Gateway: 201 Created (ZoneDto)
+deactivate MasterCtrl
+
+Gateway --> UI: 201 Created
+deactivate Gateway
+
+' GIAI ĐOẠN 3: HIỂN THỊ CẬP NHẬT TRÊN BẢNG VÙNG CƯỚC
+UI -> UI: Render dòng vùng cước mới vào Bảng ma trận Zone:\n- Mã Zone: ZONE_LIEN_MIEN_BAC_NAM\n- Phụ phí: +15%\n- Số tỉnh thành trực thuộc: N tỉnh\n- Trạng thái: Badge "HOẠT ĐỘNG"
+
+UI -> UI: Hiển thị Toast thông báo: "Đã thiết lập vùng cước Zone mới thành công!"
+deactivate UI
+@enduml

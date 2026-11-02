@@ -1,0 +1,96 @@
+@startuml
+!theme plain
+skinparam monochrome true
+skinparam sequenceMessageAlign center
+skinparam responseMessageBelowArrow true
+skinparam maxMessageSize 140
+skinparam wrapWidth 200
+skinparam BoxPadding 8
+autonumber "<b>[00]</b>"
+
+box "Boundary Layer (Giao Diện Thiết Bị Cầm Tay PDA / Web)" #FFFFFF
+actor "Giám sát cửa bốc dỡ Dock\n(Dock Gate Ops Supervisor)" as Ops
+boundary "VehicleOutboundScreen\n(apps/courier-mobile PDA & ops-web)" as UI
+boundary "Gateway BFF (:3000)\n(OpsScanController)" as Gateway
+end box
+
+box "Control Layer (Điều Khiển & Quét Xuất Trạm Xe Tuyến)" #FFFFFF
+control "ScanController\n(:3005 scan-service)" as ScanCtrl
+control "OutboundScanProcessor\n(audit domain service)" as OutboundSvc
+control "LinehaulService (:3013)\n(Trip State Manager)" as LinehaulSvc
+control "AudioFeedbackService\n(Âm thanh quét Beep)" as AudioSvc
+end box
+
+box "Entity Layer (Lưu Trữ & Cơ Sở Dữ Liệu)" #FFFFFF
+entity "PostgreSQL (scan_db)\n[scan_events & vehicle_loads Table]" as ScanDB
+end box
+
+note over UI
+Nhân viên vận hành đứng tại cửa xe tải (Dock) sử dụng thiết bị PDA để quét mã tem xe,
+quét kiểm đếm từng bao hàng bốc lên thùng xe và niêm phong chì khóa bạt trước khi xe lăn bánh
+end note
+
+' GIAI ĐOẠN 1: QUÉT TEM XE TẢI VÀ NẠP DANH SÁCH BAO BỐC XẾP
+Ops -> UI: Mở màn hình Quét xe đi (VehicleOutboundScreen),\nbắn tia quét Mã tem xe tải (Mã XT hoặc Biển kiểm soát)
+activate UI
+
+UI -> Gateway: GET /ops/scan/vehicle/trip-info?plate={plate}\n(Headers: Bearer accessToken)
+activate Gateway
+Gateway -> ScanCtrl: GET /vehicle/trip-info
+activate ScanCtrl
+ScanCtrl -> LinehaulSvc: getTripManifest(plate)
+activate LinehaulSvc
+LinehaulSvc --> ScanCtrl: TripSummaryDto { tripCode: 'TRIP-5566', expectedBags: N, destHub: 'HUB_MIEN_NAM' }
+deactivate LinehaulSvc
+ScanCtrl --> Gateway: 200 OK (TripSummaryDto)
+deactivate ScanCtrl
+Gateway --> UI: 200 OK
+deactivate Gateway
+
+UI -> UI: Hiển thị giao diện nạp hàng: Chuyến TRIP-5566, Xe: 29C-888.99, Mục tiêu: N bao
+
+loop Quét kiểm đếm từng bao tải xếp lên thùng xe
+    Ops -> UI: Bắn tia quét mã vạch trên từng bao hàng (Mã MB-xxxx)
+    UI -> AudioSvc: playScanSuccessSound()
+    activate AudioSvc
+    AudioSvc --> UI: Âm thanh Ting xác nhận hợp lệ
+    deactivate AudioSvc
+    UI -> UI: Tăng bộ đếm bao đã xếp lên xe (Scanned: k / N)
+end
+
+' GIAI ĐOẠN 2: NIÊM PHONG KẸP CHÌ THÙNG XE VÀ XÁC NHẬN XE XUẤT TRẠM
+Ops -> UI: Đóng cửa thùng xe tải, kẹp chì seal niêm phong cửa bạt,\nnhập / quét Mã kẹp chì thùng xe (truckSealCode) và bấm "Xác nhận xuất trạm" (handleConfirmOutbound)
+
+UI -> Gateway: POST /ops/scan/vehicle/outbound\n(Body: { tripCode: 'TRIP-5566', vehiclePlate: '29C-888.99', truckSealCode, scannedBags: string[] })
+activate Gateway
+
+Gateway -> ScanCtrl: POST /vehicle/outbound
+activate ScanCtrl
+
+ScanCtrl -> OutboundSvc: processVehicleOutbound(payload, operatorId)
+activate OutboundSvc
+
+OutboundSvc -> ScanDB: INSERT INTO scan_events (scan_type: 'VEHICLE_OUTBOUND', trip_code, vehicle_plate, seal_code, hub_code, operator_id, created_at)\nVALUES (...)
+activate ScanDB
+ScanDB --> OutboundSvc: Ghi nhận sự kiện vết quét Outbound
+deactivate ScanDB
+
+OutboundSvc -> LinehaulSvc: markTripDeparted(tripCode, truckSealCode)
+activate LinehaulSvc
+LinehaulSvc -> LinehaulSvc: Chuyển trạng thái chuyến xe sang 'IN_TRANSIT (ĐANG CHẠY ĐƯỜNG TRỤC)'\nĐồng bộ sự kiện vết quét Tracking cho toàn bộ bưu phẩm chứa trong các bao
+LinehaulSvc --> OutboundSvc: Xác nhận khởi hành thành công
+deactivate LinehaulSvc
+
+OutboundSvc --> ScanCtrl: { success: true, tripCode: 'TRIP-5566', status: 'IN_TRANSIT', departedAt: NOW() }
+deactivate OutboundSvc
+
+ScanCtrl --> Gateway: 200 OK
+deactivate ScanCtrl
+
+Gateway --> UI: 200 OK
+deactivate Gateway
+
+' GIAI ĐOẠN 3: PHẢN HỒI GIAO DIỆN HOÀN TẤT XUẤT BẾN
+UI -> UI: Hiển thị Màn hình thông báo xanh lá:\n"XE ĐÃ XUẤT TRẠM THÀNH CÔNG!"\nChuyến xe TRIP-5566 đã bắt đầu hành trình đến Hub đích
+deactivate UI
+@enduml

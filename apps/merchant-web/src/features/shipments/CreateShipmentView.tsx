@@ -82,6 +82,8 @@ export function CreateShipmentView({
   onNavigateView,
   findHubByCode,
 }: CreateShipmentViewProps): React.JSX.Element {
+  const [showPickupContractDetails, setShowPickupContractDetails] = React.useState(false);
+
   return (
     <section className="create-shipment-bento">
       <div className="bento-left-stack">
@@ -96,111 +98,123 @@ export function CreateShipmentView({
           </p>
         ) : null}
 
-        {/* THẺ 1: KHO LẤY HÀNG (CỐ ĐỊNH THEO HỢP ĐỒNG) - READ-ONLY */}
-        <section className="contract-pickup-card">
-          <div className="contract-pickup-header">
-            <div>
-              <div className="contract-pickup-badge">
-                <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>
-                  verified
-                </span>
-                <span>Kho lấy hàng cố định</span>
-              </div>
-              <h3
-                style={{
-                  margin: '8px 0 0',
-                  fontSize: '18px',
-                  fontWeight: 700,
-                  color: 'var(--stitch-on-surface)',
-                }}
-              >
-                Điểm lấy hàng hợp đồng
-              </h3>
+        {/* THẺ 1: KHO LẤY HÀNG CỐ ĐỊNH - COMPACT STRIP (TIẾT KIỆM KHÔNG GIAN) */}
+        <section className="contract-pickup-strip">
+          <div className="contract-pickup-strip__main">
+            <div className="contract-pickup-strip__icon-wrap">
+              <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>
+                warehouse
+              </span>
             </div>
+            <div className="contract-pickup-strip__content">
+              <div className="contract-pickup-strip__title-row">
+                <span className="contract-pickup-tag">KHO LẤY HÀNG CỐ ĐỊNH</span>
+                <strong className="contract-pickup-shop-name">
+                  {profile.shopName || session.user.displayName || session.user.username}
+                </strong>
+                <span className="contract-pickup-phone">
+                  ({profile.contactPhone || session.user.phone || 'Chưa cập nhật SĐT'})
+                </span>
+                <span className="contract-pickup-sep">·</span>
+                <span className="contract-pickup-hub">
+                  📍 {lockedSenderHub ? `${lockedSenderHub.hubName} (${lockedSenderHub.hubCode})` : 'Bưu cục phụ trách'}
+                </span>
+              </div>
+              <div className="contract-pickup-strip__address-row">
+                <span className="contract-pickup-address" title={profile.defaultPickupAddress || createForm.senderAddress || lockedSenderHub?.fullAddress || ''}>
+                  {profile.defaultPickupAddress ||
+                    createForm.senderAddress ||
+                    lockedSenderHub?.fullAddress ||
+                    'Chưa thiết lập địa chỉ kho'}
+                </span>
+                {profile.latitude && profile.longitude ? (
+                  <span className="contract-pickup-gps-chip" title="Tọa độ GPS đã đồng bộ với bưu cục">
+                    <span className="gps-indicator-dot" />
+                    GPS: {profile.latitude.toFixed(4)}, {profile.longitude.toFixed(4)}
+                  </span>
+                ) : null}
+              </div>
+            </div>
+          </div>
+
+          <div className="contract-pickup-strip__actions">
+            <button
+              type="button"
+              className="btn btn-ghost btn-sm contract-pickup-toggle-btn"
+              onClick={() => setShowPickupContractDetails((prev) => !prev)}
+              title={showPickupContractDetails ? 'Thu gọn chi tiết' : 'Xem chi tiết điều phối kho'}
+            >
+              <span>{showPickupContractDetails ? 'Thu gọn' : 'Chi tiết'}</span>
+              <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>
+                {showPickupContractDetails ? 'expand_less' : 'expand_more'}
+              </span>
+            </button>
             <button
               type="button"
               className="btn btn-secondary btn-sm"
               onClick={() => onNavigateView('account')}
               title="Đến mục Hồ sơ để sửa đổi địa chỉ kho và đồng bộ lại tọa độ"
             >
-              <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>
+              <span className="material-symbols-outlined" style={{ fontSize: '15px' }}>
                 edit_location_alt
               </span>
-              <span>Thay đổi tại Hồ sơ</span>
+              <span>Sửa tại Hồ sơ</span>
             </button>
           </div>
+        </section>
 
-          <div className="contract-pickup-grid">
-            <div className="contract-pickup-item">
-              <span className="contract-pickup-label">Tên cửa hàng / Người gửi</span>
-              <span className="contract-pickup-value">
-                {profile.shopName || session.user.displayName || session.user.username}
-              </span>
-            </div>
-            <div className="contract-pickup-item">
-              <span className="contract-pickup-label">Số điện thoại liên hệ</span>
-              <span className="contract-pickup-value">
-                {profile.contactPhone || session.user.phone || 'Chưa cập nhật'}
-              </span>
-            </div>
-            <div className="contract-pickup-item contract-pickup-full-address">
-              <span className="contract-pickup-label">Địa chỉ kho lấy hàng</span>
-              <div
-                className="contract-pickup-value"
-                style={{ marginTop: '4px', fontSize: '13px', lineHeight: '1.5' }}
-              >
-                {profile.defaultPickupAddress ||
-                  createForm.senderAddress ||
-                  lockedSenderHub?.fullAddress ||
-                  'Chưa thiết lập địa chỉ kho'}
+        {showPickupContractDetails && (
+          <div className="contract-pickup-details-drawer">
+            <div className="contract-pickup-grid">
+              <div className="contract-pickup-item">
+                <span className="contract-pickup-label">Tên cửa hàng / Người gửi</span>
+                <span className="contract-pickup-value">
+                  {profile.shopName || session.user.displayName || session.user.username}
+                </span>
+              </div>
+              <div className="contract-pickup-item">
+                <span className="contract-pickup-label">Số điện thoại liên hệ</span>
+                <span className="contract-pickup-value">
+                  {profile.contactPhone || session.user.phone || 'Chưa cập nhật'}
+                </span>
+              </div>
+              <div className="contract-pickup-item contract-pickup-full-address">
+                <span className="contract-pickup-label">Địa chỉ kho lấy hàng</span>
+                <div
+                  className="contract-pickup-value"
+                  style={{ marginTop: '4px', fontSize: '13px', lineHeight: '1.5' }}
+                >
+                  {profile.defaultPickupAddress ||
+                    createForm.senderAddress ||
+                    lockedSenderHub?.fullAddress ||
+                    'Chưa thiết lập địa chỉ kho'}
+                </div>
+              </div>
+              <div className="contract-pickup-item">
+                <span className="contract-pickup-label">Khu vực & Bưu cục phụ trách</span>
+                <span className="contract-pickup-value">
+                  {lockedSenderHub
+                    ? `${lockedSenderHub.hubName} (${lockedSenderHub.hubCode}) - ${lockedSenderHub.province}`
+                    : 'Chưa gán bưu cục'}
+                </span>
+              </div>
+              <div className="contract-pickup-item">
+                <span className="contract-pickup-label">Phương thức điều phối</span>
+                <span className="contract-pickup-value" style={{ color: 'var(--stitch-primary)' }}>
+                  Tự động gom & phân công tài xế (Auto-dispatch)
+                </span>
               </div>
             </div>
-            <div className="contract-pickup-item">
-              <span className="contract-pickup-label">Khu vực & Bưu cục phụ trách</span>
-              <span className="contract-pickup-value">
-                {lockedSenderHub
-                  ? `${lockedSenderHub.hubName} (${lockedSenderHub.hubCode}) - ${lockedSenderHub.province}`
-                  : 'Chưa gán bưu cục'}
+            <div className="contract-pickup-notice">
+              <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>
+                lock
               </span>
-            </div>
-            <div className="contract-pickup-item">
-              <span className="contract-pickup-label">Phương thức điều phối</span>
-              <span className="contract-pickup-value" style={{ color: 'var(--stitch-primary)' }}>
-                Tự động gom & phân công tài xế (Auto-dispatch)
+              <span>
+                Địa chỉ lấy hàng được cố định theo hồ sơ đăng ký để đảm bảo điều phối tài xế chính xác.
               </span>
             </div>
           </div>
-
-          <div className="pickup-gps-badge">
-            <span className="gps-indicator-dot" />
-            <span>Tọa độ GPS điều phối: </span>
-            <strong>
-              {profile.latitude && profile.longitude
-                ? `${profile.latitude.toFixed(5)}, ${profile.longitude.toFixed(5)}`
-                : lockedSenderHub?.latitude && lockedSenderHub?.longitude
-                ? `${lockedSenderHub.latitude.toFixed(5)}, ${lockedSenderHub.longitude.toFixed(5)}`
-                : 'Đang xác định'}
-            </strong>
-            <span
-              className="gps-verified-tag"
-              style={{ display: 'inline-flex', alignItems: 'center', gap: '3px' }}
-            >
-              <span className="material-symbols-outlined" style={{ fontSize: '13px' }}>
-                verified
-              </span>
-              Đã liên kết hợp đồng
-            </span>
-          </div>
-
-          <div className="contract-pickup-notice">
-            <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>
-              lock
-            </span>
-            <span>
-              Địa chỉ lấy hàng được cố định theo hồ sơ đăng ký để đảm bảo điều phối tài xế chính xác.
-            </span>
-          </div>
-        </section>
+        )}
 
         {/* THẺ 2: THÔNG TIN NGƯỜI NHẬN HÀNG */}
         <section className="form-section-card">

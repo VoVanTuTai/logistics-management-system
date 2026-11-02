@@ -1092,7 +1092,7 @@ export function BranchFinanceCodSettlementPage(): React.JSX.Element {
                     <td>
                       {summary.pendingRemitTotal === 0 ? (
                         <span className="ops-branch-cod__muted" style={{ color: '#059669', fontWeight: 600 }}>
-                          {summary.remittedTotal > 0 ? '✓ Đã hoàn tất' : '✓ Đủ điều kiện ca'}
+                          {summary.remittedTotal > 0 ? 'Đã hoàn tất' : 'Đủ điều kiện ca'}
                         </span>
                       ) : (
                         <div className="ops-branch-cod__actions">

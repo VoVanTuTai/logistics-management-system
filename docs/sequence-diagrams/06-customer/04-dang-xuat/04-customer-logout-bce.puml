@@ -1,0 +1,86 @@
+@startuml
+!theme plain
+skinparam monochrome true
+skinparam sequenceMessageAlign center
+skinparam responseMessageBelowArrow true
+skinparam maxMessageSize 140
+skinparam wrapWidth 200
+skinparam BoxPadding 8
+autonumber "<b>[00]</b>"
+
+
+box "Boundary Layer (Giao Diện Khách Hàng)" #FFFFFF
+actor "Khách hàng cá nhân\n(Customer User)" as Customer
+boundary "PortalHeader / ProfileScreen\n(apps/guest-web & mobile)" as HeaderUI
+boundary "CustomerAccountModal / LogoutModal\n(apps/guest-web & mobile)" as ModalUI
+boundary "HomePage / LoginScreen\n(apps/guest-web & mobile)" as HomeUI
+end box
+
+box "Control Layer (Điều Khiển Phiên Đăng Nhập)" #FFFFFF
+control "CustomerAccountModal\n(Footer Action Handler)" as ModalCtrl
+control "PortalHeader\n(handleLogout Handler)" as HeaderCtrl
+control "useAuthStore\n(Zustand store)" as AuthStore
+end box
+
+box "Entity Layer (Lưu Trữ Phiên Trình Duyệt)" #FFFFFF
+entity "Browser Storage\n[localStorage & sessionStorage]" as BrowserStorage
+end box
+
+' GIAI ĐOẠN 1: KHÁCH HÀNG YÊU CẦU ĐĂNG XUẤT
+alt Trường hợp 1: Đăng xuất từ Hộp thoại Hồ sơ (CustomerAccountModal)
+    Customer -> ModalUI: Nhấp nút "Đăng xuất tài khoản" tại chân trang modal
+    activate ModalUI
+
+    ModalUI -> ModalCtrl: Kích hoạt hiển thị xác nhận (setShowConfirmLogout(true))
+    activate ModalCtrl
+    ModalCtrl --> ModalUI: Cập nhật footer: hiển thị dòng cảnh báo "Xác nhận đăng xuất?" kèm nút "Đăng xuất ngay" & "Hủy"
+    deactivate ModalCtrl
+
+    alt Khách hàng hủy thao tác
+        Customer -> ModalUI: Nhấp nút "Hủy" (setShowConfirmLogout(false))
+        ModalUI -> ModalUI: Trở về giao diện footer bình thường
+    else Khách hàng xác nhận đăng xuất
+        Customer -> ModalUI: Nhấp nút "Đăng xuất ngay" (onLogout())
+        ModalUI -> HeaderCtrl: Kích hoạt hàm xử lý handleLogout()
+        ModalUI -> ModalUI: Đóng modal (onClose())
+        deactivate ModalUI
+    end
+else Trường hợp 2: Đăng xuất trực tiếp từ thanh Header
+    Customer -> HeaderUI: Nhấp nút biểu tượng Đăng xuất (LogOut icon)
+    activate HeaderUI
+    HeaderUI -> HeaderCtrl: Kích hoạt hàm xử lý handleLogout()
+    deactivate HeaderUI
+end
+
+' GIAI ĐOẠN 2: TIẾN HÀNH THU HỒI PHIÊN CỤC BỘ & XÓA BỘ NHỚ ĐỆM
+activate HeaderCtrl
+HeaderCtrl -> AuthStore: logout()
+activate AuthStore
+
+AuthStore -> BrowserStorage: removeItem('nexus_guest_auth')
+activate BrowserStorage
+BrowserStorage --> AuthStore: Đã dọn dẹp token & thông tin người dùng
+deactivate BrowserStorage
+
+AuthStore -> BrowserStorage: removeItem('nexus_tracking_active_route')
+activate BrowserStorage
+BrowserStorage --> AuthStore: Đã dọn dẹp lộ trình tra cứu tạm thời
+deactivate BrowserStorage
+
+AuthStore -> AuthStore: Đặt lại trạng thái Store: { phone: null, token: null, user: null }
+AuthStore --> HeaderCtrl: Hoàn tất dọn dẹp phiên đăng nhập
+deactivate AuthStore
+
+' GIAI ĐOẠN 3: ĐIỀU HƯỚNG VÀ CẬP NHẬT GIAO DIỆN KHÁCH VÃNG LAI
+HeaderCtrl -> HomeUI: navigate('/')
+activate HomeUI
+deactivate HeaderCtrl
+
+HomeUI -> HeaderUI: Re-render giao diện thanh điều hướng (Unauthenticated State)
+activate HeaderUI
+
+HeaderUI -> HeaderUI: Ẩn avatar người dùng, hiển thị lại nút "Đăng nhập / Đăng ký" (/login)
+deactivate HeaderUI
+HomeUI -> HomeUI: Render Trang chủ Guest Web ở trạng thái khách vãng lai
+deactivate HomeUI
+@enduml

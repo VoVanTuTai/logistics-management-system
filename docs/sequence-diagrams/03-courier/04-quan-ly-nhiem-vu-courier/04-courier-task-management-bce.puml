@@ -1,0 +1,97 @@
+@startuml
+!theme plain
+skinparam monochrome true
+skinparam sequenceMessageAlign center
+skinparam responseMessageBelowArrow true
+skinparam maxMessageSize 140
+skinparam wrapWidth 200
+skinparam BoxPadding 8
+autonumber "<b>[00]</b>"
+
+
+box "Boundary Layer (Giao Diện & Gateway)" #FFFFFF
+actor "Bưu tá / Shipper\n(Courier User)" as Courier
+boundary "TaskListScreen\n(apps/courier-mobile)" as UI
+boundary "TaskDetailScreen\n(apps/courier-mobile)" as DetailUI
+boundary "Gateway BFF (:3000)\n(CourierController)" as Gateway
+end box
+
+box "Control Layer (Điều Khiển & Nghiệp Vụ)" #FFFFFF
+control "TaskQueries / TasksApi\n(React Query hook)" as TaskQ
+control "DispatchService (:3004)\n(TasksController & Svc)" as DispatchSvc
+control "ShipmentsService (:3002)\n(ShipmentsController & Svc)" as ShipmentSvc
+end box
+
+box "Entity Layer (Cơ Sở Dữ Liệu)" #FFFFFF
+entity "PostgreSQL (dispatch_db)\n[courier_tasks & assignments]" as TaskDB
+entity "PostgreSQL (shipment_db)\n[shipments & metadata]" as ShipmentDB
+end box
+
+' GIAI ĐOẠN 1: MỞ MÀN HÌNH DANH SÁCH NHIỆM VỤ
+Courier -> UI: Mở ứng dụng, vào tab "Nhiệm vụ" -> mở màn hình "Nhiệm vụ hàng ngày" (TaskListScreen)
+activate UI
+
+UI -> TaskQ: useAssignedTasksQuery({ courierId, accessToken })
+activate TaskQ
+
+TaskQ -> Gateway: GET /courier/dispatch/tasks?courierId={courierId}\n(Headers: Bearer JWT AccessToken)
+activate Gateway
+
+Gateway -> DispatchSvc: GET /tasks?courierId={courierId}
+activate DispatchSvc
+
+DispatchSvc -> TaskDB: SELECT * FROM courier_tasks\nWHERE courier_id = $1 AND status != 'CANCELLED'\nORDER BY created_at DESC
+activate TaskDB
+TaskDB --> DispatchSvc: Danh sách nhiệm vụ (courier_tasks record[])
+deactivate TaskDB
+
+DispatchSvc --> Gateway: 200 OK (TaskDto[]: PICKUP, DELIVERY, RETURN)
+deactivate DispatchSvc
+Gateway --> TaskQ: 200 OK (TaskDto[])
+deactivate Gateway
+TaskQ --> UI: Cập nhật danh sách nhiệm vụ vào React Query Cache
+deactivate TaskQ
+
+' GIAI ĐOẠN 2: TẢI BỔ SUNG THÔNG TIN VẬN ĐƠN ĐÍNH KÈM
+UI -> TaskQ: useQueries (shipmentApi.getShipmentDetail(code))
+activate TaskQ
+TaskQ -> Gateway: GET /courier/shipment/shipments/{shipmentCode}
+activate Gateway
+Gateway -> ShipmentSvc: GET /shipments/{shipmentCode}
+activate ShipmentSvc
+ShipmentSvc -> ShipmentDB: SELECT * FROM shipments WHERE code = $1
+activate ShipmentDB
+ShipmentDB --> ShipmentSvc: Dữ liệu vận đơn & metadata kiện hàng
+deactivate ShipmentDB
+ShipmentSvc --> Gateway: 200 OK (ShipmentDto)
+deactivate ShipmentSvc
+Gateway --> TaskQ: 200 OK (ShipmentDto)
+deactivate Gateway
+TaskQ --> UI: Bổ sung thông tin khách hàng, COD, địa chỉ
+deactivate TaskQ
+
+UI -> UI: Kiểm tra hạn chót SLA & phân loại nhóm:\n- Đợi lấy (PICKUP)\n- Đợi phát (DELIVERY)\n- Hoàn hàng (RETURN)
+UI -> UI: Render bảng danh sách nhiệm vụ & bộ lọc tab trạng thái
+
+' GIAI ĐOẠN 3: LỌC TAB NHIỆM VỤ
+Courier -> UI: Chọn lọc theo tab (ví dụ: Tab "Đợi lấy" hoặc "Đợi phát")
+UI -> UI: Lọc danh sách theo taskTypeFilter ('ALL' | 'PICKUP' | 'DELIVERY')
+UI -> UI: Cập nhật danh sách nhiệm vụ tương ứng trên màn hình
+
+' GIAI ĐOẠN 4: XEM CHI TIẾT NHIỆM VỤ
+Courier -> UI: Nhấn chọn 1 nhiệm vụ trong danh sách (taskId, shipmentCode)
+UI -> DetailUI: navigation.navigate('TaskDetail', { taskId })
+deactivate UI
+activate DetailUI
+
+DetailUI -> TaskQ: useTaskDetailQuery(taskId) & useShipmentDetailQuery(shipmentCode)
+activate TaskQ
+TaskQ --> DetailUI: Dữ liệu chi tiết TaskDto & ShipmentDto
+deactivate TaskQ
+
+DetailUI -> DetailUI: Phân tích nghiệp vụ kiện hàng:\n- Phân loại đồng kiểm (VIEW_ONLY / TRY_ON / NONE)\n- Kích thước & Cân nặng (DxRxC, weightKg)\n- Tiền thu hộ COD & Ghi chú giao hàng
+DetailUI -> DetailUI: Render toàn cảnh chi tiết nhiệm vụ và các nút thao tác\n(Gọi điện, Nhắn tin, Chỉ đường, Xác nhận nhận/giao hàng)
+deactivate DetailUI
+
+@enduml
+

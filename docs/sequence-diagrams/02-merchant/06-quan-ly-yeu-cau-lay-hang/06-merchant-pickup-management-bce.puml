@@ -1,0 +1,174 @@
+@startuml
+!theme plain
+skinparam sequenceMessageAlign center
+skinparam responseMessageBelowArrow true
+skinparam maxMessageSize 140
+skinparam wrapWidth 200
+skinparam BoxPadding 8
+autonumber "<b>[00]</b>"
+
+
+box "Boundary Layer (Giao Diện & Gateway)" #F8FAFC
+actor "Chủ shop / Người gửi\n(Merchant User)" as Merchant
+boundary "PickupRequestView\n(apps/merchant-web)" as UI
+boundary "Gateway BFF (:3000)\n(MerchantController)" as Gateway
+boundary "PickupParcelsModal\n(apps/merchant-web)" as ModalUI
+end box
+
+box "Control Layer (Nghiệp Vụ & Dịch Vụ)" #FFFFFF
+control "PickupController\n(:3003 pickup-service)" as PickupCtrl
+control "PickupsService\n(application service)" as PickupSvc
+control "PickupOutboxService\n(transactional outbox)" as OutboxSvc
+end box
+
+box "Entity Layer (Dữ Liệu PostgreSQL & Outbox)" #F8FAFC
+entity "PostgreSQL (pickup_db)\n[pickup_orders & items]" as PickupDB
+entity "PostgreSQL (pickup_db)\n[outbox_events Table]" as OutboxDB
+end box
+
+' GIAI ĐOẠN 1: TẢI GIAO DIỆN & PHÂN LOẠI ĐƠN CHỜ LẤY HÀNG
+Merchant -> UI: Mở màn hình Yêu cầu lấy hàng (View: 'pickups')
+activate UI
+
+note over UI: Lọc đơn chờ lấy (loại trừ đơn đang giao/đã hủy để tránh trùng lặp)
+
+UI -> Gateway: GET /merchant/pickup/pickups (Bearer accessToken)
+activate Gateway
+
+note over Gateway: GatewayAuthGuard & RoleGuard (Role: 'MERCHANT') -> proxy :3003
+
+Gateway -> PickupCtrl: GET /pickups (Headers: x-user-id, x-user-role)
+activate PickupCtrl
+
+PickupCtrl -> PickupSvc: listByRequester(userId)
+activate PickupSvc
+
+PickupSvc -> PickupDB: SELECT * FROM pickup_orders WHERE requester_user_id = $1 ORDER BY created_at DESC
+activate PickupDB
+PickupDB --> PickupSvc: Trả về danh sách phiếu pickup & danh sách kiện
+deactivate PickupDB
+
+PickupSvc --> PickupCtrl: PickupRequest[]
+deactivate PickupSvc
+
+PickupCtrl --> Gateway: 200 OK: Danh sách phiếu lấy hàng
+deactivate PickupCtrl
+
+Gateway --> UI: 200 OK: Dữ liệu phiếu pickup
+deactivate Gateway
+
+UI -> UI: Render bảng chọn đơn chờ lấy & bảng lịch sử phiếu gom
+
+' GIAI ĐOẠN 2: CHỌN ĐƠN VÀ TẠO YÊU CẦU LẤY HÀNG (SUBMIT PICKUP REQUEST)
+Merchant -> UI: Tích chọn các đơn hàng & bấm "Yêu cầu lấy hàng (N)"
+
+alt Lỗi tiền kiểm tra tại giao diện
+    UI -> UI: Kiểm tra: codes.length === 0 || distinctSenderHubs.length > 1
+    UI -> UI: Báo lỗi: "Chọn ít nhất 1 đơn hợp lệ & các đơn phải cùng kho lấy hàng"
+else Dữ liệu hợp lệ: Gửi yêu cầu tạo phiếu gom
+    UI -> UI: Tính khung giờ lấy (Sáng: trong ngày / Chiều: trước 12:00 mai)\nSinh pickupCode & đóng gói items: [{ shipmentCode, quantity: 1 }]
+
+    UI -> Gateway: POST /merchant/pickup/pickups\n(Bearer accessToken, Body: { pickupCode, requesterName, contactPhone, pickupAddress, items })
+    activate Gateway
+
+    Gateway -> PickupCtrl: POST /pickups (Body: CreatePickupInput)
+    activate PickupCtrl
+
+    PickupCtrl -> PickupSvc: create(input: CreatePickupInput)
+    activate PickupSvc
+
+    PickupSvc -> PickupDB: INSERT INTO pickup_orders (...) VALUES (...)\nINSERT INTO pickup_items (...) VALUES (...)
+    activate PickupDB
+    PickupDB --> PickupSvc: Lưu thành công phiếu gom & danh sách kiện
+    deactivate PickupDB
+
+    PickupSvc -> OutboxSvc: enqueuePickupCreated(pickup)
+    activate OutboxSvc
+    OutboxSvc -> OutboxDB: INSERT INTO outbox_events (eventType: 'PickupCreated', ...)
+    activate OutboxDB
+    OutboxDB --> OutboxSvc: Ghi nhận event Outbox thành công
+    deactivate OutboxDB
+    OutboxSvc --> PickupSvc: Outbox OK
+    deactivate OutboxSvc
+
+    PickupSvc --> PickupCtrl: PickupRequest (status: 'REQUESTED')
+    deactivate PickupSvc
+
+    PickupCtrl --> Gateway: 201 Created: PickupResponse
+    deactivate PickupCtrl
+
+    Gateway --> UI: 201 Created: Trả về phiếu pickup mới
+    deactivate Gateway
+
+    UI -> UI: Cập nhật state, xóa đơn đã chọn khỏi danh sách chờ lấy\nHiển thị thông báo: "Đã tạo thành công yêu cầu lấy hàng {pickupCode}"
+    UI -> UI: Cập nhật bảng và thông báo thành công
+end
+
+' GIAI ĐOẠN 3: XEM CHI TIẾT DANH SÁCH KIỆN HÀNG TRONG PHIẾU
+opt Merchant bấm "N kiện" hoặc "Xem danh sách" tại dòng phiếu lấy hàng
+    Merchant -> UI: Nhấn xem chi tiết kiện hàng
+    UI -> ModalUI: setViewingPickup(item)
+    activate ModalUI
+    ModalUI -> ModalUI: Render Modal: Danh sách vận đơn, Shipper, COD, Trạng thái\n(Hỗ trợ nút "Sao chép tất cả mã" vào Clipboard)
+    Merchant -> ModalUI: Bấm nút Đóng (✕)
+    deactivate ModalUI
+end
+
+' GIAI ĐOẠN 4: HỦY YÊU CẦU LẤY HÀNG (NÚT HỦY PICKUP TRÊN GIAO DIỆN)
+alt Merchant nhấn nút "Hủy pickup" tại cột Hành động (onCancelPickup)
+    alt Phiếu đã hoàn tất hoặc đã hủy (item.status in ['COMPLETED', 'CANCELLED'])
+        UI -> UI: Nút Hủy bị vô hiệu hóa (Disabled) kèm tooltip giải thích
+    else Phiếu đang chờ lấy (status === 'REQUESTED')
+        Merchant -> UI: Nhấp "Hủy pickup" -> Hộp thoại Xác nhận (Confirm) & Nhập lý do (Prompt)
+        
+        UI -> Gateway: POST /merchant/pickup/pickups/{id}/cancel\n(Bearer accessToken, Body: { reason: "Shop hoãn gửi hàng" })
+        activate Gateway
+
+        Gateway -> PickupCtrl: POST /pickups/:id/cancel (Param: id, Body: { reason })
+        activate PickupCtrl
+
+        PickupCtrl -> PickupSvc: cancel(id, reason)
+        activate PickupSvc
+
+        PickupSvc -> PickupDB: SELECT status FROM pickup_orders WHERE id = $1
+        activate PickupDB
+        PickupDB --> PickupSvc: Trạng thái hiện tại
+        deactivate PickupDB
+
+        alt Phiếu đã hoàn tất trước đó (status === 'COMPLETED')
+            PickupSvc --> PickupCtrl: throw BadRequestException("Phiếu lấy hàng đã hoàn tất, không thể hủy.")
+            PickupCtrl --> Gateway: 400 Bad Request
+            Gateway --> UI: 400 Bad Request
+            UI -> UI: Báo lỗi: "Phiếu lấy hàng đã hoàn tất, không thể hủy."
+        else Hủy hợp lệ: Cập nhật trạng thái CANCELLED
+            PickupSvc -> PickupDB: UPDATE pickup_orders SET status = 'CANCELLED', cancellation_reason = $2, updated_at = NOW() WHERE id = $1
+            activate PickupDB
+            PickupDB --> PickupSvc: Cập nhật thành công
+            deactivate PickupDB
+
+            PickupSvc -> OutboxSvc: enqueuePickupCancelled(cancelledPickup)
+            activate OutboxSvc
+            OutboxSvc -> OutboxDB: INSERT INTO outbox_events (eventType: 'PickupCancelled', ...)
+            activate OutboxDB
+            OutboxDB --> OutboxSvc: Outbox OK
+            deactivate OutboxDB
+            OutboxSvc --> PickupSvc: Outbox OK
+            deactivate OutboxSvc
+
+            PickupSvc --> PickupCtrl: PickupRequest (status: 'CANCELLED')
+            deactivate PickupSvc
+
+            PickupCtrl --> Gateway: 200 OK: PickupResponse (status: 'CANCELLED')
+            deactivate PickupCtrl
+
+            Gateway --> UI: 200 OK: Trả về phiếu pickup đã hủy
+            deactivate Gateway
+
+            UI -> UI: Cập nhật trạng thái phiếu trong bảng sang "CANCELLED"\nVô hiệu hóa nút Hủy & hoàn lại đơn chờ lấy
+            UI -> UI: Thông báo: "Đã hủy phiếu lấy hàng {pickupCode}"
+        end
+    end
+end
+
+deactivate UI
+@enduml

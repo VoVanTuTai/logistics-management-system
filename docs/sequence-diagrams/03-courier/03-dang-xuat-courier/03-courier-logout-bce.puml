@@ -1,0 +1,84 @@
+@startuml
+!theme plain
+skinparam monochrome true
+skinparam sequenceMessageAlign center
+skinparam responseMessageBelowArrow true
+skinparam maxMessageSize 140
+skinparam wrapWidth 200
+skinparam BoxPadding 8
+autonumber "<b>[00]</b>"
+
+
+box "Boundary Layer (Giao Diện & Gateway)" #FFFFFF
+actor "Bưu tá / Shipper\n(Courier User)" as Courier
+boundary "ProfileScreen\n(apps/courier-mobile)" as UI
+boundary "Gateway BFF (:3000)\n(CourierController)" as Gateway
+boundary "LoginScreen\n(apps/courier-mobile)" as LoginUI
+end box
+
+box "Control Layer (Điều Khiển & Thu Hồi Phiên)" #FFFFFF
+control "AuthStore\n(Zustand mobile state)" as AuthStore
+control "AuthController\n(:3010 auth-service)" as AuthCtrl
+control "AuthService\n(application service)" as AuthSvc
+end box
+
+box "Entity Layer (Lưu Trữ Điện Thoại & Database)" #FFFFFF
+entity "AsyncStorage & Cache\n[Mobile Local Storage]" as LocalStore
+entity "PostgreSQL (auth_db)\n[auth_sessions Table]" as AuthDB
+end box
+
+' GIAI ĐOẠN 1: BẤM NÚT ĐĂNG XUẤT TRÊN MÀN HÌNH CÁ NHÂN
+Courier -> UI: Mở tab "Cá nhân" (ProfileScreen)\nvà nhấn nút "Đăng xuất tài khoản" (handleLogout)
+activate UI
+
+UI -> AuthStore: logout()
+activate AuthStore
+
+AuthStore -> AuthStore: Lấy token hiện tại: session.tokens (accessToken, refreshToken)\nBật isLoading = true
+
+' GIAI ĐOẠN 2: GỬI REQUEST THU HỒI TOKEN QUA GATEWAY BFF
+AuthStore -> Gateway: POST /courier/auth/auth/logout\n(Bearer accessToken, Body: { accessToken, refreshToken })
+activate Gateway
+
+note over Gateway: GatewayAuthGuard & RoleGuard (Role: 'COURIER_APP') -> proxy :3010
+
+Gateway -> AuthCtrl: POST /auth/logout (Body: LogoutInputDto)
+activate AuthCtrl
+
+AuthCtrl -> AuthSvc: logout(accessToken, input)
+activate AuthSvc
+
+' GIAI ĐOẠN 3: HỦY PHIÊN LÀM VIỆC TRONG CƠ SỞ DỮ LIỆU
+AuthSvc -> AuthDB: UPDATE auth_sessions SET revoked_at = NOW()\nWHERE access_token = $1 OR refresh_token = $2
+activate AuthDB
+AuthDB --> AuthSvc: Thu hồi bản ghi phiên làm việc thành công
+deactivate AuthDB
+
+AuthSvc --> AuthCtrl: LogoutResultDto { success: true }
+deactivate AuthSvc
+
+AuthCtrl --> Gateway: 200 OK: LogoutResultDto
+deactivate AuthCtrl
+
+Gateway --> AuthStore: 200 OK: Đã thu hồi phiên trên server
+deactivate Gateway
+
+' GIAI ĐOẠN 4: DỌN DẸP BỘ NHỚ ĐỆM VÀ SESSION TRÊN THIẾT BỊ DI ĐỘNG
+AuthStore -> LocalStore: 1. clearAuthSession() (Xóa tokens trong AsyncStorage)\n2. queryClient.clear() (Xóa cache React Query)\n3. useAppStore.clearSession() (Xóa state bưu tá)
+activate LocalStore
+LocalStore --> AuthStore: Bộ nhớ thiết bị đã được dọn sạch
+deactivate LocalStore
+
+AuthStore -> AuthStore: Cập nhật Zustand state:\nstatus = 'guest', session = null, isLoading = false
+AuthStore --> UI: Hoàn tất đăng xuất
+deactivate AuthStore
+
+' GIAI ĐOẠN 5: ĐIỀU HƯỚNG BƯU TÁ VỀ MÀN HÌNH ĐĂNG NHẬP
+UI -> LoginUI: Tự động chuyển hướng về LoginScreen
+activate LoginUI
+LoginUI -> LoginUI: Render màn hình Đăng nhập Shipper\n(Sẵn sàng cho ca làm việc kế tiếp)
+deactivate LoginUI
+
+deactivate UI
+@enduml
+
