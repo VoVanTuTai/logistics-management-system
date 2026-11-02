@@ -277,19 +277,19 @@ def build_presentation_svg():
       <text x="35" y="198" font-size="11" font-weight="600" fill="#1D4ED8">• Bàn giao Payload cho Validation Agent thẩm định rủi ro.</text>
     </g>
 
-    <!-- AGENT 3: VALIDATION AGENT (CRITIC / GATEKEEPER) -->
+    <!-- AGENT 3: VALIDATION AGENT (CRITIC / GATEKEEPER - NVIDIA) -->
     <g transform="translate(20, 560)">
       <rect width="500" height="255" rx="10" fill="#FFFFFF" stroke="#DC2626" stroke-width="2.2" class="shadow"/>
       <rect width="500" height="38" rx="10 10 0 0" fill="#FEF2F2" stroke="#FECACA" stroke-width="1.2"/>
       <circle cx="25" cy="19" r="12" fill="#DC2626"/>
       <text x="25" y="24" class="mono" font-size="11" font-weight="900" fill="#FFFFFF" text-anchor="middle">3C</text>
-      <text x="46" y="24" font-size="14" font-weight="900" fill="#991B1B">VALIDATION AGENT (Thẩm Định CoT - DeepSeek)</text>
-      <text x="350" y="24" class="mono" font-size="9.5" font-weight="700" fill="#DC2626">DeepSeek-R1-Distill-70B</text>
+      <text x="46" y="24" font-size="14" font-weight="900" fill="#991B1B">VALIDATION AGENT (NeMo Guardrail - NVIDIA)</text>
+      <text x="390" y="24" class="mono" font-size="10.5" font-weight="700" fill="#DC2626">Nemotron-70B</text>
 
       <text x="20" y="65" font-size="12" font-weight="800" fill="#0F172A">Nhiệm vụ phản biện độc lập (Independent Critic):</text>
       <text x="20" y="86" font-size="11" font-weight="600" fill="#334155">• Đối chiếu điều kiện: "Đơn NX001 đã bàn giao cho Shipper chưa?"</text>
       <text x="20" y="106" font-size="11" font-weight="600" fill="#334155">• Kiểm tra quyền: Người yêu cầu có phải là người gửi đơn này không?</text>
-      <text x="20" y="126" font-size="11" font-weight="600" fill="#334155">• Suy luận &lt;think&gt; CoT loại bỏ thiên kiến đồng nhất (Homogeneous Bias)</text>
+      <text x="20" y="126" font-size="11" font-weight="600" fill="#334155">• NeMo Guardrails Reward Model triệt tiêu thiên kiến đồng nhất</text>
 
       <rect x="20" y="142" width="460" height="98" rx="6" fill="#FEF2F2" stroke="#F87171" stroke-width="1.2"/>
       <text x="35" y="164" font-size="11" font-weight="900" fill="#B91C1C">PHÁN QUYẾT AN TOÀN (Zero-Trust Gatekeeper):</text>

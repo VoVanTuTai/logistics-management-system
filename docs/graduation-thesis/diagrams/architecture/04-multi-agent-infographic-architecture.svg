@@ -405,14 +405,14 @@
   </g>
 
   <!-- =====================
-       AGENT C: VALIDATION AGENT (DEEPSEEK-R1-DISTILL-70B - DEEPSEEK) (x=1215, y=420, w=310, h=200)
+       AGENT C: VALIDATION AGENT (LLAMA-3.1-NEMOTRON-70B - NVIDIA) (x=1215, y=420, w=310, h=200)
        ===================== -->
   <g id="Card_ValidationAgent" transform="translate(1215, 420)">
     <rect width="310" height="200" rx="14" fill="#FDF2F8" stroke="#F472B6" stroke-width="2" class="card-shadow"/>
     
     <!-- Role Pill Badge -->
     <rect x="15" y="12" width="255" height="22" rx="4" fill="#DC2626"/>
-    <text x="142" y="27" font-size="9" font-weight="900" fill="#FFFFFF" text-anchor="middle">🛡️ SUY LUẬN CoT &amp; HITL (DEEPSEEK ARCH)</text>
+    <text x="142" y="27" font-size="9" font-weight="900" fill="#FFFFFF" text-anchor="middle">🛡️ AN TOÀN &amp; GUARDRAIL (NVIDIA ARCH)</text>
 
     <!-- Shield Icon -->
     <g transform="translate(280, 14)">
@@ -421,13 +421,13 @@
     </g>
 
     <text x="15" y="58" font-size="14.5" font-weight="900" fill="#831843">Validation Agent</text>
-    <text x="135" y="58" font-size="11" font-weight="800" fill="#BE185D">(DeepSeek-R1-Distill-70B)</text>
+    <text x="135" y="58" font-size="11" font-weight="800" fill="#BE185D">(Nemotron-70B / NVIDIA NIM)</text>
 
     <!-- Distinct Function Highlights -->
     <g transform="translate(15, 78)">
       <rect width="280" height="32" rx="4" fill="#FFFFFF" stroke="#FECDD3" stroke-width="1"/>
-      <text x="8" y="20" font-size="10" font-weight="800" fill="#BE123C">💡 Suy luận thẻ &lt;think&gt;:</text>
-      <text x="135" y="20" font-size="9.5" font-weight="600" fill="#334155">Lập luận CoT kiểm toán rủi ro</text>
+      <text x="8" y="20" font-size="10" font-weight="800" fill="#BE123C">🛡️ NeMo Guardrails:</text>
+      <text x="125" y="20" font-size="9.5" font-weight="600" fill="#334155">Reward Model kiểm toán an toàn</text>
 
       <rect y="38" width="280" height="32" rx="4" fill="#FFFFFF" stroke="#FECDD3" stroke-width="1"/>
       <text x="8" y="58" font-size="10" font-weight="800" fill="#BE123C">🛑 Thẩm định Nghiệp vụ:</text>
@@ -435,7 +435,7 @@
 
       <rect y="76" width="280" height="32" rx="4" fill="#FFFFFF" stroke="#FECDD3" stroke-width="1"/>
       <text x="8" y="96" font-size="10" font-weight="800" fill="#BE123C">⚖️ Khử Thiên Kiến Đồng Nhất:</text>
-      <text x="160" y="96" font-size="9.5" font-weight="700" fill="#DC2626">Kiểm duyệt chéo độc lập</text>
+      <text x="160" y="96" font-size="9.5" font-weight="700" fill="#DC2626">Kiểm duyệt chéo độc lập Meta</text>
     </g>
   </g>
 
@@ -798,8 +798,8 @@
       <!-- Multi-star icon -->
       <polygon points="16,4 19,12 28,12 21,17 24,25 16,20 8,25 11,17 4,12 13,12" fill="#0284C7"/>
 
-      <text x="40" y="14" font-size="12" font-weight="800" fill="#0F172A">4 Họ AI (Heterogeneous)</text>
-      <text x="40" y="28" font-size="10.5" font-weight="700" fill="#1E40AF">Google • Alibaba • Meta • DeepSeek</text>
+      <text x="40" y="14" font-size="12" font-weight="800" fill="#0F172A">Bộ Tứ Big 4 (Heterogeneous)</text>
+      <text x="40" y="28" font-size="10.5" font-weight="700" fill="#1E40AF">Google • Alibaba • Meta • NVIDIA</text>
     </g>
 
     <line x1="1400" y1="45" x2="1400" y2="85" stroke="#CBD5E1" stroke-width="1.2"/>
