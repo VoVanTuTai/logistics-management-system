@@ -1,5 +1,5 @@
 import React from 'react';
-import { MapPin } from 'lucide-react';
+import { MapPin, Cpu, User } from 'lucide-react';
 
 import type { TrackingTimelineEventDto } from '../../features/tracking/tracking.types';
 import { formatDateTime } from '../../utils/format';
@@ -20,14 +20,16 @@ export function TrackingTimelineTable({
     if (isAuto) {
       return (
         <span style={styles.autoBadge}>
-          🤖 Tự động (Hệ thống)
+          <Cpu size={12} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: 4 }} />
+          Tự động (Hệ thống)
         </span>
       );
     }
 
     return (
       <span style={styles.manualBadge}>
-        👤 {source}
+        <User size={12} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: 4 }} />
+        {source}
       </span>
     );
   };

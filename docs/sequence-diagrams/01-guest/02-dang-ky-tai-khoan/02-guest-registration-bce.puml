@@ -1,0 +1,185 @@
+@startuml
+!theme plain
+skinparam sequenceMessageAlign center
+skinparam responseMessageBelowArrow true
+skinparam maxMessageSize 140
+skinparam wrapWidth 200
+skinparam BoxPadding 8
+autonumber "<b>[00]</b>"
+
+
+box "Boundary Layer (Giao Diện & Gateway)" #F8FAFC
+actor "Khách vãng lai\n(Guest User)" as Guest
+boundary "LoginPage (Tab Đăng ký)\n(apps/guest-web UI)" as UI
+boundary "Gateway BFF (:3000)\n(PublicController)" as Gateway
+end box
+
+box "Control Layer (Điều Khiển & Xác Thực Nghiệp Vụ)" #FFFFFF
+control "AuthController (:3010)\n(auth-service)" as AuthCtrl
+control "AuthService\n(application service)" as AuthSvc
+control "HashService\n(security digest)" as HashSvc
+control "OpaqueTokenService\n(token issuer)" as TokenSvc
+control "CustomerProfilesService\n(:3001 masterdata-service)" as MasterSvc
+control "AdminAuditService\n(audit logging)" as AuditSvc
+control "AuthOutboxService\n(transactional outbox)" as OutboxSvc
+end box
+
+box "Entity Layer (Dữ Liệu PostgreSQL)" #F8FAFC
+entity "PostgreSQL (auth_db)\n[user_accounts & auth_sessions]" as AuthDB
+entity "PostgreSQL (masterdata_db)\n[customer_profiles Table]" as MasterDB
+entity "PostgreSQL (auth_db)\n[outbox_events Table]" as OutboxDB
+end box
+
+' BƯỚC 1: KHỞI TẠO ĐĂNG KÝ TẠI GIAO DIỆN
+note over Guest, UI
+  Khách truy cập /login?tab=register
+  (hoặc chuyển sang tab "Đăng ký" tại LoginPage)
+end note
+
+Guest -> UI: Nhập form Đăng ký:\n- Họ và tên (fullName)\n- Số điện thoại (phone)\n- Mật khẩu (password)\n- Xác nhận mật khẩu (confirmPassword)\n& nhấn "Đăng ký tài khoản"
+activate UI
+
+' BƯỚC 2: RÀNG BUỘC KIỂM TRA ĐẦU VÀO TẠI CLIENT
+alt Lỗi Form 1: Chưa nhập họ tên (!fullName.trim())
+    UI -> UI: Cảnh báo: "Vui lòng nhập họ và tên."
+
+else Lỗi Form 2: Chưa nhập số điện thoại (!phone.trim())
+    UI -> UI: Cảnh báo: "Vui lòng nhập số điện thoại."
+
+else Lỗi Form 3: Chưa nhập mật khẩu (!password.trim())
+    UI -> UI: Cảnh báo: "Vui lòng nhập mật khẩu."
+
+else Lỗi Form 4: Mật khẩu xác nhận không khớp (password !== confirmPassword)
+    UI -> UI: Cảnh báo: "Mật khẩu xác nhận không trùng khớp."
+
+else Form hợp lệ: Gửi yêu cầu đăng ký qua Gateway BFF
+    UI -> Gateway: POST /public/auth/auth/register-customer\nBody: { username: phone, password, displayName: fullName, phone }
+    activate Gateway
+
+    note over Gateway
+      - GatewayAuthGuard: Bỏ qua kiểm tra Bearer token
+        (khớp whitelist public register-customer)
+      - GatewayRoleGuard: Passthrough route công khai
+      - ServiceRegistryClient: Phân giải 'auth'
+        -> AUTH_SERVICE_URL (:3010)
+      - GatewayProxyClient.forward('public', ...)
+    end note
+
+    Gateway -> AuthCtrl: POST /auth/register-customer\n(Body: RegisterCustomerInput)
+    activate AuthCtrl
+
+    AuthCtrl -> AuthSvc: registerCustomer(input, auditContext)
+    activate AuthSvc
+
+    ' BƯỚC 3: KIỂM TRA TRÙNG LẶP SỐ ĐIỆN THOẠI
+    AuthSvc -> AuthSvc: normalizeLoginCode(username)\nnormalizeRequiredText(password, 128)\nnormalizeOptionalText(displayName, phone)
+
+    AuthSvc -> AuthDB: userAccountRepository.findByUsername(username)
+    activate AuthDB
+    AuthDB --> AuthSvc: existingUser | null
+    deactivate AuthDB
+
+    alt Lỗi 409: Số điện thoại đã được đăng ký (existingUser != null)
+        AuthSvc --> AuthCtrl: throw new ConflictException(\n  "Username '0912345678' already exists.")
+        AuthCtrl --> Gateway: 409 Conflict
+        Gateway --> UI: 409 Conflict
+        UI -> UI: Cảnh báo: "Số điện thoại '0912345678' đã được đăng ký.\nVui lòng chuyển sang Đăng nhập."
+
+    else Số điện thoại hợp lệ (Chưa tồn tại trong hệ thống)
+        ' BƯỚC 4: BĂM MẬT KHẨU & TẠO USER ACCOUNT
+        AuthSvc -> HashSvc: digest(password)
+        activate HashSvc
+        HashSvc --> AuthSvc: passwordHash (SHA-256 Digest)
+        deactivate HashSvc
+
+        AuthSvc -> AuthDB: userAccountRepository.create({\n  id: username, username, passwordHash,\n  roles: ['CUSTOMER'], status: 'ACTIVE',\n  displayName, phone, hubCodes: []\n})
+        activate AuthDB
+        AuthDB --> AuthSvc: UserAccount record đã tạo
+        deactivate AuthDB
+
+        ' BƯỚC 5: ĐỒNG BỘ PROFILE SANG MASTERDATA-SERVICE
+        opt Đồng bộ CustomerProfile sang masterdata-service (:3001)
+            AuthSvc -> MasterSvc: POST /customer-profiles\n{ userId, fullName, phone, email }
+            activate MasterSvc
+            MasterSvc -> MasterDB: prisma.customerProfile.upsert({ ... })
+            activate MasterDB
+            MasterDB --> MasterSvc: CustomerProfile record
+            deactivate MasterDB
+            MasterSvc --> AuthSvc: 201 Created
+            deactivate MasterSvc
+        end
+
+        ' BƯỚC 6: GHI NHẬT KÝ KIỂM TOÁN HỆ THỐNG
+        AuthSvc -> AuditSvc: record({\n  action: 'CUSTOMER_REGISTERED',\n  targetType: 'USER', targetId: user.id\n})
+        activate AuditSvc
+        AuditSvc -> AuthDB: prisma.adminAuditRecord.create({ ... })
+        deactivate AuditSvc
+
+        AuthSvc --> AuthCtrl: toUserAccountView(user)
+        deactivate AuthSvc
+
+        AuthCtrl --> Gateway: 201 Created (UserAccountView Payload)
+        deactivate AuthCtrl
+
+        Gateway --> UI: 201 Created
+        deactivate Gateway
+
+        ' BƯỚC 7: TỰ ĐỘNG ĐĂNG NHẬP (AUTO-LOGIN NGAY SAU KHI ĐĂNG KÝ)
+        note over UI
+          Client nhận 201 Created -> Tự động gọi tiếp
+          authApi.login({ username: phone, password, roleGroup: 'CUSTOMER_APP' })
+        end note
+
+        UI -> Gateway: POST /public/auth/auth/login\nBody: { username: phone, password, roleGroup: 'CUSTOMER_APP' }
+        activate Gateway
+        Gateway -> AuthCtrl: POST /auth/login\n(Body: LoginInput)
+        activate AuthCtrl
+        AuthCtrl -> AuthSvc: login(input: LoginInput)
+        activate AuthSvc
+
+        AuthSvc -> HashSvc: verify(password, user.passwordHash)
+        activate HashSvc
+        HashSvc --> AuthSvc: Match = true
+        deactivate HashSvc
+
+        AuthSvc -> TokenSvc: issueTokens(issuedAt)
+        activate TokenSvc
+        TokenSvc --> AuthSvc: { accessToken, refreshToken, expiresAt }
+        deactivate TokenSvc
+
+        AuthSvc -> AuthDB: authSessionRepository.create({\n  userId, accessTokenHash, refreshTokenHash,\n  accessTokenExpiresAt, refreshTokenExpiresAt\n})
+        activate AuthDB
+        AuthDB --> AuthSvc: AuthSession record
+        deactivate AuthDB
+
+        AuthSvc -> OutboxSvc: enqueueSessionCreated(session, user.username)
+        activate OutboxSvc
+        OutboxSvc -> OutboxDB: prisma.outboxEvent.create({\n  eventType: 'auth.session.created',\n  payload: { sessionId, userId, username }\n})
+        activate OutboxDB
+        OutboxDB --> OutboxSvc: OutboxEvent saved
+        deactivate OutboxDB
+        OutboxSvc --> AuthSvc: Enqueued successfully
+        deactivate OutboxSvc
+
+        AuthSvc --> AuthCtrl: LoginResult { user, session, tokens }
+        deactivate AuthSvc
+        AuthCtrl --> Gateway: 200 OK (LoginResult)
+        deactivate AuthCtrl
+        Gateway --> UI: 200 OK (LoginResponse JSON)
+        deactivate Gateway
+
+        ' BƯỚC 8: LƯU PHIÊN & ĐIỀU HƯỚNG TẠI CLIENT
+        note over UI
+          1. useAuthStore.login(phone, token, userProfile)
+          2. Hiển thị thông báo:
+             "Đăng ký tài khoản thành công! Đang chuyển hướng..."
+          3. Điều hướng tới redirectTarget (/create hoặc /orders)
+        end note
+
+        UI -> UI: useAuthStore.login(phone, token, userProfile)
+        UI -> UI: Hiển thị thông báo thành công &\nđiều hướng sang màn hình Đặt đơn (/create)
+        deactivate UI
+    end
+end
+
+@enduml

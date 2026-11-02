@@ -21,6 +21,7 @@ import {
   formatTaskStatusLabel,
 } from '../../../../utils/logisticsLabels';
 import { CopyableShipmentCode } from '../../../shared/CopyableShipmentCode';
+import { AlertTriangle, Activity } from 'lucide-react';
 import '../proactive/ServiceQualityMonitor.css';
 
 type AbnormalType =
@@ -519,7 +520,8 @@ export function ServiceQualityAbnormalManagementPage(): React.JSX.Element {
               borderBottomColor: currentTab === 'abnormal' ? '#ffffff' : 'transparent',
             }}
           >
-            <span>⚠️ Sự cố & Hàng bất thường</span>
+            <AlertTriangle size={14} style={{ color: currentTab === 'abnormal' ? '#2563eb' : '#64748b' }} />
+            <span>Sự cố & Hàng bất thường</span>
           </button>
           <button
             type="button"
@@ -540,7 +542,8 @@ export function ServiceQualityAbnormalManagementPage(): React.JSX.Element {
               borderBottomColor: currentTab === 'sla-radar' ? '#ffffff' : 'transparent',
             }}
           >
-            <span>📡 Radar Cảnh báo SLA Chủ động</span>
+            <Activity size={14} style={{ color: currentTab === 'sla-radar' ? '#2563eb' : '#64748b' }} />
+            <span>Radar Cảnh báo SLA Chủ động</span>
           </button>
         </div>
       </header>

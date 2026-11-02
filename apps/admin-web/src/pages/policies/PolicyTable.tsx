@@ -61,7 +61,7 @@ export function PolicyTable({
   }
 
   return (
-    <div style={{ overflowX: 'auto' }}>
+    <div style={{ width: '100%', maxWidth: '100%', overflowX: 'auto', WebkitOverflowScrolling: 'touch', boxSizing: 'border-box' }}>
       <table className="table" style={{ width: '100%', textAlign: 'left', borderCollapse: 'collapse' }}>
         <thead>
           <tr>

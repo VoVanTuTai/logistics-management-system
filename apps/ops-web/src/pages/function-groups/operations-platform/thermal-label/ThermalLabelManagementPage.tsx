@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { ArrowRight, Filter, Package, Search, Printer, ListFilter } from 'lucide-react';
+import { ArrowRight, Filter, Package, Search, Printer, ListFilter, X } from 'lucide-react';
 
 import { useManifestsQuery } from '../../../../features/manifests/manifests.hooks';
 import { useHubScope } from '../../../../hooks/useHubScope';
@@ -248,8 +248,9 @@ export function ThermalLabelManagementPage(): React.JSX.Element {
               className="ops-thermal-management__search-clear"
               onClick={() => setSearchCode('')}
               title="Xoá tìm kiếm"
+              aria-label="Xoá tìm kiếm"
             >
-              ✕
+              <X size={14} />
             </button>
           )}
         </div>

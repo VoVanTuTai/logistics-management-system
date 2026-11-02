@@ -1,0 +1,87 @@
+@startuml
+!theme plain
+skinparam monochrome true
+skinparam sequenceMessageAlign center
+skinparam responseMessageBelowArrow true
+skinparam maxMessageSize 140
+skinparam wrapWidth 200
+skinparam BoxPadding 8
+autonumber "<b>[00]</b>"
+
+box "Boundary Layer (Giao Diện & Gateway)" #FFFFFF
+actor "Khách hàng cá nhân\n(Customer User)" as Customer
+boundary "AiChatDrawer / Widget\n(apps/guest-web & Mobile)" as UI
+boundary "Gateway BFF (:3000)\n(CustomerAssistantCtrl)" as Gateway
+end box
+
+box "Control Layer (Trợ Lý AI & Microservices)" #FFFFFF
+control "ChatController\n(:3013 chatbot-service)" as ChatCtrl
+control "ChatService\n(Core Dialog Interactor)" as ChatSvc
+control "LogisticsTools\n(Tools & Action Engine)" as ToolEngine
+control "External LLM API\n(Google Gemini 2.5 Flash)" as LlmApi
+end box
+
+box "Entity & Downstream Services" #FFFFFF
+entity "VectorStore\n[CSKH & SLA Policies]" as VectorDB
+entity "Shipment & Claims DB\n(:3002 shipment-service)" as ShipDB
+end box
+
+' GIAI ĐOẠN 1: GỬI TIN NHẮN TỪ CLIENT ĐÃ ĐĂNG NHẬP
+Customer -> UI: Mở trợ lý AI, nhập: "Kiểm tra đơn NX1730000001\nvà phản ánh hàng bị giao trễ"
+activate UI
+
+UI -> Gateway: POST /customer/chatbot/message\n(Bearer accessToken, Body: { message, userId: customer.id, senderRole: 'CUSTOMER' })
+activate Gateway
+
+Gateway -> ChatCtrl: POST /api/v1/chat/message\n(Body: ChatRequestDto)
+activate ChatCtrl
+
+ChatCtrl -> ChatSvc: handleMessage(dto: ChatRequestDto)
+activate ChatSvc
+
+' GIAI ĐOẠN 2: PHÂN TÍCH Ý ĐỊNH & THỰC THI FUNCTION CALLING
+ChatSvc -> ChatSvc: detectIntent(question) -> Tra cứu hành trình đơn & Phản ánh khiếu nại
+
+opt Kịch bản có mã vận đơn NX...: Truy vấn dữ liệu thực tế
+    ChatSvc -> ToolEngine: trackShipment('NX1730000001', isGuest=false)
+    activate ToolEngine
+    ToolEngine -> ShipDB: GET /shipments/NX1730000001 (:3002)\nGET /tracking/NX1730000001/timeline (:3008)
+    activate ShipDB
+    ShipDB --> ToolEngine: Shipment details (Trạng thái: OUT_FOR_DELIVERY, Bưu tá: Nguyễn Văn A, SĐT: 0988***)
+    deactivate ShipDB
+    ToolEngine --> ChatSvc: TrackingResult (status, currentHub, timeline)
+    deactivate ToolEngine
+end
+
+opt Kịch bản phản ánh chậm trễ / khiếu nại: Tra cứu chính sách bồi thường
+    ChatSvc -> ToolEngine: getClaimCompensationPolicy('LATE_DELIVERY')
+    activate ToolEngine
+    ToolEngine -> VectorDB: hybridSearch('Chính sách bồi thường giao chậm', topK=3)
+    activate VectorDB
+    VectorDB --> ToolEngine: Policy Chunks (Hoàn 100% cước phí khi chậm >24h SLA)
+    deactivate VectorDB
+    ToolEngine --> ChatSvc: ClaimPolicyResult
+    deactivate ToolEngine
+end
+
+' GIAI ĐOẠN 3: GỌI GOOGLE GEMINI TỔNG HỢP CÂU TRẢ LỜI
+ChatSvc -> LlmApi: POST /v1beta/models/gemini-2.5-flash:generateContent\n(SystemPrompt + Realtime Tracking Context + Claim SOP)
+activate LlmApi
+LlmApi --> ChatSvc: 200 OK: Generated text with empathetic tone & action suggestions
+deactivate LlmApi
+
+ChatSvc --> ChatCtrl: ChatResponseDto {\n  answerText,\n  shipmentCards: [trackingCard],\n  actionChips: ['Tạo yêu cầu khiếu nại', 'Gọi hotline bưu cục']\n}
+deactivate ChatSvc
+
+ChatCtrl --> Gateway: 200 OK (ChatResponseDto)
+deactivate ChatCtrl
+
+Gateway --> UI: 200 OK (ChatResponseDto)
+deactivate Gateway
+
+' GIAI ĐOẠN 4: KẾT XUẤT NỘI DUNG VÀ THẺ TƯƠNG TÁC
+UI -> UI: Render tin nhắn văn bản, Render thẻ tiến độ giao hàng trực quan (ShipmentCard)\nkèm nút bấm "Tạo phiếu khiếu nại bồi thường 1-click"
+
+deactivate UI
+@enduml
+

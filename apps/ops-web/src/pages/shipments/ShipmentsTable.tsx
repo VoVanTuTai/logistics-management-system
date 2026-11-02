@@ -865,7 +865,7 @@ export function ShipmentsTable({
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             <span style={{ fontWeight: 700, color: '#1e40af' }}>
-              ✓ Đã chọn: {selectedShipmentCodes.length} vận đơn
+              Đã chọn: {selectedShipmentCodes.length} vận đơn
             </span>
             {totalFilteredCount !== undefined &&
               selectedShipmentCodes.length < totalFilteredCount &&
@@ -1154,7 +1154,7 @@ export function ShipmentsTable({
                             whiteSpace: 'nowrap',
                           }}
                         >
-                          📐 Thể tích IATA
+                          Thể tích IATA
                         </span>
                       )}
                     </td>
@@ -1383,7 +1383,7 @@ export function ShipmentsTable({
                               whiteSpace: 'nowrap',
                             }}
                           >
-                            ⚠️ Quá 6h
+                            Quá 6h
                           </span>
                         )}
                       </div>

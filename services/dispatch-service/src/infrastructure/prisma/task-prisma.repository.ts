@@ -6,19 +6,50 @@ import type {
   TaskStatus as PrismaTaskStatus,
 } from '@prisma/client';
 
-import type {
-  AssignTaskInput,
-  CreateTaskInput,
-  ListTasksFilters,
-  ReassignTaskInput,
-  Task,
-  TaskAssignment,
-  TaskStatus,
-  TaskType,
-  UpdateTaskStatusInput,
+import {
+  TASK_STATUSES,
+  TASK_TYPES,
+  type AssignTaskInput,
+  type CreateTaskInput,
+  type ListTasksFilters,
+  type ReassignTaskInput,
+  type Task,
+  type TaskAssignment,
+  type TaskStatus,
+  type TaskType,
+  type UpdateTaskStatusInput,
 } from '../../domain/entities/task.entity';
 import { TaskRepository } from '../../domain/repositories/task.repository';
 import { PrismaService } from './prisma.service';
+
+const VALID_TASK_STATUS_SET = new Set<string>(TASK_STATUSES);
+const VALID_TASK_TYPE_SET = new Set<string>(TASK_TYPES);
+
+const TASK_STATUS_ALIASES: Record<string, PrismaTaskStatus> = {
+  IN_PROGRESS: 'ASSIGNED',
+  DELIVERING: 'ASSIGNED',
+  PICKED_UP: 'ASSIGNED',
+  DONE: 'COMPLETED',
+  SUCCESS: 'COMPLETED',
+  FAILED: 'CANCELLED',
+};
+
+function resolvePrismaTaskStatus(
+  raw?: string | null,
+): PrismaTaskStatus | undefined {
+  if (!raw) return undefined;
+  const upper = raw.trim().toUpperCase();
+  if (!upper || upper === 'ALL' || upper === 'TAT_CA') {
+    return undefined;
+  }
+  if (VALID_TASK_STATUS_SET.has(upper)) {
+    return upper as PrismaTaskStatus;
+  }
+  if (TASK_STATUS_ALIASES[upper]) {
+    return TASK_STATUS_ALIASES[upper];
+  }
+  return undefined;
+}
 
 type TaskRecordWithAssignments = PrismaTaskRecord & {
   assignments: PrismaTaskAssignmentRecord[];
@@ -54,11 +85,19 @@ export class TaskPrismaRepository extends TaskRepository {
     }
 
     if (filters.taskType) {
-      where.taskType = filters.taskType as TaskType;
+      const upperType = filters.taskType.trim().toUpperCase();
+      if (VALID_TASK_TYPE_SET.has(upperType)) {
+        where.taskType = upperType as TaskType;
+      }
     }
 
     if (filters.status) {
-      where.status = filters.status as TaskStatus;
+      const resolved = resolvePrismaTaskStatus(filters.status);
+      if (resolved) {
+        where.status = resolved as TaskStatus;
+      } else if (filters.status.trim().toUpperCase() !== 'ALL') {
+        where.taskCode = '__NO_MATCHING_TASK__';
+      }
     }
 
     const records = await this.prisma.task.findMany({
@@ -207,10 +246,12 @@ export class TaskPrismaRepository extends TaskRepository {
   }
 
   async updateStatus(id: string, input: UpdateTaskStatusInput): Promise<Task> {
+    const resolvedStatus =
+      resolvePrismaTaskStatus(input.status) ?? ('COMPLETED' as PrismaTaskStatus);
     const record = await this.prisma.task.update({
       where: { id },
       data: {
-        status: input.status as PrismaTaskStatus,
+        status: resolvedStatus,
       },
       include: {
         assignments: {

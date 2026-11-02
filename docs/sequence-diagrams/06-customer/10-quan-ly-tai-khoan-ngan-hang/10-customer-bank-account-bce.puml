@@ -1,0 +1,69 @@
+@startuml
+!theme plain
+skinparam monochrome true
+skinparam sequenceMessageAlign center
+skinparam responseMessageBelowArrow true
+skinparam maxMessageSize 140
+skinparam wrapWidth 200
+skinparam BoxPadding 8
+autonumber "<b>[00]</b>"
+
+box "Boundary Layer (Giao Diện & Gateway)" #FFFFFF
+actor "Khách hàng cá nhân\n(Customer User)" as Customer
+boundary "CustomerAccountModal\n(apps/guest-web & Mobile)" as UI
+boundary "Gateway BFF (:3000)\n(CustomerController)" as Gateway
+end box
+
+box "Control Layer (Điều Khiển & Dịch Vụ Hồ Sơ)" #FFFFFF
+control "CustomerProfilesCtrl\n(:3001 masterdata-service)" as ProfileCtrl
+control "CustomerProfilesService\n(Application Service)" as ProfileSvc
+end box
+
+box "Entity Layer (Dữ Liệu Khách Hàng PostgreSQL)" #FFFFFF
+entity "PostgreSQL (masterdata_db)\n[customer_profiles Table]" as ProfileDB
+end box
+
+' GIAI ĐOẠN 1: MỞ TAB TÀI KHOẢN NGÂN HÀNG VÀ ĐIỀN FORM
+Customer -> UI: Mở modal tài khoản, chọn tab "Tài khoản ngân hàng"\nnhập Tên ngân hàng, Số tài khoản & Tên chủ thẻ
+activate UI
+
+Customer -> UI: Bấm nút "Lưu thông tin ngân hàng" (handleSaveBankAccount)
+
+' GIAI ĐOẠN 2: VALIDATION FORM TẠI CLIENT
+alt Lỗi thông tin bỏ trống (!bankName || !accountNumber || !accountName)
+    UI -> UI: Kiểm tra tính hợp lệ: bắt buộc điền đủ 3 trường\nHiển thị cảnh báo: "Vui lòng nhập đầy đủ thông tin tài khoản ngân hàng."
+else Thông tin hợp lệ: Gửi yêu cầu cập nhật qua Gateway
+    UI -> Gateway: PUT /customer/masterdata/customer-profiles/me/bank-account\n(Bearer accessToken, Body: { bankName, accountNumber, accountName })
+    activate Gateway
+
+    Gateway -> ProfileCtrl: PUT /customer-profiles/me/bank-account\n(Body: UpdateBankAccountInput)
+    activate ProfileCtrl
+
+    ProfileCtrl -> ProfileSvc: updateBankAccount(userId, input)
+    activate ProfileSvc
+
+    ' GIAI ĐOẠN 3: XỬ LÝ VÀ CẬP NHẬT DATABASE
+    ProfileSvc -> ProfileSvc: normalizeBankName(input.bankName)\nnormalizeAccountNumber(input.accountNumber)\nnormalizeUppercaseText(input.accountName)
+
+    ProfileSvc -> ProfileDB: UPDATE customer_profiles SET\n  bank_name = $1,\n  bank_account_number = $2,\n  bank_account_name = $3,\n  updated_at = NOW()\nWHERE user_id = $4
+    activate ProfileDB
+    ProfileDB --> ProfileSvc: Bản ghi CustomerProfile đã cập nhật
+    deactivate ProfileDB
+
+    ProfileSvc --> ProfileCtrl: CustomerProfileDto (Updated Profile)
+    deactivate ProfileSvc
+
+    ProfileCtrl --> Gateway: 200 OK (CustomerProfileDto)
+    deactivate ProfileCtrl
+
+    Gateway --> UI: 200 OK (CustomerProfileDto)
+    deactivate Gateway
+
+    ' GIAI ĐOẠN 4: CẬP NHẬT GIAO DIỆN CLIENT
+    UI -> UI: Cập nhật state thông tin ngân hàng (setBankAccount)\nHiển thị Toast thành công: "Đã lưu tài khoản ngân hàng nhận bồi hoàn!"
+    UI -> UI: Đóng form chỉnh sửa & hiển thị thẻ tóm tắt tài khoản thụ hưởng
+end
+
+deactivate UI
+@enduml
+

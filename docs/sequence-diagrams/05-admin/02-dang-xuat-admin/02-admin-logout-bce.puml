@@ -1,0 +1,74 @@
+@startuml
+!theme plain
+skinparam monochrome true
+skinparam sequenceMessageAlign center
+skinparam responseMessageBelowArrow true
+skinparam maxMessageSize 140
+skinparam wrapWidth 200
+skinparam BoxPadding 8
+autonumber "<b>[00]</b>"
+
+box "Boundary Layer (Giao Diện & Cổng Kết Nối)" #FFFFFF
+actor "Quản trị viên hệ thống\n(System Admin)" as Admin
+boundary "AppHeader\n(apps/admin-web)" as HeaderUI
+boundary "Gateway BFF (:3000)\n(AdminAuthController)" as Gateway
+boundary "LoginPage (/login)\n(apps/admin-web)" as LoginUI
+end box
+
+box "Control Layer (Điều Khiển & Hủy Phiên Làm Việc)" #FFFFFF
+control "useAuthStore\n(Zustand store)" as AuthStore
+control "AuthController\n(:3010 auth-service)" as AuthCtrl
+control "AuthService\n(application service)" as AuthSvc
+end box
+
+box "Entity Layer (Lưu Trữ & Cơ Sở Dữ Liệu)" #FFFFFF
+entity "Browser LocalStorage\n[admin_auth_session]" as LocalStore
+entity "PostgreSQL (auth_db)\n[auth_sessions Table]" as AuthDB
+end box
+
+' GIAI ĐOẠN 1: THỰC HIỆN ĐĂNG XUẤT TỪ GIAO DIỆN QUẢN TRỊ
+Admin -> HeaderUI: Nhấp nút "Đăng xuất" trên thanh điều hướng góc trên
+activate HeaderUI
+
+HeaderUI -> Gateway: POST /admin/auth/auth/logout\n(Headers: Bearer accessToken)
+activate Gateway
+
+' GIAI ĐOẠN 2: THU HỒI PHIÊN LÀM VIỆC TẠI MÁY CHỦ XÁC THỰC
+Gateway -> AuthCtrl: POST /auth/logout
+activate AuthCtrl
+
+AuthCtrl -> AuthSvc: revokeSession(accessToken)
+activate AuthSvc
+
+AuthSvc -> AuthDB: UPDATE auth_sessions SET status = 'REVOKED', updated_at = NOW()\nWHERE access_token_hash = $hash
+activate AuthDB
+AuthDB --> AuthSvc: Thu hồi Token truy cập thành công
+deactivate AuthDB
+
+AuthSvc --> AuthCtrl: { revoked: true }
+deactivate AuthSvc
+
+AuthCtrl --> Gateway: 200 OK
+deactivate AuthCtrl
+
+Gateway --> HeaderUI: 200 OK
+deactivate Gateway
+
+' GIAI ĐOẠN 3: DỌN DẸP BỘ NHỚ TRÌNH DUYỆT VÀ ĐIỀU HƯỚNG VỀ LOGIN
+HeaderUI -> LocalStore: clearAdminSession() -> removeItem('admin_auth_session')
+activate LocalStore
+LocalStore --> HeaderUI: Xóa bộ nhớ thành công
+deactivate LocalStore
+
+HeaderUI -> AuthStore: logout() -> set({ session: null, isSubmitting: false })
+activate AuthStore
+AuthStore --> HeaderUI: State đăng nhập được làm sạch
+deactivate AuthStore
+
+HeaderUI -> LoginUI: navigate('/login')
+activate LoginUI
+deactivate HeaderUI
+
+LoginUI -> LoginUI: Render Giao diện Đăng nhập quản trị hệ thống
+deactivate LoginUI
+@enduml

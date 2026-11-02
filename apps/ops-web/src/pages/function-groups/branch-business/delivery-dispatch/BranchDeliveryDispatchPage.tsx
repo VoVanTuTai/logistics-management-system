@@ -1072,7 +1072,7 @@ export function BranchDeliveryDispatchPage(): React.JSX.Element {
                                 whiteSpace: 'nowrap',
                               }}
                             >
-                              📐 Thể tích IATA
+                              Thể tích IATA
                             </span>
                           )}
                         </td>

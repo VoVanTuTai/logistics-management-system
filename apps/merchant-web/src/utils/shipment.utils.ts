@@ -86,6 +86,41 @@ export function isReturnRequestAllowed(shipment: ShipmentResponse): boolean {
   );
 }
 
+/**
+ * Whitelist of shipment statuses that are eligible for carrier pickup collection.
+ * Only orders that have been created/updated and are awaiting first-mile handover are eligible.
+ * Terminal, in-transit, delivered, and cancelled orders are strictly excluded.
+ */
+export const PICKUP_ELIGIBLE_STATUSES = new Set([
+  'CREATED',
+  'UPDATED',
+  'WAITING_PICKUP',
+]);
+
+export function isShipmentEligibleForPickup(
+  shipment: ShipmentResponse,
+  activePickupByShipmentCode: Map<string, PickupRequest>,
+): boolean {
+  const normalizedCode = normalizeCode(shipment.code);
+  if (!normalizedCode) return false;
+
+  const rawStatus = String(shipment.currentStatus ?? '').toUpperCase().trim();
+
+  // 1. Strict status check: only freshly created or waiting-pickup orders can be collected.
+  // Explicitly rejects DELIVERED, CANCELLED, PICKUP_COMPLETED, PICKED_UP, IN_TRANSIT, DELIVERING, etc.
+  if (!PICKUP_ELIGIBLE_STATUSES.has(rawStatus)) {
+    return false;
+  }
+
+  // 2. Active pickup check: cannot be in another active (non-cancelled) pickup request.
+  const existingActivePickup = activePickupByShipmentCode.get(normalizedCode);
+  if (existingActivePickup && existingActivePickup.status !== 'CANCELLED') {
+    return false;
+  }
+
+  return true;
+}
+
 export function normalizeCreateForm(
   form: Partial<CreateShipmentForm> | null | undefined,
 ): CreateShipmentForm {

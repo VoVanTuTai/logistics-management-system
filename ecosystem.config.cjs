@@ -5,17 +5,41 @@
  */
 
 const path = require('node:path');
+const fs = require('node:fs');
+
+function loadEnvFile(envPath) {
+  if (!fs.existsSync(envPath)) return {};
+  const envConfig = {};
+  const content = fs.readFileSync(envPath, 'utf8');
+  for (const line of content.split('\n')) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith('#')) continue;
+    const eqIdx = trimmed.indexOf('=');
+    if (eqIdx === -1) continue;
+    const key = trimmed.slice(0, eqIdx).trim();
+    let val = trimmed.slice(eqIdx + 1).trim();
+    if ((val.startsWith('"') && val.endsWith('"')) || (val.startsWith("'") && val.endsWith("'"))) {
+      val = val.slice(1, -1);
+    }
+    envConfig[key] = val;
+  }
+  return envConfig;
+}
 
 const ROOT_DIR = __dirname;
 const LOG_DIR = path.join(ROOT_DIR, '.tmp/pm2-logs');
 
+const rootEnv = loadEnvFile(path.join(ROOT_DIR, '.env'));
+const gatewayEnv = loadEnvFile(path.join(ROOT_DIR, 'services/gateway-bff/.env'));
+const shipmentEnv = loadEnvFile(path.join(ROOT_DIR, 'services/shipment-service/.env'));
+
 const DB_BASE = process.env.DATABASE_URL_BASE || 'postgresql://postgres:postgres@localhost:15432';
-const dbUrl = (dbName, connectionLimit = 3, poolTimeout = 10) =>
+const dbUrl = (dbName, connectionLimit = 10, poolTimeout = 30) =>
   `${DB_BASE}/${dbName}?connection_limit=${connectionLimit}&pool_timeout=${poolTimeout}`;
 
 const commonEnv = {
   NODE_ENV: 'production',
-  RABBITMQ_URL: 'amqp://guest:guest@localhost:5672',
+  RABBITMQ_URL: process.env.RABBITMQ_URL || 'amqp://guest:guest@localhost:5672?heartbeat=60',
   DOMAIN_EVENTS_EXCHANGE: 'domain.events',
   PRICING_SERVICE_URL: 'http://localhost:3012',
 };
@@ -32,7 +56,7 @@ module.exports = {
         PORT: 3001,
         DATABASE_URL: dbUrl('masterdata_db', 3),
       },
-      max_memory_restart: '180M',
+      max_memory_restart: '500M',
       autorestart: true,
       out_file: path.join(LOG_DIR, 'masterdata-out.log'),
       error_file: path.join(LOG_DIR, 'masterdata-err.log'),
@@ -47,17 +71,17 @@ module.exports = {
       env: {
         ...commonEnv,
         PORT: 3002,
-        DATABASE_URL: dbUrl('shipment_db', 5),
-        NEXUS_INTEGRATION_WEBHOOK_ENABLED: process.env.NEXUS_INTEGRATION_WEBHOOK_ENABLED || 'true',
-        NEXUS_INTEGRATION_PARTNER_CODE: process.env.NEXUS_INTEGRATION_PARTNER_CODE || 'DT_COMMERCE',
-        NEXUS_INTEGRATION_WEBHOOK_URL: process.env.NEXUS_INTEGRATION_WEBHOOK_URL || 'https://api.truongam.tech/api/v1/shipments/webhooks/nexus',
-        NEXUS_INTEGRATION_WEBHOOK_PATH: process.env.NEXUS_INTEGRATION_WEBHOOK_PATH || '/api/v1/shipments/webhooks/nexus',
-        NEXUS_INTEGRATION_WEBHOOK_SECRET: process.env.NEXUS_INTEGRATION_WEBHOOK_SECRET || '',
+        DATABASE_URL: dbUrl('shipment_db', 15),
+        NEXUS_INTEGRATION_WEBHOOK_ENABLED: process.env.NEXUS_INTEGRATION_WEBHOOK_ENABLED || shipmentEnv.NEXUS_INTEGRATION_WEBHOOK_ENABLED || 'true',
+        NEXUS_INTEGRATION_PARTNER_CODE: process.env.NEXUS_INTEGRATION_PARTNER_CODE || shipmentEnv.NEXUS_INTEGRATION_PARTNER_CODE || 'DT_COMMERCE',
+        NEXUS_INTEGRATION_WEBHOOK_URL: process.env.NEXUS_INTEGRATION_WEBHOOK_URL || shipmentEnv.NEXUS_INTEGRATION_WEBHOOK_URL || 'https://api.truongam.tech/api/v1/shipments/webhooks/nexus',
+        NEXUS_INTEGRATION_WEBHOOK_PATH: process.env.NEXUS_INTEGRATION_WEBHOOK_PATH || shipmentEnv.NEXUS_INTEGRATION_WEBHOOK_PATH || '/api/v1/shipments/webhooks/nexus',
+        NEXUS_INTEGRATION_WEBHOOK_SECRET: process.env.NEXUS_INTEGRATION_WEBHOOK_SECRET || shipmentEnv.NEXUS_INTEGRATION_WEBHOOK_SECRET || rootEnv.NEXUS_INTEGRATION_WEBHOOK_SECRET || '',
         NEXUS_INTEGRATION_WEBHOOK_MAX_ATTEMPTS: 3,
         NEXUS_INTEGRATION_WEBHOOK_RETRY_DELAY_MS: 1000,
         PUBLIC_TRACKING_PUBLIC_URL: process.env.PUBLIC_TRACKING_PUBLIC_URL || 'https://tracking.nexus-ex.site',
       },
-      max_memory_restart: '180M',
+      max_memory_restart: '500M',
       autorestart: true,
       out_file: path.join(LOG_DIR, 'shipment-out.log'),
       error_file: path.join(LOG_DIR, 'shipment-err.log'),
@@ -75,7 +99,7 @@ module.exports = {
         DATABASE_URL: dbUrl('pickup_db', 3),
         SHIPMENT_SERVICE_URL: 'http://localhost:3002',
       },
-      max_memory_restart: '180M',
+      max_memory_restart: '500M',
       autorestart: true,
       out_file: path.join(LOG_DIR, 'pickup-out.log'),
       error_file: path.join(LOG_DIR, 'pickup-err.log'),
@@ -96,7 +120,7 @@ module.exports = {
         SHIPMENT_SERVICE_URL: 'http://localhost:3002',
         MASTERDATA_SERVICE_URL: 'http://localhost:3001',
       },
-      max_memory_restart: '180M',
+      max_memory_restart: '500M',
       autorestart: true,
       out_file: path.join(LOG_DIR, 'dispatch-out.log'),
       error_file: path.join(LOG_DIR, 'dispatch-err.log'),
@@ -114,7 +138,7 @@ module.exports = {
         DATABASE_URL: dbUrl('manifest_db', 3),
         SHIPMENT_SERVICE_URL: 'http://localhost:3002',
       },
-      max_memory_restart: '180M',
+      max_memory_restart: '500M',
       autorestart: true,
       out_file: path.join(LOG_DIR, 'manifest-out.log'),
       error_file: path.join(LOG_DIR, 'manifest-err.log'),
@@ -132,7 +156,7 @@ module.exports = {
         DATABASE_URL: dbUrl('scan_db', 3),
         SHIPMENT_SERVICE_URL: 'http://localhost:3002',
       },
-      max_memory_restart: '180M',
+      max_memory_restart: '500M',
       autorestart: true,
       out_file: path.join(LOG_DIR, 'scan-out.log'),
       error_file: path.join(LOG_DIR, 'scan-err.log'),
@@ -151,7 +175,7 @@ module.exports = {
         SCAN_SERVICE_URL: 'http://localhost:3006',
         SHIPMENT_SERVICE_URL: 'http://localhost:3002',
       },
-      max_memory_restart: '180M',
+      max_memory_restart: '500M',
       autorestart: true,
       out_file: path.join(LOG_DIR, 'delivery-out.log'),
       error_file: path.join(LOG_DIR, 'delivery-err.log'),
@@ -168,7 +192,7 @@ module.exports = {
         PORT: 3008,
         DATABASE_URL: dbUrl('tracking_db', 3),
       },
-      max_memory_restart: '180M',
+      max_memory_restart: '500M',
       autorestart: true,
       out_file: path.join(LOG_DIR, 'tracking-out.log'),
       error_file: path.join(LOG_DIR, 'tracking-err.log'),
@@ -187,7 +211,7 @@ module.exports = {
         REPORTING_CONSUMER_INTERVAL_MS: 1000,
         REPORTING_CONSUMER_BATCH_SIZE: 20,
       },
-      max_memory_restart: '180M',
+      max_memory_restart: '500M',
       autorestart: true,
       out_file: path.join(LOG_DIR, 'reporting-out.log'),
       error_file: path.join(LOG_DIR, 'reporting-err.log'),
@@ -207,7 +231,7 @@ module.exports = {
         REFRESH_TOKEN_TTL_SECONDS: 2592000,
         MASTERDATA_SERVICE_URL: 'http://localhost:3001',
       },
-      max_memory_restart: '180M',
+      max_memory_restart: '500M',
       autorestart: true,
       out_file: path.join(LOG_DIR, 'auth-out.log'),
       error_file: path.join(LOG_DIR, 'auth-err.log'),
@@ -225,7 +249,7 @@ module.exports = {
         DATABASE_URL: dbUrl('payment_db', 3),
         SHIPMENT_SERVICE_URL: 'http://localhost:3002',
       },
-      max_memory_restart: '180M',
+      max_memory_restart: '500M',
       autorestart: true,
       out_file: path.join(LOG_DIR, 'payment-out.log'),
       error_file: path.join(LOG_DIR, 'payment-err.log'),
@@ -242,7 +266,7 @@ module.exports = {
         PORT: 3012,
         PRICING_QUOTE_TTL_MINUTES: 15,
       },
-      max_memory_restart: '150M',
+      max_memory_restart: '500M',
       autorestart: true,
       out_file: path.join(LOG_DIR, 'pricing-out.log'),
       error_file: path.join(LOG_DIR, 'pricing-err.log'),
@@ -262,7 +286,7 @@ module.exports = {
         KNOWLEDGE_BASE_DIR: path.join(ROOT_DIR, 'docs/knowledge-base'),
         VECTOR_INDEX_FILE: path.join(ROOT_DIR, 'docs/knowledge-base/vector-index.json'),
       },
-      max_memory_restart: '200M',
+      max_memory_restart: '500M',
       autorestart: true,
       out_file: path.join(LOG_DIR, 'chatbot-out.log'),
       error_file: path.join(LOG_DIR, 'chatbot-err.log'),
@@ -309,11 +333,11 @@ module.exports = {
         S3_SECRET_KEY: 'minioadmin123',
         S3_BUCKET_NAME: 'nexus-pod-images',
         S3_FORCE_PATH_STYLE: 'true',
-        NEXUS_INTEGRATION_AUTH_ENABLED: process.env.NEXUS_INTEGRATION_AUTH_ENABLED || 'true',
-        NEXUS_INTEGRATION_PARTNER_CODE: process.env.NEXUS_INTEGRATION_PARTNER_CODE || 'DT_COMMERCE',
-        NEXUS_INTEGRATION_API_KEY: process.env.NEXUS_INTEGRATION_API_KEY || '',
-        NEXUS_INTEGRATION_API_SECRET: process.env.NEXUS_INTEGRATION_API_SECRET || '',
-        NEXUS_INTEGRATION_WEBHOOK_SECRET: process.env.NEXUS_INTEGRATION_WEBHOOK_SECRET || '',
+        NEXUS_INTEGRATION_AUTH_ENABLED: process.env.NEXUS_INTEGRATION_AUTH_ENABLED || gatewayEnv.NEXUS_INTEGRATION_AUTH_ENABLED || rootEnv.NEXUS_INTEGRATION_AUTH_ENABLED || 'true',
+        NEXUS_INTEGRATION_PARTNER_CODE: process.env.NEXUS_INTEGRATION_PARTNER_CODE || gatewayEnv.NEXUS_INTEGRATION_PARTNER_CODE || rootEnv.NEXUS_INTEGRATION_PARTNER_CODE || 'DT_COMMERCE',
+        NEXUS_INTEGRATION_API_KEY: process.env.NEXUS_INTEGRATION_API_KEY || gatewayEnv.NEXUS_INTEGRATION_API_KEY || rootEnv.NEXUS_INTEGRATION_API_KEY || '',
+        NEXUS_INTEGRATION_API_SECRET: process.env.NEXUS_INTEGRATION_API_SECRET || gatewayEnv.NEXUS_INTEGRATION_API_SECRET || rootEnv.NEXUS_INTEGRATION_API_SECRET || '',
+        NEXUS_INTEGRATION_WEBHOOK_SECRET: process.env.NEXUS_INTEGRATION_WEBHOOK_SECRET || gatewayEnv.NEXUS_INTEGRATION_WEBHOOK_SECRET || rootEnv.NEXUS_INTEGRATION_WEBHOOK_SECRET || '',
         NEXUS_INTEGRATION_REQUIRE_SHOP_MAPPING: 'false',
         NEXUS_INTEGRATION_SHOP_MAPPINGS_JSON: '[]',
         NEXUS_INTEGRATION_TIMESTAMP_SKEW_MS: 300000,
@@ -322,7 +346,7 @@ module.exports = {
         OPS_PUBLIC_URL: process.env.OPS_PUBLIC_URL || 'https://ops.nexus-ex.site',
         PUBLIC_TRACKING_PUBLIC_URL: process.env.PUBLIC_TRACKING_PUBLIC_URL || 'https://tracking.nexus-ex.site',
       },
-      max_memory_restart: '250M',
+      max_memory_restart: '500M',
       autorestart: true,
       out_file: path.join(LOG_DIR, 'gateway-out.log'),
       error_file: path.join(LOG_DIR, 'gateway-err.log'),

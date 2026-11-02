@@ -1,0 +1,125 @@
+@startuml
+!theme plain
+skinparam monochrome true
+skinparam sequenceMessageAlign center
+skinparam responseMessageBelowArrow true
+skinparam maxMessageSize 140
+skinparam wrapWidth 200
+skinparam BoxPadding 8
+autonumber "<b>[00]</b>"
+
+
+box "Boundary Layer (Giao Diện & Gateway)" #FFFFFF
+actor "Bưu tá / Shipper\n(Courier User)" as Courier
+boundary "LoginScreen / Form\n(apps/courier-mobile)" as UI
+boundary "Gateway BFF (:3000)\n(CourierController)" as Gateway
+boundary "HomeScreen\n(apps/courier-mobile)" as HomeUI
+end box
+
+box "Control Layer (Điều Khiển & Xác Thực)" #FFFFFF
+control "AuthStore\n(Zustand mobile state)" as AuthStore
+control "AuthController\n(:3010 auth-service)" as AuthCtrl
+control "AuthService\n(application service)" as AuthSvc
+control "HashService\n(bcrypt digest)" as HashSvc
+end box
+
+box "Entity Layer (Lưu Trữ Điện Thoại & Database)" #FFFFFF
+entity "AsyncStorage\n[Secure Session Storage]" as LocalStore
+entity "PostgreSQL (auth_db)\n[user_accounts & auth_sessions]" as AuthDB
+end box
+
+' GIAI ĐOẠN 1: MỞ APP VÀ NHẬP THÔNG TIN ĐĂNG NHẬP
+Courier -> UI: Mở ứng dụng di động Courier Mobile\nvà nhập Tên tài khoản, Mật khẩu
+activate UI
+
+Courier -> UI: Nhấn nút "Bắt đầu ca làm việc" (onSubmit)
+
+alt Lỗi bỏ trống thông tin tại giao diện
+    UI -> UI: Kiểm tra: !username.trim() || !password.trim()
+    UI -> UI: Hiển thị lỗi: "Vui lòng nhập đầy đủ tài khoản và mật khẩu"
+else Dữ liệu hợp lệ: Bắt đầu quy trình xác thực
+    UI -> AuthStore: login({ username, password })
+    activate AuthStore
+
+    ' GIAI ĐOẠN 2: GỬI REQUEST QUA GATEWAY BFF
+    AuthStore -> Gateway: POST /courier/auth/auth/login\n(Body: { username, password, roleGroup: 'COURIER_APP' })
+    activate Gateway
+
+    note over Gateway: GatewayAuthGuard & RoleGuard bypass public auth -> proxy :3010
+
+    Gateway -> AuthCtrl: POST /auth/login (Body: LoginInput)
+    activate AuthCtrl
+
+    AuthCtrl -> AuthSvc: login(input: LoginInput)
+    activate AuthSvc
+
+    ' GIAI ĐOẠN 3: KIỂM TRA TÀI KHOẢN VÀ MẬT KHẨU TẠI AUTH SERVICE
+    AuthSvc -> AuthDB: SELECT * FROM user_accounts WHERE username = $1 AND status = 'ACTIVE'
+    activate AuthDB
+    AuthDB --> AuthSvc: Bản ghi tài khoản (UserAccount)
+    deactivate AuthDB
+
+    alt Tài khoản không tồn tại hoặc đã bị khóa
+        AuthSvc --> AuthCtrl: throw UnauthorizedException("Sai tên đăng nhập hoặc mật khẩu.")
+        AuthCtrl --> Gateway: 401 Unauthorized
+        Gateway --> AuthStore: 401 Unauthorized
+        AuthStore --> UI: errorMessage: "Tài khoản không hợp lệ hoặc đã bị khóa."
+        UI -> UI: Hiển thị thông báo lỗi trên form
+    else Tài khoản hợp lệ: Kiểm tra mật khẩu băm BCrypt
+        AuthSvc -> HashSvc: compare(password, account.passwordHash)
+        activate HashSvc
+        HashSvc --> AuthSvc: Kết quả so khớp (true / false)
+        deactivate HashSvc
+
+        alt Mật khẩu không chính xác
+            AuthSvc --> AuthCtrl: throw UnauthorizedException("Sai tên đăng nhập hoặc mật khẩu.")
+            AuthCtrl --> Gateway: 401 Unauthorized
+            Gateway --> AuthStore: 401 Unauthorized
+            AuthStore --> UI: errorMessage: "Mật khẩu không chính xác."
+            UI -> UI: Hiển thị thông báo sai mật khẩu
+        else Mật khẩu hợp lệ: Kiểm tra vai trò COURIER_APP
+            AuthSvc -> AuthSvc: Kiểm tra vai trò bưu tá (COURIER, DRIVER, SHIPPER, HUB_STAFF...)
+
+            ' Tạo phiên đăng nhập Opaque Tokens
+            AuthSvc -> AuthDB: INSERT INTO auth_sessions (user_id, access_token, refresh_token, expires_at)\nVALUES (...)
+            activate AuthDB
+            AuthDB --> AuthSvc: Lưu phiên thành công
+            deactivate AuthDB
+
+            AuthSvc --> AuthCtrl: LoginResultDto { tokens, user }
+            deactivate AuthSvc
+
+            AuthCtrl --> Gateway: 200 OK: LoginResultDto
+            deactivate AuthCtrl
+
+            Gateway --> AuthStore: 200 OK: Thông tin phiên đăng nhập
+            deactivate Gateway
+
+            ' GIAI ĐOẠN 4: ĐỒNG BỘ QUYỀN TRÊN APP VÀ LƯU PHIÊN LÀM VIỆC THEO NGÀY
+            AuthStore -> Gateway: GET /courier/auth/auth/mobile-permissions/users/{userId}/effective\n(Bearer accessToken)
+            activate Gateway
+            Gateway --> AuthStore: 200 OK: MobilePermissionEffectiveDto
+            deactivate Gateway
+
+            AuthStore -> AuthStore: Đóng gói session trong ngày (sessionDate = getTodayDateString())
+            AuthStore -> LocalStore: persistAuthSession(sessionForToday)
+            activate LocalStore
+            LocalStore --> AuthStore: Lưu thành công vào AsyncStorage
+            deactivate LocalStore
+
+            AuthStore -> AuthStore: Cập nhật Zustand state:\nstatus = 'authenticated', session = sessionForToday
+            AuthStore --> UI: Đăng nhập thành công
+            deactivate AuthStore
+
+            ' GIAI ĐOẠN 5: ĐIỀU HƯỚNG VÀO TRANG CHỦ CA LÀM VIỆC
+            UI -> HomeUI: Navigation điều hướng vào màn hình chính
+            activate HomeUI
+            HomeUI -> HomeUI: Render màn hình Home ca làm việc:\nBưu cục phụ trách, Danh sách đơn cần lấy và phát trong ngày
+            deactivate HomeUI
+        end
+    end
+end
+
+deactivate UI
+@enduml
+

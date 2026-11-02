@@ -1,0 +1,83 @@
+@startuml
+!theme plain
+skinparam monochrome true
+skinparam sequenceMessageAlign center
+skinparam responseMessageBelowArrow true
+skinparam maxMessageSize 140
+skinparam wrapWidth 200
+skinparam BoxPadding 8
+autonumber "<b>[00]</b>"
+
+box "Boundary Layer (Giao Diện & Cổng Kết Nối)" #FFFFFF
+actor "Quản trị viên hệ thống\n(System Admin)" as Admin
+boundary "ShipperUsersPage\n(apps/admin-web)" as UI
+boundary "UserEditorModal\n(Hộp thoại tạo/sửa bưu tá)" as ModalUI
+boundary "Gateway BFF (:3000)\n(AdminUserController)" as Gateway
+end box
+
+box "Control Layer (Điều Khiển & Hồ Sơ Bưu Tá)" #FFFFFF
+control "UserAccountController\n(:3010 auth-service)" as UserCtrl
+control "CourierManagementService\n(courier fleet service)" as CourierSvc
+control "HashService\n(bcrypt digest)" as HashSvc
+end box
+
+box "Entity Layer (Lưu Trữ & Cơ Sở Dữ Liệu)" #FFFFFF
+entity "PostgreSQL (auth_db)\n[user_accounts, courier_profiles Table]" as AuthDB
+end box
+
+' GIAI ĐOẠN 1: MỞ FORM TẠO TÀI KHOẢN BƯU TÁ GIAO NHẬN
+Admin -> UI: Truy cập màn hình Quản lý tài khoản bưu tá (/users/shippers),\nbấm nút "Thêm bưu tá mới" (handleOpenCreateModal)
+activate UI
+
+UI -> ModalUI: Mở hộp thoại UserEditorModal (isOpen = true)
+activate ModalUI
+deactivate UI
+
+Admin -> ModalUI: Nhập thông tin hồ sơ bưu tá giao nhận:\n- Tên tài khoản (username: 'shipper_nam_dian')\n- Mật khẩu khởi tạo tạm thời (tempPassword)\n- Họ và tên (fullName: 'Võ Thành Nam')\n- Số điện thoại đăng nhập (phone: '0977112233')\n- Loại phương tiện (vehicleType: 'MOTORBIKE') & Biển số xe (61B1-999.88)\n- Bưu cục gốc trực thuộc (baseHubCode: 'HUB_BD_01')\n- Hạn mức công nợ tiền mặt tối đa (maxCodLimit: 15.000.000đ)
+
+Admin -> ModalUI: Bấm nút "Lưu tài khoản bưu tá" (handleSaveCourier)
+
+' GIAI ĐOẠN 2: BĂM MẬT KHẨU VÀ GHI HỒ SƠ PHƯƠNG TIỆN TẠI AUTH SERVICE
+ModalUI -> Gateway: POST /admin/auth/users/couriers\n(Headers: Bearer accessToken, Body: CreateCourierInput)
+activate Gateway
+
+Gateway -> UserCtrl: POST /users/couriers
+activate UserCtrl
+
+UserCtrl -> CourierSvc: createCourierAccount(input)
+activate CourierSvc
+
+CourierSvc -> HashSvc: digest(tempPassword)
+activate HashSvc
+HashSvc --> CourierSvc: passwordHash (chuỗi băm bcrypt an toàn)
+deactivate HashSvc
+
+CourierSvc -> AuthDB: INSERT INTO user_accounts (id, username, password_hash, display_name, phone, status: 'ACTIVE', created_at)\nVALUES (...)
+activate AuthDB
+AuthDB --> CourierSvc: Ghi nhận tài khoản người dùng
+deactivate AuthDB
+
+CourierSvc -> AuthDB: INSERT INTO user_roles (user_id, role_name) VALUES ($userId, 'COURIER')\nINSERT INTO courier_profiles (user_id, vehicle_type, license_plate, base_hub_code, max_cod_limit, current_cash_debt)\nVALUES ($userId, 'MOTORBIKE', '61B1-999.88', 'HUB_BD_01', 15000000, 0)
+activate AuthDB
+AuthDB --> CourierSvc: Lưu trữ hồ sơ vận hành bưu tá thành công
+deactivate AuthDB
+
+CourierSvc --> UserCtrl: CourierUserDto { id, username, displayName, vehicleType: 'MOTORBIKE', maxCodLimit: 15000000, status: 'ACTIVE' }
+deactivate CourierSvc
+
+UserCtrl --> Gateway: 201 Created (CourierUserDto)
+deactivate UserCtrl
+
+Gateway --> ModalUI: 201 Created
+deactivate Gateway
+
+' GIAI ĐOẠN 3: ĐÓNG FORM VÀ HIỂN THỊ TRÊN BẢNG SHIPPER
+ModalUI -> UI: Đóng modal (onClose) và làm mới danh sách bưu tá
+activate UI
+deactivate ModalUI
+
+UI -> UI: Render dòng bưu tá mới vào Bảng tài khoản Shipper:\n- Tên bưu tá: Võ Thành Nam (shipper_nam_dian)\n- Phương tiện: Xe máy (61B1-999.88)\n- Hạn mức giữ COD: 15.000.000đ (Nợ hiện tại: 0đ)\n- Trạng thái: Badge xanh "HOẠT ĐỘNG"
+
+UI -> UI: Hiển thị Toast thông báo: "Đã tạo tài khoản bưu tá giao hàng mới thành công!"
+deactivate UI
+@enduml

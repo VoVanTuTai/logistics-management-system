@@ -1,0 +1,114 @@
+@startuml
+!theme plain
+skinparam monochrome true
+skinparam sequenceMessageAlign center
+skinparam responseMessageBelowArrow true
+skinparam maxMessageSize 140
+skinparam wrapWidth 200
+skinparam BoxPadding 8
+autonumber "<b>[00]</b>"
+
+
+box "Boundary Layer (Giao Diện & Gateway)" #FFFFFF
+actor "Bưu tá / Shipper\n(Courier User)" as Courier
+boundary "PickupScanScreen\n(apps/courier-mobile)" as UI
+boundary "CameraView / Scanner\n(Expo Camera)" as CamUI
+boundary "Gateway BFF (:3000)\n(CourierController)" as Gateway
+end box
+
+box "Control Layer (Điều Khiển & Nghiệp Vụ)" #FFFFFF
+control "PickupScanHandler\n(pickup.api & logic)" as ScanHandler
+control "ScanService (:3005)\n(ScanController & Svc)" as ScanSvc
+control "DispatchService (:3004)\n(TasksService)" as DispatchSvc
+control "ScanOutboxService\n(Transactional Outbox)" as OutboxSvc
+end box
+
+box "Entity Layer (Cơ Sở Dữ Liệu & Offline Cache)" #FFFFFF
+entity "PostgreSQL (scan_db)\n[scan_events & current_locations]" as ScanDB
+entity "PostgreSQL (dispatch_db)\n[courier_tasks]" as TaskDB
+entity "AsyncStorage\n[offlineQueue Storage]" as LocalStorage
+end box
+
+' GIAI ĐOẠN 1: BẬT MÁY QUÉT VÀ QUÉT MÃ KIỆN HÀNG
+Courier -> UI: Mở màn hình "Nhận hàng" (PickupScanScreen)
+activate UI
+
+Courier -> CamUI: Hướng camera vào mã vạch / QR Code trên kiện hàng
+activate CamUI
+CamUI -> UI: onBarcodeScanned({ data: shipmentCode, type })
+deactivate CamUI
+
+UI -> ScanHandler: parsePickupScannedCode(data)
+activate ScanHandler
+ScanHandler --> UI: Mã vận đơn chuẩn hóa (shipmentCode)
+deactivate ScanHandler
+
+UI -> UI: Kiểm tra trùng lặp trong phiên & phát âm thanh scan-success
+UI -> UI: Render kiện hàng vào danh sách "Chờ xác nhận nhận hàng"
+
+' GIAI ĐOẠN 2: CHỤP ẢNH MINH CHỨNG & BẤM XÁC NHẬN
+opt Bưu tá chụp ảnh minh chứng nhận hàng tại kho Shop
+    Courier -> UI: Bấm chụp ảnh bàn giao hàng hóa
+    UI -> UI: Chụp và nén ảnh (proofPhotoUri)
+end
+
+Courier -> UI: Nhấn nút "Xác nhận nhận hàng" (uploadAll)
+UI -> ScanHandler: submitPickupScanAction(command: PickupScanCommand)
+activate ScanHandler
+
+' GIAI ĐOẠN 3: XỬ LÝ ONLINE VS OFFLINE
+alt Kết nối mạng ổn định (Online Submission)
+    ScanHandler -> Gateway: POST /courier/scan/scans/pickup\n(Headers: Idempotency-Key, Bearer Token\nBody: { shipmentCode, locationCode, note, actor, occurredAt })
+    activate Gateway
+
+    Gateway -> ScanSvc: POST /scans/pickup (RecordPickupScanInput)
+    activate ScanSvc
+
+    ScanSvc -> ScanSvc: Kiểm tra khóa đơn hàng (assertShipmentNotLocked)\n& IdempotencyKey chống trùng vết quét
+
+    ScanSvc -> ScanDB: INSERT INTO scan_events (scan_type='PICKUP', ...)\nUPSERT INTO current_locations (last_scan_type='PICKUP')
+    activate ScanDB
+    ScanDB --> ScanSvc: Bản ghi scan_event & current_location đã lưu
+    deactivate ScanDB
+
+    ScanSvc -> OutboxSvc: enqueueFlowEvents('scan.pickup_confirmed', scanResult)
+    activate OutboxSvc
+    OutboxSvc --> ScanSvc: Đã tạo sự kiện outbox phát tán Kafka
+    deactivate OutboxSvc
+
+    ScanSvc --> Gateway: 201 Created (RecordScanResult)
+    deactivate ScanSvc
+    Gateway --> ScanHandler: 201 Created (RecordScanResult)
+    deactivate Gateway
+
+    ' Cập nhật trạng thái nhiệm vụ sang COMPLETED
+    ScanHandler -> Gateway: PATCH /courier/dispatch/tasks/{taskId}/status\n(Body: { status: 'COMPLETED' })
+    activate Gateway
+    Gateway -> DispatchSvc: updateTaskStatus(taskId, 'COMPLETED')
+    activate DispatchSvc
+    DispatchSvc -> TaskDB: UPDATE courier_tasks SET status = 'COMPLETED'\nWHERE id = $1
+    activate TaskDB
+    TaskDB --> DispatchSvc: Cập nhật thành công
+    deactivate TaskDB
+    DispatchSvc --> Gateway: 200 OK (TaskDto)
+    deactivate DispatchSvc
+    Gateway --> ScanHandler: 200 OK
+    deactivate Gateway
+
+    ScanHandler --> UI: Hoàn tất nhận hàng (successCodes[])
+    UI -> UI: Hiển thị thông báo: "Đã cập nhật nhận hàng thành công!"
+
+else Mất sóng hoặc lỗi mạng (Offline Fallback)
+    ScanHandler -> LocalStorage: enqueuePickupScanOffline(command)
+    activate LocalStorage
+    LocalStorage --> ScanHandler: Lưu lệnh quét vào hàng đợi ngoại tuyến offlineQueue
+    deactivate LocalStorage
+
+    ScanHandler --> UI: Ghi nhận ngoại tuyến (queuedCodes[])
+    UI -> UI: Cảnh báo: "Mất kết nối mạng. Đã lưu offline,\nhệ thống sẽ tự động đồng bộ khi có sóng trở lại."
+end
+deactivate ScanHandler
+
+deactivate UI
+
+@enduml

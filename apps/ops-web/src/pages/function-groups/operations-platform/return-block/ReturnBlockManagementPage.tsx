@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { Zap, ShieldCheck, AlertTriangle } from 'lucide-react';
+import { Zap, ShieldCheck, AlertTriangle, Plus, X } from 'lucide-react';
 
 import { routePaths } from '../../../../navigation/routes';
 import { ndrClient } from '../../../../features/ndr/ndr.client';
@@ -640,7 +640,8 @@ export function ReturnBlockManagementPage(): React.JSX.Element {
                 transition: 'background 0.15s ease',
               }}
             >
-              ➕ Đăng ký chuyển hoàn
+              <Plus size={15} />
+              <span>Đăng ký chuyển hoàn</span>
             </button>
           </div>
         </header>
@@ -898,8 +899,9 @@ export function ReturnBlockManagementPage(): React.JSX.Element {
                 type="button"
                 className="ops-return-modal__close-btn"
                 onClick={() => setSelectedFastTrackOrder(null)}
+                aria-label="Đóng"
               >
-                ✕
+                <X size={18} />
               </button>
             </header>
 
@@ -1055,7 +1057,7 @@ export function ReturnBlockManagementPage(): React.JSX.Element {
               }}
             >
               <h3 style={{ fontSize: '18px', fontWeight: 700, margin: 0, color: '#0f172a' }}>
-                ➕ Đăng ký Chuyển hoàn Đơn hàng
+                Đăng ký Chuyển hoàn Đơn hàng
               </h3>
               <button
                 type="button"
@@ -1063,15 +1065,15 @@ export function ReturnBlockManagementPage(): React.JSX.Element {
                 style={{
                   background: 'transparent',
                   border: 'none',
-                  fontSize: '22px',
-                  lineHeight: 1,
                   cursor: 'pointer',
                   color: '#64748b',
                   padding: '4px 8px',
+                  display: 'flex',
+                  alignItems: 'center',
                 }}
                 aria-label="Đóng modal đăng ký"
               >
-                ✕
+                <X size={20} />
               </button>
             </div>
             <ReturnBlockRegistrationPage

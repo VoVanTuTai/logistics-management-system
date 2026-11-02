@@ -16,6 +16,8 @@ export interface MerchantHeaderProps {
   lockedSenderHub: HubLocationOption | null;
   unreadNotifications: number;
   username: string;
+  shopName?: string;
+  roles?: string[];
   onSelectView: (view: ViewId) => void;
 }
 
@@ -26,37 +28,60 @@ export function MerchantHeader({
   lockedSenderHub,
   unreadNotifications,
   username,
+  shopName,
+  roles,
   onSelectView,
 }: MerchantHeaderProps): React.JSX.Element {
   const currentNav = navItems.find((i) => i.id === activeView);
+  const displayName = shopName || username || 'Shop Đối Tác';
+  const roleDisplay = roles && roles.length > 0 ? roles.join(', ') : 'MERCHANT';
 
   return (
     <header className="topbar topbar--stitch">
-      <div className="topbar-shell-copy">
-        <strong className="topbar-title">{currentNav?.label}</strong>
-        <div className="topbar-breadcrumb muted">{currentNav?.subtitle}</div>
+      <div className="topbar-left-group">
+        <div className="topbar-shell-copy">
+          <div className="topbar-breadcrumb">
+            <span className="topbar-breadcrumb-portal">NEXUS Merchant</span>
+            <span className="topbar-breadcrumb-slash">/</span>
+            <span className="topbar-breadcrumb-sub">{currentNav?.subtitle || 'Cổng Khách hàng'}</span>
+          </div>
+          <h2 className="topbar-title">{currentNav?.label || 'Tổng quan'}</h2>
+        </div>
       </div>
+
       <div className="topbar-compact-actions">
-        {/* Quick Stat: COD Net Balance */}
+        {/* Quick Stat 1: COD Net Balance */}
         <button
           type="button"
-          className="topbar-quick-stat topbar-quick-stat--balance"
+          className="topbar-stat-card topbar-stat-card--balance"
           onClick={() => onSelectView('finance')}
           title="Xem chi tiết sổ cái và đối soát tài chính"
         >
-          <span className="material-symbols-outlined">account_balance_wallet</span>
-          <span>
-            Số dư:{' '}
-            <strong style={{ color: netBalance >= 0 ? '#127a56' : '#ba1a1a' }}>
+          <span className="material-symbols-outlined stat-icon" aria-hidden="true">
+            account_balance_wallet
+          </span>
+          <div className="stat-text-group">
+            <span className="stat-label">Ví COD Thực Nhận</span>
+            <strong className={`stat-val ${netBalance >= 0 ? 'stat-val--pos' : 'stat-val--neg'}`}>
               {formatCurrency(netBalance)}
             </strong>
-          </span>
+          </div>
         </button>
 
-        {/* Quick Stat: Sender Hub */}
-        <div className="topbar-quick-stat topbar-quick-stat--hub" title="Bưu cục phụ trách tiếp nhận">
-          <span className="material-symbols-outlined">storefront</span>
-          <span>{lockedSenderHub?.hubName || lockedSenderHub?.hubCode || 'Bưu cục Sài Gòn'}</span>
+        {/* Quick Stat 2: Sender Hub Scope */}
+        <div
+          className="topbar-stat-card topbar-stat-card--hub"
+          title={`Bưu cục tiếp nhận: ${lockedSenderHub?.hubName || 'Bưu cục mặc định'} (${lockedSenderHub?.hubCode || 'HUB'})`}
+        >
+          <span className="material-symbols-outlined stat-icon" aria-hidden="true">
+            warehouse
+          </span>
+          <div className="stat-text-group">
+            <span className="stat-label">Bưu cục lấy hàng</span>
+            <strong className="stat-val">
+              {lockedSenderHub?.hubName || lockedSenderHub?.hubCode || 'Bưu cục Sài Gòn'}
+            </strong>
+          </div>
         </div>
 
         <div className="topbar-icon-group">
@@ -68,34 +93,41 @@ export function MerchantHeader({
           >
             <span className="material-symbols-outlined topbar-icon">notifications</span>
             {unreadNotifications > 0 ? (
-              <span
-                style={{
-                  position: 'absolute',
-                  top: '6px',
-                  right: '6px',
-                  width: '8px',
-                  height: '8px',
-                  borderRadius: '50%',
-                  background: '#dc2626',
-                }}
-              />
+              <span className="topbar-notif-indicator" />
             ) : null}
           </button>
           <button
             type="button"
             className="topbar-icon-btn"
             onClick={() => onSelectView('account')}
-            title="Cài đặt tài khoản"
+            title="Cài đặt tài khoản & Cấu hình shop"
           >
             <span className="material-symbols-outlined topbar-icon">settings</span>
           </button>
+
+          {/* Unified Shop Account & Role Badge Lockup */}
           <div
             className="topbar-user-badge"
             onClick={() => onSelectView('account')}
-            title="Hồ sơ tài khoản"
+            title={`Shop: ${displayName} · Vai trò: ${roleDisplay} · Nhấp để xem hồ sơ`}
+            role="button"
+            tabIndex={0}
           >
-            <span className="topbar-avatar">{(username ?? 'M').slice(0, 1).toUpperCase()}</span>
-            <span style={{ fontSize: '13px', fontWeight: 600, color: '#102548' }}>{username}</span>
+            <div className="topbar-avatar-container">
+              <span className="topbar-avatar">{(displayName ?? 'M').slice(0, 1).toUpperCase()}</span>
+              <span className="topbar-avatar-pulse" aria-hidden="true" />
+            </div>
+            <div className="topbar-user-meta">
+              <div className="topbar-user-name-line">
+                <strong className="topbar-username">{displayName}</strong>
+                <span className="material-symbols-outlined verified-check" style={{ fontSize: '14px', color: '#0284c7' }}>
+                  verified
+                </span>
+              </div>
+              <div className="topbar-user-role-line">
+                <span className="topbar-role-badge">VAI TRÒ: CHỦ SHOP</span>
+              </div>
+            </div>
           </div>
         </div>
       </div>

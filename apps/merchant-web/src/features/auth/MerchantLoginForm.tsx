@@ -1,4 +1,5 @@
 import React from 'react';
+import { NexusBrandLogo } from '../../components/layout/NexusBrandLogo';
 
 export interface MerchantLoginFormProps {
   loginUsername: string;
@@ -44,12 +45,11 @@ export function MerchantLoginForm({
           <div className="login-hero-overlay" />
           <div className="login-hero-content">
             <div className="login-hero-top">
-              <span className="material-symbols-outlined brand-icon">hub</span>
-              <h1 className="brand-title">NEXUS Logistic</h1>
+              <NexusBrandLogo size={42} portal="merchant" theme="dark" showLabel={true} />
             </div>
             <div className="login-hero-copy">
               <h2 className="login-hero-title">Nền tảng Logistics thông minh cho doanh nghiệp hiện đại</h2>
-              <p className="login-hero-text">Kết nối vận chuyển toàn cầu với quy trình tối ưu và dữ liệu thời gian thực.</p>
+              <p className="login-hero-text">Kết nối vận chuyển toàn quốc với quy trình tối ưu và dữ liệu thời gian thực.</p>
             </div>
             <div className="login-hero-stats">
               <div className="login-stat">
@@ -68,11 +68,7 @@ export function MerchantLoginForm({
         <div className="login-card">
           <div className="login-card-inner">
             <div className="login-brand-header">
-              <div className="login-brand-logo">
-                <span className="material-symbols-outlined brand-icon">hub</span>
-                <span className="brand-title">NEXUS Logistic</span>
-              </div>
-              <p className="login-kicker-label">Merchant Portal</p>
+              <NexusBrandLogo size={36} portal="merchant" theme="light" showLabel={true} />
             </div>
 
             <div className="login-header-group">

@@ -1,0 +1,77 @@
+@startuml
+!theme plain
+skinparam monochrome true
+skinparam sequenceMessageAlign center
+skinparam responseMessageBelowArrow true
+skinparam maxMessageSize 140
+skinparam wrapWidth 200
+skinparam BoxPadding 8
+autonumber "<b>[00]</b>"
+
+box "Boundary Layer (Giao Diện & Cổng Kết Nối)" #FFFFFF
+actor "Quản trị viên hệ thống\n(System Admin)" as Admin
+boundary "MerchantUsersPage\n(apps/admin-web)" as UI
+boundary "MerchantApprovalModal\n(Hộp thoại phê duyệt đối tác)" as ModalUI
+boundary "Gateway BFF (:3000)\n(AdminUserController)" as Gateway
+end box
+
+box "Control Layer (Điều Khiển & Quản Lý Đối Tác Shop)" #FFFFFF
+control "UserAccountController\n(:3010 auth-service)" as UserCtrl
+control "MerchantManagementService\n(merchant partner service)" as MerchantSvc
+end box
+
+box "Entity Layer (Lưu Trữ & Cơ Sở Dữ Liệu)" #FFFFFF
+entity "PostgreSQL (auth_db)\n[user_accounts & merchant_profiles Table]" as AuthDB
+end box
+
+' GIAI ĐOẠN 1: DUYỆT HỒ SƠ ĐĂNG KÝ VÀ CẤU HÌNH HỢP ĐỒNG MERCHANT
+Admin -> UI: Truy cập màn hình Quản lý tài khoản Shop (/users/merchants),\nchọn tài khoản Merchant đang chờ phê duyệt (Status: PENDING_APPROVAL)
+activate UI
+
+UI -> ModalUI: Mở hộp thoại xét duyệt đối tác (handleOpenApprovalModal)
+activate ModalUI
+deactivate UI
+
+Admin -> ModalUI: Rà soát thông tin pháp lý doanh nghiệp (Mã số thuế, Giấy phép kinh doanh, SĐT),\nthiết lập cấu hình hợp đồng thương mại:\n- Hạng bảng giá chiết khấu cước (tariffTier: 'VIP_PLATINUM_TIER')\n- Chu kỳ đối soát & giải ngân COD tự động (reconciliationCycle: 'DAILY_T1')\n- Thông tin tài khoản ngân hàng nhận tiền COD của Shop
+
+Admin -> ModalUI: Bấm nút "Phê duyệt & Kích hoạt đối tác" (handleApproveMerchant)
+
+' GIAI ĐOẠN 2: KÍCH HOẠT TÀI KHOẢN VÀ THIẾT LẬP CHÍNH SÁCH TÀI CHÍNH
+ModalUI -> Gateway: PUT /admin/auth/users/merchants/{merchantId}/approve\n(Headers: Bearer accessToken, Body: ApproveMerchantPayload)
+activate Gateway
+
+Gateway -> UserCtrl: PUT /users/merchants/{merchantId}/approve
+activate UserCtrl
+
+UserCtrl -> MerchantSvc: approveMerchantAccount(merchantId, payload)
+activate MerchantSvc
+
+MerchantSvc -> AuthDB: UPDATE user_accounts SET status = 'ACTIVE', approved_at = NOW() WHERE id = $merchantId
+activate AuthDB
+AuthDB --> MerchantSvc: Kích hoạt trạng thái tài khoản thành công
+deactivate AuthDB
+
+MerchantSvc -> AuthDB: INSERT INTO merchant_profiles (user_id, tariff_tier, reconciliation_cycle, bank_name, bank_account_no, bank_holder_name, status: 'ACTIVE')\nVALUES ($merchantId, 'VIP_PLATINUM_TIER', 'DAILY_T1', $bankName, $accNo, $holder, 'ACTIVE')\nON CONFLICT (user_id) DO UPDATE SET tariff_tier = 'VIP_PLATINUM_TIER', reconciliation_cycle = 'DAILY_T1'
+activate AuthDB
+AuthDB --> MerchantSvc: Ghi nhận chính sách chiết khấu & đối soát COD
+deactivate AuthDB
+
+MerchantSvc --> UserCtrl: MerchantDetailDto { id, shopName, tariffTier: 'VIP_PLATINUM_TIER', status: 'ACTIVE' }
+deactivate MerchantSvc
+
+UserCtrl --> Gateway: 200 OK (MerchantDetailDto)
+deactivate UserCtrl
+
+Gateway --> ModalUI: 200 OK
+deactivate Gateway
+
+' GIAI ĐOẠN 3: ĐÓNG HỘP THOẠI VÀ CẬP NHẬT TRẠNG THÁI TRÊN BẢNG
+ModalUI -> UI: Đóng modal (onClose) và làm mới danh sách đối tác
+activate UI
+deactivate ModalUI
+
+UI -> UI: Cập nhật dòng đối tác Shop trên Bảng quản trị:\n- Trạng thái: Chuyển sang badge xanh "HOẠT ĐỘNG (ACTIVE)"\n- Hạng cước: Gắn nhãn "VIP Platinum (-12% phí cước)"\n- Chu kỳ COD: T+1 (Giải ngân hàng ngày)
+
+UI -> UI: Hiển thị Toast thông báo: "Đã phê duyệt và kích hoạt tài khoản Shop thành công!"
+deactivate UI
+@enduml

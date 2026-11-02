@@ -1,0 +1,88 @@
+@startuml
+!theme plain
+skinparam monochrome true
+skinparam sequenceMessageAlign center
+skinparam responseMessageBelowArrow true
+skinparam maxMessageSize 140
+skinparam wrapWidth 200
+skinparam BoxPadding 8
+autonumber "<b>[00]</b>"
+
+
+box "Boundary Layer (Giao Diện & Gateway)" #FFFFFF
+actor "Khách hàng cá nhân\n(Customer User)" as Customer
+boundary "PortalHeader / ProfileScreen\n(apps/guest-web & mobile)" as HeaderUI
+boundary "CustomerAccountModal / AccountDetail\n(apps/guest-web & mobile)" as ModalUI
+boundary "Gateway BFF (:3000)\n(PublicController)" as Gateway
+end box
+
+box "Control Layer (Điều Khiển Hồ Sơ & Xác Thực)" #FFFFFF
+control "useAuthStore\n(Zustand store)" as AuthStore
+control "AuthController\n(:3010 auth-service)" as AuthCtrl
+control "AuthService\n(application service)" as AuthSvc
+end box
+
+box "Entity Layer (Lưu Trữ & Cơ Sở Dữ Liệu)" #FFFFFF
+entity "Browser LocalStorage\n[nexus_guest_auth]" as LocalStore
+entity "PostgreSQL (auth_db)\n[user_accounts & auth_sessions]" as AuthDB
+end box
+
+' GIAI ĐOẠN 1: MỞ HỘP THOẠI HỒ SƠ TỪ THANH ĐIỀU HƯỚNG
+Customer -> HeaderUI: Nhấp vào Tên / Avatar trên thanh điều hướng
+activate HeaderUI
+
+HeaderUI -> ModalUI: Mở CustomerAccountModal (isOpen = true)
+activate ModalUI
+deactivate HeaderUI
+
+ModalUI -> AuthStore: Đọc thông tin phiên hiện tại: getState()
+activate AuthStore
+AuthStore -> LocalStore: getItem('nexus_guest_auth')
+activate LocalStore
+LocalStore --> AuthStore: { phone, token, user }
+deactivate LocalStore
+AuthStore --> ModalUI: CustomerUser { id, username, displayName, phone, roles }
+deactivate AuthStore
+
+' GIAI ĐOẠN 2: ĐỐI SOÁT VÀ ĐỒNG BỘ DỮ LIỆU TỪ MÁY CHỦ (GET /ME)
+opt Đồng bộ hồ sơ mới nhất từ máy chủ (authApi.getMe)
+    ModalUI -> Gateway: GET /public/auth/auth/me\n(Bearer accessToken)
+    activate Gateway
+
+    Gateway -> AuthCtrl: GET /auth/me
+    activate AuthCtrl
+
+    AuthCtrl -> AuthSvc: introspect(accessToken)
+    activate AuthSvc
+
+    AuthSvc -> AuthDB: SELECT * FROM auth_sessions JOIN user_accounts ON ...\nWHERE access_token_hash = $1 AND status = 'ACTIVE'
+    activate AuthDB
+    AuthDB --> AuthSvc: Trả về UserAccount & AuthSession hợp lệ
+    deactivate AuthDB
+
+    AuthSvc --> AuthCtrl: UserProfileResponse { id, username, displayName, phone, roles: ['CUSTOMER'], status: 'ACTIVE' }
+    deactivate AuthSvc
+
+    AuthCtrl --> Gateway: 200 OK (UserProfileResponse)
+    deactivate AuthCtrl
+
+    Gateway --> ModalUI: 200 OK (Cập nhật dữ liệu mới nhất)
+    deactivate Gateway
+end
+
+' GIAI ĐOẠN 3: HIỂN THỊ CHI TIẾT HỒ SƠ VÀ TRẠNG THÁI ĐỊNH DANH
+ModalUI -> ModalUI: Render Thẻ thông tin cá nhân:\n- Họ và tên (displayName)\n- Số điện thoại đăng nhập (phone)\n- Tên tài khoản (username)\n- Phân quyền: Khách Hàng Bưu Chính (CUSTOMER)\n- Trạng thái định danh: Đang hoạt động (ACTIVE)\n- Mã định danh tài khoản (ID)
+
+' GIAI ĐOẠN 4: ĐIỀU HƯỚNG TIỆN ÍCH HOẶC ĐÓNG MODAL
+alt Khách hàng bấm xem "Đơn hàng của tôi" (/orders)
+    Customer -> ModalUI: Nhấp liên kết "Đơn hàng của tôi"
+    ModalUI -> HeaderUI: Điều hướng navigate('/orders') & đóng modal
+    activate HeaderUI
+    HeaderUI -> HeaderUI: Chuyển hướng sang trang theo dõi đơn hàng (/orders)
+    deactivate HeaderUI
+else Khách hàng đóng hộp thoại hồ sơ
+    Customer -> ModalUI: Nhấp nút "Đóng" (onClose) hoặc phím Escape
+    ModalUI -> ModalUI: Đóng modal (onClose)
+end
+deactivate ModalUI
+@enduml

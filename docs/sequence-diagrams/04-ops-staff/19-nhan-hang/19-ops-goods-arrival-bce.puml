@@ -1,0 +1,92 @@
+@startuml
+!theme plain
+skinparam monochrome true
+skinparam sequenceMessageAlign center
+skinparam responseMessageBelowArrow true
+skinparam maxMessageSize 140
+skinparam wrapWidth 200
+skinparam BoxPadding 8
+autonumber "<b>[00]</b>"
+
+box "Boundary Layer (Giao Diện Thiết Bị Cầm Tay PDA)" #FFFFFF
+actor "Nhân viên nhận hàng sàn kho\n(Floor Receiving Ops)" as Ops
+boundary "GoodsArrivalScreen\n(apps/courier-mobile PDA)" as UI
+boundary "Gateway BFF (:3000)\n(OpsScanController)" as Gateway
+end box
+
+box "Control Layer (Điều Khiển & Xử Lý Quét Nhận Hàng)" #FFFFFF
+control "ScanController\n(:3005 scan-service)" as ScanCtrl
+control "GoodsArrivalProcessor\n(hub receiving processor)" as ArrivalSvc
+control "AudioFeedbackService\n(Âm thanh quét Beep)" as AudioSvc
+end box
+
+box "Entity Layer (Lưu Trữ & Cơ Sở Dữ Liệu)" #FFFFFF
+entity "PostgreSQL (scan_db)\n[scan_events & hub_inventory Table]" as ScanDB
+end box
+
+note over UI
+Tính năng hỗ trợ nhân viên vận hành thao tác bằng thiết bị di động / máy quét cầm tay PDA
+tại sàn kho để quét nhận (nhập trạm) từng bao hàng hoặc kiện hàng rời chuyển đến bưu cục
+end note
+
+' GIAI ĐOẠN 1: CHỌN CHẾ ĐỘ NHẬN HÀNG VÀ BẬT ĐẦU ĐỌC QUÉT
+Ops -> UI: Mở màn hình Nhận hàng (GoodsArrivalScreen) trên máy PDA,\nchọn Loại bưu gửi nhận: 'BAG' (Bao hàng) hoặc 'SHIPMENT' (Kiện rời)
+activate UI
+
+UI -> UI: Kích hoạt ống kính Camera / Đầu đọc Laser Barcode trên máy PDA
+
+' GIAI ĐOẠN 2: BẮN TIA QUÉT MÃ BƯU GỬI ĐẾN VÀ ĐỐI CHIẾU LUỒNG TUYẾN
+loop Quét liên tục từng bao hàng hoặc kiện rời hạ tải vào kho
+    Ops -> UI: Bắn tia quét mã vạch trên bưu gửi (Mã MB-xxxx hoặc NEX-xxxx)
+
+    UI -> Gateway: POST /ops/scan/hub/goods-arrival\n(Headers: Idempotency-Key, Body: { itemType: 'BAG' | 'SHIPMENT', scanCode, currentHubCode, operatorId })\n[submitHubScanAction]
+    activate Gateway
+
+    Gateway -> ScanCtrl: POST /hub/goods-arrival
+    activate ScanCtrl
+
+    ScanCtrl -> ArrivalSvc: processGoodsArrival(payload)
+    activate ArrivalSvc
+
+    alt Kiện hàng bắn nhầm trạm (Misrouted Sorting)
+        ArrivalSvc --> ScanCtrl: 400 BadRequestException ("Hàng nhầm bưu cục đến (Misrouted)!")
+        ScanCtrl --> Gateway: 400 Bad Request
+        Gateway --> UI: 400 Bad Request
+        UI -> AudioSvc: playScanWarningSound()
+        activate AudioSvc
+        AudioSvc --> UI: Âm thanh cảnh báo Bíp kéo dài (Warning Tone)
+        deactivate AudioSvc
+        UI -> UI: Hiển thị Banner vàng: "CẢNH BÁO BẮN NHẦM TRẠNG THÁI! Kiện hàng này thuộc tuyến khác!"
+    else Đúng bưu cục hợp lệ: Ghi nhận nhập trạm
+        ArrivalSvc -> ScanDB: INSERT INTO scan_events (scan_type: 'GOODS_ARRIVAL_IN', item_type, scan_code, current_hub, operator_id, created_at)\nVALUES (...)
+        activate ScanDB
+        ScanDB --> ArrivalSvc: Ghi nhận sự kiện thành công
+        deactivate ScanDB
+
+        ArrivalSvc -> ScanDB: INSERT INTO hub_inventory (hub_code, item_code, item_type, received_at, status: 'IN_STORAGE')\nON CONFLICT (item_code) DO UPDATE SET status = 'IN_STORAGE', received_at = NOW()
+        activate ScanDB
+        ScanDB --> ArrivalSvc: Cập nhật tồn kho tại bưu cục
+        deactivate ScanDB
+
+        ArrivalSvc --> ScanCtrl: { success: true, itemCode: scanCode, status: 'ARRIVED_AT_STATION' }
+        deactivate ArrivalSvc
+
+        ScanCtrl --> Gateway: 200 OK
+        deactivate ScanCtrl
+
+        Gateway --> UI: 200 OK
+        deactivate Gateway
+
+        UI -> AudioSvc: playScanSuccessSound()
+        activate AudioSvc
+        AudioSvc --> UI: Phát âm thanh Ting thành công
+        deactivate AudioSvc
+
+        UI -> UI: Tăng bộ đếm sản lượng nhập trạm (+1) và hiển thị dòng xanh xác nhận
+    end
+end
+
+Ops -> UI: Bấm "Hoàn tất ca nhận hàng"
+UI -> UI: Hiển thị Tổng kết ca: "Đã quét nhận nhập kho thành công N kiện/bao bưu gửi!"
+deactivate UI
+@enduml

@@ -3750,3 +3750,89 @@ th:hover .ops-col-copy-btn,
   }
 }
 
+/* ==========================================================================
+   UNIFIED NEXUS MASTER BRAND SYSTEM (Merchant, Ops, Admin)
+   ========================================================================== */
+.nexus-brand-lockup {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+  user-select: none;
+}
+
+.nexus-brand-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.15;
+}
+
+.nexus-brand-title-line {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.nexus-brand-name {
+  font-size: 17px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: #0f172a;
+}
+
+.nexus-brand-lockup--dark .nexus-brand-name {
+  color: #ffffff;
+}
+
+.nexus-brand-logistics {
+  font-size: 15px;
+  font-weight: 500;
+  color: #0052cc;
+  letter-spacing: -0.01em;
+}
+
+.nexus-brand-lockup--dark .nexus-brand-logistics {
+  color: #93c5fd;
+}
+
+.nexus-portal-tag {
+  display: inline-flex;
+  align-items: center;
+  font-size: 9.5px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.nexus-badge--merchant {
+  background: #e0f2fe;
+  color: #0284c7;
+  border: 1px solid #bae6fd;
+}
+
+.nexus-badge--ops {
+  background: #ede9fe;
+  color: #6d28d9;
+  border: 1px solid #ddd6fe;
+}
+
+.nexus-badge--admin {
+  background: #fef3c7;
+  color: #b45309;
+  border: 1px solid #fde68a;
+}
+
+.nexus-brand-sub {
+  font-size: 11px;
+  color: #64748b;
+  font-weight: 500;
+  margin-top: 2px;
+}
+
+.nexus-brand-lockup--dark .nexus-brand-sub {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+
