@@ -1,6 +1,7 @@
-import React, { useMemo } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import {
   BrowserRouter,
+  MemoryRouter,
   NavLink,
   Navigate,
   Outlet,
@@ -32,6 +33,58 @@ import { CustomerUsersPage } from '../pages/users/CustomerUsersPage';
 import { MerchantUsersPage } from '../pages/users/MerchantUsersPage';
 import { OpsUsersPage } from '../pages/users/OpsUsersPage';
 import { ShipperUsersPage } from '../pages/users/ShipperUsersPage';
+
+const ADMIN_ACTIVE_ROUTE_KEY = 'nexus_admin_active_route';
+const isTestEnv = Boolean(import.meta.env.TEST || import.meta.env.MODE === 'test');
+
+function resolveInitialAdminRoute(): string {
+  if (typeof window === 'undefined') {
+    return routePaths.dashboard;
+  }
+  if (isTestEnv) {
+    const testPath = window.location.pathname;
+    if (testPath && testPath !== '/') {
+      return testPath + window.location.search;
+    }
+    return routePaths.dashboard;
+  }
+  try {
+    const session = getStoredAuthSession();
+    if (!session?.tokens?.accessToken) {
+      return routePaths.login;
+    }
+    const saved = sessionStorage.getItem(ADMIN_ACTIVE_ROUTE_KEY);
+    if (saved && (saved.startsWith('/app') || saved === routePaths.dashboard)) {
+      return saved;
+    }
+    return routePaths.dashboard;
+  } catch {
+    return routePaths.dashboard;
+  }
+}
+
+function AdminRoutePersistenceSync(): null {
+  const location = useLocation();
+
+  useEffect(() => {
+    if (isTestEnv || typeof window === 'undefined') {
+      return;
+    }
+    if (location.pathname.startsWith('/app')) {
+      try {
+        sessionStorage.setItem(ADMIN_ACTIVE_ROUTE_KEY, location.pathname + location.search);
+      } catch {}
+    }
+    // Mask browser address bar so it never exposes /app/ or internal admin routes
+    if (window.location.pathname !== '/' && window.location.pathname !== routePaths.login) {
+      try {
+        window.history.replaceState(null, '', '/');
+      } catch {}
+    }
+  }, [location.pathname, location.search]);
+
+  return null;
+}
 
 function AdminGuard(): React.JSX.Element {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
@@ -87,6 +140,9 @@ function AdminLayout(): React.JSX.Element {
   );
 
   const onLogout = async () => {
+    try {
+      sessionStorage.removeItem(ADMIN_ACTIVE_ROUTE_KEY);
+    } catch {}
     await logoutMutation.mutateAsync();
     navigate(routePaths.login, { replace: true });
   };
@@ -217,34 +273,45 @@ function AdminLayout(): React.JSX.Element {
 }
 
 export function AppRouter(): React.JSX.Element {
-  return (
-    <BrowserRouter>
-      <Routes>
-        <Route path={routePaths.login} element={<LoginPage />} />
-        <Route element={<AdminGuard />}>
-          <Route path={routePaths.appRoot} element={<AdminLayout />}>
-            <Route index element={<Navigate to={routePaths.dashboard} replace />} />
-            <Route path={routePaths.dashboardLeaf} element={<AdminDashboardPage />} />
-            <Route path={routePaths.opsUsersLeaf} element={<OpsUsersPage />} />
-            <Route path={routePaths.shipperUsersLeaf} element={<ShipperUsersPage />} />
-            <Route path={routePaths.merchantUsersLeaf} element={<MerchantUsersPage />} />
-            <Route path={routePaths.customerUsersLeaf} element={<CustomerUsersPage />} />
-            <Route path={routePaths.courierPermissionsLeaf} element={<CourierPermissionMatrixPage />} />
-            <Route path={routePaths.opsPermissionsLeaf} element={<OpsPermissionMatrixPage />} />
-            <Route path={routePaths.auditLogsLeaf} element={<AdminAuditLogPage />} />
-            <Route path={routePaths.masterdataHubsLeaf} element={<HubManagementPage />} />
-            <Route path={routePaths.masterdataHubNetworkMapLeaf} element={<AdminHubGeofenceMapPage />} />
-            <Route path={routePaths.masterdataZonesLeaf} element={<ZoneManagementPage />} />
-            <Route path={routePaths.masterdataNdrReasonsLeaf} element={<NdrReasonManagementPage />} />
-            <Route path={routePaths.masterdataConfigsLeaf} element={<ConfigManagementPage />} />
-            <Route path={routePaths.policiesLeaf} element={<PolicyManagementPage />} />
-            <Route path="terms" element={<Navigate to={routePaths.policies} replace />} />
-          </Route>
+  const initialRoute = useMemo(() => resolveInitialAdminRoute(), []);
+
+  const routesContent = (
+    <Routes>
+      <Route path={routePaths.login} element={<LoginPage />} />
+      <Route element={<AdminGuard />}>
+        <Route path={routePaths.appRoot} element={<AdminLayout />}>
+          <Route index element={<Navigate to={routePaths.dashboard} replace />} />
+          <Route path={routePaths.dashboardLeaf} element={<AdminDashboardPage />} />
+          <Route path={routePaths.opsUsersLeaf} element={<OpsUsersPage />} />
+          <Route path={routePaths.shipperUsersLeaf} element={<ShipperUsersPage />} />
+          <Route path={routePaths.merchantUsersLeaf} element={<MerchantUsersPage />} />
+          <Route path={routePaths.customerUsersLeaf} element={<CustomerUsersPage />} />
+          <Route path={routePaths.courierPermissionsLeaf} element={<CourierPermissionMatrixPage />} />
+          <Route path={routePaths.opsPermissionsLeaf} element={<OpsPermissionMatrixPage />} />
+          <Route path={routePaths.auditLogsLeaf} element={<AdminAuditLogPage />} />
+          <Route path={routePaths.masterdataHubsLeaf} element={<HubManagementPage />} />
+          <Route path={routePaths.masterdataHubNetworkMapLeaf} element={<AdminHubGeofenceMapPage />} />
+          <Route path={routePaths.masterdataZonesLeaf} element={<ZoneManagementPage />} />
+          <Route path={routePaths.masterdataNdrReasonsLeaf} element={<NdrReasonManagementPage />} />
+          <Route path={routePaths.masterdataConfigsLeaf} element={<ConfigManagementPage />} />
+          <Route path={routePaths.policiesLeaf} element={<PolicyManagementPage />} />
+          <Route path="terms" element={<Navigate to={routePaths.policies} replace />} />
         </Route>
-        <Route path="/admin/terms" element={<Navigate to={routePaths.policies} replace />} />
-        <Route path="*" element={<Navigate to={routePaths.login} replace />} />
-      </Routes>
-    </BrowserRouter>
+      </Route>
+      <Route path="/admin/terms" element={<Navigate to={routePaths.policies} replace />} />
+      <Route path="*" element={<Navigate to={routePaths.login} replace />} />
+    </Routes>
+  );
+
+  if (isTestEnv) {
+    return <BrowserRouter>{routesContent}</BrowserRouter>;
+  }
+
+  return (
+    <MemoryRouter initialEntries={[initialRoute]}>
+      <AdminRoutePersistenceSync />
+      {routesContent}
+    </MemoryRouter>
   );
 }
 

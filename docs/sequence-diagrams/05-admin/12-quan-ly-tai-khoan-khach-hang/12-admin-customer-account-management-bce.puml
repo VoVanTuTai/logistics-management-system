@@ -1,0 +1,91 @@
+@startuml
+!theme plain
+skinparam monochrome true
+skinparam sequenceMessageAlign center
+skinparam responseMessageBelowArrow true
+skinparam maxMessageSize 140
+skinparam wrapWidth 200
+skinparam BoxPadding 8
+autonumber "<b>[00]</b>"
+
+box "Boundary Layer (Giao Diện & Cổng Kết Nối)" #FFFFFF
+actor "Quản trị viên hệ thống\n(System Admin)" as Admin
+boundary "CustomerUsersPage\n(apps/admin-web)" as UI
+boundary "CustomerDetailDrawer\n(Ngăn kéo chi tiết khách hàng)" as DrawerUI
+boundary "Gateway BFF (:3000)\n(AdminUserController)" as Gateway
+end box
+
+box "Control Layer (Điều Khiển & Quản Trị Khách Hàng Cá Nhân)" #FFFFFF
+control "UserAccountController\n(:3010 auth-service)" as UserCtrl
+control "CustomerManagementService\n(customer domain service)" as CustomerSvc
+end box
+
+box "Entity Layer (Lưu Trữ & Cơ Sở Dữ Liệu)" #FFFFFF
+entity "PostgreSQL (auth_db)\n[user_accounts & auth_sessions Table]" as AuthDB
+end box
+
+' GIAI ĐOẠN 1: TÌM KIẾM VÀ XEM CHI TIẾT TÀI KHOẢN KHÁCH HÀNG
+Admin -> UI: Truy cập màn hình Quản lý khách hàng cá nhân (/users/customers),\nnhập Số điện thoại hoặc Họ tên vào thanh tìm kiếm
+activate UI
+
+UI -> Gateway: GET /admin/auth/users/customers?q={phone}\n(Headers: Bearer accessToken)
+activate Gateway
+Gateway -> UserCtrl: GET /users/customers?q={phone}
+activate UserCtrl
+UserCtrl -> AuthDB: SELECT u.id, u.username, u.display_name, u.phone, u.status, u.created_at\nFROM user_accounts u JOIN user_roles r ON u.id = r.user_id\nWHERE r.role_name = 'CUSTOMER' AND (u.phone ILIKE $q OR u.display_name ILIKE $q)
+activate AuthDB
+AuthDB --> UserCtrl: Danh sách tài khoản khách hàng phù hợp
+deactivate AuthDB
+UserCtrl --> Gateway: 200 OK (CustomerUserDto[])
+deactivate UserCtrl
+Gateway --> UI: 200 OK
+deactivate Gateway
+
+Admin -> UI: Nhấp vào dòng khách hàng để mở ngăn kéo chi tiết (handleOpenDrawer)
+UI -> DrawerUI: Mở CustomerDetailDrawer (userId)
+activate DrawerUI
+deactivate UI
+
+DrawerUI -> DrawerUI: Render Thẻ thông tin khách hàng:\n- Họ và tên & Số điện thoại định danh\n- Ngày đăng ký tài khoản & Số lượng đơn gửi\n- Trạng thái tài khoản hiện tại: HOẠT ĐỘNG (ACTIVE)
+
+' GIAI ĐOẠN 2: THỰC HIỆN KHÓA HOẶC MỞ KHÓA TÀI KHOẢN
+Admin -> DrawerUI: Nhấp nút "Khóa tài khoản (Suspend)" do phát hiện gian lận hoàn hàng,\nnhập Lý do khóa tài khoản và bấm "Xác nhận khóa" (handleToggleStatus)
+
+DrawerUI -> Gateway: PUT /admin/auth/users/customers/{userId}/status\n(Headers: Bearer accessToken, Body: { status: 'LOCKED', reason: 'Nghi vấn gian lận bưu gửi' })
+activate Gateway
+
+Gateway -> UserCtrl: PUT /users/customers/{userId}/status
+activate UserCtrl
+
+UserCtrl -> CustomerSvc: updateCustomerAccountStatus(userId, status, reason)
+activate CustomerSvc
+
+CustomerSvc -> AuthDB: UPDATE user_accounts SET status = 'LOCKED', updated_at = NOW() WHERE id = $userId
+activate AuthDB
+AuthDB --> CustomerSvc: Cập nhật trạng thái khóa tài khoản
+deactivate AuthDB
+
+' Tự động thu hồi tất cả các phiên đăng nhập đang hoạt động của khách hàng
+CustomerSvc -> AuthDB: UPDATE auth_sessions SET status = 'REVOKED', updated_at = NOW() WHERE user_id = $userId AND status = 'ACTIVE'
+activate AuthDB
+AuthDB --> CustomerSvc: Thu hồi toàn bộ Access Token của tài khoản
+deactivate AuthDB
+
+CustomerSvc --> UserCtrl: { success: true, userId, status: 'LOCKED' }
+deactivate CustomerSvc
+
+UserCtrl --> Gateway: 200 OK
+deactivate UserCtrl
+
+Gateway --> DrawerUI: 200 OK
+deactivate Gateway
+
+' GIAI ĐOẠN 3: PHẢN HỒI GIAO DIỆN KHÓA THÀNH CÔNG
+DrawerUI -> DrawerUI: Cập nhật trạng thái trên ngăn kéo: Badge đỏ "TÀI KHOẢN ĐÃ BỊ KHÓA (LOCKED)"
+DrawerUI -> UI: Kích hoạt làm mới danh sách khách hàng
+activate UI
+deactivate DrawerUI
+
+UI -> UI: Hiển thị Toast thông báo: "Đã khóa tài khoản khách hàng thành công và ngắt toàn bộ phiên kết nối!"
+deactivate UI
+@enduml

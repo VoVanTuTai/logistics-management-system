@@ -1,0 +1,90 @@
+@startuml
+!theme plain
+skinparam monochrome true
+skinparam sequenceMessageAlign center
+skinparam responseMessageBelowArrow true
+skinparam maxMessageSize 140
+skinparam wrapWidth 200
+skinparam BoxPadding 8
+autonumber "<b>[00]</b>"
+
+box "Boundary Layer (Giao Diện Bản Đồ Số GIS & Cổng Kết Nối)" #FFFFFF
+actor "Quản trị viên hệ thống\n(System Admin)" as Admin
+boundary "AdminHubGeofenceMapPage\n(apps/admin-web GIS Map)" as UI
+boundary "Gateway BFF (:3000)\n(AdminMasterdataController)" as Gateway
+end box
+
+box "Control Layer (Điều Khiển & Phân Vùng Địa Lý Geofence)" #FFFFFF
+control "GeofenceMapHook\n(React Query hook)" as MapHook
+control "MasterdataController\n(:3001 masterdata-service)" as MasterCtrl
+control "HubNetworkService\n(GIS spatial service)" as NetworkSvc
+end box
+
+box "Entity Layer (Lưu Trữ & Cơ Sở Dữ Liệu)" #FFFFFF
+entity "PostgreSQL (masterdata_db)\n[hubs, geofences & courier_areas Table]" as MasterDB
+end box
+
+' GIAI ĐOẠN 1: TẢI BẢN ĐỒ MẠNG LƯỚI BƯU CỤC 4 CẤP TOÀN QUỐC
+Admin -> UI: Truy cập màn hình Bản đồ mạng lưới bưu cục (/masterdata/network-map),\nchọn lớp hiển thị: 'ALL_PROVINCES', 'REGIONS', 'WARD_HUBS'
+activate UI
+
+UI -> MapHook: useHubsGeofenceQuery(layerType)
+activate MapHook
+
+MapHook -> Gateway: GET /admin/masterdata/hubs/geofences?layer={layerType}\n(Headers: Bearer accessToken)
+activate Gateway
+
+' GIAI ĐOẠN 2: TRUY VẤN TỌA ĐỘ VÀ ĐA GIÁC ĐỊA LÝ TẠI MASTERDATA SERVICE
+Gateway -> MasterCtrl: GET /hubs/geofences
+activate MasterCtrl
+
+MasterCtrl -> NetworkSvc: getHubGeofencesWithAssignments(layerType)
+activate NetworkSvc
+
+NetworkSvc -> MasterDB: SELECT h.id, h.hub_code, h.name, h.level, h.latitude, h.longitude, g.polygon_geojson, g.coverage_radius_km\nFROM hubs h LEFT JOIN geofences g ON h.id = g.hub_id WHERE h.status = 'ACTIVE'
+activate MasterDB
+MasterDB --> NetworkSvc: Dữ liệu tọa độ bưu cục và ranh giới vùng phục vụ
+deactivate MasterDB
+
+NetworkSvc --> MasterCtrl: HubGeofenceDto[] (Danh sách bưu cục kèm ranh giới GeoJSON)
+deactivate NetworkSvc
+
+MasterCtrl --> Gateway: 200 OK (HubGeofenceDto[])
+deactivate MasterCtrl
+
+Gateway --> MapHook: 200 OK (HubGeofenceDto[])
+deactivate Gateway
+
+MapHook --> UI: Tải dữ liệu không gian thành công
+deactivate MapHook
+
+UI -> UI: Vẽ bản đồ số Leaflet/GIS: Hiển thị các điểm Marker Bưu cục 4 cấp\nkèm đa giác ranh giới Geofence tô màu theo cấp quản lý
+
+' GIAI ĐOẠN 3: ĐIỀU CHỈNH RANH GIỚI VÀ GÁN TUYẾN BƯU TÁ
+Admin -> UI: Chọn một Bưu cục trên bản đồ, kéo thả đỉnh đa giác Geofence\nđể mở rộng bán kính phục vụ, gán Shipper phụ trách tuyến (useCreateCourierAreaAssignmentMutation)
+
+Admin -> UI: Bấm nút "Lưu cấu hình vùng phục vụ" (handleSaveGeofence)
+
+UI -> Gateway: PUT /admin/masterdata/hubs/{hubId}/geofence\n(Body: { polygonCoordinates, radiusKm, assignedCourierIds })
+activate Gateway
+
+Gateway -> MasterCtrl: PUT /hubs/{hubId}/geofence
+activate MasterCtrl
+MasterCtrl -> NetworkSvc: updateHubGeofence(hubId, payload)
+activate NetworkSvc
+
+NetworkSvc -> MasterDB: UPDATE geofences SET polygon_geojson = $coords, coverage_radius_km = $radius, updated_at = NOW()\nWHERE hub_id = $hubId
+activate MasterDB
+MasterDB --> NetworkSvc: Cập nhật cơ sở dữ liệu địa lý thành công
+deactivate MasterDB
+
+NetworkSvc --> MasterCtrl: { success: true, updatedHubId: hubId }
+deactivate NetworkSvc
+MasterCtrl --> Gateway: 200 OK
+deactivate MasterCtrl
+Gateway --> UI: 200 OK
+deactivate Gateway
+
+UI -> UI: Hiển thị Toast thông báo: "Đã cập nhật ranh giới phục vụ bưu cục thành công!"
+deactivate UI
+@enduml

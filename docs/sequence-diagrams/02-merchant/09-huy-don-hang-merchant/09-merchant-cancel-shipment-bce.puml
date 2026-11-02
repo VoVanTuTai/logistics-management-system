@@ -1,0 +1,110 @@
+@startuml
+!theme plain
+skinparam sequenceMessageAlign center
+skinparam responseMessageBelowArrow true
+skinparam maxMessageSize 140
+skinparam wrapWidth 200
+skinparam BoxPadding 8
+autonumber "<b>[00]</b>"
+
+
+box "Boundary Layer (Giao Diện & Gateway)" #F8FAFC
+actor "Chủ shop / Người gửi\n(Merchant User)" as Merchant
+boundary "ShipmentDetailView\n(apps/merchant-web)" as UI
+boundary "Gateway BFF (:3000)\n(MerchantController)" as Gateway
+end box
+
+box "Control Layer (Nghiệp Vụ & Máy Trạng Thái)" #FFFFFF
+control "ShipmentController\n(:3002 shipment-service)" as ShipCtrl
+control "ShipmentsService\n(application service)" as ShipSvc
+control "ShipmentStateMachine\n(state domain validator)" as StateMachine
+control "ShipmentOutboxService\n(transactional outbox)" as OutboxSvc
+end box
+
+box "Entity Layer (Dữ Liệu PostgreSQL shipment_db)" #F8FAFC
+entity "PostgreSQL (shipment_db)\n[shipments Table]" as ShipDB
+entity "PostgreSQL (shipment_db)\n[outbox_events Table]" as OutboxDB
+end box
+
+' GIAI ĐOẠN 1: MỞ CHI TIẾT ĐƠN HÀNG & BẤM NÚT HỦY ĐƠN
+Merchant -> UI: Xem chi tiết vận đơn (View: 'shipment-detail')\nvà nhấn nút "Hủy đơn" (onCancelShipment)
+activate UI
+
+note over UI
+  - Hiển thị thông tin người nhận, cước phí, bưu cục
+  - Kiểm tra quyền sở hữu đơn hàng (isShipmentOwnedByUser)
+  - Bật hộp thoại prompt yêu cầu nhập "Lý do hủy đơn"
+end note
+
+alt Người dùng hủy bỏ hoặc không nhập lý do
+    Merchant -> UI: Nhấn "Cancel" trên hộp thoại prompt
+    UI -> UI: Hủy thao tác, giữ nguyên trạng thái đơn hàng
+else Người dùng xác nhận và nhập lý do hủy
+    Merchant -> UI: Nhập lý do (VD: "Khách đổi ý không mua nữa") & nhấn "OK"
+
+    ' GIAI ĐOẠN 2: GỬI REQUEST QUA GATEWAY BFF
+    UI -> Gateway: POST /merchant/shipment/shipments/{code}/cancel\n(Bearer accessToken, Body: { reason: "Khách đổi ý..." })
+    activate Gateway
+
+    note over Gateway: GatewayAuthGuard & RoleGuard (Role: 'MERCHANT') -> proxy :3002
+
+    Gateway -> ShipCtrl: POST /shipments/:code/cancel\n(Param: code, Body: CancelShipmentInput)
+    activate ShipCtrl
+
+    ShipCtrl -> ShipSvc: cancel(code, input)
+    activate ShipSvc
+
+    ' GIAI ĐOẠN 3: KIỂM TRA ĐIỀU KIỆN & MÁY TRẠNG THÁI (STATE MACHINE)
+    ShipSvc -> ShipDB: SELECT * FROM shipments WHERE code = $1
+    activate ShipDB
+    ShipDB --> ShipSvc: Trả về thông tin đơn hàng (Shipment)
+    deactivate ShipDB
+
+    ShipSvc -> StateMachine: canCancel(shipment.currentStatus)
+    activate StateMachine
+
+    note over StateMachine: Chỉ cho phép hủy nếu chưa kết thúc:\n!['DELIVERED', 'RETURN_COMPLETED', 'CANCELLED'].includes(status)
+
+    alt Trạng thái không hợp lệ (Đơn đã giao / đang hoàn / đã hủy)
+        StateMachine --> ShipSvc: false
+        ShipSvc --> ShipCtrl: throw ConflictException(\n"Shipment cannot be cancelled from status...")
+        ShipCtrl --> Gateway: 409 Conflict
+        Gateway --> UI: 409 Conflict: Không thể hủy đơn ở trạng thái hiện tại
+        UI -> UI: Báo lỗi: "Đơn hàng đã được giao hoặc đang hoàn, không thể hủy."
+    else Trạng thái hợp lệ (CREATED, WAITING_PICKUP)
+        StateMachine --> ShipSvc: true
+        deactivate StateMachine
+
+        ' GIAI ĐOẠN 4: CẬP NHẬT DATABASE & PHÁT SỰ KIỆN OUTBOX
+        ShipSvc -> ShipDB: UPDATE shipments SET current_status = 'CANCELLED',\ncancellation_reason = $2, updated_at = NOW() WHERE code = $1
+        activate ShipDB
+        ShipDB --> ShipSvc: Cập nhật bản ghi thành công
+        deactivate ShipDB
+
+        ShipSvc -> OutboxSvc: enqueueShipmentCancelled(cancelledShipment)
+        activate OutboxSvc
+        OutboxSvc -> OutboxDB: INSERT INTO outbox_events\n(eventType: 'ShipmentCancelled', aggregateId, payload)
+        activate OutboxDB
+        OutboxDB --> OutboxSvc: Ghi nhận event Outbox thành công
+        deactivate OutboxDB
+        OutboxSvc --> ShipSvc: Outbox enqueued
+        deactivate OutboxSvc
+
+        ShipSvc --> ShipCtrl: Shipment (currentStatus: 'CANCELLED')
+        deactivate ShipSvc
+
+        ShipCtrl --> Gateway: 200 OK: ShipmentResponse
+        deactivate ShipCtrl
+
+        Gateway --> UI: 200 OK: Trả về đơn hàng đã hủy thành công
+        deactivate Gateway
+
+        ' GIAI ĐOẠN 5: CẬP NHẬT GIAO DIỆN CLIENT
+        UI -> UI: 1. Cập nhật state (upsertShipment)\n2. Đổi badge trạng thái sang "ĐÃ HỦY" (CANCELLED)\n3. Khóa toàn bộ các trường sửa địa chỉ giao hàng\n4. Ẩn/Vô hiệu hóa nút "Hủy đơn"
+        UI -> UI: Render giao diện đơn hàng đã hủy & thông báo thành công
+    end
+end
+
+deactivate UI
+@enduml
+

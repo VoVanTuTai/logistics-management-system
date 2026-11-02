@@ -1,0 +1,89 @@
+@startuml
+!theme plain
+skinparam monochrome true
+skinparam sequenceMessageAlign center
+skinparam responseMessageBelowArrow true
+skinparam maxMessageSize 140
+skinparam wrapWidth 200
+skinparam BoxPadding 8
+autonumber "<b>[00]</b>"
+
+box "Boundary Layer (Giao Diện & Thiết Bị Native)" #FFFFFF
+actor "Bưu tá / Shipper\n(Courier User)" as Courier
+boundary "DeliveryProofScreen\n(apps/courier-mobile)" as UI
+boundary "CameraView / Expo Camera\n(Native Camera Module)" as CamUI
+boundary "Gateway BFF (:3000)\n(CourierMediaController)" as Gateway
+end box
+
+box "Control Layer (Điều Khiển & Lưu Trữ)" #FFFFFF
+control "PodUploadApi\n(pod-upload.api.ts)" as UploadCtrl
+control "MediaService\n(media-service :3015)" as MediaSvc
+end box
+
+box "Entity Layer (Lưu Trữ Object Storage MinIO)" #FFFFFF
+entity "MinIO S3 Storage\n[nexus-pod-images Bucket]" as MinioDB
+end box
+
+' GIAI ĐOẠN 1: KÍCH HOẠT MÁY ẢNH VÀ CHỤP ẢNH POD
+Courier -> UI: Mở chi tiết đơn cần phát & bấm "Chụp ảnh POD"
+activate UI
+
+UI -> CamUI: useCameraPermissions() & mở CameraView
+activate CamUI
+
+Courier -> CamUI: Hướng camera vào kiện hàng & bấm nút chụp ảnh
+CamUI -> CamUI: takePictureAsync({ quality: 0.8, skipProcessing: true })
+CamUI --> UI: Trả về đường dẫn ảnh cục bộ: photoUri (file:///.../photo.jpg)
+deactivate CamUI
+
+UI -> UI: isLocalPodImageUri(photoUri) == true\nHiển thị ảnh xem trước (Preview Thumbnail) trên màn hình
+
+' GIAI ĐOẠN 2: TẢI ẢNH MINH CHỨNG LÊN MINIO STORAGE
+Courier -> UI: Nhấn nút "Tải lên ảnh minh chứng" (uploadPodImage)
+
+UI -> UploadCtrl: uploadPodImage({ accessToken, uri: photoUri, shipmentCode })
+activate UploadCtrl
+
+UploadCtrl -> UploadCtrl: buildPodFilename(uri, shipmentCode)\n-> '{shipmentCode}-pod.jpg'
+
+UploadCtrl -> Gateway: POST /courier/media/upload-url\n(Headers: Bearer accessToken, Body: { filename, mimeType: 'image/jpeg' })
+activate Gateway
+
+Gateway -> MediaSvc: generatePresignedPutUrl(bucket, filename)
+activate MediaSvc
+
+MediaSvc -> MinioDB: s3.getSignedUrlPromise('putObject', { Bucket: 'nexus-pod-images', Key: filename })
+activate MinioDB
+MinioDB --> MediaSvc: Presigned Upload URL & Public Download URL
+deactivate MinioDB
+
+MediaSvc --> Gateway: 200 OK: { uploadUrl, publicUrl }
+deactivate MediaSvc
+
+Gateway --> UploadCtrl: 200 OK: { uploadUrl, publicUrl }
+deactivate Gateway
+
+alt Tải ảnh lên MinIO thành công
+    UploadCtrl -> MinioDB: PUT {uploadUrl} (Binary Image Data)
+    activate MinioDB
+    MinioDB --> UploadCtrl: 200 OK (S3 ETag)
+    deactivate MinioDB
+
+    UploadCtrl --> UI: publicUrl (https://minio.nexus-ex.site/nexus-pod-images/deliveries/...)
+    deactivate UploadCtrl
+
+    UI -> UI: setPodImageUrl(publicUrl)\nHiển thị huy hiệu "✓ Đã tải ảnh minh chứng lên hệ thống"
+    UI -> UI: Kích hoạt nút "Xác nhận phát hàng thành công"
+
+else Sự cố mạng / MinIO offline (Fallback Mechanism)
+    activate UploadCtrl
+    UploadCtrl -> UploadCtrl: Bắt ngoại lệ catch(error)\nTạo fallback URL an toàn theo mã vận đơn
+    UploadCtrl --> UI: fallbackUrl: https://minio.nexus-ex.site/.../{safeCode}-pod.jpg
+    deactivate UploadCtrl
+
+    UI -> UI: Ghi nhận fallback URL & cho phép bưu tá tiếp tục quy trình ký nhận
+end
+
+deactivate UI
+@enduml
+

@@ -1,4 +1,4 @@
-﻿import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 
 import {
   useConfigsQuery,
@@ -436,52 +436,54 @@ export function ConfigManagementPage(): React.JSX.Element {
       ) : null}
 
       {configsQuery.isSuccess && visibleConfigs.length > 0 ? (
-        <table style={styles.table}>
-          <thead>
-            <tr>
-              <th style={styles.headerCell}>Key</th>
-              <th style={styles.headerCell}>Tên</th>
-              <th style={styles.headerCell}>Nhóm</th>
-              <th style={styles.headerCell}>Giá trị</th>
-              <th style={styles.headerCell}>Kiểu</th>
-              <th style={styles.headerCell}>Trạng thái</th>
-              <th style={styles.headerCell}>Cập nhật</th>
-              <th style={styles.headerCell}>Hành động</th>
-            </tr>
-          </thead>
-          <tbody>
-            {visibleConfigs.map((config) => {
-              const envelope = parseConfigEnvelope(config);
+        <div style={styles.tableWrapper}>
+          <table style={styles.table}>
+            <thead>
+              <tr>
+                <th style={styles.headerCell}>Key</th>
+                <th style={styles.headerCell}>Tên</th>
+                <th style={styles.headerCell}>Nhóm</th>
+                <th style={styles.headerCell}>Giá trị</th>
+                <th style={styles.headerCell}>Kiểu</th>
+                <th style={styles.headerCell}>Trạng thái</th>
+                <th style={styles.headerCell}>Cập nhật</th>
+                <th style={styles.headerCell}>Hành động</th>
+              </tr>
+            </thead>
+            <tbody>
+              {visibleConfigs.map((config) => {
+                const envelope = parseConfigEnvelope(config);
 
-              return (
-                <tr key={config.id}>
-                  <td style={styles.cell}>{config.key}</td>
-                  <td style={styles.cell}>{envelope.name}</td>
-                  <td style={styles.cell}>{config.scope ?? 'Không có'}</td>
-                  <td style={styles.cell}>{stringifyValue(envelope.value) || 'Không có'}</td>
-                  <td style={styles.cell}>{envelope.valueType}</td>
-                  <td style={styles.cell}>
-                    <MasterdataStatusPill isActive={envelope.isActive} />
-                  </td>
-                  <td style={styles.cell}>{formatDateTime(config.updatedAt)}</td>
-                  <td style={styles.cell}>
-                    <div style={styles.actionsCell}>
-                      <button type="button" onClick={() => setSelectedConfigId(config.id)}>
-                        Chi tiết
-                      </button>
-                      <button type="button" onClick={() => openEditModal(config)}>
-                        Sửa
-                      </button>
-                      <button type="button" onClick={() => void onToggleActive(config)}>
-                        {envelope.isActive ? 'Tắt' : 'Bật'}
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+                return (
+                  <tr key={config.id} className="admin-table-row">
+                    <td style={styles.codeCell}>{config.key}</td>
+                    <td style={styles.cell}>{envelope.name}</td>
+                    <td style={styles.cell}>{config.scope ?? 'Không có'}</td>
+                    <td style={styles.cell}>{stringifyValue(envelope.value) || 'Không có'}</td>
+                    <td style={styles.cell}>{envelope.valueType}</td>
+                    <td style={styles.cell}>
+                      <MasterdataStatusPill isActive={envelope.isActive} />
+                    </td>
+                    <td style={styles.cell}>{formatDateTime(config.updatedAt)}</td>
+                    <td style={styles.cell}>
+                      <div style={styles.actionsCell}>
+                        <button type="button" onClick={() => setSelectedConfigId(config.id)}>
+                          Chi tiết
+                        </button>
+                        <button type="button" onClick={() => openEditModal(config)}>
+                          Sửa
+                        </button>
+                        <button type="button" onClick={() => void onToggleActive(config)}>
+                          {envelope.isActive ? 'Tắt' : 'Bật'}
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
       ) : null}
 
       {selectedConfig ? (
@@ -696,20 +698,61 @@ const styles: Record<string, React.CSSProperties> = {
     fontFamily: 'monospace',
     fontSize: 13,
   },
+  tableWrapper: {
+    width: '100%',
+    maxWidth: '100%',
+    overflowX: 'auto',
+    WebkitOverflowScrolling: 'touch',
+    background: 'var(--admin-surface, #ffffff)',
+    borderRadius: 8,
+    border: '1px solid var(--admin-border, #dbe2f0)',
+    boxShadow: '0 1px 3px rgba(16, 37, 72, 0.04)',
+    marginTop: 12,
+    boxSizing: 'border-box',
+  },
   table: {
     width: '100%',
-    borderCollapse: 'collapse',
-    marginTop: 12,
+    borderCollapse: 'separate',
+    borderSpacing: 0,
+    margin: 0,
+    background: 'transparent',
+    border: 'none',
   },
   headerCell: {
     textAlign: 'left',
-    padding: '8px 10px',
-    borderBottom: '1px solid var(--admin-border)',
+    padding: '10px 12px',
+    backgroundColor: 'var(--admin-surface-soft, #f8faff)',
+    color: 'var(--admin-navy, #1f2b6f)',
+    fontSize: 12,
+    fontWeight: 800,
+    textTransform: 'uppercase',
+    letterSpacing: '0.04em',
+    borderBottom: '1px solid #cbd5e1',
+    whiteSpace: 'nowrap',
+    position: 'sticky',
+    top: 0,
+    zIndex: 1,
   },
   cell: {
-    padding: '8px 10px',
-    borderBottom: '1px solid var(--admin-border)',
-    verticalAlign: 'top',
+    padding: '8px 12px',
+    borderBottom: '1px solid var(--admin-border, #dbe2f0)',
+    verticalAlign: 'middle',
+    fontSize: 13,
+    color: 'var(--admin-text, #102548)',
+    whiteSpace: 'nowrap',
+  },
+  codeCell: {
+    padding: '8px 12px',
+    borderBottom: '1px solid var(--admin-border, #dbe2f0)',
+    verticalAlign: 'middle',
+    fontSize: 12,
+    fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
+    fontWeight: 700,
+    color: 'var(--admin-primary, #0052cc)',
+    userSelect: 'text',
+    WebkitUserSelect: 'text',
+    cursor: 'text',
+    whiteSpace: 'nowrap',
   },
   actionsCell: {
     display: 'flex',

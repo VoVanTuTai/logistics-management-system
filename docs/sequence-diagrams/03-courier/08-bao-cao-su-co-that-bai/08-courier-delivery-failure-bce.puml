@@ -1,0 +1,103 @@
+@startuml
+!theme plain
+skinparam monochrome true
+skinparam sequenceMessageAlign center
+skinparam responseMessageBelowArrow true
+skinparam maxMessageSize 140
+skinparam wrapWidth 200
+skinparam BoxPadding 8
+autonumber "<b>[00]</b>"
+
+
+box "Boundary Layer (Giao Diện & Gateway)" #FFFFFF
+actor "Bưu tá / Shipper\n(Courier User)" as Courier
+boundary "TaskIssueScreen\n(apps/courier-mobile)" as UI
+boundary "CameraView (Minh chứng)\n(Expo Camera)" as CamUI
+boundary "Gateway BFF (:3000)\n(CourierController)" as Gateway
+end box
+
+box "Control Layer (Điều Khiển & Nghiệp Vụ)" #FFFFFF
+control "IssueReportHandler\n(shipment-exception.api)" as IssueCtrl
+control "DeliveryService (:3006)\n(NdrCasesController & Svc)" as DeliverySvc
+control "ShipmentService (:3002)\n(ShipmentsService)" as ShipmentSvc
+control "DispatchService (:3004)\n(TasksService)" as DispatchSvc
+end box
+
+box "Entity Layer (Cơ Sở Dữ Liệu)" #FFFFFF
+entity "PostgreSQL (delivery_db)\n[ndr_cases & attachments]" as NdrDB
+entity "PostgreSQL (shipment_db)\n[shipments (isLocked)]" as ShipmentDB
+entity "PostgreSQL (dispatch_db)\n[courier_tasks]" as TaskDB
+end box
+
+' GIAI ĐOẠN 1: MỞ MÀN HÌNH BÁO CÁO SỰ CỐ
+Courier -> UI: Chọn "Báo cáo sự cố / Giao thất bại" từ chi tiết đơn
+activate UI
+
+UI -> UI: Tải danh mục lý do sự cố:\n- Khách hẹn lại (CUSTOMER_RESCHEDULED)\n- Không liên lạc được (CANNOT_CONTACT)\n- Sai địa chỉ / SĐT (INCORRECT_INFO)\n- Khách từ chối nhận (CUSTOMER_REJECTED)\n- Hàng vỡ hỏng / móp méo (DAMAGED_GOODS)
+UI -> UI: Render form chọn lý do & ghi chú giải trình
+
+' GIAI ĐOẠN 2: CHỌN LÝ DO & CHỤP ẢNH MINH CHỨNG
+Courier -> UI: Chọn lý do sự cố (selectedIssueId) & nhập ghi chú
+opt Trường hợp sự cố ngoại quan vật lý (Hàng vỡ / Hư hại)
+    Courier -> CamUI: Bấm chụp ảnh hiện trường kiện hàng
+    activate CamUI
+    CamUI --> UI: Trả về ảnh chứng cứ sự cố (capturedUri)
+    deactivate CamUI
+    UI -> UI: Bắt buộc đính kèm ít nhất 1 ảnh minh chứng
+end
+
+' GIAI ĐOẠN 3: GỬI BÁO CÁO SỰ CỐ QUA GATEWAY
+Courier -> UI: Nhấn nút "Gửi báo cáo sự cố" (handleSubmit)
+UI -> IssueCtrl: reportShipmentException(accessToken, payload)
+activate IssueCtrl
+
+opt Đính kèm ảnh minh chứng: Upload lên MinIO Storage
+    IssueCtrl -> Gateway: POST /courier/media/upload-url (uploadCourierImage)
+    activate Gateway
+    Gateway --> IssueCtrl: 200 OK (Public S3/MinIO Image URL)
+    deactivate Gateway
+end
+
+IssueCtrl -> Gateway: POST /courier/delivery/ndr/exception\n(Body: { shipmentCode, hubCode, issueType, attachments, note, actor })
+activate Gateway
+
+Gateway -> DeliverySvc: createShipmentException(payload)
+activate DeliverySvc
+
+' GIAI ĐOẠN 4: LƯU TRỮ HỒ SƠ NDR & KHÓA VẬN ĐƠN AN TOÀN
+DeliverySvc -> NdrDB: INSERT INTO ndr_cases (shipment_code, issue_type, note, actor, status='PENDING')\nINSERT INTO ndr_attachments (...)
+activate NdrDB
+NdrDB --> DeliverySvc: Đã tạo hồ sơ sự cố NDR thành công
+deactivate NdrDB
+
+DeliverySvc -> ShipmentSvc: lockShipmentForIssue(shipmentCode, 'EXCEPTION')
+activate ShipmentSvc
+ShipmentSvc -> ShipmentDB: UPDATE shipments SET current_status = 'EXCEPTION',\nis_locked = true WHERE code = $1
+activate ShipmentDB
+ShipmentDB --> ShipmentSvc: Đã khóa luân chuyển đơn hàng
+deactivate ShipmentDB
+ShipmentSvc --> DeliverySvc: Khóa vận đơn thành công
+deactivate ShipmentSvc
+
+DeliverySvc -> DispatchSvc: updateTaskAfterException(taskId, 'EXCEPTION')
+activate DispatchSvc
+DispatchSvc -> TaskDB: UPDATE courier_tasks SET note = $2 WHERE id = $1
+activate TaskDB
+TaskDB --> DispatchSvc: Cập nhật ghi chú nhiệm vụ
+deactivate TaskDB
+DispatchSvc --> DeliverySvc: Hoàn tất
+deactivate DispatchSvc
+
+DeliverySvc --> Gateway: 201 Created (NdrCaseDto)
+deactivate DeliverySvc
+Gateway --> IssueCtrl: 201 Created (NdrCaseDto)
+deactivate Gateway
+
+IssueCtrl --> UI: Báo cáo thành công (result.id)
+deactivate IssueCtrl
+
+UI -> UI: Hiển thị thông báo: "✓ Đã ghi nhận sự cố NDR. Đơn đã được\ntạm khóa để CSKH/Điều phối viên hỗ trợ xử lý."
+deactivate UI
+
+@enduml
+

@@ -1,0 +1,101 @@
+@startuml
+!theme plain
+skinparam sequenceMessageAlign center
+skinparam responseMessageBelowArrow true
+skinparam maxMessageSize 140
+skinparam wrapWidth 200
+skinparam BoxPadding 8
+autonumber "<b>[00]</b>"
+
+
+box "Boundary Layer (Giao Diện & Gateway)" #F8FAFC
+actor "Chủ shop / Người gửi\n(Merchant User)" as Merchant
+boundary "ReturnRequestView\n(apps/merchant-web)" as UI
+boundary "Gateway BFF (:3000)\n(MerchantController)" as Gateway
+end box
+
+box "Control Layer (Nghiệp Vụ & Dịch Vụ)" #FFFFFF
+control "ReturnsController\n(:3004 delivery-service)" as ReturnCtrl
+control "ReturnsService\n(application service)" as ReturnSvc
+control "ShipmentController\n(:3002 shipment-service)" as ShipCtrl
+control "DeliveryOutboxService\n(transactional outbox)" as OutboxSvc
+end box
+
+box "Entity Layer (Dữ Liệu PostgreSQL & Outbox)" #F8FAFC
+entity "PostgreSQL (delivery_db)\n[return_cases Table]" as ReturnDB
+entity "PostgreSQL (delivery_db)\n[outbox_events Table]" as OutboxDB
+end box
+
+' GIAI ĐOẠN 1: TÌM KIẾM ĐƠN HÀNG & XEM TRƯỚC THÔNG TIN
+Merchant -> UI: Mở tab "Yêu cầu hoàn hàng" (View: 'returns')\nvà nhập mã vận đơn (returnCode)
+activate UI
+
+UI -> UI: Tìm đơn trong bộ nhớ client: find(r => r.shipment.code === returnCode)
+UI -> UI: Render Thẻ thông tin đơn hàng (Người nhận, SĐT, Địa chỉ, Trạng thái)
+
+' GIAI ĐOẠN 2: CHỌN LÝ DO & GỬI YÊU CẦU HOÀN HÀNG
+Merchant -> UI: Chọn Lý do hoàn (Khách hủy, Không liên lạc được...),\nnhập Ghi chú và nhấn "Gửi yêu cầu hoàn hàng"
+
+alt Tiền kiểm tra thất bại tại Client
+    UI -> UI: Kiểm tra: !isShipmentOwnedByUser || !isReturnRequestAllowed
+    UI -> UI: Báo lỗi: "Đơn đã giao thành công, đã hoàn hoặc đã hủy nên không thể yêu cầu hoàn."
+else Dữ liệu hợp lệ: Gửi yêu cầu qua Gateway BFF
+    UI -> Gateway: POST /merchant/delivery/returns\n(Bearer accessToken, Body: { shipmentCode, note: "reason=...|note=..." })
+    activate Gateway
+
+    note over Gateway: GatewayAuthGuard & RoleGuard (Role: 'MERCHANT') -> proxy :3004
+
+    Gateway -> ReturnCtrl: POST /returns (Body: CreateReturnCaseInput)
+    activate ReturnCtrl
+
+    ReturnCtrl -> ReturnSvc: create(input)
+    activate ReturnSvc
+
+    ' Kiểm tra chéo trạng thái với shipment-service
+    ReturnSvc -> ShipCtrl: GET /shipments/{shipmentCode}
+    activate ShipCtrl
+    ShipCtrl --> ReturnSvc: 200 OK: { currentStatus }
+    deactivate ShipCtrl
+
+    ReturnSvc -> ReturnSvc: Kiểm tra assertShipmentCanStartReturn(shipmentCode)
+
+    ' Ghi nhận ca chuyển hoàn vào cơ sở dữ liệu
+    ReturnSvc -> ReturnDB: INSERT INTO return_cases\n(shipment_code, status: 'STARTED', note, created_at) VALUES (...)
+    activate ReturnDB
+    ReturnDB --> ReturnSvc: Bản ghi ReturnCase thành công
+    deactivate ReturnDB
+
+    ' Phát sự kiện Outbox ReturnStarted
+    ReturnSvc -> OutboxSvc: enqueueReturnStarted(returnCase)
+    activate OutboxSvc
+    OutboxSvc -> OutboxDB: INSERT INTO outbox_events\n(eventType: 'ReturnStarted', aggregateId: id, payload)
+    activate OutboxDB
+    OutboxDB --> OutboxSvc: Ghi nhận event Outbox thành công
+    deactivate OutboxDB
+    OutboxSvc --> ReturnSvc: Outbox OK
+    deactivate OutboxSvc
+
+    ReturnSvc --> ReturnCtrl: ReturnCase (status: 'STARTED')
+    deactivate ReturnSvc
+
+    ReturnCtrl --> Gateway: 201 Created: ReturnCaseResponse
+    deactivate ReturnCtrl
+
+    Gateway --> UI: 201 Created: Trả về ca chuyển hoàn mới
+    deactivate Gateway
+
+    ' GIAI ĐOẠN 3: CẬP NHẬT GIAO DIỆN & LỊCH SỬ YÊU CẦU
+    UI -> UI: 1. Thêm yêu cầu vào đầu danh sách lịch sử (setReturnRows)\n2. Reset form nhập lý do\n3. Hiển thị thông báo: "Đã tạo yêu cầu hoàn hàng thành công"
+    UI -> UI: Cập nhật bảng Lịch sử yêu cầu hoàn hàng (Mã đơn, Lý do, Trạng thái 'STARTED')
+end
+
+' GIAI ĐOẠN 4: LỌC LỊCH SỬ & TRA CỨU HÀNH TRÌNH CHUYỂN HOÀN
+opt Merchant lọc lịch sử hoặc bấm "Tracking"
+    Merchant -> UI: Chọn bộ lọc trạng thái (TẤT CẢ, IN_TRANSIT, COMPLETED)\nHOẶC bấm nút "Tracking" tại dòng đơn hoàn
+    UI -> UI: Điều hướng sang View 'tracking' hoặc lọc bảng tức thì
+    UI -> UI: Hiển thị hành trình luân chuyển hoàn về kho của kiện hàng
+end
+
+deactivate UI
+@enduml
+

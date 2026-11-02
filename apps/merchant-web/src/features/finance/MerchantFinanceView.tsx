@@ -10,6 +10,7 @@ import {
   FinanceCardExplanationModal,
   type FinanceExplanationTab,
 } from './FinanceCardExplanationModal';
+import { FinanceBusinessCharts } from './FinanceBusinessCharts';
 
 export interface FinanceInsightsProps {
   netBalance: number;
@@ -578,6 +579,17 @@ export function MerchantFinanceView({
       {/* Subtab 1: Tổng quan dòng tiền */}
       {financeSubTab === 'overview' ? (
         <div style={{ display: 'grid', gap: '20px' }}>
+          {/* Biểu đồ phân tích kinh doanh & Dòng tiền */}
+          <FinanceBusinessCharts
+            shipmentRows={filteredShipments}
+            settlementBatches={displayBatches}
+            selectedMonth={selectedMonth}
+            deliveredCod={effectiveMetrics.deliveredCod}
+            incurredFee={effectiveMetrics.incurredFee}
+            deliveringCod={effectiveMetrics.deliveringCod}
+            netBalance={effectiveMetrics.netBalance}
+          />
+
           {/* Kỳ đối soát gần nhất */}
           {settlementBatches[0] ? (
             <div className="finance-section-card">

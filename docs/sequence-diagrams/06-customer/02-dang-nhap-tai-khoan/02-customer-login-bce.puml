@@ -1,0 +1,109 @@
+@startuml
+!theme plain
+skinparam monochrome true
+skinparam sequenceMessageAlign center
+skinparam responseMessageBelowArrow true
+skinparam maxMessageSize 140
+skinparam wrapWidth 200
+skinparam BoxPadding 8
+autonumber "<b>[00]</b>"
+
+
+box "Boundary Layer (Giao Diện & Gateway)" #FFFFFF
+actor "Khách hàng cá nhân\n(Customer User)" as Customer
+boundary "LoginScreen / LoginPage\n(apps/customer-mobile & guest-web)" as UI
+boundary "Gateway BFF (:3000)\n(PublicController)" as Gateway
+boundary "HomeScreen / CreateOrderPage\n(Giao diện sau đăng nhập)" as TargetUI
+end box
+
+box "Control Layer (Điều Khiển & Xác Thực)" #FFFFFF
+control "useAuthStore\n(Zustand store)" as AuthStore
+control "AuthController\n(:3010 auth-service)" as AuthCtrl
+control "AuthService\n(application service)" as AuthSvc
+control "HashService\n(bcrypt digest)" as HashSvc
+end box
+
+box "Entity Layer (Lưu Trữ & Cơ Sở Dữ Liệu)" #FFFFFF
+entity "Browser LocalStorage\n[nexus_guest_auth]" as LocalStore
+entity "PostgreSQL (auth_db)\n[user_accounts & auth_sessions]" as AuthDB
+end box
+
+' GIAI ĐOẠN 1: NHẬP THÔNG TIN VÀ KIỂM TRA ĐẦU VÀO
+Customer -> UI: Mở trang đăng nhập (/login),\nnhập Số điện thoại và Mật khẩu
+activate UI
+
+Customer -> UI: Bấm nút "Đăng nhập ngay" (handleLogin)
+
+alt Lỗi bỏ trống thông tin
+    UI -> UI: Kiểm tra: !phone.trim() || !password.trim()\nHiển thị cảnh báo: "Vui lòng nhập số điện thoại / mật khẩu."
+else Dữ liệu hợp lệ: Gửi yêu cầu xác thực
+    UI -> Gateway: POST /public/auth/auth/login\n(Body: { username: phone, password, roleGroup: 'CUSTOMER_APP' })
+    activate Gateway
+
+    ' GIAI ĐOẠN 2: XỬ LÝ XÁC THỰC TẠI AUTH SERVICE
+    Gateway -> AuthCtrl: POST /auth/login (LoginInput)
+    activate AuthCtrl
+
+    AuthCtrl -> AuthSvc: login(input: LoginInput)
+    activate AuthSvc
+
+    AuthSvc -> AuthDB: SELECT * FROM user_accounts WHERE username = $phone AND status = 'ACTIVE'
+    activate AuthDB
+    AuthDB --> AuthSvc: Trả về thông tin tài khoản (UserAccount)
+    deactivate AuthDB
+
+    alt Tài khoản không tồn tại hoặc bị khóa
+        AuthSvc --> AuthCtrl: 401 UnauthorizedException ("Sai tên đăng nhập hoặc mật khẩu.")
+        AuthCtrl --> Gateway: 401 Unauthorized
+        Gateway --> UI: 401 Unauthorized
+        UI -> UI: Render thông báo lỗi: "Đăng nhập thất bại. Vui lòng kiểm tra lại số điện thoại hoặc mật khẩu."
+    else Tài khoản hợp lệ: Đối chiếu mật khẩu
+        AuthSvc -> HashSvc: verify(password, user.passwordHash)
+        activate HashSvc
+        HashSvc --> AuthSvc: Kết quả đối soát mã băm bcrypt
+        deactivate HashSvc
+
+        alt Mật khẩu không chính xác
+            AuthSvc --> AuthCtrl: 401 UnauthorizedException ("Sai tên đăng nhập hoặc mật khẩu.")
+            AuthCtrl --> Gateway: 401 Unauthorized
+            Gateway --> UI: 401 Unauthorized
+            UI -> UI: Render thông báo lỗi: "Đăng nhập thất bại. Vui lòng kiểm tra lại số điện thoại hoặc mật khẩu."
+        else Mật khẩu hợp lệ: Cấp phiên làm việc và mã Token
+            AuthSvc -> AuthSvc: assertUserMatchesLoginRoleGroup(user, 'CUSTOMER_APP')\nOpaqueTokenService.issueTokens()
+            
+            AuthSvc -> AuthDB: INSERT INTO auth_sessions (user_id, access_token_hash, refresh_token_hash, expires_at)
+            activate AuthDB
+            AuthDB --> AuthSvc: Ghi nhận phiên đăng nhập hợp lệ
+            deactivate AuthDB
+
+            AuthSvc --> AuthCtrl: LoginResult { tokens: { accessToken, refreshToken }, user }
+            deactivate AuthSvc
+
+            AuthCtrl --> Gateway: 200 OK (LoginResult)
+            deactivate AuthCtrl
+
+            Gateway --> UI: 200 OK { tokens: { accessToken }, user }
+            deactivate Gateway
+
+            ' GIAI ĐOẠN 3: LƯU TRỮ PHIÊN & CHUYỂN HƯỚNG GIAO DIỆN
+            UI -> AuthStore: login(phone, token, user)
+            activate AuthStore
+
+            AuthStore -> LocalStore: setItem('nexus_guest_auth', JSON.stringify({ phone, token, user }))
+            activate LocalStore
+            LocalStore --> AuthStore: Lưu trữ thành công
+            deactivate LocalStore
+
+            AuthStore --> UI: State đăng nhập được cập nhật
+            deactivate AuthStore
+
+            UI -> UI: Hiển thị Toast: "Đăng nhập thành công! Đang chuyển hướng..."
+            UI -> TargetUI: navigate(redirectTarget || '/create')
+            activate TargetUI
+            deactivate UI
+            TargetUI -> TargetUI: Render màn hình tạo đơn gửi hàng hoặc trang trước đó
+            deactivate TargetUI
+        end
+    end
+end
+@enduml

@@ -1,0 +1,120 @@
+@startuml
+!theme plain
+skinparam sequenceMessageAlign center
+skinparam responseMessageBelowArrow true
+skinparam maxMessageSize 140
+skinparam wrapWidth 200
+skinparam BoxPadding 8
+autonumber "<b>[00]</b>"
+
+
+box "Boundary Layer (Giao Diện & Gateway)" #F8FAFC
+actor "Khách vãng lai\n(Guest User)" as Guest
+boundary "Guest Web UI\n(apps/guest-web)" as UI
+boundary "Gateway BFF (:3000)\n(PublicController)" as Gateway
+end box
+
+box "Control Layer (Điều Khiển & Nghiệp Vụ)" #FFFFFF
+control "PublicTrackingCtrl\n(tracking-service :3008)" as Ctrl
+control "TrackingProjection\n(Query Service)" as Proj
+control "ProjectionStore\n(Prisma Data Access)" as Store
+control "LocationCtrl\n(scan-service :3006)" as ScanCtrl
+end box
+
+box "Entity Layer (Dữ Liệu PostgreSQL)" #F8FAFC
+entity "PostgreSQL\n(tracking_db)" as DB
+entity "PostgreSQL\n(scan_db)" as ScanDB
+end box
+
+' BƯỚC 1: KHỞI TẠO THAO TÁC TRA CỨU
+Guest -> UI: Nhập mã vận đơn (VD: "333577082054")\n& bấm "Tra cứu"
+
+' BƯỚC 2: RÀNG BUỘC CHÍNH SÁCH BẢO MẬT BƯU CHÍNH TẠI CLIENT
+alt Trường hợp 1: Chưa nhập SĐT người nhận (!token && !phoneToUse)
+    note over UI
+      Chính sách bảo vệ dữ liệu cá nhân:
+      Khách chưa đăng nhập bắt buộc
+      nhập kèm SĐT người nhận
+    end note
+    UI -> UI: Hiển thị cảnh báo:\n"Quý khách vui lòng nhập cả mã vận đơn\nvà số điện thoại người nhận"
+
+else Trường hợp 2: Đã nhập đủ Mã vận đơn và SĐT người nhận
+    UI -> Gateway: GET /public/tracking/public/track/333577082054\n?receiverPhone=0912345678
+    note over Gateway
+      PublicController.proxy(@All('*'))
+      GatewayProxyClient.forward(...)
+      Phân giải TRACKING_SERVICE_URL (:3008)
+    end note
+    
+    Gateway -> Ctrl: GET /public/track/333577082054\n?receiverPhone=0912345678
+    Ctrl -> Proj: getPublicTracking("333577082054", "0912345678")
+    
+    Proj -> Proj: Chuẩn hóa dữ liệu đầu vào:\nshipmentCode.trim().toUpperCase()\nnormalizePhone(receiverPhone)
+    
+    ' BƯỚC 3: TRUY VẤN DỮ LIỆU TẠI DATA STORE
+    Proj -> Store: getTimeline("333577082054")
+    Store -> DB: prisma.timelineEvent.findMany(\n  { where: { shipmentCode } })
+    DB --> Store: TimelineEvent[] records
+    Store --> Proj: TimelineEvent[]
+    
+    Proj -> Store: getCurrent("333577082054")
+    Store -> DB: prisma.trackingCurrent.findUnique(\n  { where: { shipmentCode } })
+    DB --> Store: TrackingCurrent record
+    Store --> Proj: TrackingCurrent | null
+    
+    ' BƯỚC 4: ĐỐI CHIẾU NGHIỆP VỤ & XÁC THỰC QUYỀN TRUY CẬP
+    alt 2.1: Vận đơn không tồn tại (!currentRecord && timelineRecords.length == 0)
+        Proj --> Ctrl: throw NotFoundException(\n  "Tracking data for shipment not found")
+        Ctrl --> Gateway: 404 Not Found\n{ statusCode: 404, message: "..." }
+        Gateway --> UI: 404 Not Found
+        UI -> UI: Hiển thị thông báo:\n"Không tìm thấy hành trình vận đơn.\nVui lòng kiểm tra lại mã hoặc số điện thoại!"
+        
+    else 2.2: Đơn tồn tại nhưng sai số điện thoại người nhận (!phonesMatch)
+        note over Proj
+          extractShipmentSnapshot(...)
+          extractReceiverPhone(...)
+          phonesMatch(...) == FALSE
+        end note
+        Proj --> Ctrl: throw NotFoundException(\n  "Không khớp mã đơn và SĐT người nhận")
+        Ctrl --> Gateway: 404 Not Found\n{ statusCode: 404, message: "..." }
+        Gateway --> UI: 404 Not Found
+        UI -> UI: Hiển thị cảnh báo đỏ:\n"Số điện thoại người nhận\nkhông trùng khớp với đơn hàng."
+        
+    else 2.3: Hợp lệ 100% (Khớp mã đơn và SĐT người nhận)
+        note over Proj
+          BẢO MẬT DỮ LIỆU (DATA MASKING):
+          - actor: null (Không để lộ nhân sự)
+          - eventSource: "Hệ thống Nexus"
+          - note: cleanCustomerNote(ev.note)
+          - proofImageUrl: normalizeUrl(proof)
+          - mapPublicOrder(), mapTimeline()
+        end note
+        
+        Proj --> Ctrl: PublicTrackingView Payload\n(shipmentCode, current, timeline, order)
+        Ctrl --> Gateway: 200 OK (PublicTrackingView)
+        
+        ' BƯỚC 5: TRUY VẤN TỌA ĐỘ GPS REALTIME (TÙY CHỌN NẾU ĐANG PHÁT)
+        opt Nếu đơn ở trạng thái phát chặng cuối (OUT_FOR_DELIVERY / IN_TRANSIT)
+            UI -> Gateway: GET /public/scan/locations/...\n/latest-position
+            Gateway -> ScanCtrl: Forward tới SCAN_SERVICE (:3006)
+            ScanCtrl -> ScanDB: prisma.currentLocation.findFirst(\n  { where: { shipmentCode } })
+            ScanDB --> ScanCtrl: { latitude, longitude, capturedAt }
+            ScanCtrl --> Gateway: 200 OK (GpsPositionView)
+            Gateway --> UI: GpsPositionView Payload
+        end
+        
+        Gateway --> UI: 200 OK (UnifiedTrackingResponse Payload)
+        
+        ' BƯỚC 6: RENDER GIAO DIỆN
+        note over UI
+          UI RENDER CHUẨN CARRIER:
+          1. Mã đơn Monospace + Barcode 128
+          2. Badge trạng thái trực quan
+          3. Timeline từng vết quét & ảnh POD (MinIO)
+          4. Phân loại mặt hàng (GENERAL, FRAGILE)
+        end note
+        UI -> UI: Render toàn cảnh hành trình bưu kiện & bản đồ số
+    end
+end
+
+@enduml

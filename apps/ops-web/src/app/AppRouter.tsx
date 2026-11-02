@@ -1,6 +1,7 @@
 import React, { Suspense, lazy, useEffect, useMemo, useState } from 'react';
 import {
   BrowserRouter,
+  MemoryRouter,
   Navigate,
   Outlet,
   Route,
@@ -8,6 +9,58 @@ import {
   useLocation,
   useNavigate,
 } from 'react-router-dom';
+
+const OPS_ACTIVE_ROUTE_KEY = 'nexus_ops_active_route';
+const isTestEnv = Boolean(import.meta.env.TEST || import.meta.env.MODE === 'test');
+
+function resolveInitialOpsRoute(): string {
+  if (typeof window === 'undefined') {
+    return routePaths.dashboard;
+  }
+  if (isTestEnv) {
+    const testPath = window.location.pathname;
+    if (testPath && testPath !== '/') {
+      return testPath + window.location.search;
+    }
+    return routePaths.dashboard;
+  }
+  try {
+    const session = getStoredAuthSession();
+    if (!session?.tokens?.accessToken) {
+      return routePaths.login;
+    }
+    const saved = sessionStorage.getItem(OPS_ACTIVE_ROUTE_KEY);
+    if (saved && (saved.startsWith('/app') || saved === routePaths.dashboard)) {
+      return saved;
+    }
+    return routePaths.dashboard;
+  } catch {
+    return routePaths.dashboard;
+  }
+}
+
+function OpsRoutePersistenceSync(): null {
+  const location = useLocation();
+
+  useEffect(() => {
+    if (isTestEnv || typeof window === 'undefined') {
+      return;
+    }
+    if (location.pathname.startsWith('/app')) {
+      try {
+        sessionStorage.setItem(OPS_ACTIVE_ROUTE_KEY, location.pathname + location.search);
+      } catch {}
+    }
+    // Mask browser address bar so it never exposes /app/function-groups/ or internal routes
+    if (window.location.pathname !== '/' && window.location.pathname !== routePaths.login) {
+      try {
+        window.history.replaceState(null, '', '/');
+      } catch {}
+    }
+  }, [location.pathname, location.search]);
+
+  return null;
+}
 
 import { useLogoutMutation } from '../features/auth/auth.api';
 import { getStoredAuthSession } from '../features/auth/auth.session';
@@ -1091,6 +1144,9 @@ function DashboardLayout(): React.JSX.Element {
   };
 
   const onLogout = async () => {
+    try {
+      sessionStorage.removeItem(OPS_ACTIVE_ROUTE_KEY);
+    } catch {}
     await logoutMutation.mutateAsync();
     navigate(routePaths.login, { replace: true });
   };
@@ -1597,6 +1653,7 @@ function AppIndexRedirect(): React.JSX.Element {
 }
 
 export function AppRouter(): React.JSX.Element {
+  const initialRoute = useMemo(() => resolveInitialOpsRoute(), []);
   const lazyRoute = (element: React.ReactNode) => (
     <Suspense fallback={<RouteLoadingFallback />}>{element}</Suspense>
   );
@@ -1606,9 +1663,8 @@ export function AppRouter(): React.JSX.Element {
     </Suspense>
   );
 
-  return (
-    <BrowserRouter>
-      <Routes>
+  const routesContent = (
+    <Routes>
         <Route path={routePaths.login} element={<LoginPage />} />
         <Route element={<AuthGuard />}>
           <Route path={routePaths.appRoot} element={<DashboardLayout />}>
@@ -1984,6 +2040,16 @@ export function AppRouter(): React.JSX.Element {
         </Route>
         <Route path="*" element={<Navigate to={routePaths.login} replace />} />
       </Routes>
-    </BrowserRouter>
+  );
+
+  if (isTestEnv) {
+    return <BrowserRouter>{routesContent}</BrowserRouter>;
+  }
+
+  return (
+    <MemoryRouter initialEntries={[initialRoute]}>
+      <OpsRoutePersistenceSync />
+      {routesContent}
+    </MemoryRouter>
   );
 }

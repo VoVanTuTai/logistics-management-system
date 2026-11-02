@@ -1,0 +1,143 @@
+@startuml
+!theme plain
+skinparam sequenceMessageAlign center
+skinparam responseMessageBelowArrow true
+skinparam maxMessageSize 140
+skinparam wrapWidth 200
+skinparam BoxPadding 8
+autonumber "<b>[00]</b>"
+
+
+box "Boundary Layer (Giao Diện & Gateway)" #F8FAFC
+actor "Chủ shop / Người gửi\n(Merchant User)" as Merchant
+boundary "MerchantLoginForm\n(apps/merchant-web)" as UI
+boundary "Gateway BFF (:3000)\n(MerchantController)" as Gateway
+end box
+
+box "Control Layer (Điều Khiển & Xác Thực)" #FFFFFF
+control "AuthController\n(:3010 auth-service)" as AuthCtrl
+control "AuthService\n(application service)" as AuthSvc
+control "HashService\n(security digest)" as HashSvc
+control "OpaqueTokenService\n(token issuer)" as TokenSvc
+control "AuthOutboxService\n(transactional outbox)" as OutboxSvc
+end box
+
+box "Entity Layer (Dữ Liệu PostgreSQL auth_db)" #F8FAFC
+entity "PostgreSQL (auth_db)\n[user_accounts & auth_sessions]" as AuthDB
+entity "PostgreSQL (auth_db)\n[outbox_events Table]" as OutboxDB
+end box
+
+' BƯỚC 1: KHỞI TẠO ĐĂNG NHẬP TẠI GIAO DIỆN
+Merchant -> UI: Nhập Mã shop/SĐT/Email (VD: "41100001"),\nMật khẩu & nhấn "Đăng nhập"
+activate UI
+
+UI -> UI: Kiểm tra & map demo email sang mã Shop (41100001)\nChuẩn bị payload { username, password, roleGroup: 'MERCHANT' }
+
+' BƯỚC 2: GỬI REQUEST QUA GATEWAY BFF
+UI -> Gateway: POST /merchant/auth/auth/login\n(Body: { username, password, roleGroup })
+activate Gateway
+
+note over Gateway
+  - GatewayAuthGuard: Bỏ qua xác thực do URL
+    khớp whitelist public auth login
+  - GatewayRoleGuard: Cho phép route công khai
+  - ServiceRegistryClient: Phân giải 'auth'
+    -> AUTH_SERVICE_URL (:3010)
+  - GatewayProxyClient.forward('merchant', ...)
+end note
+
+Gateway -> AuthCtrl: POST /auth/login\n(Body: LoginInput)
+activate AuthCtrl
+
+' BƯỚC 3: XỬ LÝ XÁC THỰC TẠI AUTH SERVICE
+AuthCtrl -> AuthSvc: login(input: LoginInput)
+activate AuthSvc
+
+' BƯỚC 4: RÀNG BUỘC ĐẦU VÀO
+alt Lỗi 400: Thiếu thông tin đăng nhập (!username || !password)
+    AuthSvc --> AuthCtrl: throw BadRequestException(\n  "Yêu cầu nhập tên đăng nhập và mật khẩu.")
+    AuthCtrl --> Gateway: 400 Bad Request
+    Gateway --> UI: 400 Bad Request
+    UI -> UI: Cảnh báo: "Vui lòng nhập đầy đủ tên đăng nhập và mật khẩu"
+
+else Hợp lệ: Tiếp tục đối soát tài khoản
+    AuthSvc -> AuthDB: userAccountRepository.findByUsername(username)
+    activate AuthDB
+    AuthDB --> AuthSvc: UserAccount record | null
+    deactivate AuthDB
+
+    alt Lỗi 401: Tài khoản không tồn tại hoặc bị khóa (!user || status != 'ACTIVE')
+        AuthSvc --> AuthCtrl: throw UnauthorizedException(\n  "Sai tên đăng nhập hoặc mật khẩu.")
+        AuthCtrl --> Gateway: 401 Unauthorized
+        Gateway --> UI: 401 Unauthorized
+        UI -> UI: Cảnh báo đỏ: "Sai tên đăng nhập hoặc mật khẩu"
+
+    else Tài khoản tồn tại và ACTIVE: Kiểm tra mật khẩu
+        AuthSvc -> HashSvc: verify(input.password, user.passwordHash)
+        activate HashSvc
+        HashSvc --> AuthSvc: boolean (true / false)
+        deactivate HashSvc
+
+        alt Lỗi 401: Sai mật khẩu (passwordHash mismatch)
+            AuthSvc --> AuthCtrl: throw UnauthorizedException(\n  "Sai tên đăng nhập hoặc mật khẩu.")
+            AuthCtrl --> Gateway: 401 Unauthorized
+            Gateway --> UI: 401 Unauthorized
+            UI -> UI: Cảnh báo đỏ: "Sai tên đăng nhập hoặc mật khẩu"
+
+        else Mật khẩu chính xác: Kiểm tra nhóm quyền cổng Merchant
+            AuthSvc -> AuthSvc: assertUserMatchesLoginRoleGroup(user, 'MERCHANT')
+
+            alt Lỗi 401: Sai vai trò (Tài khoản không có role 'MERCHANT')
+                AuthSvc --> AuthCtrl: throw UnauthorizedException(\n  "Tài khoản không thuộc nhóm quyền Chủ shop. Vui lòng đăng nhập đúng cổng.")
+                AuthCtrl --> Gateway: 401 Unauthorized
+                Gateway --> UI: 401 Unauthorized
+                UI -> UI: Cảnh báo: "Tài khoản không thuộc cổng Merchant"
+
+            else Hợp lệ 100%: Cấp Token & Khởi tạo Phiên Đăng Nhập
+                AuthSvc -> TokenSvc: issueTokens(issuedAt)
+                activate TokenSvc
+                TokenSvc --> AuthSvc: { accessToken, refreshToken, expiresAt }
+                deactivate TokenSvc
+
+                AuthSvc -> AuthDB: authSessionRepository.create({\n  userId, accessTokenHash, refreshTokenHash,\n  accessTokenExpiresAt, refreshTokenExpiresAt\n})
+                activate AuthDB
+                AuthDB --> AuthSvc: AuthSession record
+                deactivate AuthDB
+
+                ' Ghi nhận sự kiện Outbox (Transactional Outbox Pattern)
+                AuthSvc -> OutboxSvc: enqueueSessionCreated(session, user.username)
+                activate OutboxSvc
+                OutboxSvc -> OutboxDB: prisma.outboxEvent.create({\n  eventType: 'auth.session.created',\n  payload: { sessionId, userId, username }\n})
+                activate OutboxDB
+                OutboxDB --> OutboxSvc: OutboxEvent saved
+                deactivate OutboxDB
+                OutboxSvc --> AuthSvc: Enqueued successfully
+                deactivate OutboxSvc
+
+                AuthSvc --> AuthCtrl: LoginResult {\n  user: AuthenticatedUser,\n  session: AuthSession,\n  tokens: OpaqueTokens\n}
+                deactivate AuthSvc
+
+                AuthCtrl --> Gateway: 200 OK (LoginResult)
+                deactivate AuthCtrl
+
+                Gateway --> UI: 200 OK (LoginResponse JSON)
+                deactivate Gateway
+
+                ' BƯỚC 5: LƯU PHIÊN & KHỞI TẠO DỮ LIỆU ĐỒNG BỘ TẠI CLIENT
+                UI -> UI: mapLoginResponseToMerchantSession(result)\nLưu Session & Tokens vào sessionStorage\n(rememberMe ? saveRememberedCredentials)
+
+                UI -> Gateway: refreshAllData(accessToken):\n- GET /merchant/shipment/shipments\n- GET /merchant/pickup/pickups\n- GET /merchant/masterdata/merchant-profiles/...
+                activate Gateway
+                Gateway --> UI: 200 OK (Dữ liệu khởi tạo Dashboard)
+                deactivate Gateway
+
+                UI -> UI: setActiveView('dashboard')\npushNotification('Đăng nhập thành công')
+                UI -> UI: Render & Điều hướng vào Merchant Dashboard View
+                deactivate UI
+            end
+        end
+    end
+end
+
+@enduml
+
