@@ -1,0 +1,412 @@
+#!/usr/bin/env python3
+"""
+generate-multi-agent-presentation-svg.py
+Creates an elegant, intuitive, presentation-grade 16:9 SVG diagram
+optimized for slides, defense presentations, and easy explanation to supervisors.
+Aspect Ratio: 1920 x 1080 (16:9 Standard Presentation Slide)
+"""
+
+import os
+import html
+import xml.etree.ElementTree as ET
+
+OUTPUT_SVG = "docs/graduation-thesis/diagrams/architecture/04-multi-agent-presentation-slide.svg"
+
+def draw_arrow(x, y, direction="right", color="#000000", size=14):
+    if direction == "right":
+        points = f"{x},{y} {x-size},{y-size*0.45:.1f} {x-size},{y+size*0.45:.1f}"
+    elif direction == "left":
+        points = f"{x},{y} {x+size},{y-size*0.45:.1f} {x+size},{y+size*0.45:.1f}"
+    elif direction == "down":
+        points = f"{x},{y} {x-size*0.45:.1f},{y-size} {x+size*0.45:.1f},{y-size}"
+    elif direction == "up":
+        points = f"{x},{y} {x-size*0.45:.1f},{y+size} {x+size*0.45:.1f},{y+size}"
+    return f'<polygon points="{points}" fill="{color}"/>'
+
+def build_presentation_svg():
+    W = 1920
+    H = 1080
+    lines = []
+
+    lines.append(f'''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {W} {H}" width="{W}" height="{H}">
+  <defs>
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800;900&amp;family=JetBrains+Mono:wght@700;800;900&amp;display=swap');
+      * {{ box-sizing: border-box; }}
+      text {{ font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif; }}
+      .mono {{ font-family: 'JetBrains Mono', monospace; }}
+      .step-num {{ font-family: 'Plus Jakarta Sans', sans-serif; font-size: 14px; font-weight: 900; fill: #FFFFFF; }}
+      .shadow {{ filter: drop-shadow(0 4px 12px rgba(15, 23, 42, 0.05)); }}
+    </style>
+
+    <!-- Linear Gradients for subtle modern card headers -->
+    <linearGradient id="headerGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1E293B"/>
+      <stop offset="100%" stop-color="#0F172A"/>
+    </linearGradient>
+
+    <linearGradient id="supervisorGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#3B82F6"/>
+      <stop offset="100%" stop-color="#1D4ED8"/>
+    </linearGradient>
+
+    <linearGradient id="hitlGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FEF2F2"/>
+      <stop offset="100%" stop-color="#FEE2E2"/>
+    </linearGradient>
+  </defs>
+
+  <!-- PURE CLEAN BACKGROUND -->
+  <rect width="{W}" height="{H}" fill="#FFFFFF"/>
+  
+  <!-- ELEGANT SUBTLE DOT PATTERN (Slide aesthetics) -->
+  <pattern id="dotPattern" x="0" y="0" width="24" height="24" patternUnits="userSpaceOnUse">
+    <circle cx="2" cy="2" r="1.2" fill="#E2E8F0"/>
+  </pattern>
+  <rect width="{W}" height="{H}" fill="url(#dotPattern)" opacity="0.6"/>
+
+  <!-- SLIDE BORDER -->
+  <rect x="24" y="24" width="{W - 48}" height="{H - 48}" fill="none" stroke="#CBD5E1" stroke-width="1.5" rx="12"/>
+
+  <!-- =========================================================================
+       SLIDE HEADER: TITLE & CORE VALUE PROPOSITION
+       ========================================================================= -->
+  <g id="Slide_Header" transform="translate(60, 48)">
+    <!-- Top badge -->
+    <rect x="0" y="0" width="240" height="28" rx="6" fill="#F1F5F9" stroke="#64748B" stroke-width="1.2"/>
+    <text x="120" y="19" class="mono" font-size="12" font-weight="900" fill="#0F172A" text-anchor="middle">RESEARCH PROPOSAL • AGENTIC AI</text>
+
+    <!-- Main Title -->
+    <text x="0" y="66" font-size="32" font-weight="900" fill="#0F172A" letter-spacing="-0.02em">
+      MÔ HÌNH CỘNG TÁC ĐA TÁC TỬ (MULTI-AGENT) VỚI CHỐT CHẶN AN TOÀN HUMAN-IN-THE-LOOP
+    </text>
+    
+    <!-- Subtitle / Narrative -->
+    <text x="0" y="96" font-size="16" font-weight="600" fill="#64748B">
+      Giải pháp tự động hóa vận hành logistics an toàn: Phân tách chuyên môn hóa, quản lý đồ thị trạng thái (LangGraph) và triệt tiêu 100% rủi ro thao tác sai.
+    </text>
+  </g>
+
+  <!-- =========================================================================
+       SECTION 1: KHÁCH HÀNG & GIAO DIỆN CLIENT (x=60, y=170, w=300, h=840)
+       ========================================================================= -->
+  <g id="Col_Client" transform="translate(60, 170)">
+    <!-- Container -->
+    <rect width="300" height="840" rx="12" fill="#FFFFFF" stroke="#E2E8F0" stroke-width="2" class="shadow"/>
+    <rect width="300" height="48" rx="12 12 0 0" fill="#F8FAFC" stroke="#E2E8F0" stroke-width="2"/>
+    <text x="150" y="30" font-size="15" font-weight="800" fill="#1E293B" text-anchor="middle">1. TẦNG TRẢI NGHIỆM CLIENT</text>
+
+    <!-- User Actor Box -->
+    <g transform="translate(20, 70)">
+      <rect width="260" height="110" rx="8" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="1.5"/>
+      <circle cx="50" cy="55" r="24" fill="#3B82F6"/>
+      <!-- User Icon -->
+      <path d="M50 48 A 6 6 0 1 0 50 36 A 6 6 0 1 0 50 48 Z M40 64 C 40 58 44 55 50 55 C 56 55 60 58 60 64 Z" fill="#FFFFFF"/>
+      <text x="90" y="46" font-size="15" font-weight="800" fill="#0F172A">Người Dùng</text>
+      <text x="90" y="68" font-size="12" font-weight="600" fill="#64748B">Merchant / Khách hàng</text>
+      <text x="90" y="86" font-size="11" font-weight="700" fill="#2563EB">Web &amp; Mobile App</text>
+    </g>
+
+    <!-- User Request Bubble [BƯỚC 1] -->
+    <g transform="translate(20, 205)">
+      <rect width="260" height="120" rx="8" fill="#EFF6FF" stroke="#3B82F6" stroke-width="1.8"/>
+      <!-- Step Badge -->
+      <circle cx="25" cy="25" r="14" fill="#2563EB"/>
+      <text x="25" y="30" class="step-num" text-anchor="middle">1</text>
+      <text x="48" y="29" font-size="13" font-weight="800" fill="#1E40AF">Gửi yêu cầu thao tác</text>
+
+      <rect x="15" y="48" width="230" height="56" rx="6" fill="#FFFFFF" stroke="#BFDBFE" stroke-width="1.2"/>
+      <text x="25" y="70" class="mono" font-size="12" font-weight="700" fill="#1E293B">"Hủy giúp tôi đơn NX001</text>
+      <text x="25" y="90" class="mono" font-size="12" font-weight="700" fill="#1E293B">tôi ghi sai thông tin!"</text>
+    </g>
+
+    <!-- Gateway Pass-Through Card -->
+    <g transform="translate(20, 350)">
+      <rect width="260" height="90" rx="8" fill="#F8FAFC" stroke="#E2E8F0" stroke-width="1.5"/>
+      <text x="130" y="30" font-size="13" font-weight="800" fill="#334155" text-anchor="middle">API Gateway BFF (:3000)</text>
+      <text x="130" y="52" font-size="12" font-weight="600" fill="#64748B" text-anchor="middle">Kiểm tra JWT &amp; Phân quyền</text>
+      <text x="130" y="72" class="mono" font-size="11" font-weight="700" fill="#047857" text-anchor="middle">POST /api/v1/chat/stream</text>
+    </g>
+
+    <!-- Human-in-the-Loop Dialog Display [BƯỚC 4] -->
+    <g transform="translate(15, 470)">
+      <rect width="270" height="340" rx="10" fill="url(#hitlGrad)" stroke="#EF4444" stroke-width="2.2" class="shadow"/>
+      
+      <!-- Step 4 Badge -->
+      <circle cx="26" cy="26" r="14" fill="#DC2626"/>
+      <text x="26" y="31" class="step-num" text-anchor="middle">4</text>
+      <text x="50" y="31" font-size="14" font-weight="900" fill="#991B1B">CHỐT CHẶN AN TOÀN</text>
+      <text x="135" y="58" font-size="13" font-weight="800" fill="#7F1D1D" text-anchor="middle">Human-in-the-Loop (HITL)</text>
+
+      <!-- Mockup Card -->
+      <rect x="15" y="75" width="240" height="175" rx="8" fill="#FFFFFF" stroke="#FCA5A5" stroke-width="1.5"/>
+      <text x="25" y="100" class="mono" font-size="12" font-weight="900" fill="#DC2626">⚠️ YÊU CẦU XÁC NHẬN</text>
+      <text x="25" y="122" font-size="12" font-weight="700" fill="#0F172A">Thao tác: Hủy vận đơn NX001</text>
+      <text x="25" y="142" font-size="11" font-weight="600" fill="#475569">• Tình trạng: Chờ bưu tá lấy</text>
+      <text x="25" y="160" font-size="11" font-weight="600" fill="#475569">• Phí phát sinh: 0 VNĐ</text>
+      <text x="25" y="178" font-size="11" font-weight="700" fill="#DC2626">• Hủy xong không thể khôi phục</text>
+
+      <!-- Interactive Confirm Button -->
+      <rect x="25" y="195" width="110" height="36" rx="6" fill="#DC2626"/>
+      <text x="80" y="218" font-size="12" font-weight="900" fill="#FFFFFF" text-anchor="middle">XÁC NHẬN</text>
+      
+      <rect x="145" y="195" width="95" height="36" rx="6" fill="#F1F5F9" stroke="#CBD5E1" stroke-width="1.2"/>
+      <text x="192" y="218" font-size="12" font-weight="800" fill="#475569" text-anchor="middle">BỎ QUA</text>
+
+      <text x="135" y="278" font-size="11" font-weight="700" fill="#991B1B" text-anchor="middle">AI KHÔNG TỰ Ý THỰC THI</text>
+      <text x="135" y="298" font-size="11" font-weight="600" fill="#475569" text-anchor="middle">Bắt buộc người dùng nhấn duyệt</text>
+      <text x="135" y="316" font-size="11" font-weight="600" fill="#475569" text-anchor="middle">mới cho phép Backend ghi dữ liệu.</text>
+    </g>
+  </g>
+
+  <!-- =========================================================================
+       SECTION 2: BỘ NÃO ĐIỀU PHỐI (SUPERVISOR & SHARED STATE) (x=390, y=170, w=480, h=840)
+       ========================================================================= -->
+  <g id="Col_Supervisor" transform="translate(390, 170)">
+    <rect width="480" height="840" rx="12" fill="#FFFFFF" stroke="#E2E8F0" stroke-width="2" class="shadow"/>
+    <rect width="480" height="48" rx="12 12 0 0" fill="#F8FAFC" stroke="#E2E8F0" stroke-width="2"/>
+    <text x="240" y="30" font-size="15" font-weight="800" fill="#1E293B" text-anchor="middle">2. BỘ NÃO ĐIỀU PHỐI (LANGGRAPH ORCHESTRATOR)</text>
+
+    <!-- SUPERVISOR AGENT CARD [BƯỚC 2] -->
+    <g transform="translate(20, 70)">
+      <rect width="440" height="240" rx="10" fill="#FFFFFF" stroke="#2563EB" stroke-width="2.2" class="shadow"/>
+      <rect width="440" height="44" rx="10 10 0 0" fill="url(#supervisorGrad)"/>
+      
+      <!-- Step 2 Badge -->
+      <circle cx="28" cy="22" r="14" fill="#FFFFFF"/>
+      <text x="28" y="27" class="mono" font-size="13" font-weight="900" fill="#1D4ED8" text-anchor="middle">2</text>
+      <text x="52" y="27" font-size="15" font-weight="900" fill="#FFFFFF">SUPERVISOR AGENT (Orchestrator)</text>
+      <text x="355" y="27" class="mono" font-size="10.5" font-weight="800" fill="#93C5FD">Gemini 2.5 Flash</text>
+
+      <text x="20" y="72" font-size="13" font-weight="800" fill="#0F172A">Vai trò trung tâm (Central Intelligence):</text>
+      <text x="30" y="96" font-size="12" font-weight="600" fill="#334155">1. Tiếp nhận câu hỏi &amp; Phân tích ý định (Intent Recognition)</text>
+      <text x="30" y="118" font-size="12" font-weight="600" fill="#334155">2. Lập kế hoạch theo Đồ thị trạng thái (State Graph Planner)</text>
+      <text x="30" y="140" font-size="12" font-weight="600" fill="#334155">3. Điều phối song song / tuần tự cho 3 Sub-Agents chuyên trách</text>
+      <text x="30" y="162" font-size="12" font-weight="600" fill="#334155">4. Tổng hợp (Synthesis) kết quả phản hồi cuối cùng [BƯỚC 6]</text>
+
+      <rect x="20" y="178" width="400" height="48" rx="6" fill="#F1F5F9" stroke="#CBD5E1" stroke-width="1.2"/>
+      <text x="35" y="198" font-size="11" font-weight="800" fill="#1E293B">Lợi ích học thuật so với Single-Agent:</text>
+      <text x="35" y="214" font-size="11" font-weight="600" fill="#2563EB">Không làm việc trực tiếp với DB, triệt tiêu nguy cơ ảo giác hành động.</text>
+    </g>
+
+    <!-- SHARED STATE & MEMORY (TUẦN HOÀN THÔNG TIN) -->
+    <g transform="translate(20, 335)">
+      <rect width="440" height="235" rx="10" fill="#F8FAFC" stroke="#0F172A" stroke-width="2" class="shadow"/>
+      <rect width="440" height="38" rx="10 10 0 0" fill="#0F172A"/>
+      <text x="220" y="24" font-size="14" font-weight="900" fill="#FFFFFF" text-anchor="middle">SHARED STATE &amp; CONTEXT MEMORY (Tuple Trạng Thái)</text>
+
+      <text x="20" y="65" font-size="12" font-weight="800" fill="#0F172A">Cấu trúc dữ liệu trạng thái được LangGraph ghi nhớ:</text>
+      
+      <rect x="20" y="80" width="400" height="135" rx="6" fill="#FFFFFF" stroke="#E2E8F0" stroke-width="1.2"/>
+      <text x="30" y="105" class="mono" font-size="12" font-weight="700" fill="#047857">• messages: BaseMessage[] (Lịch sử hội thoại)</text>
+      <text x="30" y="128" class="mono" font-size="12" font-weight="700" fill="#047857">• userContext: {{ userId, role, isGuest, shopTier }}</text>
+      <text x="30" y="151" class="mono" font-size="12" font-weight="700" fill="#047857">• actionDraft: {{ action: 'CANCEL', orderCode: 'NX001' }}</text>
+      <text x="30" y="174" class="mono" font-size="12" font-weight="700" fill="#DC2626">• validationCheck: {{ eligible: true, requireHITL: true }}</text>
+      <text x="30" y="197" class="mono" font-size="12" font-weight="700" fill="#2563EB">• hitlStatus: 'PENDING' | 'CONFIRMED' | 'REJECTED'</text>
+    </g>
+
+    <!-- WORKFLOW ROUTER BOX -->
+    <g transform="translate(20, 595)">
+      <rect width="440" height="215" rx="10" fill="#FFFFFF" stroke="#64748B" stroke-width="1.8"/>
+      <text x="220" y="30" font-size="14" font-weight="800" fill="#0F172A" text-anchor="middle">CƠ CHẾ RẼ NHÁNH DỰA TRÊN MỨC ĐỘ RỦI RO</text>
+      
+      <!-- Branch 1 -->
+      <rect x="20" y="48" width="195" height="70" rx="6" fill="#F0FDF4" stroke="#16A34A" stroke-width="1.5"/>
+      <text x="117" y="70" font-size="12" font-weight="800" fill="#15803D" text-anchor="middle">Nhánh 1: Read-Only</text>
+      <text x="117" y="88" font-size="11" font-weight="600" fill="#166534" text-anchor="middle">Tra cứu đơn / Báo giá / FAQ</text>
+      <text x="117" y="104" font-size="10" font-weight="700" fill="#15803D" text-anchor="middle">⚡ Trả về ngay (Không cần HITL)</text>
+
+      <!-- Branch 2 -->
+      <rect x="225" y="48" width="195" height="70" rx="6" fill="#FEF2F2" stroke="#DC2626" stroke-width="1.8"/>
+      <text x="322" y="70" font-size="12" font-weight="900" fill="#B91C1C" text-anchor="middle">Nhánh 2: Transactional</text>
+      <text x="322" y="88" font-size="11" font-weight="600" fill="#7F1D1D" text-anchor="middle">Hủy đơn / Khiếu nại bồi thường</text>
+      <text x="322" y="104" font-size="10" font-weight="900" fill="#DC2626" text-anchor="middle">🛡️ Bắt buộc qua HITL [BƯỚC 4]</text>
+
+      <rect x="20" y="130" width="400" height="70" rx="6" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="1.2"/>
+      <text x="30" y="152" font-size="11" font-weight="800" fill="#0F172A">Nguyên tắc cốt tử (Core Design Principle):</text>
+      <text x="30" y="170" font-size="11" font-weight="600" fill="#475569">• Tác tử AI chỉ chuẩn bị bản thảo lệnh (Proposal / Draft).</text>
+      <text x="30" y="188" font-size="11" font-weight="600" fill="#475569">• Người dùng và Backend NestJS giữ quyền phê duyệt tối hậu.</text>
+    </g>
+  </g>
+
+  <!-- =========================================================================
+       SECTION 3: BIỆT ĐỘI 3 SUB-AGENTS CHUYÊN TRÁCH (x=900, y=170, w=540, h=840)
+       ========================================================================= -->
+  <g id="Col_SpecializedAgents" transform="translate(900, 170)">
+    <rect width="540" height="840" rx="12" fill="#FFFFFF" stroke="#E2E8F0" stroke-width="2" class="shadow"/>
+    <rect width="540" height="48" rx="12 12 0 0" fill="#F8FAFC" stroke="#E2E8F0" stroke-width="2"/>
+    <text x="270" y="30" font-size="15" font-weight="800" fill="#1E293B" text-anchor="middle">3. TẬP HỢP CÁC TÁC TỬ CHUYÊN MÔN HÓA (SUB-AGENTS) [BƯỚC 3]</text>
+
+    <!-- AGENT 1: KNOWLEDGE AGENT -->
+    <g transform="translate(20, 70)">
+      <rect width="500" height="225" rx="10" fill="#FFFFFF" stroke="#059669" stroke-width="2" class="shadow"/>
+      <rect width="500" height="38" rx="10 10 0 0" fill="#ECFDF5" stroke="#A7F3D0" stroke-width="1.2"/>
+      <circle cx="25" cy="19" r="12" fill="#059669"/>
+      <text x="25" y="24" class="mono" font-size="11" font-weight="900" fill="#FFFFFF" text-anchor="middle">3A</text>
+      <text x="46" y="24" font-size="14" font-weight="900" fill="#065F46">KNOWLEDGE AGENT (Tri Thức &amp; RAG - Alibaba)</text>
+      <text x="410" y="24" class="mono" font-size="10.5" font-weight="700" fill="#059669">Qwen 2.5 32B</text>
+
+      <text x="20" y="65" font-size="12" font-weight="800" fill="#0F172A">Nhiệm vụ:</text>
+      <text x="20" y="86" font-size="11" font-weight="600" fill="#334155">• Tra cứu Luật Bưu chính (Điều 25 về giới hạn bồi thường)</text>
+      <text x="20" y="106" font-size="11" font-weight="600" fill="#334155">• Tra cứu biểu phí theo trọng lượng &amp; Cân quy đổi thể tích IATA</text>
+      <text x="20" y="126" font-size="11" font-weight="600" fill="#334155">• Quy định đóng gói bubble wrap 3 lớp hàng dễ vỡ (SOP)</text>
+
+      <rect x="20" y="142" width="460" height="68" rx="6" fill="#F0FDF4" stroke="#86EFAC" stroke-width="1.2"/>
+      <text x="35" y="164" font-size="11" font-weight="800" fill="#166534">Cơ chế kỹ thuật: Hybrid RAG + MRL Embeddings</text>
+      <text x="35" y="182" font-size="11" font-weight="600" fill="#15803D">• Trích xuất nguồn (Citations 100%) neo vào từng điều khoản.</text>
+      <text x="35" y="198" font-size="11" font-weight="600" fill="#15803D">• Tiết kiệm 25% token context nhờ Tokenizer tối ưu tiếng Việt.</text>
+    </g>
+
+    <!-- AGENT 2: LOGISTICS OPERATION AGENT -->
+    <g transform="translate(20, 315)">
+      <rect width="500" height="225" rx="10" fill="#FFFFFF" stroke="#2563EB" stroke-width="2" class="shadow"/>
+      <rect width="500" height="38" rx="10 10 0 0" fill="#EFF6FF" stroke="#BFDBFE" stroke-width="1.2"/>
+      <circle cx="25" cy="19" r="12" fill="#2563EB"/>
+      <text x="25" y="24" class="mono" font-size="11" font-weight="900" fill="#FFFFFF" text-anchor="middle">3B</text>
+      <text x="46" y="24" font-size="14" font-weight="900" fill="#1E40AF">LOGISTICS OPERATION AGENT (Nghiệp Vụ - Meta)</text>
+      <text x="410" y="24" class="mono" font-size="10.5" font-weight="700" fill="#2563EB">Llama 3.3 70B</text>
+
+      <text x="20" y="65" font-size="12" font-weight="800" fill="#0F172A">Nhiệm vụ:</text>
+      <text x="20" y="86" font-size="11" font-weight="600" fill="#334155">• Gọi API lấy thông tin trạng thái thực tế của đơn hàng NX001</text>
+      <text x="20" y="106" font-size="11" font-weight="600" fill="#334155">• Tính toán tiền hoàn, cước phát sinh nếu có</text>
+      <text x="20" y="126" font-size="11" font-weight="600" fill="#334155">• Chuẩn bị sẵn Payload (Draft) theo đúng DTO của Backend NestJS</text>
+
+      <rect x="20" y="142" width="460" height="68" rx="6" fill="#EFF6FF" stroke="#93C5FD" stroke-width="1.2"/>
+      <text x="35" y="164" font-size="11" font-weight="800" fill="#1E40AF">Cơ chế kỹ thuật: Deterministic API Tool Calling</text>
+      <text x="35" y="182" font-size="11" font-weight="600" fill="#1D4ED8">• Chỉ soạn thảo JSON DTO, KHÔNG tự gọi lệnh ghi dữ liệu.</text>
+      <text x="35" y="198" font-size="11" font-weight="600" fill="#1D4ED8">• Bàn giao Payload cho Validation Agent thẩm định rủi ro.</text>
+    </g>
+
+    <!-- AGENT 3: VALIDATION AGENT (CRITIC / GATEKEEPER) -->
+    <g transform="translate(20, 560)">
+      <rect width="500" height="255" rx="10" fill="#FFFFFF" stroke="#DC2626" stroke-width="2.2" class="shadow"/>
+      <rect width="500" height="38" rx="10 10 0 0" fill="#FEF2F2" stroke="#FECACA" stroke-width="1.2"/>
+      <circle cx="25" cy="19" r="12" fill="#DC2626"/>
+      <text x="25" y="24" class="mono" font-size="11" font-weight="900" fill="#FFFFFF" text-anchor="middle">3C</text>
+      <text x="46" y="24" font-size="14" font-weight="900" fill="#991B1B">VALIDATION AGENT (Thẩm Định CoT - DeepSeek)</text>
+      <text x="350" y="24" class="mono" font-size="9.5" font-weight="700" fill="#DC2626">DeepSeek-R1-Distill-70B</text>
+
+      <text x="20" y="65" font-size="12" font-weight="800" fill="#0F172A">Nhiệm vụ phản biện độc lập (Independent Critic):</text>
+      <text x="20" y="86" font-size="11" font-weight="600" fill="#334155">• Đối chiếu điều kiện: "Đơn NX001 đã bàn giao cho Shipper chưa?"</text>
+      <text x="20" y="106" font-size="11" font-weight="600" fill="#334155">• Kiểm tra quyền: Người yêu cầu có phải là người gửi đơn này không?</text>
+      <text x="20" y="126" font-size="11" font-weight="600" fill="#334155">• Suy luận &lt;think&gt; CoT loại bỏ thiên kiến đồng nhất (Homogeneous Bias)</text>
+
+      <rect x="20" y="142" width="460" height="98" rx="6" fill="#FEF2F2" stroke="#F87171" stroke-width="1.2"/>
+      <text x="35" y="164" font-size="11" font-weight="900" fill="#B91C1C">PHÁN QUYẾT AN TOÀN (Zero-Trust Gatekeeper):</text>
+      <text x="35" y="184" font-size="11" font-weight="600" fill="#7F1D1D">✓ Nếu vi phạm: Từ chối ngay, giải thích lý do cho khách hàng.</text>
+      <text x="35" y="202" font-size="11" font-weight="600" fill="#7F1D1D">✓ Nếu hợp lệ: KÍCH HOẠT LỆNH NGẮT (INTERRUPT) để chuyển sang</text>
+      <text x="35" y="220" font-size="11" font-weight="800" fill="#DC2626">   bước lấy chữ ký xác nhận của Người Dùng (Human-in-the-Loop).</text>
+    </g>
+  </g>
+
+  <!-- =========================================================================
+       SECTION 4: TẦNG THỰC THI BACKEND & DỮ LIỆU (x=1470, y=170, w=390, h=840)
+       ========================================================================= -->
+  <g id="Col_Backend" transform="translate(1470, 170)">
+    <rect width="390" height="840" rx="12" fill="#FFFFFF" stroke="#E2E8F0" stroke-width="2" class="shadow"/>
+    <rect width="390" height="48" rx="12 12 0 0" fill="#F8FAFC" stroke="#E2E8F0" stroke-width="2"/>
+    <text x="195" y="30" font-size="15" font-weight="800" fill="#1E293B" text-anchor="middle">4. THỰC THI &amp; GHI VẾT [BƯỚC 5]</text>
+
+    <!-- BACKEND CONTROLLER -->
+    <g transform="translate(20, 70)">
+      <rect width="350" height="230" rx="10" fill="#FFFFFF" stroke="#0F172A" stroke-width="2" class="shadow"/>
+      <rect width="350" height="38" rx="10 10 0 0" fill="#1E293B"/>
+      
+      <!-- Step 5 Badge -->
+      <circle cx="25" cy="19" r="12" fill="#16A34A"/>
+      <text x="25" y="24" class="mono" font-size="11" font-weight="900" fill="#FFFFFF" text-anchor="middle">5</text>
+      <text x="46" y="24" font-size="14" font-weight="900" fill="#FFFFFF">BACKEND THỰC THI GIAO DỊCH</text>
+
+      <text x="20" y="65" font-size="12" font-weight="800" fill="#0F172A">Dịch vụ NestJS đảm nhận:</text>
+      
+      <rect x="20" y="80" width="310" height="45" rx="4" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="1"/>
+      <text x="30" y="100" class="mono" font-size="11" font-weight="800" fill="#0F172A">@NEXUS/shipments-service (:3002)</text>
+      <text x="30" y="115" font-size="10" font-weight="600" fill="#64748B">Cập nhật DB: CANCELLED_BY_SENDER</text>
+
+      <rect x="20" y="135" width="310" height="45" rx="4" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="1"/>
+      <text x="30" y="155" class="mono" font-size="11" font-weight="800" fill="#0F172A">@NEXUS/tracking-service (:3008)</text>
+      <text x="30" y="170" font-size="10" font-weight="600" fill="#64748B">Ghi mốc hành trình: Đã hủy trên hệ thống</text>
+
+      <text x="20" y="205" font-size="11" font-weight="700" fill="#047857">Chỉ thực thi khi có chữ ký phê duyệt HITL</text>
+    </g>
+
+    <!-- AUDIT TRAIL DATABASE (IMMUTABLE LOG) -->
+    <g transform="translate(20, 325)">
+      <rect width="350" height="240" rx="10" fill="#EFF6FF" stroke="#1D4ED8" stroke-width="2" class="shadow"/>
+      <rect width="350" height="38" rx="10 10 0 0" fill="#1D4ED8"/>
+      <text x="175" y="24" font-size="14" font-weight="900" fill="#FFFFFF" text-anchor="middle">AUDIT TRAIL CHỐNG CHỐI BỎ</text>
+
+      <text x="20" y="65" font-size="12" font-weight="800" fill="#1E40AF">Table: ai_agent_audit_logs</text>
+      <text x="20" y="86" font-size="11" font-weight="600" fill="#334155">• trace_id &amp; session_id duy nhất</text>
+      <text x="20" y="106" font-size="11" font-weight="600" fill="#334155">• user_id &amp; role (Merchant/Customer)</text>
+      <text x="20" y="126" font-size="11" font-weight="600" fill="#334155">• agent_draft_payload (JSON gốc do AI lập)</text>
+      <text x="20" y="146" font-size="11" font-weight="600" fill="#334155">• validator_verdict (Kết quả thẩm định)</text>
+      <text x="20" y="166" font-size="11" font-weight="600" fill="#334155">• user_hitl_signature &amp; IP timestamp</text>
+
+      <rect x="20" y="185" width="310" height="40" rx="4" fill="#FFFFFF" stroke="#BFDBFE" stroke-width="1"/>
+      <text x="175" y="210" font-size="11" font-weight="800" fill="#1E40AF" text-anchor="middle">Minh bạch 100% trước cơ quan kiểm toán</text>
+    </g>
+
+    <!-- STORAGE TIER -->
+    <g transform="translate(20, 590)">
+      <rect width="350" height="220" rx="10" fill="#F8FAFC" stroke="#64748B" stroke-width="1.8"/>
+      <text x="175" y="30" font-size="13" font-weight="800" fill="#0F172A" text-anchor="middle">HẠ TẦNG DỮ LIỆU &amp; VECTOR TRI THỨC</text>
+
+      <rect x="20" y="50" width="310" height="65" rx="6" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1.2"/>
+      <text x="30" y="72" font-size="12" font-weight="800" fill="#0F172A">PostgreSQL + pgvector Extension</text>
+      <text x="30" y="90" font-size="11" font-weight="600" fill="#64748B">Kho Vector 1536 chiều lưu Luật Bưu chính &amp; Biểu phí</text>
+      <text x="30" y="105" font-size="10" font-weight="700" fill="#047857">Chỉ mục HNSW: Tìm kiếm tương đồng &lt; 15ms</text>
+
+      <rect x="20" y="130" width="310" height="65" rx="6" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1.2"/>
+      <text x="30" y="152" font-size="12" font-weight="800" fill="#0F172A">Redis Semantic Cache &amp; Checkpoints</text>
+      <text x="30" y="170" font-size="11" font-weight="600" fill="#64748B">Lưu checkpoint LangGraph, khôi phục session chat</text>
+      <text x="30" y="185" font-size="10" font-weight="700" fill="#047857">Giảm 50% chi phí gọi LLM cho câu hỏi lặp</text>
+    </g>
+  </g>
+
+  <!-- =========================================================================
+       CONNECTORS & NUMBERED FLOW HIGHWAYS (BETWEEN STAGES)
+       ========================================================================= -->
+  <!-- Step 1 Arrow: Client -> Supervisor -->
+  <path d="M 360 410 L 410 410" fill="none" stroke="#2563EB" stroke-width="2.5"/>
+  {draw_arrow(410, 410, "right", color="#2563EB", size=14)}
+
+  <!-- Step 2 Arrow: Supervisor -> Sub-Agents -->
+  <path d="M 870 300 L 920 300" fill="none" stroke="#2563EB" stroke-width="2.5"/>
+  {draw_arrow(920, 300, "right", color="#2563EB", size=14)}
+
+  <!-- Step 4 Interrupt Line: Validation Agent -> HITL Card on Client -->
+  <path d="M 920 780 L 890 780 L 890 920 L 300 920" fill="none" stroke="#DC2626" stroke-width="2.5" stroke-dasharray="6,4"/>
+  {draw_arrow(300, 920, "left", color="#DC2626", size=16)}
+
+  <!-- Step 5 Approve Line: HITL Confirmation -> Backend Execution -->
+  <path d="M 285 700 L 370 700 L 370 1030 L 1645 1030 L 1645 420" fill="none" stroke="#16A34A" stroke-width="2.5"/>
+  {draw_arrow(1645, 420, "up", color="#16A34A", size=14)}
+
+  <!-- Step 6 Feedback Line: Backend -> Supervisor -> Client -->
+  <path d="M 1470 300 L 1400 300 L 1400 270 L 870 270" fill="none" stroke="#64748B" stroke-width="1.8" stroke-dasharray="4,4"/>
+  {draw_arrow(870, 270, "left", color="#64748B", size=12)}
+
+  <!-- Badges on connector lines -->
+  <g transform="translate(640, 910)">
+    <rect x="-85" y="-14" width="170" height="28" rx="6" fill="#FFFFFF" stroke="#DC2626" stroke-width="1.8"/>
+    <text x="0" y="5" class="mono" font-size="11" font-weight="900" fill="#DC2626" text-anchor="middle">[4. INTERRUPT_HITL]</text>
+  </g>
+
+  <g transform="translate(900, 1020)">
+    <rect x="-95" y="-14" width="190" height="28" rx="6" fill="#FFFFFF" stroke="#16A34A" stroke-width="1.8"/>
+    <text x="0" y="5" class="mono" font-size="11" font-weight="900" fill="#16A34A" text-anchor="middle">[5. CONFIRM_EXECUTE]</text>
+  </g>
+
+</svg>
+''')
+
+    svg_content = "\n".join(lines)
+    os.makedirs(os.path.dirname(OUTPUT_SVG), exist_ok=True)
+    with open(OUTPUT_SVG, "w", encoding="utf-8") as f:
+        f.write(svg_content)
+    print(f"Generated Presentation SVG: {OUTPUT_SVG}")
+
+if __name__ == "__main__":
+    build_presentation_svg()
+

@@ -222,16 +222,16 @@ def build_svg():
     <rect width="440" height="175" rx="14" fill="url(#supervisorCardGrad)" stroke="#1D4ED8" stroke-width="2" class="card-shadow"/>
     
     <!-- Top Role Badge -->
-    <rect x="20" y="14" width="230" height="22" rx="4" fill="#3B82F6"/>
-    <text x="135" y="29" font-size="10.5" font-weight="900" fill="#FFFFFF" text-anchor="middle">★ TRƯỞNG PHÒNG ĐIỀU PHỐI (CHỈ HUY)</text>
+    <rect x="20" y="14" width="280" height="22" rx="4" fill="#3B82F6"/>
+    <text x="160" y="29" font-size="10" font-weight="900" fill="#FFFFFF" text-anchor="middle">★ CHỈ HUY ĐIỀU PHỐI (GOOGLE ARCHITECTURE)</text>
 
     <!-- Gemini Sparkle Icon -->
-    <g transform="translate(385, 14)">
+    <g transform="translate(390, 14)">
       <path d="M 14 0 C 14 8 20 14 28 14 C 20 14 14 20 14 28 C 14 20 8 14 0 14 C 8 14 14 8 14 0 Z" fill="url(#geminiSparkle)"/>
     </g>
 
-    <text x="20" y="64" font-size="18" font-weight="900" fill="#FFFFFF">Supervisor Agent</text>
-    <text x="195" y="64" font-size="13" font-weight="800" fill="#93C5FD">(Gemini Flash - Free Tier)</text>
+    <text x="20" y="64" font-size="17" font-weight="900" fill="#FFFFFF">Supervisor Agent</text>
+    <text x="180" y="64" font-size="12.5" font-weight="800" fill="#93C5FD">(Gemini 2.5 Flash - Google Free)</text>
 
     <!-- 3 Core Highlight Capabilities -->
     <g transform="translate(20, 84)">
@@ -369,106 +369,106 @@ def build_svg():
   </g>
 
   <!-- =====================
-       AGENT A: KNOWLEDGE AGENT (QWEN 2.5) (x=535, y=420, w=310, h=200)
+       AGENT A: KNOWLEDGE AGENT (QWEN 2.5 32B - ALIBABA) (x=535, y=420, w=310, h=200)
        ===================== -->
   <g id="Card_KnowledgeAgent" transform="translate(535, 420)">
     <rect width="310" height="200" rx="14" fill="#F0F9FF" stroke="#38BDF8" stroke-width="2" class="card-shadow"/>
     
     <!-- Role Pill Badge -->
-    <rect x="15" y="12" width="220" height="22" rx="4" fill="#0284C7"/>
-    <text x="125" y="27" font-size="10.5" font-weight="900" fill="#FFFFFF" text-anchor="middle">📖 CHUYÊN GIA TRI THỨC &amp; RAG</text>
+    <rect x="15" y="12" width="245" height="22" rx="4" fill="#0284C7"/>
+    <text x="137" y="27" font-size="9.5" font-weight="900" fill="#FFFFFF" text-anchor="middle">📖 TRÍCH XUẤT RAG (ALIBABA ARCHITECTURE)</text>
 
     <!-- Logo icon -->
-    <g transform="translate(265, 14)">
+    <g transform="translate(275, 14)">
       <polygon points="12,2 22,8 22,20 12,26 2,20 2,8" fill="none" stroke="#0284C7" stroke-width="2"/>
       <circle cx="12" cy="14" r="3" fill="#0284C7"/>
     </g>
 
-    <text x="15" y="58" font-size="16" font-weight="900" fill="#0F172A">Knowledge Agent</text>
-    <text x="150" y="58" font-size="12" font-weight="800" fill="#0284C7">(Qwen 2.5 / Groq Free)</text>
+    <text x="15" y="58" font-size="15" font-weight="900" fill="#0F172A">Knowledge Agent</text>
+    <text x="145" y="58" font-size="11.5" font-weight="800" fill="#0284C7">(Qwen 2.5 32B / Groq LPU)</text>
 
     <!-- Distinct Function Highlights -->
     <g transform="translate(15, 78)">
       <rect width="280" height="32" rx="4" fill="#FFFFFF" stroke="#BAE6FD" stroke-width="1"/>
-      <text x="8" y="20" font-size="11" font-weight="800" fill="#0369A1">⚖️ Luật Bưu chính:</text>
-      <text x="110" y="20" font-size="10.5" font-weight="600" fill="#334155">Điều 25 (Đền bù 4x cước)</text>
+      <text x="8" y="20" font-size="10.5" font-weight="800" fill="#0369A1">🇻🇳 Tokenizer Tiếng Việt:</text>
+      <text x="135" y="20" font-size="10" font-weight="600" fill="#334155">Tiết kiệm 25% token context</text>
 
       <rect y="38" width="280" height="32" rx="4" fill="#FFFFFF" stroke="#BAE6FD" stroke-width="1"/>
-      <text x="8" y="58" font-size="11" font-weight="800" fill="#0369A1">📦 Quy chuẩn SOP:</text>
-      <text x="115" y="58" font-size="10.5" font-weight="600" fill="#334155">Bọc bubble wrap ≥ 3 lớp</text>
+      <text x="8" y="58" font-size="10.5" font-weight="800" fill="#0369A1">⚖️ Luật Bưu chính (Đ.25):</text>
+      <text x="145" y="58" font-size="10" font-weight="600" fill="#334155">Đền bù 4x cước, trích dẫn 100%</text>
 
       <rect y="76" width="280" height="32" rx="4" fill="#FFFFFF" stroke="#BAE6FD" stroke-width="1"/>
-      <text x="8" y="96" font-size="11" font-weight="800" fill="#0369A1">🔍 Vector Citations:</text>
-      <text x="122" y="96" font-size="10.5" font-weight="600" fill="#334155">Trích dẫn 100% điều khoản</text>
+      <text x="8" y="96" font-size="10.5" font-weight="800" fill="#0369A1">📦 SOP Bưu cục pgvector:</text>
+      <text x="145" y="96" font-size="10" font-weight="600" fill="#334155">Bọc bubble wrap ≥ 3 lớp chuẩn</text>
     </g>
   </g>
 
   <!-- =====================
-       AGENT B: LOGISTICS OPERATION AGENT (LLAMA 3.3 70B) (x=875, y=420, w=310, h=200)
+       AGENT B: LOGISTICS OPERATION AGENT (LLAMA 3.3 70B - META) (x=875, y=420, w=310, h=200)
        ===================== -->
   <g id="Card_OperationAgent" transform="translate(875, 420)">
     <rect width="310" height="200" rx="14" fill="#F0FDF4" stroke="#34D399" stroke-width="2" class="card-shadow"/>
     
     <!-- Role Pill Badge -->
-    <rect x="15" y="12" width="220" height="22" rx="4" fill="#059669"/>
-    <text x="125" y="27" font-size="10.5" font-weight="900" fill="#FFFFFF" text-anchor="middle">⚡ THAO TÁC NGHIỆP VỤ &amp; GỌI API</text>
+    <rect x="15" y="12" width="245" height="22" rx="4" fill="#059669"/>
+    <text x="137" y="27" font-size="9.5" font-weight="900" fill="#FFFFFF" text-anchor="middle">⚡ TOOL CALLING 70B (META ARCHITECTURE)</text>
 
     <!-- Infinity Icon -->
-    <g transform="translate(265, 14)">
+    <g transform="translate(275, 14)">
       <path d="M 4 14 C 4 8 10 8 15 14 C 20 20 26 20 26 14 C 26 8 20 8 15 14 C 10 20 4 20 4 14 Z" fill="none" stroke="#059669" stroke-width="2.5"/>
     </g>
 
-    <text x="15" y="58" font-size="16" font-weight="900" fill="#065F46">Operation Agent</text>
-    <text x="145" y="58" font-size="12" font-weight="800" fill="#059669">(Llama 3.3 70B / Groq)</text>
+    <text x="15" y="58" font-size="15" font-weight="900" fill="#065F46">Operation Agent</text>
+    <text x="145" y="58" font-size="11.5" font-weight="800" fill="#059669">(Llama 3.3 70B / Groq LPU)</text>
 
     <!-- Distinct Function Highlights -->
     <g transform="translate(15, 78)">
       <rect width="280" height="32" rx="4" fill="#FFFFFF" stroke="#BBF7D0" stroke-width="1"/>
-      <text x="8" y="20" font-size="11" font-weight="800" fill="#15803D">🚚 Tra cứu Vận đơn:</text>
-      <text x="125" y="20" font-size="10.5" font-weight="600" fill="#334155">GET :3008 (Vị trí Hub, Shipper)</text>
+      <text x="8" y="20" font-size="10.5" font-weight="800" fill="#15803D">🚚 Tra cứu Vận đơn:</text>
+      <text x="125" y="20" font-size="10" font-weight="600" fill="#334155">GET :3008 (Vị trí Hub, Shipper)</text>
 
       <rect y="38" width="280" height="32" rx="4" fill="#FFFFFF" stroke="#BBF7D0" stroke-width="1"/>
-      <text x="8" y="58" font-size="11" font-weight="800" fill="#15803D">📐 Tính cước IATA:</text>
-      <text x="122" y="58" font-size="10.5" font-weight="600" fill="#334155">Cân nặng quy đổi V/6000</text>
+      <text x="8" y="58" font-size="10.5" font-weight="800" fill="#15803D">📐 Tính cước IATA:</text>
+      <text x="122" y="58" font-size="10" font-weight="600" fill="#334155">Cân nặng quy đổi V/6000</text>
 
       <rect y="76" width="280" height="32" rx="4" fill="#FFFFFF" stroke="#BBF7D0" stroke-width="1"/>
-      <text x="8" y="96" font-size="11" font-weight="800" fill="#15803D">📝 Soạn Thảo Lệnh:</text>
-      <text x="125" y="96" font-size="10.5" font-weight="600" fill="#334155">Chuẩn bị JSON DTO (Chưa lưu)</text>
+      <text x="8" y="96" font-size="10.5" font-weight="800" fill="#15803D">📝 Soạn Thảo Lệnh:</text>
+      <text x="125" y="96" font-size="10" font-weight="600" fill="#334155">JSON DTO tương thích NestJS</text>
     </g>
   </g>
 
   <!-- =====================
-       AGENT C: VALIDATION AGENT (LLAMA 3.1 8B GUARDRAIL) (x=1215, y=420, w=310, h=200)
+       AGENT C: VALIDATION AGENT (DEEPSEEK-R1-DISTILL-70B - DEEPSEEK) (x=1215, y=420, w=310, h=200)
        ===================== -->
   <g id="Card_ValidationAgent" transform="translate(1215, 420)">
     <rect width="310" height="200" rx="14" fill="#FDF2F8" stroke="#F472B6" stroke-width="2" class="card-shadow"/>
     
     <!-- Role Pill Badge -->
-    <rect x="15" y="12" width="220" height="22" rx="4" fill="#DC2626"/>
-    <text x="125" y="27" font-size="10.5" font-weight="900" fill="#FFFFFF" text-anchor="middle">🛡️ THANH TRA AN TOÀN &amp; RỦI RO</text>
+    <rect x="15" y="12" width="255" height="22" rx="4" fill="#DC2626"/>
+    <text x="142" y="27" font-size="9" font-weight="900" fill="#FFFFFF" text-anchor="middle">🛡️ SUY LUẬN CoT &amp; HITL (DEEPSEEK ARCH)</text>
 
     <!-- Shield Icon -->
-    <g transform="translate(265, 14)">
+    <g transform="translate(280, 14)">
       <path d="M 12 2 L 22 7 L 22 15 C 22 21 12 26 12 26 C 12 26 2 21 2 15 L 2 7 Z" fill="#DC2626"/>
       <path d="M 8 13 L 11 16 L 17 10" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round"/>
     </g>
 
-    <text x="15" y="58" font-size="16" font-weight="900" fill="#831843">Validation Agent</text>
-    <text x="145" y="58" font-size="12" font-weight="800" fill="#BE185D">(Llama 3.1 8B / Free)</text>
+    <text x="15" y="58" font-size="14.5" font-weight="900" fill="#831843">Validation Agent</text>
+    <text x="135" y="58" font-size="11" font-weight="800" fill="#BE185D">(DeepSeek-R1-Distill-70B)</text>
 
     <!-- Distinct Function Highlights -->
     <g transform="translate(15, 78)">
       <rect width="280" height="32" rx="4" fill="#FFFFFF" stroke="#FECDD3" stroke-width="1"/>
-      <text x="8" y="20" font-size="11" font-weight="800" fill="#BE123C">🔒 Check Phân Quyền:</text>
-      <text x="130" y="20" font-size="10.5" font-weight="600" fill="#334155">Chặn sửa đơn người khác</text>
+      <text x="8" y="20" font-size="10" font-weight="800" fill="#BE123C">💡 Suy luận thẻ &lt;think&gt;:</text>
+      <text x="135" y="20" font-size="9.5" font-weight="600" fill="#334155">Lập luận CoT kiểm toán rủi ro</text>
 
       <rect y="38" width="280" height="32" rx="4" fill="#FFFFFF" stroke="#FECDD3" stroke-width="1"/>
-      <text x="8" y="58" font-size="11" font-weight="800" fill="#BE123C">🛑 Thẩm định Điều kiện:</text>
-      <text x="145" y="58" font-size="10.5" font-weight="600" fill="#334155">Đã xuất kho xe tải = CẤM HỦY</text>
+      <text x="8" y="58" font-size="10" font-weight="800" fill="#BE123C">🛑 Thẩm định Nghiệp vụ:</text>
+      <text x="145" y="58" font-size="9.5" font-weight="600" fill="#334155">Đã xuất kho xe tải = CẤM HỦY</text>
 
       <rect y="76" width="280" height="32" rx="4" fill="#FFFFFF" stroke="#FECDD3" stroke-width="1"/>
-      <text x="8" y="96" font-size="11" font-weight="800" fill="#BE123C">⏸️ Kích hoạt Ngắt HITL:</text>
-      <text x="140" y="96" font-size="10.5" font-weight="600" fill="#334155">Chờ khách ký duyệt trước khi ghi</text>
+      <text x="8" y="96" font-size="10" font-weight="800" fill="#BE123C">⚖️ Khử Thiên Kiến Đồng Nhất:</text>
+      <text x="160" y="96" font-size="9.5" font-weight="700" fill="#DC2626">Kiểm duyệt chéo độc lập</text>
     </g>
   </g>
 
@@ -825,16 +825,14 @@ def build_svg():
 
     <line x1="1050" y1="45" x2="1050" y2="85" stroke="#CBD5E1" stroke-width="1.2"/>
 
-    <!-- Item 4: Fallback & Self-hosted -->
+    <!-- Item 4: Heterogeneous Models -->
     <g transform="translate(1080, 48)">
       <circle cx="16" cy="16" r="14" fill="#E0F2FE"/>
-      <path d="M 8 18 C 8 14 12 11 18 11 C 24 11 26 14 26 18 Z" fill="#0284C7"/>
-      <rect x="10" y="14" width="3" height="3" fill="#FFFFFF"/>
-      <rect x="14" y="14" width="3" height="3" fill="#FFFFFF"/>
-      <rect x="18" y="14" width="3" height="3" fill="#FFFFFF"/>
+      <!-- Multi-star icon -->
+      <polygon points="16,4 19,12 28,12 21,17 24,25 16,20 8,25 11,17 4,12 13,12" fill="#0284C7"/>
 
-      <text x="40" y="14" font-size="12" font-weight="800" fill="#0F172A">Container &amp; vLLM</text>
-      <text x="40" y="28" font-size="11" font-weight="600" fill="#64748B">Docker + Qwen Local Fallback</text>
+      <text x="40" y="14" font-size="12" font-weight="800" fill="#0F172A">4 Họ AI (Heterogeneous)</text>
+      <text x="40" y="28" font-size="10.5" font-weight="700" fill="#1E40AF">Google • Alibaba • Meta • DeepSeek</text>
     </g>
 
     <line x1="1400" y1="45" x2="1400" y2="85" stroke="#CBD5E1" stroke-width="1.2"/>
