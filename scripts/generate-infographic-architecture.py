@@ -231,7 +231,7 @@ def build_svg():
     </g>
 
     <text x="20" y="64" font-size="17" font-weight="900" fill="#FFFFFF">Supervisor Agent</text>
-    <text x="180" y="64" font-size="12.5" font-weight="800" fill="#93C5FD">(Gemini 2.5 Flash - Google Free)</text>
+    <text x="180" y="64" font-size="12.5" font-weight="800" fill="#93C5FD">(Gemini 3.6 Flash - Google Free)</text>
 
     <!-- 3 Core Highlight Capabilities -->
     <g transform="translate(20, 84)">

@@ -724,10 +724,10 @@ HÃY ĐƯA RA CÂU TRẢ LỜI ĐẦY ĐỦ VÀ CHÍNH XÁC:`;
     if (this.geminiApiKey) {
       const candidateModels = Array.from(
         new Set([
-          'gemini-3.5-flash-lite',
-          'gemini-3-flash-preview',
-          'gemini-3.8-flash',
           this.geminiModel,
+          'gemini-3.6-flash',
+          'gemini-3.5-flash-lite',
+          'gemini-flash-latest',
         ].filter(Boolean))
       );
 

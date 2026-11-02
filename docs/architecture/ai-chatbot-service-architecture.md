@@ -302,7 +302,7 @@ Toàn bộ kiến trúc được trực quan hóa theo tiêu chuẩn thiết k�
                   └───────────────────────────▲────────────────────────────┘
                                               │ (OTEL Telemetry Tap)
 [1. Khách Hàng] ──> [⚡ Semantic Cache] ──> [2. Supervisor Agent] <──> [🧠 Shared Memory]
-                          │ (Hit: <15ms)         (Gemini 2.5 Flash)         │ (Sliding Window K=5
+                          │ (Hit: <15ms)         (Gemini 3.6 Flash)         │ (Sliding Window K=5
                           ▼ (0$ token)                │                     │  Token Cap ≤ 1500)
                      [Phản hồi ngay]        [🔄 Fallback Cascade]           │
                                             (Groq ➔ Gemini ➔ vLLM)          │
@@ -320,7 +320,7 @@ Nhằm triệt tiêu hoàn toàn **Thiên kiến đồng nhất (Homogeneous Bia
 
 | Tác tử & Nhãn Vai trò | Họ Mô hình AI & Tập đoàn | Hạ tầng Vận hành | Lý do Học thuật & Năng lực Cốt lõi (Model Selection Rationale) |
 | :--- | :--- | :--- | :--- |
-| **👑 Supervisor Agent**<br>`[CHỈ HUY ĐIỀU PHỐI]` | **Gemini 2.5 Flash**<br>*(Google)* | **Google AI Studio** *(Free)* | • **TTFT siêu thấp & Native Structured Outputs:** Định tuyến đồ thị DAG chuẩn xác.<br>• **Tách tải độc lập:** Giảm tải hoàn toàn cho cụm Groq bên dưới, tránh nghẽn Rate Limit.<br>• Gom dữ liệu stream SSE realtime trả về Client. |
+| **👑 Supervisor Agent**<br>`[CHỈ HUY ĐIỀU PHỐI]` | **Gemini 3.6 Flash**<br>*(Google)* | **Google AI Studio** *(Free)* | • **TTFT siêu thấp & Native Structured Outputs:** Định tuyến đồ thị DAG chuẩn xác.<br>• **Tách tải độc lập:** Giảm tải hoàn toàn cho cụm Groq bên dưới, tránh nghẽn Rate Limit.<br>• Gom dữ liệu stream SSE realtime trả về Client. |
 | **📖 Knowledge Agent**<br>`[TRÍCH XUẤT RAG]` | **Qwen 2.5 32B Instruct**<br>*(Alibaba)* | **Groq LPU Cloud** *(Free)* | • **Tokenizer tiếng Việt vượt trội:** Tiết kiệm tới **25% token context** so với model phương Tây.<br>• **Độ trung thực ngữ cảnh cao (High Faithfulness):** Trích dẫn 100% Luật Bưu chính (Điều 25) và quy chuẩn SOP đóng gói bubble wrap $\ge 3$ lớp. |
 | **⚡ Operation Agent**<br>`[TOOL CALLING]` | **Llama 3.3 70B Versatile**<br>*(Meta)* | **Groq LPU Cloud** *(Free)* | • **Model 70B chuyên trị Tool Calling:** Chọc API tra cứu vận đơn (`GET :3008`), tính cước quy đổi IATA ($V/6000$).<br>• **Tạo JSON DTO chuẩn xác:** Đóng gói payload tương thích 100% với NestJS DTO trước khi lưu. |
 | **🛡️ Validation Agent**<br>`[NeMo GUARDRAIL]` | **Llama-3.1-Nemotron-70B**<br>*(NVIDIA)* | **NVIDIA NIM Cloud** *(1,000 Credits Free)* | • **NeMo Guardrails & Reward Modeling:** Tối ưu chuyên biệt cho an toàn hệ thống, đối soát chính sách và phát hiện gian lận khiếu nại.<br>• **Khử Thiên Kiến Đồng Nhất:** Kiểm duyệt chéo độc lập đầu ra của Llama 3.3 70B; kích hoạt ngắt HITL. |

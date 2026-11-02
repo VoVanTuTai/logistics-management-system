@@ -146,7 +146,7 @@
       <circle cx="28" cy="22" r="14" fill="#FFFFFF"/>
       <text x="28" y="27" class="mono" font-size="13" font-weight="900" fill="#1D4ED8" text-anchor="middle">2</text>
       <text x="52" y="27" font-size="15" font-weight="900" fill="#FFFFFF">SUPERVISOR AGENT (Orchestrator)</text>
-      <text x="355" y="27" class="mono" font-size="10.5" font-weight="800" fill="#93C5FD">Gemini 2.5 Flash</text>
+      <text x="355" y="27" class="mono" font-size="10.5" font-weight="800" fill="#93C5FD">Gemini 3.6 Flash</text>
 
       <text x="20" y="72" font-size="13" font-weight="800" fill="#0F172A">Vai trò trung tâm (Central Intelligence):</text>
       <text x="30" y="96" font-size="12" font-weight="600" fill="#334155">1. Tiếp nhận câu hỏi &amp; Phân tích ý định (Intent Recognition)</text>
