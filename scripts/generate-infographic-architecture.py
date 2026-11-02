@@ -1,21 +1,24 @@
 #!/usr/bin/env python3
 """
 generate-infographic-architecture.py
-Ultra-Modern Production-Grade Architecture Infographic (Widescreen Canvas 2160 x 1320)
-Strictly adhering to Modern Technical Architecture Infographic Standard (AGENTS.md Section 5)
-
-Key Enhancements in this revision:
-1. Generously spaced card layout with increased breathing room (no crowded elements).
-2. Highly prominent, descriptive text labels and pill badges on all arrows and communication buses.
-3. Crystal-clear distinction of roles:
-   - LangGraph: StateGraph Orchestration, Shared State Channel, Checkpoints & HITL interrupt()
-   - LangChain: Tool Calling (@tool), Hybrid RAG Retriever, Multi-LLM BaseChatModel Adapters
-4. Heterogeneous Big 4 AI Models:
-   - Supervisor: Gemini 3.6 Flash (Google AI Studio Free)
-   - Knowledge Agent: Qwen 2.5 32B Instruct (Alibaba / Groq LPU Free)
-   - Operation Agent: Llama 3.3 70B Versatile (Meta / Groq LPU Free)
-   - Validation Agent: Llama-3.1-Nemotron-70B (NVIDIA NIM Free)
-5. 4 Production Pillars: Semantic Cache (Redis), HA Failover Cascade, Observability (OpenTelemetry), Memory Hygiene (Sliding Window K=5)
+Ultra-Modern Production-Grade Multi-Agent Architecture Infographic (Canvas 2020 x 950)
+Faithfully matches the reference architecture diagram (media_1793637964973_f8ad1ca6.jpg):
+1. Clean Left-to-Right Horizontal Pipeline:
+   - Khách hàng (Web/App) -> Redis Semantic Cache -> 4 AI Agents Container -> Decision Node (Kiểm tra rủi ro & quyền hạn) -> HITL / Backend Microservices -> Internal Logistics APIs.
+2. Central Container:
+   - Top: LangGraph - Shared State & Memory (Sliding Window, Context, Action Draft, Audit)
+   - Badge: 4 AI Agents (Tổng cộng: 4)
+   - 4 Agents Side-by-Side:
+     * Supervisor Agent (Gemini 3.6 Flash / Google Free Tier)
+     * Knowledge Agent (Qwen 2.5 32B / Groq LPU - Alibaba)
+     * Operation Agent (Llama 3.3 70B / Groq LPU - Meta)
+     * Validation Agent (Nemotron-70B / NVIDIA NIM - NVIDIA)
+   - Inter-agent coordination arrows (Supervisor -> Knowledge -> Operation <-> Validation)
+   - Bottom: Fallback Cascade (Groq LPU -> Gemini Flash -> vLLM Local)
+3. Top Right: Observability & Tracing (LangSmith, Arize Phoenix, OpenTelemetry) tapped to LangGraph.
+4. Decision Diamond & HITL Routing: "Nếu rủi ro" -> HITL, "Đạt yêu cầu" -> Backend Microservices.
+5. Bottom Row: Database & Knowledge Ingestion, Vector DB, Safe Execution, and Final Result with Return Loop to Customer.
+6. Bottom Footer Bar: Infrastructure & Technology stack with Big Four logos.
 """
 
 import os
@@ -24,7 +27,7 @@ import xml.etree.ElementTree as ET
 
 OUTPUT_SVG = "docs/graduation-thesis/diagrams/architecture/04-multi-agent-infographic-architecture.svg"
 
-def draw_arrow(x, y, direction="right", color="#1D4ED8", size=14):
+def draw_arrow(x, y, direction="right", color="#0052CC", size=12):
     if direction == "right":
         points = f"{x},{y} {x-size},{y-size*0.48:.1f} {x-size},{y+size*0.48:.1f}"
     elif direction == "left":
@@ -36,55 +39,31 @@ def draw_arrow(x, y, direction="right", color="#1D4ED8", size=14):
     return f'<polygon points="{points}" fill="{color}"/>'
 
 def build_svg():
-    W = 2160
-    H = 1320
+    W = 2020
+    H = 950
     lines = []
 
     lines.append(f'''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {W} {H}" width="{W}" height="{H}">
   <defs>
     <style>
-      @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800;900&amp;family=JetBrains+Mono:wght@700;800;900&amp;display=swap');
+      @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800;900&amp;family=JetBrains+Mono:wght@700;800&amp;display=swap');
       * {{ box-sizing: border-box; }}
       text {{ font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif; }}
       .mono {{ font-family: 'JetBrains Mono', monospace; }}
-      .card-shadow {{ filter: drop-shadow(0 6px 20px rgba(15, 23, 42, 0.08)); }}
-      .subtle-shadow {{ filter: drop-shadow(0 3px 10px rgba(0, 0, 0, 0.06)); }}
-      .glow-green {{ filter: drop-shadow(0 0 10px rgba(16, 185, 129, 0.35)); }}
-      .glow-indigo {{ filter: drop-shadow(0 0 12px rgba(99, 102, 241, 0.28)); }}
+      .card-shadow {{ filter: drop-shadow(0 4px 14px rgba(15, 23, 42, 0.06)); }}
+      .subtle-shadow {{ filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.05)); }}
     </style>
 
-    <!-- Gradients -->
+    <!-- Top Pill Gradient -->
     <linearGradient id="topPillGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#1D4ED8"/>
-      <stop offset="100%" stop-color="#1E40AF"/>
+      <stop offset="0%" stop-color="#0F4C81"/>
+      <stop offset="100%" stop-color="#1B365D"/>
     </linearGradient>
 
-    <linearGradient id="supervisorCardGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#1E40AF"/>
+    <!-- Supervisor Gradient -->
+    <linearGradient id="supervisorGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1E3A8A"/>
       <stop offset="100%" stop-color="#0F172A"/>
-    </linearGradient>
-
-    <linearGradient id="cacheGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#F0FDF4"/>
-      <stop offset="100%" stop-color="#DCFCE7"/>
-    </linearGradient>
-
-    <linearGradient id="obsGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#FAF5FF"/>
-      <stop offset="100%" stop-color="#F3E8FF"/>
-    </linearGradient>
-
-    <linearGradient id="langgraphHeaderGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#312E81"/>
-      <stop offset="50%" stop-color="#4338CA"/>
-      <stop offset="100%" stop-color="#1E1B4B"/>
-    </linearGradient>
-
-    <!-- Gemini Sparkle Gradient -->
-    <linearGradient id="geminiSparkle" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#93C5FD"/>
-      <stop offset="50%" stop-color="#F472B6"/>
-      <stop offset="100%" stop-color="#FBBF24"/>
     </linearGradient>
   </defs>
 
@@ -92,915 +71,703 @@ def build_svg():
   <rect width="{W}" height="{H}" fill="#FFFFFF"/>
 
   <!-- =========================================================================
-       1. TOP HEADER BANNER (PILL WITH DELIVERY TRUCK ICON)
+       1. TOP HEADER BANNER
        ========================================================================= -->
-  <g id="Header_Banner" transform="translate({W//2}, 45)">
-    <rect x="-530" y="-23" width="1060" height="46" rx="23" fill="url(#topPillGrad)" class="card-shadow"/>
+  <g id="Header_Banner" transform="translate({W//2}, 38)">
+    <rect x="-490" y="-22" width="980" height="44" rx="22" fill="url(#topPillGrad)" class="card-shadow"/>
     
     <!-- White Delivery Truck Icon -->
-    <g transform="translate(-490, -11)">
+    <g transform="translate(-460, -11)">
       <path d="M 0 5 L 14 5 L 18 10 L 25 10 L 25 17 L 0 17 Z" fill="#FFFFFF"/>
       <rect x="0" y="2" width="13" height="15" fill="#FFFFFF" rx="1"/>
-      <circle cx="6" cy="18" r="3" fill="#1E40AF" stroke="#FFFFFF" stroke-width="1.8"/>
-      <circle cx="19" cy="18" r="3" fill="#1E40AF" stroke="#FFFFFF" stroke-width="1.8"/>
+      <circle cx="6" cy="18" r="3" fill="#1E3A8A" stroke="#FFFFFF" stroke-width="1.8"/>
+      <circle cx="19" cy="18" r="3" fill="#1E3A8A" stroke="#FFFFFF" stroke-width="1.8"/>
+      <line x1="30" y1="0" x2="30" y2="20" stroke="#93C5FD" stroke-width="1.5"/>
     </g>
 
-    <text x="-445" y="8" font-size="20" font-weight="900" fill="#FFFFFF" letter-spacing="-0.01em">
-      Multi-Agent Logistics Architecture – Phiên Bản Vận Hành Doanh Nghiệp (Production-Grade)
+    <text x="-415" y="7" font-size="18.5" font-weight="900" fill="#FFFFFF" letter-spacing="-0.01em">
+      Multi-Agent Logistics Architecture – Phiên bản vận hành doanh nghiệp (Production-Grade)
     </text>
 
     <!-- Subtitle below pill -->
-    <text x="0" y="46" font-size="14" font-weight="700" fill="#475569" text-anchor="middle" font-style="italic">
-      Phối hợp LangGraph (StateGraph Điều Phối) + LangChain (Công Cụ &amp; RAG) với 4 Họ AI Big 4 (Google, Alibaba, Meta, NVIDIA)
+    <text x="0" y="44" font-size="13.5" font-weight="700" fill="#0F172A" text-anchor="middle" font-style="italic">
+      Mô hình vận hành thông minh – Xử lý khiếu nại nhanh chóng – Chính xác – An toàn
     </text>
   </g>
 
-  <!-- =========================================================================
-       OVERHEAD ROOFTOP HIGHWAY FOR ROUTE ⑤ (y=96) - ZERO COLLISION HIGHWAY
-       ========================================================================= -->
-  <path d="M 1260 730 L 1260 96 L 775 96 L 775 160" fill="none" stroke="#1D4ED8" stroke-width="3" stroke-dasharray="8,5"/>
-  {draw_arrow(775, 160, "down", color="#1D4ED8", size=12)}
-
-  <!-- Number Badge ⑤ Protected Pill on Rooftop Highway -->
-  <g transform="translate(1015, 96)">
-    <rect x="-240" y="-16" width="480" height="32" rx="16" fill="#FFFFFF" stroke="#1D4ED8" stroke-width="2" class="subtle-shadow"/>
-    <circle cx="-218" cy="0" r="11" fill="#1D4ED8"/>
-    <text x="-218" y="4" font-size="12" font-weight="900" fill="#FFFFFF" text-anchor="middle">5</text>
-    <text x="12" y="4" font-size="11.5" font-weight="800" fill="#1D4ED8" text-anchor="middle">
-      ⑤ Cập nhật DB &amp; Ghi Audit Log thành công ➔ Báo cáo về Supervisor Agent
-    </text>
-  </g>
+  <!-- Divider Line below header -->
+  <line x1="160" y1="92" x2="1860" y2="92" stroke="#E2E8F0" stroke-width="1.2"/>
 
   <!-- =========================================================================
-       2. LEFT COLUMN: KHÁCH HÀNG (WEB/APP) (x=45, y=160, w=165)
+       2. COLUMN 1: KHÁCH HÀNG (WEB / MOBILE APP)
        ========================================================================= -->
-  <g id="Col_Customer" transform="translate(45, 160)">
+  <g id="Col_Customer" transform="translate(20, 135)">
     <!-- Speech bubble -->
-    <rect x="0" y="0" width="165" height="78" rx="10" fill="#EFF6FF" stroke="#93C5FD" stroke-width="1.8"/>
-    <polygon points="20,78 35,78 25,90" fill="#EFF6FF" stroke="#93C5FD" stroke-width="1.8"/>
-    <rect x="18" y="76" width="20" height="4" fill="#EFF6FF"/>
-    
-    <circle cx="25" cy="20" r="2.5" fill="#3B82F6"/>
-    <circle cx="35" cy="20" r="2.5" fill="#3B82F6"/>
-    <circle cx="45" cy="20" r="2.5" fill="#3B82F6"/>
+    <rect x="0" y="0" width="145" height="58" rx="20" fill="#EFF6FF" stroke="#93C5FD" stroke-width="1.5"/>
+    <polygon points="40,58 55,58 45,68" fill="#EFF6FF" stroke="#93C5FD" stroke-width="1.5"/>
+    <rect x="38" y="56" width="20" height="4" fill="#EFF6FF"/>
+    <text x="72" y="34" font-size="12" font-weight="800" fill="#1E40AF" text-anchor="middle">“Hủy vận đơn NX001”</text>
 
-    <text x="25" y="42" font-size="12.5" font-weight="800" fill="#1E40AF">"Hủy vận đơn</text>
-    <text x="25" y="62" font-size="12.5" font-weight="800" fill="#1E40AF">NX001"</text>
+    <!-- User Avatar & Container -->
+    <g transform="translate(0, 90)">
+      <rect x="0" y="0" width="145" height="155" rx="14" fill="#F8FAFC" stroke="#E2E8F0" stroke-width="1.5" class="card-shadow"/>
+      
+      <!-- Avatar character -->
+      <circle cx="72" cy="50" r="24" fill="#FDBA74"/>
+      <path d="M 50 45 C 50 28 62 22 84 22 C 95 22 98 29 98 36 C 92 31 79 31 70 38 Z" fill="#1E293B"/>
+      <path d="M 46 92 C 46 74 60 70 72 70 C 85 70 99 74 99 92 Z" fill="#3B82F6"/>
+      <rect x="85" y="65" width="14" height="24" rx="2" fill="#1E293B"/>
+      <rect x="87" y="67" width="10" height="18" rx="1" fill="#93C5FD"/>
 
-    <!-- User Illustration Container -->
-    <rect x="0" y="100" width="165" height="160" rx="16" fill="#F0F7FF" stroke="#BFDBFE" stroke-width="2" class="subtle-shadow"/>
-    
-    <!-- Stylized Flat Character -->
-    <circle cx="82" cy="145" r="25" fill="#FDBA74"/>
-    <path d="M 58 140 C 58 122 71 116 94 116 C 105 116 108 123 108 130 C 102 125 89 125 80 132 Z" fill="#1E293B"/>
-    <path d="M 54 188 C 54 170 69 165 82 165 C 95 165 110 170 110 188 Z" fill="#3B82F6"/>
-    <rect x="93" y="160" width="16" height="28" rx="3" fill="#1E293B"/>
-    <rect x="95" y="162" width="12" height="22" rx="2" fill="#93C5FD"/>
-
-    <text x="82" y="222" font-size="15" font-weight="900" fill="#0F172A" text-anchor="middle">Khách hàng</text>
-    <text x="82" y="242" font-size="12" font-weight="700" fill="#64748B" text-anchor="middle">(Web / Mobile App)</text>
+      <text x="72" y="118" font-size="14" font-weight="900" fill="#0F172A" text-anchor="middle">Khách hàng</text>
+      <text x="72" y="136" font-size="11" font-weight="600" fill="#64748B" text-anchor="middle">(Web / Mobile App)</text>
+    </g>
   </g>
+
+  <!-- Arrow: Customer -> Redis Semantic Cache -->
+  <line x1="165" y1="302" x2="205" y2="302" stroke="#0052CC" stroke-width="2.5"/>
+  {draw_arrow(205, 302, "right", color="#0052CC", size=10)}
 
   <!-- =========================================================================
-       EVOLUTION 1: SEMANTIC CACHING GATEWAY (REDIS VECTOR) (x=245, y=150, w=245, h=200)
+       3. COLUMN 2: REDIS SEMANTIC CACHE (x=205, y=200, w=185, h=225)
        ========================================================================= -->
-  <g id="Card_SemanticCache" transform="translate(245, 150)">
-    <rect width="245" height="200" rx="14" fill="url(#cacheGrad)" stroke="#10B981" stroke-width="2" class="card-shadow"/>
+  <g id="Card_SemanticCache" transform="translate(205, 200)">
+    <rect width="185" height="225" rx="14" fill="#E6F9F0" stroke="#34D399" stroke-width="1.8" class="card-shadow"/>
     
-    <!-- Top Pill Badge -->
-    <rect x="12" y="10" width="221" height="24" rx="4" fill="#059669"/>
-    <text x="122" y="26" font-size="10.5" font-weight="900" fill="#FFFFFF" text-anchor="middle">⚡ SEMANTIC CACHE GATEWAY</text>
-
-    <!-- Bolt Icon -->
-    <g transform="translate(208, 12)">
-      <polygon points="12,2 5,14 11,14 9,22 17,10 11,10" fill="#FBBF24"/>
+    <!-- Header with Bolt Icon -->
+    <g transform="translate(14, 20)">
+      <polygon points="12,2 5,14 11,14 9,22 17,10 11,10" fill="#059669"/>
+      <text x="24" y="15" font-size="14.5" font-weight="900" fill="#065F46">Redis</text>
+      <text x="24" y="32" font-size="13.5" font-weight="800" fill="#065F46">Semantic Cache</text>
     </g>
 
-    <text x="12" y="58" font-size="15.5" font-weight="900" fill="#065F46">Redis Vector Cache</text>
-    <text x="12" y="76" font-size="11.5" font-weight="700" fill="#047857">(Cosine Similarity ≥ 0.95)</text>
+    <text x="14" y="88" font-size="12" font-weight="700" fill="#047857">Cosine Similarity</text>
+    <line x1="14" y1="100" x2="171" y2="100" stroke="#A7F3D0" stroke-width="1"/>
 
-    <!-- 3 Metrics Boxes with expanded spacing -->
-    <g transform="translate(12, 88)">
-      <rect width="221" height="30" rx="4" fill="#FFFFFF" stroke="#A7F3D0" stroke-width="1"/>
-      <text x="8" y="19" font-size="11" font-weight="800" fill="#047857">🚀 Trả về ngay:</text>
-      <text x="100" y="19" font-size="11" font-weight="900" fill="#059669">&lt; 15ms (0$ LLM)</text>
+    <!-- Bullets -->
+    <g transform="translate(14, 120)">
+      <circle cx="8" cy="8" r="8" fill="#10B981"/>
+      <path d="M 5 8 L 7 10 L 11 6" fill="none" stroke="#FFFFFF" stroke-width="1.8"/>
+      <text x="22" y="7" font-size="11" font-weight="800" fill="#065F46">Cache hit:</text>
+      <text x="22" y="21" font-size="10.5" font-weight="600" fill="#047857">trả kết quả nhanh</text>
 
-      <rect y="36" width="221" height="30" rx="4" fill="#FFFFFF" stroke="#A7F3D0" stroke-width="1"/>
-      <text x="8" y="55" font-size="11" font-weight="800" fill="#047857">📉 Tiết kiệm Token:</text>
-      <text x="120" y="55" font-size="11" font-weight="900" fill="#059669">Giảm 60% chi phí</text>
-
-      <rect y="72" width="221" height="30" rx="4" fill="#FFFFFF" stroke="#A7F3D0" stroke-width="1"/>
-      <text x="8" y="91" font-size="11" font-weight="800" fill="#047857">❓ Cache Miss:</text>
-      <text x="105" y="91" font-size="10.5" font-weight="700" fill="#1D4ED8">Chuyển Supervisor</text>
+      <circle cx="8" cy="50" r="8" fill="#10B981"/>
+      <path d="M 5 50 L 7 52 L 11 48" fill="none" stroke="#FFFFFF" stroke-width="1.8"/>
+      <text x="22" y="49" font-size="11" font-weight="800" fill="#065F46">Cache miss:</text>
+      <text x="22" y="63" font-size="10.5" font-weight="600" fill="#047857">chuyển Supervisor</text>
     </g>
   </g>
 
-  <!-- Number Badge ① on connecting highway line -->
-  <line x1="210" y1="242" x2="245" y2="242" stroke="#1D4ED8" stroke-width="3"/>
-  {draw_arrow(245, 242, "right", color="#1D4ED8", size=12)}
-  <g transform="translate(227, 226)">
-    <circle cx="0" cy="0" r="12" fill="#1D4ED8" stroke="#FFFFFF" stroke-width="2"/>
-    <text x="0" y="4" font-size="12" font-weight="900" fill="#FFFFFF" text-anchor="middle">1</text>
-  </g>
-
-  <!-- Arrow: Cache Hit -> Back to Customer (Direct Return) -->
-  <path d="M 330 350 L 330 380 L 125 380 L 125 330" fill="none" stroke="#10B981" stroke-width="2.8" stroke-dasharray="6,4"/>
-  {draw_arrow(125, 330, "up", color="#10B981", size=11)}
-  <g transform="translate(225, 380)">
-    <rect x="-85" y="-12" width="170" height="24" rx="6" fill="#ECFDF5" stroke="#10B981" stroke-width="1.2" class="subtle-shadow"/>
-    <text x="0" y="4" font-size="10" font-weight="900" fill="#047857" text-anchor="middle">
-      ⚡ CACHE HIT: &lt;15ms (0$ LLM)
-    </text>
-  </g>
-
-  <!-- Arrow: Cache Miss -> Supervisor with clear prominent label -->
-  <line x1="490" y1="242" x2="540" y2="242" stroke="#1D4ED8" stroke-width="3"/>
-  {draw_arrow(540, 242, "right", color="#1D4ED8", size=13)}
-  <g transform="translate(515, 226)">
-    <rect x="-42" y="-11" width="84" height="22" rx="4" fill="#EFF6FF" stroke="#1D4ED8" stroke-width="1.2" class="subtle-shadow"/>
-    <text x="0" y="4" font-size="10" font-weight="900" fill="#1D4ED8" text-anchor="middle">
-      MISS ➔ DAG
-    </text>
-  </g>
+  <!-- Arrow: Semantic Cache -> 4 AI Agents Container -->
+  <line x1="390" y1="302" x2="430" y2="302" stroke="#0052CC" stroke-width="2.5"/>
+  {draw_arrow(430, 302, "right", color="#0052CC", size=10)}
 
   <!-- =========================================================================
-       3. CENTRAL CORE: LANGGRAPH MULTI-AGENT STATEGRAPH RUNTIME CONTAINER
-       (x=530, y=120, w=1060, h=590) - GENEROUS BREATHING SPACE
+       4. CENTRAL CONTAINER: 4 AI AGENTS (x=430, y=105, w=945, h=510)
        ========================================================================= -->
-  <rect x="530" y="120" width="1060" height="590" rx="20" fill="#F8FAFF" stroke="#6366F1" stroke-width="2.2" stroke-dasharray="8,5" class="glow-indigo"/>
+  <rect x="430" y="105" width="945" height="510" rx="16" fill="#FFFFFF" stroke="#3B82F6" stroke-width="1.8" stroke-dasharray="6,4" class="card-shadow"/>
 
-  <!-- PROMINENT LANGGRAPH BANNER HEADER -->
-  <g transform="translate(1060, 120)">
-    <rect x="-410" y="-22" width="820" height="44" rx="22" fill="url(#langgraphHeaderGrad)" stroke="#818CF8" stroke-width="2" class="card-shadow"/>
+  <!-- TOP BAR: LangGraph - Shared State & Memory (x=450, y=120, w=905, h=62) -->
+  <g id="Bar_SharedMemory" transform="translate(450, 120)">
+    <rect width="905" height="62" rx="10" fill="#EBF5FF" stroke="#93C5FD" stroke-width="1.5"/>
     
-    <!-- LangGraph Node Graph Connected Icon -->
-    <g transform="translate(-375, -9)">
-      <circle cx="5" cy="5" r="4" fill="#38BDF8"/>
-      <circle cx="21" cy="5" r="4" fill="#38BDF8"/>
-      <circle cx="13" cy="18" r="4" fill="#38BDF8"/>
-      <line x1="5" y1="5" x2="21" y2="5" stroke="#FFFFFF" stroke-width="2"/>
-      <line x1="5" y1="5" x2="13" y2="18" stroke="#FFFFFF" stroke-width="2"/>
-      <line x1="21" y1="5" x2="13" y2="18" stroke="#FFFFFF" stroke-width="2"/>
-    </g>
-
-    <text x="-335" y="7" font-size="15" font-weight="900" fill="#FFFFFF" letter-spacing="0.02em">
-      🌐 LANGGRAPH STATEGRAPH RUNTIME ENGINE
-    </text>
-    <text x="-35" y="7" font-size="14" font-weight="400" fill="#A5B4FC">|</text>
-    <text x="-20" y="7" font-size="12.5" font-weight="700" fill="#E0E7FF">
-      StateGraph DAG • Tuần Hoàn Tuple Trạng Thái • Checkpoint &amp; Ngắt HITL
-    </text>
-  </g>
-
-  <!-- =========================================================================
-       SUPERVISOR AGENT CARD (x=550, y=160, w=455, h=190)
-       ========================================================================= -->
-  <g id="Card_Supervisor" transform="translate(550, 160)">
-    <rect width="455" height="190" rx="14" fill="url(#supervisorCardGrad)" stroke="#1D4ED8" stroke-width="2" class="card-shadow"/>
-    
-    <!-- Top Role Badge -->
-    <rect x="18" y="12" width="285" height="24" rx="4" fill="#3B82F6"/>
-    <text x="160" y="28" font-size="10.5" font-weight="900" fill="#FFFFFF" text-anchor="middle">★ CHỈ HUY ĐIỀU PHỐI (GOOGLE ARCHITECTURE)</text>
-
-    <!-- Gemini Sparkle Icon -->
-    <g transform="translate(405, 12)">
-      <path d="M 14 0 C 14 8 20 14 28 14 C 20 14 14 20 14 28 C 14 20 8 14 0 14 C 8 14 14 8 14 0 Z" fill="url(#geminiSparkle)"/>
-    </g>
-
-    <text x="18" y="65" font-size="17.5" font-weight="900" fill="#FFFFFF">Supervisor Agent</text>
-    <text x="185" y="65" font-size="13" font-weight="800" fill="#93C5FD">(Gemini 3.6 Flash - Google Free)</text>
-
-    <!-- LangChain Integration Pill inside Supervisor -->
-    <g transform="translate(18, 77)">
-      <rect width="230" height="20" rx="4" fill="#1E293B" stroke="#60A5FA" stroke-width="1"/>
-      <text x="10" y="14" font-size="9.5" font-weight="800" fill="#93C5FD">🦜 LangChain Multi-LLM Adapter</text>
-    </g>
-
-    <!-- 3 Core Highlight Capabilities -->
-    <g transform="translate(18, 106)">
-      <text x="0" y="12" font-size="12" font-weight="700" fill="#67E8F9">• Phân tích Intent:</text>
-      <text x="115" y="12" font-size="11.5" font-weight="500" fill="#E2E8F0">FAQ, tra cứu cước hay yêu cầu hủy đơn</text>
-
-      <text x="0" y="32" font-size="12" font-weight="700" fill="#67E8F9">• Lập kế hoạch DAG:</text>
-      <text x="128" y="32" font-size="11.5" font-weight="500" fill="#E2E8F0">Chia việc cho Sub-agents theo StateGraph</text>
-
-      <text x="0" y="52" font-size="12" font-weight="700" fill="#67E8F9">• Tổng hợp SSE Stream:</text>
-      <text x="150" y="52" font-size="11.5" font-weight="500" fill="#E2E8F0">Gom dữ liệu trả về realtime cho Client</text>
-
-      <text x="0" y="72" font-size="11" font-weight="700" fill="#FBBF24">⚡ Tích hợp Fallback Cascade: Groq ➔ Gemini ➔ vLLM</text>
-    </g>
-  </g>
-
-  <!-- =========================================================================
-       EVOLUTION 4: CONTEXT MEMORY WITH PROGRESSIVE SUMMARIZER (x=1035, y=160, w=535, h=190)
-       ========================================================================= -->
-  <g id="Card_ContextMemory" transform="translate(1035, 160)">
-    <rect width="535" height="190" rx="14" fill="#FFFFFF" stroke="#6366F1" stroke-width="2" class="card-shadow"/>
-    
-    <!-- Top Role Badge -->
-    <rect x="18" y="12" width="265" height="24" rx="4" fill="#EEF2FF" stroke="#A5B4FC" stroke-width="1"/>
-    <text x="150" y="28" font-size="11" font-weight="900" fill="#4338CA" text-anchor="middle">🧠 LANGGRAPH STATE TUPLE (SHARED STATE)</text>
-
-    <!-- Blue Database Cylinder Icon -->
-    <g transform="translate(485, 12)">
-      <ellipse cx="14" cy="8" rx="14" ry="5" fill="#4F46E5"/>
-      <path d="M 0 8 L 0 24 C 0 28 6 31 14 31 C 22 31 28 28 28 24 L 28 8 Z" fill="#818CF8" opacity="0.8"/>
+    <!-- Database Cylinder Icon -->
+    <g transform="translate(18, 12)">
+      <ellipse cx="14" cy="8" rx="14" ry="5" fill="#1E40AF"/>
+      <path d="M 0 8 L 0 24 C 0 28 6 31 14 31 C 22 31 28 28 28 24 L 28 8 Z" fill="#3B82F6" opacity="0.85"/>
       <ellipse cx="14" cy="16" rx="14" ry="4.5" fill="none" stroke="#FFFFFF" stroke-width="1"/>
       <ellipse cx="14" cy="24" rx="14" ry="4.5" fill="none" stroke="#FFFFFF" stroke-width="1"/>
     </g>
 
-    <text x="18" y="65" font-size="16.5" font-weight="900" fill="#0F172A">Context &amp; Shared State</text>
-    <text x="225" y="65" font-size="12.5" font-weight="700" fill="#4F46E5">(Central State Channel)</text>
+    <text x="60" y="28" font-size="14.5" font-weight="900" fill="#1E3A8A">LangGraph – Shared State &amp; Memory</text>
+    <text x="60" y="47" font-size="11.5" font-weight="700" fill="#3B82F6">Sliding Window • User Context &amp; Role • Action Draft &amp; Audit Trace</text>
+  </g>
 
-    <!-- Progressive Memory Hygiene Block (Evolution Highlight) -->
-    <g transform="translate(18, 82)">
-      <rect width="498" height="44" rx="6" fill="#EEF2FF" stroke="#818CF8" stroke-width="1.2"/>
-      <text x="10" y="18" font-size="11.5" font-weight="800" fill="#3730A3">🗜️ Cơ Chế Kiểm Soát Bộ Nhớ (Progressive Memory Hygiene):</text>
-      <text x="10" y="36" font-size="10.5" font-weight="600" fill="#334155">• Sliding Window: Giữ nguyên văn K=5 lượt gần nhất | Tóm tắt nền (Cap ≤ 1500 tokens)</text>
+  <!-- Central Title Pill: 4 AI Agents (Tổng cộng: 4) -->
+  <g transform="translate(902, 192)">
+    <rect x="-140" y="-14" width="280" height="28" rx="14" fill="#0F4C81"/>
+    <text x="0" y="5" font-size="12.5" font-weight="900" fill="#FFFFFF" text-anchor="middle">4 AI Agents (Tổng cộng: 4)</text>
+  </g>
 
-      <rect y="50" width="240" height="28" rx="4" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="1"/>
-      <text x="10" y="68" font-size="11" font-weight="700" fill="#0F172A">👤 messages &amp; userContext</text>
+  <!-- =========================================================================
+       THE 4 AGENTS SIDE-BY-SIDE (y=218, h=285, w=210 each, gap=18px)
+       Card 1: x=455
+       Card 2: x=683
+       Card 3: x=911
+       Card 4: x=1139
+       ========================================================================= -->
 
-      <rect x="255" y="50" width="243" height="28" rx="4" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="1"/>
-      <text x="265" y="68" font-size="11" font-weight="700" fill="#0F172A">⏳ actionDraft &amp; hitlStatus</text>
+  <!-- AGENT 1: SUPERVISOR AGENT (x=455, y=218, w=210, h=285) -->
+  <g id="Agent_Supervisor" transform="translate(455, 218)">
+    <rect width="210" height="285" rx="12" fill="url(#supervisorGrad)" stroke="#1D4ED8" stroke-width="1.8" class="card-shadow"/>
+    
+    <!-- Title & Model -->
+    <text x="105" y="28" font-size="14.5" font-weight="900" fill="#FFFFFF" text-anchor="middle">Supervisor Agent</text>
+    <text x="105" y="46" font-size="11" font-weight="700" fill="#93C5FD" text-anchor="middle">Gemini 3.6 Flash / Google Free Tier</text>
+
+    <!-- DAG Branching Tree Icon -->
+    <g transform="translate(105, 85)">
+      <!-- Top node -->
+      <rect x="-14" y="-22" width="28" height="14" rx="3" fill="#60A5FA"/>
+      <!-- Connecting lines -->
+      <line x1="0" y1="-8" x2="0" y2="4" stroke="#93C5FD" stroke-width="1.5"/>
+      <line x1="-30" y1="4" x2="30" y2="4" stroke="#93C5FD" stroke-width="1.5"/>
+      <line x1="-30" y1="4" x2="-30" y2="16" stroke="#93C5FD" stroke-width="1.5"/>
+      <line x1="0" y1="4" x2="0" y2="16" stroke="#93C5FD" stroke-width="1.5"/>
+      <line x1="30" y1="4" x2="30" y2="16" stroke="#93C5FD" stroke-width="1.5"/>
+      <!-- 3 bottom nodes -->
+      <rect x="-42" y="16" width="24" height="12" rx="2" fill="#93C5FD"/>
+      <rect x="-12" y="16" width="24" height="12" rx="2" fill="#93C5FD"/>
+      <rect x="18" y="16" width="24" height="12" rx="2" fill="#93C5FD"/>
+    </g>
+
+    <!-- Divider -->
+    <line x1="15" y1="130" x2="195" y2="130" stroke="#334155" stroke-width="1"/>
+
+    <!-- Bullets -->
+    <g transform="translate(14, 148)">
+      <circle cx="5" cy="6" r="3" fill="#60A5FA"/>
+      <text x="14" y="9" font-size="10.5" font-weight="700" fill="#E2E8F0">Phân tích intent;</text>
+      <text x="14" y="24" font-size="10.5" font-weight="600" fill="#CBD5E1">lập kế hoạch DAG;</text>
+
+      <circle cx="5" cy="45" r="3" fill="#60A5FA"/>
+      <text x="14" y="48" font-size="10.5" font-weight="700" fill="#E2E8F0">tổng hợp kết quả;</text>
+      <text x="14" y="63" font-size="10.5" font-weight="600" fill="#CBD5E1">điều phối 3 agents;</text>
+
+      <circle cx="5" cy="84" r="3" fill="#60A5FA"/>
+      <text x="14" y="87" font-size="10.5" font-weight="700" fill="#E2E8F0">kích hoạt fallback</text>
+      <text x="14" y="102" font-size="10.5" font-weight="600" fill="#CBD5E1">khi lỗi.</text>
     </g>
   </g>
 
-  <!-- Horizontal connector: Supervisor <-> Context & Memory -->
-  <line x1="1005" y1="245" x2="1035" y2="245" stroke="#4F46E5" stroke-width="2.5"/>
-  {draw_arrow(1035, 245, "right", color="#4F46E5", size=9)}
-  {draw_arrow(1005, 245, "left", color="#4F46E5", size=9)}
+  <!-- Arrow between Supervisor and Knowledge -->
+  <line x1="665" y1="350" x2="683" y2="350" stroke="#0284C7" stroke-width="2.2"/>
+  {draw_arrow(683, 350, "right", color="#0284C7", size=7)}
 
-  <!-- =========================================================================
-       ARROW ②: DISTRIBUTION HIGHWAY BUS FROM SUPERVISOR DOWN TO 3 SUB-AGENTS
-       Positioned at y=390 with plenty of breathing space and clear branch labels!
-       ========================================================================= -->
-  <line x1="775" y1="350" x2="775" y2="390" stroke="#1D4ED8" stroke-width="3"/>
-  <line x1="710" y1="390" x2="1430" y2="390" stroke="#1D4ED8" stroke-width="3"/>
-  
-  <!-- Branch 1 into Knowledge Agent -->
-  <line x1="710" y1="390" x2="710" y2="430" stroke="#1D4ED8" stroke-width="3"/>
-  {draw_arrow(710, 430, "down", color="#1D4ED8", size=13)}
+  <!-- AGENT 2: KNOWLEDGE AGENT (x=683, y=218, w=210, h=285) -->
+  <g id="Agent_Knowledge" transform="translate(683, 218)">
+    <rect width="210" height="285" rx="12" fill="#EBF5FF" stroke="#38BDF8" stroke-width="1.8" class="card-shadow"/>
+    
+    <!-- Alibaba Logo 'e' -->
+    <g transform="translate(105, 22)">
+      <circle cx="0" cy="0" r="10" fill="#EA580C"/>
+      <text x="0" y="4" font-size="11" font-weight="900" fill="#FFFFFF" text-anchor="middle">e</text>
+    </g>
 
-  <!-- Branch 2 into Operation Agent -->
-  <line x1="1070" y1="390" x2="1070" y2="430" stroke="#1D4ED8" stroke-width="3"/>
-  {draw_arrow(1070, 430, "down", color="#1D4ED8", size=13)}
+    <!-- Title & Model -->
+    <text x="105" y="48" font-size="14.5" font-weight="900" fill="#0F172A" text-anchor="middle">Knowledge Agent</text>
+    <text x="105" y="65" font-size="11" font-weight="800" fill="#0284C7" text-anchor="middle">Qwen 2.5 32B / Groq LPU</text>
 
-  <!-- Branch 3 into Validation Agent -->
-  <line x1="1430" y1="390" x2="1430" y2="430" stroke="#1D4ED8" stroke-width="3"/>
-  {draw_arrow(1430, 430, "down", color="#1D4ED8", size=13)}
+    <!-- Open Book Icon -->
+    <g transform="translate(105, 95)">
+      <path d="M -18 10 C -10 6 0 6 0 16 C 0 6 10 6 18 10 L 18 -10 C 10 -14 0 -14 0 -4 C 0 -14 -10 -14 -18 -10 Z" fill="#0284C7" opacity="0.85"/>
+      <path d="M 0 -4 L 0 16" stroke="#FFFFFF" stroke-width="1.5"/>
+    </g>
 
-  <!-- Central Badge ② with highly clear, descriptive pill label -->
-  <g transform="translate(1070, 390)">
-    <rect x="-240" y="-15" width="480" height="30" rx="15" fill="#FFFFFF" stroke="#1D4ED8" stroke-width="2" class="subtle-shadow"/>
-    <circle cx="-218" cy="0" r="11" fill="#1D4ED8"/>
-    <text x="-218" y="4" font-size="12" font-weight="900" fill="#FFFFFF" text-anchor="middle">2</text>
-    <text x="12" y="4" font-size="11.5" font-weight="800" fill="#1D4ED8" text-anchor="middle">
-      ② StateGraph Router: Phân chia tác vụ chuyên môn cho 3 Sub-Agents
+    <!-- Divider -->
+    <line x1="15" y1="130" x2="195" y2="130" stroke="#BAE6FD" stroke-width="1"/>
+
+    <!-- Bullets -->
+    <g transform="translate(14, 148)">
+      <circle cx="5" cy="6" r="3" fill="#0284C7"/>
+      <text x="14" y="9" font-size="10.5" font-weight="800" fill="#0369A1">RAG truy xuất SOP</text>
+      <text x="14" y="24" font-size="10.5" font-weight="600" fill="#334155">tài liệu;</text>
+
+      <circle cx="5" cy="45" r="3" fill="#0284C7"/>
+      <text x="14" y="48" font-size="10.5" font-weight="800" fill="#0369A1">Tokenization tiếng Việt;</text>
+      <text x="14" y="63" font-size="10.5" font-weight="600" fill="#334155">reranking;</text>
+
+      <circle cx="5" cy="84" r="3" fill="#0284C7"/>
+      <text x="14" y="87" font-size="10.5" font-weight="800" fill="#0369A1">truy xuất từ pgvector.</text>
+    </g>
+  </g>
+
+  <!-- Arrow between Knowledge and Operation -->
+  <line x1="893" y1="350" x2="911" y2="350" stroke="#059669" stroke-width="2.2"/>
+  {draw_arrow(911, 350, "right", color="#059669", size=7)}
+
+  <!-- AGENT 3: OPERATION AGENT (x=911, y=218, w=210, h=285) -->
+  <g id="Agent_Operation" transform="translate(911, 218)">
+    <rect width="210" height="285" rx="12" fill="#ECFDF5" stroke="#34D399" stroke-width="1.8" class="card-shadow"/>
+    
+    <!-- Meta Logo '∞' -->
+    <g transform="translate(105, 22)">
+      <path d="M -9 3 C -13 3 -15 -1 -15 -3 C -15 -7 -12 -9 -8 -9 C -4 -9 -1 -5 0 -2 C 1 -5 4 -9 8 -9 C 12 -9 15 -7 15 -3 C 15 -1 13 3 9 3 C 5 3 2 -1 0 -4 C -2 -1 -5 3 -9 3 Z" fill="none" stroke="#0081FB" stroke-width="2.5"/>
+    </g>
+
+    <!-- Title & Model -->
+    <text x="105" y="48" font-size="14.5" font-weight="900" fill="#0F172A" text-anchor="middle">Operation Agent</text>
+    <text x="105" y="65" font-size="11" font-weight="800" fill="#059669" text-anchor="middle">Llama 3.3 70B / Groq LPU</text>
+
+    <!-- Crossed Tools Icon -->
+    <g transform="translate(105, 95)">
+      <path d="M -12 -12 L 12 12 M -6 -12 L -12 -6 M 12 6 L 6 12" stroke="#059669" stroke-width="3" stroke-linecap="round"/>
+      <circle cx="-10" cy="-10" r="3" fill="#059669"/>
+      <circle cx="10" cy="10" r="3" fill="#059669"/>
+    </g>
+
+    <!-- Divider -->
+    <line x1="15" y1="130" x2="195" y2="130" stroke="#A7F3D0" stroke-width="1"/>
+
+    <!-- Bullets -->
+    <g transform="translate(14, 148)">
+      <circle cx="5" cy="6" r="3" fill="#059669"/>
+      <text x="14" y="9" font-size="10.5" font-weight="800" fill="#065F46">Tool calling;</text>
+      <text x="14" y="24" font-size="10.5" font-weight="600" fill="#334155">tra cứu vận đơn;</text>
+
+      <circle cx="5" cy="45" r="3" fill="#059669"/>
+      <text x="14" y="48" font-size="10.5" font-weight="800" fill="#065F46">kiểm tra trạng thái;</text>
+
+      <circle cx="5" cy="84" r="3" fill="#059669"/>
+      <text x="14" y="87" font-size="10.5" font-weight="800" fill="#065F46">soạn lệnh JSON DTO</text>
+      <text x="14" y="102" font-size="10.5" font-weight="600" fill="#334155">cho NestJS.</text>
+    </g>
+  </g>
+
+  <!-- Horizontal bidirectional arrow between Operation & Validation -->
+  <line x1="1121" y1="350" x2="1139" y2="350" stroke="#F59E0B" stroke-width="2.2"/>
+  {draw_arrow(1139, 350, "right", color="#F59E0B", size=7)}
+  {draw_arrow(1121, 350, "left", color="#F59E0B", size=7)}
+
+  <!-- AGENT 4: VALIDATION AGENT (x=1139, y=218, w=210, h=285) -->
+  <g id="Agent_Validation" transform="translate(1139, 218)">
+    <rect width="210" height="285" rx="12" fill="#FEE2E2" stroke="#F87171" stroke-width="1.8" class="card-shadow"/>
+    
+    <!-- NVIDIA Logo badge -->
+    <g transform="translate(105, 22)">
+      <rect x="-12" y="-9" width="24" height="18" rx="3" fill="#76B900"/>
+      <path d="M -6 0 C -6 -4 0 -6 4 -3 C 2 0 -2 3 -4 2" fill="none" stroke="#FFFFFF" stroke-width="1.5"/>
+    </g>
+
+    <!-- Title & Model -->
+    <text x="105" y="48" font-size="14.5" font-weight="900" fill="#0F172A" text-anchor="middle">Validation Agent</text>
+    <text x="105" y="65" font-size="11" font-weight="800" fill="#DC2626" text-anchor="middle">Nemotron-70B / NVIDIA NIM</text>
+
+    <!-- Shield Icon with Checkmark -->
+    <g transform="translate(105, 95)">
+      <path d="M 0 -14 L 14 -7 L 14 5 C 14 12 0 18 0 18 C 0 18 -14 12 -14 5 L -14 -7 Z" fill="#DC2626"/>
+      <path d="M -5 3 L -1 7 L 6 -1" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round"/>
+    </g>
+
+    <!-- Divider -->
+    <line x1="15" y1="130" x2="195" y2="130" stroke="#FECACA" stroke-width="1"/>
+
+    <!-- Bullets -->
+    <g transform="translate(14, 148)">
+      <circle cx="5" cy="6" r="3" fill="#DC2626"/>
+      <text x="14" y="9" font-size="10.5" font-weight="800" fill="#991B1B">Guardrails;</text>
+
+      <circle cx="5" cy="32" r="3" fill="#DC2626"/>
+      <text x="14" y="35" font-size="10.5" font-weight="800" fill="#991B1B">kiểm tra bằng chứng</text>
+      <text x="14" y="50" font-size="10.5" font-weight="600" fill="#334155">và quy tắc nghiệp vụ;</text>
+
+      <circle cx="5" cy="73" r="3" fill="#DC2626"/>
+      <text x="14" y="76" font-size="10.5" font-weight="800" fill="#991B1B">phát hiện rủi ro;</text>
+
+      <circle cx="5" cy="98" r="3" fill="#DC2626"/>
+      <text x="14" y="101" font-size="10.5" font-weight="800" fill="#991B1B">chặn hành động</text>
+      <text x="14" y="116" font-size="10.5" font-weight="600" fill="#334155">không hợp lệ.</text>
+    </g>
+  </g>
+
+  <!-- BOTTOM BAR: Fallback Cascade (x=450, y=520, w=905, h=52) -->
+  <g id="Bar_Fallback" transform="translate(450, 520)">
+    <rect width="905" height="52" rx="10" fill="#FEF3C7" stroke="#F59E0B" stroke-width="1.5"/>
+    
+    <!-- Cycle Refresh Icon -->
+    <g transform="translate(25, 26)">
+      <path d="M -8 0 A 8 8 0 1 1 0 8" fill="none" stroke="#B45309" stroke-width="2.2"/>
+      <polygon points="2,8 -2,4 0,11" fill="#B45309"/>
+    </g>
+
+    <text x="50" y="24" font-size="13.5" font-weight="900" fill="#92400E">
+      Fallback Cascade: Groq LPU ➔ Gemini Flash ➔ VLLM Local
+    </text>
+    <text x="50" y="42" font-size="11.5" font-weight="700" fill="#B45309">
+      (Khi timeout / offline / 429)
     </text>
   </g>
 
-  <!-- Branch 1 Label Pill -->
-  <g transform="translate(710, 412)">
-    <rect x="-80" y="-10" width="160" height="20" rx="4" fill="#E0F2FE" stroke="#0284C7" stroke-width="1"/>
-    <text x="0" y="4" font-size="9" font-weight="800" fill="#0369A1" text-anchor="middle">⬇ Nhánh Tra Cứu RAG</text>
-  </g>
+  <!-- Connection: Supervisor down to Fallback Cascade -->
+  <line x1="560" y1="503" x2="560" y2="520" stroke="#F59E0B" stroke-width="2"/>
+  {draw_arrow(560, 520, "down", color="#F59E0B", size=7)}
 
-  <!-- Branch 2 Label Pill -->
-  <g transform="translate(1070, 412)">
-    <rect x="-85" y="-10" width="170" height="20" rx="4" fill="#DCFCE7" stroke="#15803D" stroke-width="1"/>
-    <text x="0" y="4" font-size="9" font-weight="800" fill="#166534" text-anchor="middle">⬇ Nhánh Gọi API Nghiệp Vụ</text>
-  </g>
+  <!-- Connection: Fallback Cascade up to Knowledge Agent -->
+  <line x1="788" y1="520" x2="788" y2="503" stroke="#F59E0B" stroke-width="2"/>
+  {draw_arrow(788, 503, "up", color="#F59E0B", size=7)}
 
-  <!-- Branch 3 Label Pill -->
-  <g transform="translate(1430, 412)">
-    <rect x="-85" y="-10" width="170" height="20" rx="4" fill="#FCE7F3" stroke="#DC2626" stroke-width="1"/>
-    <text x="0" y="4" font-size="9" font-weight="800" fill="#991B1B" text-anchor="middle">⬇ Nhánh Thẩm Định An Toàn</text>
-  </g>
+  <!-- Connection: Fallback Cascade up to Operation Agent -->
+  <line x1="1016" y1="520" x2="1016" y2="503" stroke="#F59E0B" stroke-width="2"/>
+  {draw_arrow(1016, 503, "up", color="#F59E0B", size=7)}
+
+  <!-- Connection: Fallback Cascade up to Validation Agent -->
+  <line x1="1244" y1="520" x2="1244" y2="503" stroke="#F59E0B" stroke-width="2"/>
+  {draw_arrow(1244, 503, "up", color="#F59E0B", size=7)}
 
   <!-- =========================================================================
-       SUB-AGENT A: KNOWLEDGE AGENT (QWEN 2.5 32B - ALIBABA) (x=550, y=430, w=325, h=220)
+       5. DECISION DIAMOND & HUMAN-IN-THE-LOOP
        ========================================================================= -->
-  <g id="Card_KnowledgeAgent" transform="translate(550, 430)">
-    <rect width="325" height="220" rx="14" fill="#F0F9FF" stroke="#38BDF8" stroke-width="2" class="card-shadow"/>
+  <!-- Arrow from Validation Agent -> Decision Diamond -->
+  <line x1="1349" y1="350" x2="1395" y2="350" stroke="#0052CC" stroke-width="2.5"/>
+  {draw_arrow(1395, 350, "right", color="#0052CC", size=10)}
+
+  <!-- Diamond Node: Kiểm tra rủi ro & quyền hạn (Center: 1460, 350) -->
+  <g id="Node_Decision" transform="translate(1460, 350)">
+    <polygon points="0,-48 65,0 0,48 -65,0" fill="#FEF3C7" stroke="#F59E0B" stroke-width="2" class="card-shadow"/>
     
-    <!-- Role Pill Badge -->
-    <rect x="15" y="10" width="255" height="24" rx="4" fill="#0284C7"/>
-    <text x="142" y="26" font-size="10" font-weight="900" fill="#FFFFFF" text-anchor="middle">📖 TRÍCH XUẤT RAG (ALIBABA ARCH)</text>
+    <!-- Shield Check icon -->
+    <path d="M 0 -30 L 10 -24 L 10 -15 C 10 -9 0 -5 0 -5 C 0 -5 -10 -9 -10 -15 L -10 -24 Z" fill="#059669"/>
+    <path d="M -4 -17 L -1 -14 L 4 -19" fill="none" stroke="#FFFFFF" stroke-width="1.5"/>
 
-    <!-- Logo icon -->
-    <g transform="translate(285, 12)">
-      <polygon points="12,2 22,8 22,20 12,26 2,20 2,8" fill="none" stroke="#0284C7" stroke-width="2"/>
-      <circle cx="12" cy="14" r="3" fill="#0284C7"/>
-    </g>
-
-    <text x="15" y="56" font-size="15.5" font-weight="900" fill="#0F172A">Knowledge Agent</text>
-    <text x="150" y="56" font-size="12" font-weight="800" fill="#0284C7">(Qwen 2.5 32B / Groq)</text>
-
-    <!-- LangChain Badge inside Knowledge Agent -->
-    <g transform="translate(15, 65)">
-      <rect width="295" height="20" rx="3" fill="#E0F2FE" stroke="#0284C7" stroke-width="0.8"/>
-      <text x="10" y="14" font-size="9.5" font-weight="800" fill="#0369A1">🦜 LangChain Hybrid RAG &amp; Document Splitter</text>
-    </g>
-
-    <!-- Distinct Function Highlights with relaxed padding -->
-    <g transform="translate(15, 92)">
-      <rect width="295" height="35" rx="4" fill="#FFFFFF" stroke="#BAE6FD" stroke-width="1"/>
-      <text x="8" y="15" font-size="10.5" font-weight="800" fill="#0369A1">🇻🇳 Tokenizer Tiếng Việt:</text>
-      <text x="8" y="29" font-size="9.5" font-weight="600" fill="#334155">Tiết kiệm 25% token context so với model phương Tây</text>
-
-      <rect y="42" width="295" height="35" rx="4" fill="#FFFFFF" stroke="#BAE6FD" stroke-width="1"/>
-      <text x="8" y="57" font-size="10.5" font-weight="800" fill="#0369A1">⚖️ Luật Bưu chính (Đ.25):</text>
-      <text x="8" y="71" font-size="9.5" font-weight="600" fill="#334155">Đền bù 4x cước, quy chuẩn SOP bọc bubble wrap ≥3 lớp</text>
-
-      <rect y="84" width="295" height="35" rx="4" fill="#FFFFFF" stroke="#BAE6FD" stroke-width="1"/>
-      <text x="8" y="99" font-size="10.5" font-weight="800" fill="#0369A1">🔍 Vector Citations 100%:</text>
-      <text x="8" y="113" font-size="9.5" font-weight="600" fill="#334155">Neo nguồn trích dẫn từ PostgreSQL pgvector</text>
-    </g>
+    <text x="0" y="3" font-size="12" font-weight="900" fill="#78350F" text-anchor="middle">Kiểm tra</text>
+    <text x="0" y="18" font-size="12" font-weight="900" fill="#78350F" text-anchor="middle">rủi ro &amp;</text>
+    <text x="0" y="33" font-size="12" font-weight="900" fill="#78350F" text-anchor="middle">quyền hạn</text>
   </g>
+
+  <!-- Branch 1: "Nếu rủi ro" (Down from Diamond to HITL) -->
+  <line x1="1460" y1="398" x2="1460" y2="475" stroke="#DC2626" stroke-width="2.5"/>
+  {draw_arrow(1460, 475, "down", color="#DC2626", size=10)}
+  <text x="1460" y="435" font-size="12" font-weight="900" fill="#DC2626" text-anchor="middle">Nếu rủi ro</text>
+
+  <!-- Card: Human-in-the-Loop (x=1390, y=475, w=140, h=105) -->
+  <g id="Card_Hitl" transform="translate(1390, 475)">
+    <rect width="140" height="105" rx="12" fill="#FFEDD5" stroke="#FB923C" stroke-width="1.8" class="card-shadow"/>
+    
+    <!-- User Avatar Icon -->
+    <circle cx="70" cy="26" r="14" fill="#EA580C"/>
+    <circle cx="70" cy="22" r="6" fill="#FED7AA"/>
+    <path d="M 60 36 C 60 30 65 29 70 29 C 75 29 80 30 80 36 Z" fill="#FED7AA"/>
+
+    <text x="70" y="58" font-size="12.5" font-weight="900" fill="#9A3412" text-anchor="middle">Human-in-the-Loop</text>
+    <text x="70" y="75" font-size="10.5" font-weight="600" fill="#C2410C" text-anchor="middle">Popup xác nhận</text>
+    <text x="70" y="90" font-size="10.5" font-weight="600" fill="#C2410C" text-anchor="middle">với người duyệt</text>
+  </g>
+
+  <!-- Branch 2: "Đạt yêu cầu" (Right from Diamond to Backend) -->
+  <line x1="1525" y1="350" x2="1595" y2="350" stroke="#059669" stroke-width="2.5"/>
+  {draw_arrow(1595, 350, "right", color="#059669", size=10)}
+  <text x="1560" y="340" font-size="11.5" font-weight="900" fill="#059669" text-anchor="middle">Đạt yêu cầu</text>
+
+  <!-- Arrow from HITL right into Backend -->
+  <line x1="1530" y1="525" x2="1595" y2="525" stroke="#059669" stroke-width="2.5"/>
+  {draw_arrow(1595, 525, "right", color="#059669", size=10)}
 
   <!-- =========================================================================
-       SUB-AGENT B: LOGISTICS OPERATION AGENT (LLAMA 3.3 70B - META) (x=910, y=430, w=325, h=220)
+       6. BACKEND MICROSERVICES & LOGISTICS APIS
        ========================================================================= -->
-  <g id="Card_OperationAgent" transform="translate(910, 430)">
-    <rect width="325" height="220" rx="14" fill="#F0FDF4" stroke="#4ADE80" stroke-width="2" class="card-shadow"/>
+  <!-- BACKEND MICROSERVICES CONTAINER (x=1595, y=315, w=235, h=280) -->
+  <g id="Card_Backend" transform="translate(1595, 315)">
+    <rect width="235" height="280" rx="14" fill="#F0FDF4" stroke="#34D399" stroke-width="1.8" class="card-shadow"/>
     
-    <!-- Role Pill Badge -->
-    <rect x="15" y="10" width="255" height="24" rx="4" fill="#059669"/>
-    <text x="142" y="26" font-size="10" font-weight="900" fill="#FFFFFF" text-anchor="middle">⚡ TOOL CALLING &amp; APIS (META ARCH)</text>
-
-    <!-- Infinity / Meta Tool Icon -->
-    <g transform="translate(285, 12)">
-      <path d="M 4 14 C 4 8 10 8 15 14 C 20 20 26 20 26 14 C 26 8 20 8 15 14 C 10 20 4 20 4 14 Z" fill="none" stroke="#059669" stroke-width="2.5"/>
+    <!-- Red NestJS Cat Logo -->
+    <g transform="translate(117, 28)">
+      <circle cx="0" cy="0" r="14" fill="#E11D48"/>
+      <path d="M -7 5 C -7 -1 -4 -4 0 -4 C 4 -4 7 -1 7 5 Z" fill="#FFFFFF"/>
+      <polygon points="-5,-4 -8,-10 -2,-6" fill="#FFFFFF"/>
+      <polygon points="5,-4 8,-10 2,-6" fill="#FFFFFF"/>
     </g>
 
-    <text x="15" y="56" font-size="15.5" font-weight="900" fill="#065F46">Operation Agent</text>
-    <text x="145" y="56" font-size="12" font-weight="800" fill="#059669">(Llama 3.3 70B / Groq)</text>
+    <text x="117" y="58" font-size="14" font-weight="900" fill="#065F46" text-anchor="middle">Backend Microservices</text>
+    <text x="117" y="74" font-size="12" font-weight="800" fill="#047857" text-anchor="middle">(NestJS Core)</text>
 
-    <!-- LangChain Badge inside Operation Agent -->
-    <g transform="translate(15, 65)">
-      <rect width="295" height="20" rx="3" fill="#DCFCE7" stroke="#059669" stroke-width="0.8"/>
-      <text x="10" y="14" font-size="9.5" font-weight="800" fill="#065F46">🦜 LangChain Tool Calling (@tool) &amp; JSON DTO</text>
-    </g>
+    <!-- Bullets -->
+    <g transform="translate(16, 96)">
+      <circle cx="8" cy="8" r="8" fill="#10B981"/>
+      <path d="M 5 8 L 7 10 L 11 6" fill="none" stroke="#FFFFFF" stroke-width="1.8"/>
+      <text x="22" y="12" font-size="11.5" font-weight="700" fill="#065F46">JWT / Shop Role</text>
 
-    <!-- Distinct Function Highlights with relaxed padding -->
-    <g transform="translate(15, 92)">
-      <rect width="295" height="35" rx="4" fill="#FFFFFF" stroke="#BBF7D0" stroke-width="1"/>
-      <text x="8" y="15" font-size="10.5" font-weight="800" fill="#15803D">🔍 Tra cứu Vận đơn:</text>
-      <text x="8" y="29" font-size="9.5" font-weight="600" fill="#334155">GET :3008 (Vị trí Hub, Shipper, Mốc GPS)</text>
+      <circle cx="8" cy="40" r="8" fill="#10B981"/>
+      <path d="M 5 40 L 7 42 L 11 38" fill="none" stroke="#FFFFFF" stroke-width="1.8"/>
+      <text x="22" y="44" font-size="11.5" font-weight="700" fill="#065F46">Kiểm tra nghiệp vụ</text>
 
-      <rect y="42" width="295" height="35" rx="4" fill="#FFFFFF" stroke="#BBF7D0" stroke-width="1"/>
-      <text x="8" y="57" font-size="10.5" font-weight="800" fill="#15803D">📐 Tính cước IATA:</text>
-      <text x="8" y="71" font-size="9.5" font-weight="600" fill="#334155">Cân nặng quy đổi V/6000, phụ phí vùng miền</text>
+      <circle cx="8" cy="72" r="8" fill="#10B981"/>
+      <path d="M 5 72 L 7 74 L 11 70" fill="none" stroke="#FFFFFF" stroke-width="1.8"/>
+      <text x="22" y="74" font-size="11.5" font-weight="700" fill="#065F46">Cập nhật trạng thái</text>
+      <text x="22" y="89" font-size="11" font-weight="800" fill="#DC2626">đơn hàng: CANCELLED</text>
 
-      <rect y="84" width="295" height="35" rx="4" fill="#FFFFFF" stroke="#BBF7D0" stroke-width="1"/>
-      <text x="8" y="99" font-size="10.5" font-weight="800" fill="#15803D">📝 Soạn Thảo Lệnh (Draft):</text>
-      <text x="8" y="113" font-size="9.5" font-weight="600" fill="#334155">Soạn JSON DTO chuẩn, chưa tự ý ghi vào DB</text>
+      <circle cx="8" cy="116" r="8" fill="#10B981"/>
+      <path d="M 5 116 L 7 118 L 11 114" fill="none" stroke="#FFFFFF" stroke-width="1.8"/>
+      <text x="22" y="118" font-size="11.5" font-weight="700" fill="#065F46">Ghi log kiểm toán</text>
+      <text x="22" y="132" font-size="11" font-weight="600" fill="#047857">(bất biến)</text>
     </g>
   </g>
 
-  <!-- =========================================================================
-       SUB-AGENT C: VALIDATION AGENT (LLAMA-3.1-NEMOTRON-70B - NVIDIA) (x=1270, y=430, w=325, h=220)
-       ========================================================================= -->
-  <g id="Card_ValidationAgent" transform="translate(1270, 430)">
-    <rect width="325" height="220" rx="14" fill="#FDF2F8" stroke="#F472B6" stroke-width="2" class="card-shadow"/>
+  <!-- Two-way connector Backend <-> Logistics APIs -->
+  <line x1="1830" y1="455" x2="1865" y2="455" stroke="#0052CC" stroke-width="2.5"/>
+  {draw_arrow(1865, 455, "right", color="#0052CC", size=8)}
+  {draw_arrow(1830, 455, "left", color="#0052CC", size=8)}
+
+  <!-- HỆ THỐNG LOGISTICS APIS NỘI BỘ (x=1865, y=315, w=130, h=280) -->
+  <g id="Card_LogisticsApis" transform="translate(1865, 315)">
+    <rect width="130" height="280" rx="14" fill="#FFFFFF" stroke="#93C5FD" stroke-width="1.8" class="card-shadow"/>
     
-    <!-- Role Pill Badge -->
-    <rect x="15" y="10" width="265" height="24" rx="4" fill="#DC2626"/>
-    <text x="147" y="26" font-size="9.5" font-weight="900" fill="#FFFFFF" text-anchor="middle">🛡️ AN TOÀN &amp; GUARDRAIL (NVIDIA ARCH)</text>
+    <text x="65" y="32" font-size="13" font-weight="900" fill="#0F172A" text-anchor="middle">Hệ thống</text>
+    <text x="65" y="48" font-size="13" font-weight="900" fill="#0F172A" text-anchor="middle">Logistics APIs</text>
+    <text x="65" y="64" font-size="13" font-weight="900" fill="#0F172A" text-anchor="middle">Nội Bộ</text>
 
-    <!-- Shield Icon -->
-    <g transform="translate(290, 12)">
-      <path d="M 12 2 L 22 7 L 22 15 C 22 21 12 26 12 26 C 12 26 2 21 2 15 L 2 7 Z" fill="#DC2626"/>
-      <path d="M 8 13 L 11 16 L 17 10" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round"/>
+    <!-- Gear Icon -->
+    <g transform="translate(65, 105)">
+      <circle cx="0" cy="0" r="15" fill="none" stroke="#0284C7" stroke-width="3"/>
+      <circle cx="0" cy="0" r="6" fill="#0284C7"/>
+      <!-- Teeth -->
+      <line x1="0" y1="-18" x2="0" y2="18" stroke="#0284C7" stroke-width="4"/>
+      <line x1="-18" y1="0" x2="18" y2="0" stroke="#0284C7" stroke-width="4"/>
     </g>
 
-    <text x="15" y="56" font-size="15" font-weight="900" fill="#831843">Validation Agent</text>
-    <text x="140" y="56" font-size="11.5" font-weight="800" fill="#BE185D">(Nemotron-70B / NVIDIA)</text>
+    <!-- 3 numbered items -->
+    <g transform="translate(15, 155)">
+      <circle cx="8" cy="8" r="8" fill="#0284C7"/>
+      <text x="8" y="12" font-size="10.5" font-weight="900" fill="#FFFFFF" text-anchor="middle">1</text>
+      <text x="24" y="12" font-size="11" font-weight="800" fill="#0369A1">Tra cứu đơn</text>
 
-    <!-- LangChain Badge inside Validation Agent -->
-    <g transform="translate(15, 65)">
-      <rect width="295" height="20" rx="3" fill="#FCE7F3" stroke="#DC2626" stroke-width="0.8"/>
-      <text x="10" y="14" font-size="9.5" font-weight="800" fill="#991B1B">🦜 LangChain Structured Output Guardrail</text>
-    </g>
+      <circle cx="8" cy="42" r="8" fill="#0284C7"/>
+      <text x="8" y="46" font-size="10.5" font-weight="900" fill="#FFFFFF" text-anchor="middle">2</text>
+      <text x="24" y="46" font-size="11" font-weight="800" fill="#0369A1">Hủy đơn</text>
 
-    <!-- Distinct Function Highlights with relaxed padding -->
-    <g transform="translate(15, 92)">
-      <rect width="295" height="35" rx="4" fill="#FFFFFF" stroke="#FECDD3" stroke-width="1"/>
-      <text x="8" y="15" font-size="10.5" font-weight="800" fill="#BE123C">🛡️ NeMo Guardrails:</text>
-      <text x="8" y="29" font-size="9.5" font-weight="600" fill="#334155">Reward Model kiểm toán an toàn &amp; phân quyền</text>
-
-      <rect y="42" width="295" height="35" rx="4" fill="#FFFFFF" stroke="#FECDD3" stroke-width="1"/>
-      <text x="8" y="57" font-size="10.5" font-weight="800" fill="#BE123C">🛑 Thẩm định Nghiệp vụ:</text>
-      <text x="8" y="71" font-size="9.5" font-weight="600" fill="#334155">Đã xuất kho xe tải = CẤM HỦY (Zero-Trust)</text>
-
-      <rect y="84" width="295" height="35" rx="4" fill="#FFFFFF" stroke="#FECDD3" stroke-width="1"/>
-      <text x="8" y="99" font-size="10.5" font-weight="800" fill="#BE123C">⚖️ Khử Thiên Kiến Đồng Nhất:</text>
-      <text x="8" y="113" font-size="9.5" font-weight="700" fill="#DC2626">Kiểm duyệt chéo độc lập đầu ra Meta Llama</text>
-    </g>
-  </g>
-
-  <!-- Horizontal Two-way Collaboration Arrow between Operation & Validation with Prominent Pill Badge ③ -->
-  <line x1="1235" y1="540" x2="1270" y2="540" stroke="#1D4ED8" stroke-width="2.8"/>
-  {draw_arrow(1270, 540, "right", color="#1D4ED8", size=10)}
-  {draw_arrow(1235, 540, "left", color="#1D4ED8", size=10)}
-  <g transform="translate(1252, 515)">
-    <rect x="-95" y="-12" width="190" height="24" rx="5" fill="#EFF6FF" stroke="#1D4ED8" stroke-width="1.2" class="subtle-shadow"/>
-    <text x="0" y="4" font-size="9.5" font-weight="900" fill="#1D4ED8" text-anchor="middle">
-      ③ Bàn giao Draft DTO kiểm toán
-    </text>
-  </g>
-
-  <!-- =========================================================================
-       EVOLUTION 2: MULTI-PROVIDER FALLBACK & CIRCUIT BREAKER BANNER
-       Positioned horizontally with breathing space below sub-agents!
-       ========================================================================= -->
-  <g id="Banner_Fallback" transform="translate(550, 665)">
-    <rect width="1045" height="34" rx="8" fill="#FFFBEB" stroke="#F59E0B" stroke-width="1.5" class="subtle-shadow"/>
-    
-    <g transform="translate(18, 7)">
-      <circle cx="10" cy="10" r="10" fill="#F59E0B"/>
-      <path d="M 6 10 L 9 13 L 14 7" fill="none" stroke="#FFFFFF" stroke-width="1.8"/>
-      <text x="30" y="14" font-size="11.5" font-weight="900" fill="#92400E">CƠ CHẾ DỰ PHÒNG HA (FAILOVER CASCADE):</text>
-      <text x="315" y="14" font-size="11.5" font-weight="700" fill="#1D4ED8">1. Groq LPU (400 t/s)</text>
-      <text x="470" y="14" font-size="11" font-weight="600" fill="#64748B">➔ [Nếu 429/Timeout]</text>
-      <text x="625" y="14" font-size="11.5" font-weight="700" fill="#2563EB">2. Gemini 3.6 Flash</text>
-      <text x="780" y="14" font-size="11" font-weight="600" fill="#64748B">➔ [Nếu Offline/Mất mạng]</text>
-      <text x="945" y="14" font-size="11.5" font-weight="800" fill="#059669">3. vLLM Local</text>
+      <circle cx="8" cy="76" r="8" fill="#0284C7"/>
+      <text x="8" y="80" font-size="10.5" font-weight="900" fill="#FFFFFF" text-anchor="middle">3</text>
+      <text x="24" y="80" font-size="11" font-weight="800" fill="#0369A1">Xử lý</text>
+      <text x="24" y="94" font-size="11" font-weight="800" fill="#0369A1">ngoại lệ</text>
     </g>
   </g>
 
   <!-- =========================================================================
-       5. LOWER TIER (LEFT): RAG PIPELINE & PGVECTOR (x=550, y=730, w=325)
+       7. OBSERVABILITY & TRACING (TOP RIGHT) (x=1545, y=105, w=450, h=195)
        ========================================================================= -->
-  <!-- Vertical Drop from Knowledge Agent to RAG Pipeline -->
-  <line x1="710" y1="650" x2="710" y2="730" stroke="#10B981" stroke-width="2.8"/>
-  {draw_arrow(710, 730, "down", color="#10B981", size=12)}
-
-  <!-- Box: Quy trình RAG (x=550, y=730, w=325, h=165) -->
-  <g id="Box_RagPipeline" transform="translate(550, 730)">
-    <rect width="325" height="165" rx="14" fill="#ECFDF5" stroke="#34D399" stroke-width="1.8" stroke-dasharray="5,4" class="card-shadow"/>
+  <g id="Card_Observability" transform="translate(1545, 105)">
+    <rect width="450" height="195" rx="14" fill="#FAF5FF" stroke="#C084FC" stroke-width="1.8" class="card-shadow"/>
     
-    <rect x="15" y="10" width="190" height="22" rx="4" fill="#059669"/>
-    <text x="110" y="25" font-size="10.5" font-weight="900" fill="#FFFFFF" text-anchor="middle">QUY TRÌNH NẠP &amp; TRUY XUẤT RAG</text>
+    <!-- Header Pill -->
+    <rect x="18" y="10" width="280" height="24" rx="4" fill="#7E22CE"/>
+    <text x="158" y="26" font-size="11" font-weight="900" fill="#FFFFFF" text-anchor="middle">📊 Observability &amp; Tracing</text>
 
-    <!-- Sub-step 1 -->
-    <circle cx="28" cy="55" r="10" fill="#10B981"/>
-    <text x="28" y="59" font-size="10.5" font-weight="900" fill="#FFFFFF" text-anchor="middle">1</text>
-    <text x="48" y="55" font-size="12" font-weight="800" fill="#0F172A">Chunking tài liệu AST</text>
-    <text x="48" y="70" font-size="10.5" font-weight="600" fill="#64748B">(Giữ nguyên cấu trúc SOP bưu chính)</text>
-
-    <!-- Sub-step 2 -->
-    <circle cx="28" cy="95" r="10" fill="#10B981"/>
-    <text x="28" y="99" font-size="10.5" font-weight="900" fill="#FFFFFF" text-anchor="middle">2</text>
-    <text x="48" y="95" font-size="12" font-weight="800" fill="#0F172A">MRL Embedding (Matryoshka)</text>
-    <text x="48" y="110" font-size="10.5" font-weight="600" fill="#64748B">(Rút gọn 256 chiều, giảm 75% RAM)</text>
-
-    <!-- Sub-step 3 -->
-    <circle cx="28" cy="135" r="10" fill="#10B981"/>
-    <text x="28" y="139" font-size="10.5" font-weight="900" fill="#FFFFFF" text-anchor="middle">3</text>
-    <text x="48" y="135" font-size="12" font-weight="800" fill="#0F172A">Hybrid Retrieval (Cosine + BM25)</text>
-    <text x="48" y="150" font-size="10.5" font-weight="600" fill="#64748B">(Trích dẫn nguồn neo 100% điều khoản)</text>
-  </g>
-
-  <!-- Vertical Drop to Vector DB -->
-  <line x1="710" y1="895" x2="710" y2="925" stroke="#10B981" stroke-width="2.8"/>
-  {draw_arrow(710, 925, "down", color="#10B981", size=11)}
-
-  <!-- Box: Vector DB (x=550, y=925, w=325, h=80) -->
-  <g id="Box_VectorDb" transform="translate(550, 925)">
-    <rect width="325" height="80" rx="14" fill="#FFFFFF" stroke="#059669" stroke-width="2" class="card-shadow"/>
-    
-    <g transform="translate(20, 22)">
-      <circle cx="10" cy="10" r="9" fill="none" stroke="#059669" stroke-width="2.5"/>
-      <line x1="17" y1="17" x2="25" y2="25" stroke="#059669" stroke-width="2.5" stroke-linecap="round"/>
-    </g>
-
-    <text x="70" y="34" font-size="15" font-weight="900" fill="#065F46">Vector Database</text>
-    <text x="70" y="56" font-size="12.5" font-weight="700" fill="#047857">(pgvector / PostgreSQL Core DB)</text>
-  </g>
-
-  <!-- =========================================================================
-       6. LOWER TIER (CENTER): CHỐT CHẶN HITL (x=910, y=730, w=325) [BƯỚC 4]
-       ========================================================================= -->
-  <!-- Drop from Validation Agent to HITL with Prominent Route Label ④ -->
-  <line x1="1430" y1="650" x2="1430" y2="720" stroke="#DC2626" stroke-width="2.8"/>
-  <line x1="1430" y1="720" x2="1070" y2="720" stroke="#DC2626" stroke-width="2.8"/>
-  <line x1="1070" y1="720" x2="1070" y2="730" stroke="#DC2626" stroke-width="2.8"/>
-  {draw_arrow(1070, 730, "down", color="#DC2626", size=12)}
-
-  <!-- Protected Number Badge ④ Pill Label on HITL Trigger Route -->
-  <g transform="translate(1250, 720)">
-    <rect x="-180" y="-14" width="360" height="28" rx="14" fill="#FFFFFF" stroke="#DC2626" stroke-width="2" class="subtle-shadow"/>
-    <circle cx="-160" cy="0" r="11" fill="#DC2626"/>
-    <text x="-160" y="4" font-size="12" font-weight="900" fill="#FFFFFF" text-anchor="middle">4</text>
-    <text x="15" y="4" font-size="11" font-weight="900" fill="#DC2626" text-anchor="middle">
-      ④ Thao tác nhạy cảm ➔ Kích hoạt LangGraph interrupt()
-    </text>
-  </g>
-
-  <!-- Box: HITL Container (x=910, y=730, w=325, h=275) -->
-  <g id="Card_Hitl" transform="translate(910, 730)">
-    <rect width="325" height="275" rx="14" fill="#FFFBEB" stroke="#F59E0B" stroke-width="2" class="card-shadow"/>
-    
-    <rect x="15" y="10" width="245" height="24" rx="4" fill="#D97706"/>
-    <text x="137" y="26" font-size="10" font-weight="900" fill="#FFFFFF" text-anchor="middle">👤 LANGGRAPH INTERRUPT() (HITL)</text>
-
-    <text x="15" y="56" font-size="15.5" font-weight="900" fill="#78350F">Human-in-the-Loop</text>
-    <text x="15" y="74" font-size="11.5" font-weight="700" fill="#B45309">Chốt chặn phê duyệt của Người Dùng</text>
-
-    <!-- Simulated UI Drawer Card -->
-    <g transform="translate(15, 84)">
-      <rect width="295" height="115" rx="8" fill="#FFFFFF" stroke="#FCD34D" stroke-width="1.5"/>
-      <text x="10" y="22" font-size="11.5" font-weight="900" fill="#B45309">⚠️ Xác nhận yêu cầu hủy đơn hàng</text>
-      
-      <text x="10" y="42" font-size="10.5" font-weight="600" fill="#475569">Mã đơn: <tspan font-weight="800" fill="#0F172A">NX001</tspan> | Phí hoàn dự kiến: <tspan font-weight="800" fill="#DC2626">15.000đ</tspan></text>
-      <text x="10" y="58" font-size="10.5" font-weight="600" fill="#475569">Tác tử AI chỉ chuẩn bị bản thảo (Proposal Draft).</text>
-
-      <!-- 2 Action Buttons -->
-      <g transform="translate(10, 72)">
-        <rect width="125" height="32" rx="6" fill="#DC2626"/>
-        <text x="62" y="20" font-size="11" font-weight="900" fill="#FFFFFF" text-anchor="middle">Đồng ý hủy</text>
+    <!-- 3 Providers Side-by-Side -->
+    <g transform="translate(18, 45)">
+      <!-- LangSmith -->
+      <g transform="translate(35, 18)">
+        <circle cx="0" cy="0" r="12" fill="#7C3AED"/>
+        <path d="M -4 -4 L 4 4 M -4 4 L 4 -4" stroke="#FFFFFF" stroke-width="2"/>
+        <text x="0" y="24" font-size="11" font-weight="900" fill="#581C87" text-anchor="middle">LangSmith</text>
+        <text x="0" y="37" font-size="10" font-weight="700" fill="#7E22CE" text-anchor="middle">(Trace)</text>
       </g>
-      <g transform="translate(145, 72)">
-        <rect width="140" height="32" rx="6" fill="#F1F5F9" stroke="#CBD5E1" stroke-width="1"/>
-        <text x="70" y="20" font-size="11" font-weight="800" fill="#475569" text-anchor="middle">Bỏ qua / Giữ lại</text>
+      <line x1="85" y1="5" x2="85" y2="45" stroke="#E9D5FF" stroke-width="1"/>
+
+      <!-- Arize Phoenix -->
+      <g transform="translate(145, 18)">
+        <circle cx="0" cy="0" r="12" fill="#EA580C"/>
+        <path d="M 0 -8 C 4 -4 6 0 4 6 C 2 8 -2 8 -4 6 C -6 0 -4 -4 0 -8 Z" fill="#FFFFFF"/>
+        <text x="0" y="24" font-size="11" font-weight="900" fill="#581C87" text-anchor="middle">Arize Phoenix</text>
+        <text x="0" y="37" font-size="10" font-weight="700" fill="#7E22CE" text-anchor="middle">(Analytics)</text>
       </g>
-    </g>
+      <line x1="210" y1="5" x2="210" y2="45" stroke="#E9D5FF" stroke-width="1"/>
 
-    <text x="15" y="226" font-size="11" font-weight="800" fill="#92400E">Cơ chế kỹ thuật LangGraph:</text>
-    <text x="15" y="244" font-size="10.5" font-weight="600" fill="#78350F">Lệnh interrupt() tạm dừng luồng an toàn,</text>
-    <text x="15" y="260" font-size="10.5" font-weight="600" fill="#78350F">chờ nhận tín hiệu confirm mới resume().</text>
-  </g>
-
-  <!-- Horizontal Arrow from HITL to Backend Execution with clear descriptive label -->
-  <line x1="1235" y1="810" x2="1270" y2="810" stroke="#1D4ED8" stroke-width="2.8"/>
-  {draw_arrow(1270, 810, "right", color="#1D4ED8", size=12)}
-  <g transform="translate(1252, 785)">
-    <rect x="-85" y="-12" width="170" height="24" rx="5" fill="#EFF6FF" stroke="#1D4ED8" stroke-width="1.2" class="subtle-shadow"/>
-    <text x="0" y="4" font-size="9.5" font-weight="900" fill="#1D4ED8" text-anchor="middle">
-      resume() sau khi nhấn Duyệt
-    </text>
-  </g>
-
-  <!-- =========================================================================
-       7. LOWER TIER (RIGHT): KIỂM TRA ĐIỀU KIỆN & THỰC THI (x=1270, y=730, w=325)
-       ========================================================================= -->
-  <!-- Box: Backend Action Check (x=1270, y=730, w=325, h=165) -->
-  <g id="Card_BackendCheck" transform="translate(1270, 730)">
-    <rect width="325" height="165" rx="14" fill="#F8FAFC" stroke="#64748B" stroke-width="2" class="card-shadow"/>
-    
-    <rect x="15" y="10" width="235" height="22" rx="4" fill="#334155"/>
-    <text x="132" y="25" font-size="10.5" font-weight="900" fill="#FFFFFF" text-anchor="middle">KIỂM TRA ĐIỀU KIỆN &amp; THỰC THI</text>
-
-    <!-- Mini Sub-step 1 -->
-    <rect x="15" y="44" width="295" height="30" rx="4" fill="#FFFFFF" stroke="#E2E8F0" stroke-width="1"/>
-    <text x="25" y="63" font-size="11" font-weight="700" fill="#0F172A">Check quyền sở hữu đơn hàng (Ownership)</text>
-
-    <!-- Mini Sub-step 2 -->
-    <rect x="15" y="82" width="295" height="30" rx="4" fill="#FFFFFF" stroke="#E2E8F0" stroke-width="1"/>
-    <text x="25" y="101" font-size="11" font-weight="700" fill="#0F172A">Check trạng thái đơn tại thời điểm thực tế</text>
-
-    <!-- Mini Sub-step 3 -->
-    <rect x="15" y="120" width="295" height="30" rx="4" fill="#FFFFFF" stroke="#E2E8F0" stroke-width="1"/>
-    <text x="25" y="139" font-size="11" font-weight="700" fill="#DC2626">Cập nhật CANCELLED &amp; Ghi Audit Log</text>
-  </g>
-
-  <!-- Vertical Drop to Audit DB -->
-  <line x1="1430" y1="895" x2="1430" y2="925" stroke="#1D4ED8" stroke-width="2.8"/>
-  {draw_arrow(1430, 925, "down", color="#1D4ED8", size=11)}
-
-  <!-- Box: Audit Trail DB (x=1270, y=925, w=325, h=80) -->
-  <g id="Box_AuditDb" transform="translate(1270, 925)">
-    <rect width="325" height="80" rx="14" fill="#EFF6FF" stroke="#1D4ED8" stroke-width="2" class="card-shadow"/>
-    
-    <g transform="translate(20, 22)">
-      <rect x="0" y="0" width="22" height="22" rx="3" fill="#1D4ED8"/>
-      <path d="M 6 11 L 10 15 L 18 7" fill="none" stroke="#FFFFFF" stroke-width="2.2"/>
-    </g>
-
-    <text x="65" y="34" font-size="15" font-weight="900" fill="#1E40AF">Audit Trail Database</text>
-    <text x="65" y="56" font-size="12.5" font-weight="700" fill="#1D4ED8">(ai_agent_audit_logs - Bất biến)</text>
-  </g>
-
-  <!-- =========================================================================
-       8. RIGHT COLUMN: OBSERVABILITY, BACKEND, FRAMEWORK MATRIX & STEP SUMMARY
-       (x=1650, w=460) - EXPANDED WIDTH FOR SUPREME READABILITY
-       ========================================================================= -->
-
-  <!-- CARD 8.1: OBSERVABILITY & TRACING (x=1650, y=125, w=460, h=225) -->
-  <g id="Card_Observability" transform="translate(1650, 125)">
-    <rect width="460" height="225" rx="16" fill="url(#obsGrad)" stroke="#A855F7" stroke-width="2" class="card-shadow"/>
-    
-    <!-- Top Pill Badge -->
-    <rect x="18" y="12" width="285" height="24" rx="4" fill="#7E22CE"/>
-    <text x="160" y="28" font-size="11" font-weight="900" fill="#FFFFFF" text-anchor="middle">📡 OBSERVABILITY &amp; TRACING</text>
-
-    <!-- Radar / Activity Icon -->
-    <g transform="translate(405, 12)">
-      <circle cx="12" cy="12" r="10" fill="none" stroke="#7E22CE" stroke-width="2"/>
-      <circle cx="12" cy="12" r="5" fill="none" stroke="#7E22CE" stroke-width="1.5"/>
-      <circle cx="12" cy="12" r="2" fill="#7E22CE"/>
-    </g>
-
-    <text x="18" y="60" font-size="16.5" font-weight="900" fill="#581C87">LangSmith / Arize Phoenix</text>
-    <text x="260" y="60" font-size="12.5" font-weight="700" fill="#9333EA">(OpenTelemetry)</text>
-
-    <!-- 4 Observability Metrics Boxes with comfortable spacing -->
-    <g transform="translate(18, 74)">
-      <rect width="424" height="30" rx="4" fill="#FFFFFF" stroke="#E9D5FF" stroke-width="1"/>
-      <text x="10" y="19" font-size="11.5" font-weight="800" fill="#6B21A8">🔍 Trace ID Xuyên Suốt:</text>
-      <text x="165" y="19" font-size="11" font-weight="600" fill="#334155">Đồng bộ từ Gateway -> Các Agent Nodes</text>
-
-      <rect y="36" width="424" height="30" rx="4" fill="#FFFFFF" stroke="#E9D5FF" stroke-width="1"/>
-      <text x="10" y="55" font-size="11.5" font-weight="800" fill="#6B21A8">⏱️ Per-Node Latency:</text>
-      <text x="155" y="55" font-size="11" font-weight="600" fill="#334155">Đo độ trễ chính xác từng bước (ms)</text>
-
-      <rect y="72" width="424" height="30" rx="4" fill="#FFFFFF" stroke="#E9D5FF" stroke-width="1"/>
-      <text x="10" y="91" font-size="11.5" font-weight="800" fill="#6B21A8">💰 Token Burn Analytics:</text>
-      <text x="165" y="91" font-size="11" font-weight="600" fill="#334155">Theo dõi chi phí token theo thời gian thực</text>
-
-      <rect y="108" width="424" height="30" rx="4" fill="#FFFFFF" stroke="#E9D5FF" stroke-width="1"/>
-      <text x="10" y="127" font-size="11.5" font-weight="800" fill="#DC2626">🚨 Circuit Catching:</text>
-      <text x="145" y="127" font-size="11" font-weight="700" fill="#BE123C">Bắt điểm đứt gãy khi luồng bị gián đoạn</text>
-    </g>
-  </g>
-
-  <!-- Telemetry Tap Line: LangGraph -> Observability with prominent label -->
-  <line x1="1590" y1="215" x2="1650" y2="215" stroke="#9333EA" stroke-width="2.5" stroke-dasharray="5,4"/>
-  {draw_arrow(1650, 215, "right", color="#9333EA", size=10)}
-  <g transform="translate(1620, 195)">
-    <rect x="-48" y="-10" width="96" height="20" rx="4" fill="#FAF5FF" stroke="#A855F7" stroke-width="1.2" class="subtle-shadow"/>
-    <text x="0" y="4" font-size="9" font-weight="900" fill="#7E22CE" text-anchor="middle">OTEL TELEMETRY</text>
-  </g>
-
-  <!-- CARD 8.2: BACKEND NESTJS CONTAINER (x=1650, y=365, w=460, h=225) -->
-  <g id="Card_Backend" transform="translate(1650, 365)">
-    <rect width="460" height="225" rx="16" fill="#FEF3C7" stroke="#FBBF24" stroke-width="2" class="card-shadow"/>
-    
-    <!-- Role Pill Badge -->
-    <rect x="20" y="12" width="285" height="24" rx="4" fill="#D97706"/>
-    <text x="162" y="28" font-size="11" font-weight="900" fill="#FFFFFF" text-anchor="middle">💾 THỰC THI GIAO DỊCH &amp; AUDIT TRAIL</text>
-
-    <!-- Green Checkmark Icon -->
-    <g transform="translate(405, 12)">
-      <circle cx="14" cy="14" r="14" fill="#10B981"/>
-      <path d="M 8 14 L 12 18 L 20 10" fill="none" stroke="#FFFFFF" stroke-width="2.2" stroke-linecap="round"/>
-    </g>
-
-    <text x="20" y="62" font-size="17.5" font-weight="900" fill="#78350F">Backend Microservices</text>
-    <text x="250" y="62" font-size="13" font-weight="800" fill="#92400E">(NestJS Core)</text>
-
-    <!-- 4 Function Bullet Boxes with relaxed padding -->
-    <g transform="translate(20, 76)">
-      <rect width="420" height="30" rx="4" fill="#FFFFFF" stroke="#FDE68A" stroke-width="1"/>
-      <text x="10" y="19" font-size="11.5" font-weight="800" fill="#1E293B">✓  Kiểm tra quyền:</text>
-      <text x="145" y="19" font-size="11" font-weight="600" fill="#475569">Xác thực JWT Token &amp; Shop Role</text>
-
-      <rect y="36" width="420" height="30" rx="4" fill="#FFFFFF" stroke="#FDE68A" stroke-width="1"/>
-      <text x="10" y="55" font-size="11.5" font-weight="800" fill="#1E293B">✓  Đối chiếu điều kiện:</text>
-      <text x="165" y="55" font-size="11" font-weight="600" fill="#475569">Check ràng buộc nghiệp vụ lần cuối</text>
-
-      <rect y="72" width="420" height="30" rx="4" fill="#FFFFFF" stroke="#FDE68A" stroke-width="1"/>
-      <text x="10" y="91" font-size="11.5" font-weight="800" fill="#1E293B">✓  Thực thi giao dịch:</text>
-      <text x="160" y="91" font-size="11" font-weight="600" fill="#475569">UPDATE shipments thành CANCELLED</text>
-
-      <rect y="108" width="420" height="30" rx="4" fill="#FFFFFF" stroke="#FDE68A" stroke-width="1"/>
-      <text x="10" y="127" font-size="11.5" font-weight="800" fill="#1E293B">✓  Ghi Audit Log:</text>
-      <text x="140" y="127" font-size="11" font-weight="700" fill="#DC2626">Lưu vết AI + chữ ký HITL chống chối bỏ</text>
-    </g>
-  </g>
-
-  <!-- CARD 8.3: HỆ THỐNG LOGISTICS APIS CONTAINER (x=1650, y=605, w=460, h=90) -->
-  <g id="Card_LogisticsApis" transform="translate(1650, 605)">
-    <rect width="460" height="90" rx="14" fill="#FFFFFF" stroke="#FDE68A" stroke-width="1.8" class="card-shadow"/>
-    <text x="230" y="26" font-size="13.5" font-weight="900" fill="#0F172A" text-anchor="middle">Hệ thống Logistics APIs Nội Bộ (NestJS :3000 - :3012)</text>
-
-    <!-- Mini API Button Pills -->
-    <g transform="translate(18, 36)">
-      <rect width="130" height="40" rx="6" fill="#F0F9FF" stroke="#BAE6FD" stroke-width="1.2"/>
-      <text x="65" y="25" font-size="11" font-weight="800" fill="#0369A1" text-anchor="middle">🔍 Tra cứu (:3008)</text>
-    </g>
-
-    <g transform="translate(162, 36)">
-      <rect width="125" height="40" rx="6" fill="#FEF2F2" stroke="#FECACA" stroke-width="1.2"/>
-      <text x="62" y="25" font-size="11" font-weight="800" fill="#991B1B" text-anchor="middle">🛑 Hủy đơn (:3002)</text>
-    </g>
-
-    <g transform="translate(302, 36)">
-      <rect width="140" height="40" rx="6" fill="#F0FDF4" stroke="#BBF7D0" stroke-width="1.2"/>
-      <text x="70" y="25" font-size="11" font-weight="800" fill="#166534" text-anchor="middle">⚖️ Bồi thường (:3010)</text>
-    </g>
-  </g>
-
-  <!-- Two-way link Backend <-> Logistics APIs -->
-  <line x1="1880" y1="590" x2="1880" y2="605" stroke="#1E293B" stroke-width="2"/>
-  {draw_arrow(1880, 605, "down", color="#1E293B", size=8)}
-  {draw_arrow(1880, 590, "up", color="#1E293B", size=8)}
-
-  <!-- Two-way connector between Operation Agent & Backend APIs with prominent label -->
-  <path d="M 1590 515 L 1650 515" fill="none" stroke="#1D4ED8" stroke-width="2.8"/>
-  {draw_arrow(1650, 515, "right", color="#1D4ED8", size=12)}
-  <g transform="translate(1620, 495)">
-    <rect x="-48" y="-10" width="96" height="20" rx="4" fill="#FFFFFF" stroke="#1D4ED8" stroke-width="1.2" class="subtle-shadow"/>
-    <text x="0" y="4" font-size="9" font-weight="900" fill="#1D4ED8" text-anchor="middle">REST Tool Call</text>
-  </g>
-
-  <!-- Connection from Backend Execution to Backend Card with clear label -->
-  <path d="M 1590 810 L 1650 810" fill="none" stroke="#D97706" stroke-width="2.8"/>
-  {draw_arrow(1650, 810, "right", color="#D97706", size=12)}
-  <g transform="translate(1620, 790)">
-    <rect x="-42" y="-10" width="84" height="20" rx="4" fill="#FFFBEB" stroke="#D97706" stroke-width="1.2" class="subtle-shadow"/>
-    <text x="0" y="4" font-size="9" font-weight="900" fill="#D97706" text-anchor="middle">Lệnh Ghi DB</text>
-  </g>
-
-  <!-- =========================================================================
-       CARD 8.4: DUAL-FRAMEWORK ARCHITECTURAL MATRIX (LANGGRAPH vs. LANGCHAIN)
-       (x=1650, y=715, w=460, h=230)
-       ========================================================================= -->
-  <g id="Card_FrameworkRoles" transform="translate(1650, 715)">
-    <rect width="460" height="230" rx="14" fill="#FFFFFF" stroke="#4F46E5" stroke-width="2" class="card-shadow"/>
-    <rect width="460" height="36" rx="14 14 0 0" fill="#312E81"/>
-    <text x="230" y="24" font-size="13" font-weight="900" fill="#FFFFFF" text-anchor="middle">
-      ⚡ PHÂN ĐỊNH VAI TRÒ: LANGGRAPH vs. LANGCHAIN
-    </text>
-
-    <!-- Column 1: LangGraph (State & Orchestrator - "Bộ Não") -->
-    <g transform="translate(15, 48)">
-      <rect width="208" height="168" rx="8" fill="#EEF2FF" stroke="#A5B4FC" stroke-width="1.2"/>
-      <rect x="8" y="8" width="192" height="22" rx="4" fill="#4338CA"/>
-      <text x="104" y="23" font-size="10" font-weight="900" fill="#FFFFFF" text-anchor="middle">🌐 LANGGRAPH (BỘ NÃO)</text>
-      
-      <text x="8" y="46" font-size="10" font-weight="800" fill="#3730A3">• StateGraph DAG:</text>
-      <text x="8" y="60" font-size="9.5" font-weight="600" fill="#334155">Đồ thị điều phối luồng chu trình</text>
-      
-      <text x="8" y="78" font-size="10" font-weight="800" fill="#3730A3">• Shared Context State:</text>
-      <text x="8" y="92" font-size="9.5" font-weight="600" fill="#334155">Tuần hoàn tuple trạng thái tập trung</text>
-      
-      <text x="8" y="110" font-size="10" font-weight="800" fill="#3730A3">• Human-in-the-Loop:</text>
-      <text x="8" y="124" font-size="9.5" font-weight="600" fill="#334155">Lệnh ngắt interrupt() an toàn</text>
-      
-      <text x="8" y="142" font-size="10" font-weight="800" fill="#3730A3">• State Checkpointing:</text>
-      <text x="8" y="156" font-size="9.5" font-weight="600" fill="#334155">Lưu snapshot chống sập phiên</text>
-    </g>
-
-    <!-- Column 2: LangChain (Tools & Integrator - "Đôi Tay") -->
-    <g transform="translate(237, 48)">
-      <rect width="208" height="168" rx="8" fill="#ECFDF5" stroke="#86EFAC" stroke-width="1.2"/>
-      <rect x="8" y="8" width="192" height="22" rx="4" fill="#059669"/>
-      <text x="104" y="23" font-size="10" font-weight="900" fill="#FFFFFF" text-anchor="middle">🦜 LANGCHAIN (CÔNG CỤ)</text>
-      
-      <text x="8" y="46" font-size="10" font-weight="800" fill="#065F46">• Multi-LLM Adapters:</text>
-      <text x="8" y="60" font-size="9.5" font-weight="600" fill="#334155">Chuẩn hóa 4 hãng AI Big 4</text>
-      
-      <text x="8" y="78" font-size="10" font-weight="800" fill="#065F46">• Tool Calling (@tool):</text>
-      <text x="8" y="92" font-size="9.5" font-weight="600" fill="#334155">Đóng gói API :3008, :3012</text>
-      
-      <text x="8" y="110" font-size="10" font-weight="800" fill="#065F46">• Hybrid RAG Pipeline:</text>
-      <text x="8" y="124" font-size="9.5" font-weight="600" fill="#334155">Loader + Splitter + pgvector</text>
-      
-      <text x="8" y="142" font-size="10" font-weight="800" fill="#065F46">• Structured Parsers:</text>
-      <text x="8" y="156" font-size="9.5" font-weight="600" fill="#334155">Ép kiểu JSON DTO NestJS</text>
-    </g>
-  </g>
-
-  <!-- CARD 8.5: STEP SUMMARY CARD (BOTTOM RIGHT) (x=1650, y=960, w=460, h=180) -->
-  <g id="Card_StepSummary" transform="translate(1650, 960)">
-    <rect width="460" height="180" rx="14" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1.8" class="card-shadow"/>
-    <rect width="460" height="34" rx="14 14 0 0" fill="#0F4C81"/>
-    <text x="230" y="23" font-size="13.5" font-weight="900" fill="#FFFFFF" text-anchor="middle">Tóm tắt luồng hoạt động khép kín (6 Bước)</text>
-
-    <!-- 6 Summary items in 2 Columns with generous spacing -->
-    <g transform="translate(18, 48)">
-      <!-- Col 1 -->
-      <circle cx="9" cy="9" r="8" fill="#1D4ED8"/>
-      <text x="9" y="13" font-size="9" font-weight="900" fill="#FFFFFF" text-anchor="middle">1</text>
-      <text x="25" y="13" font-size="11" font-weight="700" fill="#0F172A">Người dùng gửi yêu cầu</text>
-
-      <circle cx="9" cy="45" r="8" fill="#1D4ED8"/>
-      <text x="9" y="49" font-size="9" font-weight="900" fill="#FFFFFF" text-anchor="middle">2</text>
-      <text x="25" y="49" font-size="11" font-weight="700" fill="#0F172A">Supervisor lập kế hoạch DAG</text>
-
-      <circle cx="9" cy="81" r="8" fill="#1D4ED8"/>
-      <text x="9" y="85" font-size="9" font-weight="900" fill="#FFFFFF" text-anchor="middle">3</text>
-      <text x="25" y="85" font-size="11" font-weight="700" fill="#0F172A">Sub-Agents phối hợp RAG &amp; Tool</text>
-
-      <!-- Col 2 -->
-      <g transform="translate(225, 0)">
-        <circle cx="9" cy="9" r="8" fill="#1D4ED8"/>
-        <text x="9" y="13" font-size="9" font-weight="900" fill="#FFFFFF" text-anchor="middle">4</text>
-        <text x="25" y="13" font-size="11" font-weight="700" fill="#0F172A">Xác nhận với khách (HITL)</text>
-
-        <circle cx="9" cy="45" r="8" fill="#1D4ED8"/>
-        <text x="9" y="49" font-size="9" font-weight="900" fill="#FFFFFF" text-anchor="middle">5</text>
-        <text x="25" y="49" font-size="11" font-weight="700" fill="#0F172A">Thực thi giao dịch &amp; Ghi Audit</text>
-
-        <circle cx="9" cy="81" r="8" fill="#1D4ED8"/>
-        <text x="9" y="85" font-size="9" font-weight="900" fill="#FFFFFF" text-anchor="middle">6</text>
-        <text x="25" y="85" font-size="11" font-weight="700" fill="#0F172A">Tổng hợp phản hồi SSE Stream</text>
+      <!-- OpenTelemetry -->
+      <g transform="translate(265, 18)">
+        <circle cx="0" cy="0" r="12" fill="#0284C7"/>
+        <circle cx="-3" cy="-3" r="3" fill="#FFFFFF"/>
+        <circle cx="4" cy="4" r="3" fill="#FFFFFF"/>
+        <line x1="-3" y1="-3" x2="4" y2="4" stroke="#FFFFFF" stroke-width="1.5"/>
+        <text x="0" y="24" font-size="11" font-weight="900" fill="#581C87" text-anchor="middle">OpenTelemetry</text>
+        <text x="0" y="37" font-size="10" font-weight="700" fill="#7E22CE" text-anchor="middle">(Telemetry)</text>
       </g>
     </g>
+
+    <!-- 4 Checkmark Bullets -->
+    <g transform="translate(145, 108)">
+      <circle cx="8" cy="8" r="7" fill="#9333EA"/>
+      <path d="M 5 8 L 7 10 L 11 6" fill="none" stroke="#FFFFFF" stroke-width="1.5"/>
+      <text x="22" y="12" font-size="11" font-weight="700" fill="#334155">Trace ID xuyên suốt</text>
+
+      <circle cx="8" cy="28" r="7" fill="#9333EA"/>
+      <path d="M 5 28 L 7 30 L 11 26" fill="none" stroke="#FFFFFF" stroke-width="1.5"/>
+      <text x="22" y="32" font-size="11" font-weight="700" fill="#334155">Độ trễ từng bước (ms)</text>
+
+      <circle cx="8" cy="48" r="7" fill="#9333EA"/>
+      <path d="M 5 48 L 7 50 L 11 46" fill="none" stroke="#FFFFFF" stroke-width="1.5"/>
+      <text x="22" y="52" font-size="11" font-weight="700" fill="#334155">Token Burn Analytics</text>
+
+      <circle cx="8" cy="68" r="7" fill="#9333EA"/>
+      <path d="M 5 68 L 7 70 L 11 66" fill="none" stroke="#FFFFFF" stroke-width="1.5"/>
+      <text x="22" y="72" font-size="11" font-weight="700" fill="#334155">Circuit Breaking</text>
+    </g>
   </g>
 
-  <!-- =========================================================================
-       ARROW ⑥: THỰC THI GIAO DỊCH -> KHÁCH HÀNG (UNDERGROUND HIGHWAY at y=1035)
-       ========================================================================= -->
-  <path d="M 1260 1005 L 1260 1035 L 125 1035 L 125 435" fill="none" stroke="#1D4ED8" stroke-width="3.2"/>
-  {draw_arrow(125, 435, "up", color="#1D4ED8", size=14)}
+  <!-- Dashed connection from LangGraph to Observability -->
+  <path d="M 1375 150 L 1485 150 L 1485 202 L 1545 202" fill="none" stroke="#9333EA" stroke-width="1.8" stroke-dasharray="4,4"/>
+  {draw_arrow(1545, 202, "right", color="#9333EA", size=8)}
 
-  <!-- Number Badge ⑥ Protected Pill on Underground Highway with prominent text -->
-  <g transform="translate(800, 1035)">
-    <rect x="-260" y="-16" width="520" height="32" rx="16" fill="#FFFFFF" stroke="#1D4ED8" stroke-width="2.2" class="subtle-shadow"/>
-    <circle cx="-238" cy="0" r="11" fill="#1D4ED8"/>
-    <text x="-238" y="4" font-size="12" font-weight="900" fill="#FFFFFF" text-anchor="middle">6</text>
-    <text x="12" y="4" font-size="11.5" font-weight="800" fill="#1D4ED8" text-anchor="middle">
-      ⑥ Hoàn tất giao dịch: Tổng hợp kết quả &amp; Stream SSE realtime về Client
-    </text>
+  <!-- =========================================================================
+       8. BOTTOM SUPPORTING ROW (y=635, h=100)
+       ========================================================================= -->
+
+  <!-- CARD 8.1: Cơ sở dữ liệu & Tri thức (x=165, y=635, w=310, h=100) -->
+  <g id="Card_Database" transform="translate(165, 635)">
+    <rect width="310" height="100" rx="14" fill="#F0FDF4" stroke="#86EFAC" stroke-width="1.8" class="card-shadow"/>
+    
+    <!-- DB Icon -->
+    <g transform="translate(20, 24)">
+      <ellipse cx="14" cy="8" rx="14" ry="5" fill="#047857"/>
+      <path d="M 0 8 L 0 24 C 0 28 6 31 14 31 C 22 31 28 28 28 24 L 28 8 Z" fill="#10B981" opacity="0.85"/>
+      <ellipse cx="14" cy="16" rx="14" ry="4.5" fill="none" stroke="#FFFFFF" stroke-width="1"/>
+      <ellipse cx="14" cy="24" rx="14" ry="4.5" fill="none" stroke="#FFFFFF" stroke-width="1"/>
+    </g>
+
+    <text x="65" y="32" font-size="13" font-weight="900" fill="#065F46">Cơ sở dữ liệu &amp; Tri thức</text>
+    
+    <g transform="translate(65, 46)">
+      <circle cx="5" cy="5" r="5" fill="#10B981"/>
+      <path d="M 3 5 L 4.5 6.5 L 7 3.5" fill="none" stroke="#FFFFFF" stroke-width="1.2"/>
+      <text x="14" y="9" font-size="10.5" font-weight="700" fill="#065F46">pgvector / PostgreSQL Core DB</text>
+
+      <text x="0" y="28" font-size="10" font-weight="600" fill="#475569">Knowledge Ingestion Pipeline:</text>
+      <text x="0" y="42" font-size="10" font-weight="700" fill="#047857">AST chunking, Matryoshka (MRL-512), HNSW index</text>
+    </g>
   </g>
 
+  <!-- CARD 8.2: Vector Database (x=495, y=635, w=225, h=100) -->
+  <g id="Card_VectorDb" transform="translate(495, 635)">
+    <rect width="225" height="100" rx="14" fill="#EBF5FF" stroke="#93C5FD" stroke-width="1.8" class="card-shadow"/>
+    
+    <!-- Magnifying Glass Icon -->
+    <g transform="translate(20, 28)">
+      <circle cx="12" cy="12" r="10" fill="none" stroke="#0284C7" stroke-width="3"/>
+      <line x1="20" y1="20" x2="30" y2="30" stroke="#0284C7" stroke-width="3.5" stroke-linecap="round"/>
+    </g>
+
+    <text x="65" y="44" font-size="13.5" font-weight="900" fill="#0F172A">Vector Database</text>
+    <text x="65" y="66" font-size="11.5" font-weight="700" fill="#0284C7">(pgvector / PostgreSQL)</text>
+  </g>
+
+  <!-- CARD 8.3: Thực thi giao dịch an toàn (x=740, y=635, w=490, h=100) -->
+  <g id="Card_SafeExecution" transform="translate(740, 635)">
+    <rect width="490" height="100" rx="14" fill="#F0FDF4" stroke="#86EFAC" stroke-width="1.8" class="card-shadow"/>
+    
+    <!-- Green Shield Icon -->
+    <g transform="translate(22, 30)">
+      <path d="M 0 -12 L 12 -6 L 12 4 C 12 10 0 16 0 16 C 0 16 -12 10 -12 4 L -12 -6 Z" fill="#059669"/>
+      <path d="M -4 2 L -1 5 L 5 -1" fill="none" stroke="#FFFFFF" stroke-width="2"/>
+    </g>
+
+    <text x="50" y="38" font-size="13.5" font-weight="900" fill="#065F46">Thực thi giao dịch an toàn (via NestJS Backend)</text>
+    <text x="50" y="62" font-size="11.5" font-weight="700" fill="#047857">Chỉ chuyển trạng thái CANCELLED khi nhận tín hiệu</text>
+    <text x="50" y="80" font-size="11.5" font-weight="700" fill="#047857">phê duyệt hợp lệ từ HITL</text>
+  </g>
+
+  <!-- CARD 8.4: KẾT QUẢ (x=1750, y=635, w=245, h=100) -->
+  <g id="Card_Result" transform="translate(1750, 635)">
+    <rect width="245" height="100" rx="14" fill="#ECFDF5" stroke="#34D399" stroke-width="2" class="card-shadow"/>
+    
+    <!-- Green Checkmark Circle -->
+    <g transform="translate(24, 30)">
+      <circle cx="12" cy="12" r="12" fill="#10B981"/>
+      <path d="M 7 12 L 10 15 L 17 9" fill="none" stroke="#FFFFFF" stroke-width="2.2" stroke-linecap="round"/>
+    </g>
+
+    <text x="56" y="40" font-size="14.5" font-weight="900" fill="#065F46">Kết quả</text>
+    <text x="24" y="70" font-size="12" font-weight="700" fill="#047857">Cập nhật trạng thái</text>
+    <text x="24" y="86" font-size="12" font-weight="700" fill="#047857">cho khách hàng</text>
+  </g>
+
+  <!-- Connection: Logistics APIs down to Result -->
+  <line x1="1930" y1="595" x2="1930" y2="635" stroke="#0052CC" stroke-width="2.5"/>
+  {draw_arrow(1930, 635, "down", color="#0052CC", size=9)}
+
+  <!-- Return Loop: From Result all the way back to Customer (Runs at y=762, avoiding all cards) -->
+  <path d="M 1750 685 L 1715 685 L 1715 762 L 92 762 L 92 380" fill="none" stroke="#0052CC" stroke-width="2.8"/>
+  {draw_arrow(92, 380, "up", color="#0052CC", size=12)}
+
   <!-- =========================================================================
-       9. BOTTOM TECH STACK FOOTER BAR (x=45, y=1175, w=2070, h=98)
+       9. FOOTER BAR: HẠ TẦNG & CÔNG NGHỆ (x=20, y=795, w=1975, h=88)
        ========================================================================= -->
-  <g id="Bar_TechStack" transform="translate(45, 1175)">
-    <rect width="2070" height="98" rx="16" fill="#F0F7FF" stroke="#BAE6FD" stroke-width="2" class="card-shadow"/>
+  <g id="Bar_TechStack" transform="translate(20, 795)">
+    <rect width="1975" height="88" rx="14" fill="#F0F7FF" stroke="#BAE6FD" stroke-width="1.8" class="card-shadow"/>
     
     <!-- Left Blue Pill Badge -->
-    <rect x="0" y="0" width="230" height="34" rx="16 0 16 0" fill="#0284C7"/>
-    <text x="115" y="22" font-size="13.5" font-weight="900" fill="#FFFFFF" text-anchor="middle">Hạ tầng &amp; Công nghệ</text>
+    <rect x="0" y="0" width="220" height="34" rx="14 0 14 0" fill="#0F4C81"/>
+    <text x="110" y="22" font-size="13" font-weight="900" fill="#FFFFFF" text-anchor="middle">Hạ tầng &amp; Công nghệ</text>
 
-    <!-- 6 Technology Items Spaced Generously Across 2070px -->
-    <!-- Item 1: Framework AI -->
-    <g transform="translate(35, 50)">
-      <circle cx="16" cy="16" r="15" fill="#EEF2FF"/>
-      <circle cx="10" cy="12" r="2.5" fill="#4F46E5"/>
-      <circle cx="22" cy="12" r="2.5" fill="#4F46E5"/>
-      <circle cx="16" cy="22" r="2.5" fill="#4F46E5"/>
-      <line x1="10" y1="12" x2="22" y2="12" stroke="#4F46E5" stroke-width="1.2"/>
-      <line x1="10" y1="12" x2="16" y2="22" stroke="#4F46E5" stroke-width="1.2"/>
-      <line x1="22" y1="12" x2="16" y2="22" stroke="#4F46E5" stroke-width="1.2"/>
-
-      <text x="42" y="14" font-size="12.5" font-weight="800" fill="#0F172A">AI Orchestration</text>
-      <text x="42" y="29" font-size="11.5" font-weight="600" fill="#4F46E5">LangGraph (State) + LangChain</text>
+    <!-- 6 Items Spaced Across 1975px -->
+    <!-- Item 1: Cloud - LangChain + LangGraph -->
+    <g transform="translate(30, 48)">
+      <path d="M 6 16 C 2 16 0 13 0 9 C 0 5 4 3 8 3 C 10 1 14 0 18 1 C 22 2 25 5 25 9 C 28 9 30 11 30 14 C 30 17 28 19 25 19 L 6 19 Z" fill="#3B82F6"/>
+      <text x="38" y="14" font-size="12.5" font-weight="900" fill="#0F172A">LangChain + LangGraph</text>
     </g>
 
-    <line x1="360" y1="45" x2="360" y2="88" stroke="#CBD5E1" stroke-width="1.2"/>
+    <line x1="280" y1="42" x2="280" y2="78" stroke="#CBD5E1" stroke-width="1.2"/>
 
-    <!-- Item 2: Cloud Free-Tier -->
-    <g transform="translate(390, 50)">
-      <circle cx="16" cy="16" r="15" fill="#E0F2FE"/>
-      <polygon points="17,5 10,17 16,17 15,27 22,15 16,15" fill="#0284C7"/>
-      
-      <text x="42" y="14" font-size="12.5" font-weight="800" fill="#0F172A">Cloud Free-Tier</text>
-      <text x="42" y="29" font-size="11.5" font-weight="600" fill="#64748B">Groq LPU + Google AI Studio</text>
+    <!-- Item 2: Bolt - Groq LPU + Google AI Studio -->
+    <g transform="translate(310, 48)">
+      <polygon points="12,2 5,14 11,14 9,22 17,10 11,10" fill="#0081FB"/>
+      <text x="24" y="8" font-size="12" font-weight="800" fill="#0F172A">Groq LPU +</text>
+      <text x="24" y="22" font-size="12" font-weight="800" fill="#0F172A">Google AI Studio</text>
     </g>
 
-    <line x1="720" y1="45" x2="720" y2="88" stroke="#CBD5E1" stroke-width="1.2"/>
+    <line x1="530" y1="42" x2="530" y2="78" stroke="#CBD5E1" stroke-width="1.2"/>
 
-    <!-- Item 3: Semantic Cache & DB -->
-    <g transform="translate(750, 50)">
-      <circle cx="16" cy="16" r="15" fill="#E0F2FE"/>
-      <ellipse cx="16" cy="10" rx="8" ry="3" fill="#0284C7"/>
-      <path d="M 8 10 L 8 22 C 8 24 11 26 16 26 C 21 26 24 24 24 22 L 24 10 Z" fill="#0284C7" opacity="0.8"/>
-
-      <text x="42" y="14" font-size="12.5" font-weight="800" fill="#0F172A">Database &amp; Caching</text>
-      <text x="42" y="29" font-size="11.5" font-weight="600" fill="#64748B">PostgreSQL + pgvector &amp; Redis</text>
+    <!-- Item 3: DB - PostgreSQL + pgvector + Redis -->
+    <g transform="translate(560, 48)">
+      <ellipse cx="10" cy="5" rx="10" ry="3.5" fill="#1E3A8A"/>
+      <path d="M 0 5 L 0 16 C 0 19 4 21 10 21 C 16 21 20 19 20 16 L 20 5 Z" fill="#3B82F6" opacity="0.85"/>
+      <text x="28" y="8" font-size="12" font-weight="800" fill="#0F172A">PostgreSQL + pgvector</text>
+      <text x="28" y="22" font-size="12" font-weight="800" fill="#0F172A">+ Redis</text>
     </g>
 
-    <line x1="1100" y1="45" x2="1100" y2="88" stroke="#CBD5E1" stroke-width="1.2"/>
+    <line x1="840" y1="42" x2="840" y2="78" stroke="#CBD5E1" stroke-width="1.2"/>
 
-    <!-- Item 4: Heterogeneous Models -->
-    <g transform="translate(1130, 50)">
-      <circle cx="16" cy="16" r="15" fill="#E0F2FE"/>
-      <!-- Multi-star icon -->
-      <polygon points="16,4 19,12 28,12 21,17 24,25 16,20 8,25 11,17 4,12 13,12" fill="#0284C7"/>
+    <!-- Item 4: Big 4 Logos - Google • Alibaba • Meta • NVIDIA -->
+    <g transform="translate(870, 44)">
+      <!-- Google 'G' -->
+      <g transform="translate(10, 8)">
+        <circle cx="0" cy="0" r="9" fill="#EA4335"/>
+        <text x="0" y="4" font-size="10" font-weight="900" fill="#FFFFFF" text-anchor="middle">G</text>
+      </g>
+      <!-- Alibaba 'e' -->
+      <g transform="translate(36, 8)">
+        <circle cx="0" cy="0" r="9" fill="#FF6A00"/>
+        <text x="0" y="4" font-size="10" font-weight="900" fill="#FFFFFF" text-anchor="middle">e</text>
+      </g>
+      <!-- Meta '∞' -->
+      <g transform="translate(62, 8)">
+        <circle cx="0" cy="0" r="9" fill="#0081FB"/>
+        <path d="M -4 2 C -6 2 -7 0 -7 -1 C -7 -3 -5 -4 -3 -4 C -1 -4 0 -2 0 -1 C 1 -2 2 -4 4 -4 C 6 -4 7 -3 7 -1 C 7 0 6 2 4 2 Z" fill="none" stroke="#FFFFFF" stroke-width="1.2"/>
+      </g>
+      <!-- NVIDIA eye -->
+      <g transform="translate(88, 8)">
+        <rect x="-9" y="-9" width="18" height="18" rx="3" fill="#76B900"/>
+        <circle cx="0" cy="0" r="4" fill="#FFFFFF"/>
+      </g>
 
-      <text x="42" y="14" font-size="12.5" font-weight="800" fill="#0F172A">Bộ Tứ Big 4 (Heterogeneous)</text>
-      <text x="42" y="29" font-size="11" font-weight="700" fill="#1E40AF">Google • Alibaba • Meta • NVIDIA</text>
+      <text x="110" y="6" font-size="11.5" font-weight="900" fill="#0F172A">Google • Alibaba • Meta • NVIDIA</text>
+      <text x="110" y="22" font-size="10.5" font-weight="700" fill="#64748B">(Big Four Model Providers)</text>
     </g>
 
-    <line x1="1470" y1="45" x2="1470" y2="88" stroke="#CBD5E1" stroke-width="1.2"/>
+    <line x1="1260" y1="42" x2="1260" y2="78" stroke="#CBD5E1" stroke-width="1.2"/>
 
-    <!-- Item 5: Observability -->
-    <g transform="translate(1500, 50)">
-      <circle cx="16" cy="16" r="15" fill="#F3E8FF"/>
-      <circle cx="16" cy="16" r="7.5" fill="none" stroke="#7E22CE" stroke-width="2"/>
-      <circle cx="16" cy="16" r="2.5" fill="#7E22CE"/>
+    <!-- Item 5: LangSmith / OpenTelemetry -->
+    <g transform="translate(1290, 48)">
+      <!-- Connected dots icon -->
+      <circle cx="6" cy="6" r="4" fill="#7C3AED"/>
+      <circle cx="20" cy="6" r="4" fill="#0284C7"/>
+      <circle cx="13" cy="18" r="4" fill="#EA580C"/>
+      <line x1="6" y1="6" x2="20" y2="6" stroke="#7C3AED" stroke-width="1.5"/>
+      <line x1="6" y1="6" x2="13" y2="18" stroke="#7C3AED" stroke-width="1.5"/>
+      <line x1="20" y1="6" x2="13" y2="18" stroke="#0284C7" stroke-width="1.5"/>
 
-      <text x="42" y="14" font-size="12.5" font-weight="800" fill="#0F172A">Observability</text>
-      <text x="42" y="29" font-size="11.5" font-weight="600" fill="#64748B">LangSmith / OpenTelemetry</text>
+      <text x="32" y="8" font-size="12" font-weight="800" fill="#0F172A">LangSmith /</text>
+      <text x="32" y="22" font-size="12" font-weight="800" fill="#0F172A">OpenTelemetry</text>
     </g>
 
-    <line x1="1810" y1="45" x2="1810" y2="88" stroke="#CBD5E1" stroke-width="1.2"/>
+    <line x1="1560" y1="42" x2="1560" y2="78" stroke="#CBD5E1" stroke-width="1.2"/>
 
-    <!-- Item 6: API Gateway -->
-    <g transform="translate(1840, 50)">
-      <circle cx="16" cy="16" r="15" fill="#FEE2E2"/>
-      <path d="M 9 22 C 9 14 13 10 18 10 C 23 10 27 14 27 22 Z" fill="#E11D48"/>
-      <polygon points="12,12 10,7 16,10" fill="#E11D48"/>
-      <polygon points="24,12 26,7 20,10" fill="#E11D48"/>
+    <!-- Item 6: NestJS Cat Logo - Gateway BFF -->
+    <g transform="translate(1590, 48)">
+      <circle cx="12" cy="12" r="12" fill="#E11D48"/>
+      <path d="M 6 16 C 6 11 9 8 12 8 C 15 8 18 11 18 16 Z" fill="#FFFFFF"/>
+      <polygon points="7,8 5,3 10,6" fill="#FFFFFF"/>
+      <polygon points="17,8 19,3 14,6" fill="#FFFFFF"/>
 
-      <text x="42" y="14" font-size="12.5" font-weight="800" fill="#0F172A">API Gateway</text>
-      <text x="42" y="29" font-size="11.5" font-weight="600" fill="#64748B">NestJS Gateway BFF</text>
+      <text x="32" y="10" font-size="12.5" font-weight="900" fill="#0F172A">NestJS</text>
+      <text x="32" y="24" font-size="11.5" font-weight="700" fill="#64748B">Gateway BFF</text>
     </g>
   </g>
 
@@ -1011,7 +778,7 @@ def build_svg():
     os.makedirs(os.path.dirname(OUTPUT_SVG), exist_ok=True)
     with open(OUTPUT_SVG, "w", encoding="utf-8") as f:
         f.write(svg_content)
-    print(f"Generated Production-Grade Architecture SVG: {OUTPUT_SVG}")
+    print(f"Generated Reference-Matched Architecture SVG: {OUTPUT_SVG}")
 
 if __name__ == "__main__":
     build_svg()
