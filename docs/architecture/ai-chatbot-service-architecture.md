@@ -94,8 +94,7 @@ Nhằm triệt tiêu **Thiên kiến đồng nhất (Homogeneous Bias)**, 4 tác
 graph TD
     subgraph CLIENT_TIER ["1. TẦNG GIAO DIỆN NGƯỜI DÙNG (CLIENT FRONTENDS)"]
         CM["Customer Mobile App<br/>(React Native / iOS & Android)"]
-        MW["Merchant Web Dashboard<br/>(React 18 / Vite / Tailwind)"]
-        GW["Guest Public Tracking<br/>(React 18 / Vite / PII Masking)"]
+        GW["Guest Public Tracking Portal<br/>(React 18 / Vite / PII Masking)"]
     end
 
     subgraph GATEWAY_TIER ["2. TẦNG API GATEWAY & REVERSE PROXY (Port 3000)"]
@@ -129,7 +128,6 @@ graph TD
     end
 
     CM -->|HTTPS / SSE Stream| BFF
-    MW -->|HTTPS / SSE Stream| BFF
     GW -->|HTTPS / SSE Stream| BFF
 
     BFF <-->|Cache Hit < 15ms| CACHE
@@ -160,8 +158,8 @@ Sơ đồ thể hiện chuẩn mô hình **BCE (Boundary - Control - Entity)** v
 ```mermaid
 sequenceDiagram
     autonumber
-    actor User as Chủ hàng (Merchant)
-    participant UI as Merchant Web UI (:5173)
+    actor User as Khách hàng / Người nhận (Customer / Guest)
+    participant UI as Customer Mobile App / Guest Portal
     participant BFF as Gateway BFF (:3000)
     participant Sup as Supervisor (Google)
     participant Oper as Operation Agent (OpenAI)
