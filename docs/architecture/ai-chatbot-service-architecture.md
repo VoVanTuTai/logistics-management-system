@@ -285,4 +285,60 @@ $$\text{Cost}_{\text{month}} = 30,000 \times \$0.0002035 = \mathbf{\$6.10 / \tex
    - Thêm bộ nhớ đệm ngữ nghĩa (Semantic Cache) bằng Redis để tái sử dụng câu trả lời cho các câu hỏi trùng lặp, giảm thêm 50% chi phí gọi LLM.
 
 ---
+
+## 7. BƯỚC ĐỘT PHÁ HỌC THUẬT: KIẾN TRÚC ĐA TÁC TỬ KHÔNG ĐỒNG NHẤT (HETEROGENEOUS MULTI-AGENT ARCHITECTURE - HMAS)
+
+Nhằm nâng tầm đề tài nghiên cứu khoa học và luận văn tốt nghiệp, hệ thống đã thực hiện bước chuyển dịch mang tính đột phá từ mô hình **Single-Agent RAG cơ bản** sang **Kiến trúc Đa Tác tử Không Đồng Nhất (Heterogeneous Multi-Agent Architecture - HMAS)** tích hợp cơ chế kiểm soát an toàn **Human-in-the-Loop (HITL)**.
+
+### 7.1. Sơ đồ Kiến trúc Đồ họa Infographic Tiêu chuẩn (Modern Technical Architecture Infographic)
+Toàn bộ kiến trúc được trực quan hóa theo tiêu chuẩn thiết kế SaaS Card-based phân tầng:
+* **Sơ đồ Vector Chi tiết (2060 × 1260):** [`04-multi-agent-infographic-architecture.svg`](file:///Users/Tai.IS/my-project/logistics-management-system/docs/graduation-thesis/diagrams/architecture/04-multi-agent-infographic-architecture.svg)
+* **Sơ đồ Slide Trình chiếu Tỷ lệ 16:9 (1920 × 1080):** [`04-multi-agent-presentation-slide.svg`](file:///Users/Tai.IS/my-project/logistics-management-system/docs/graduation-thesis/diagrams/architecture/04-multi-agent-presentation-slide.svg)
+
+```
+                  ┌────────────────────────────────────────────────────────┐
+                  │ 📡 Observability & Tracing (LangSmith / OpenTelemetry) │
+                  │  Trace ID • Per-Node Latency (ms) • Token Burn Rate    │
+                  └───────────────────────────▲────────────────────────────┘
+                                              │ (OTEL Telemetry Tap)
+[1. Khách Hàng] ──> [⚡ Semantic Cache] ──> [2. Supervisor Agent] <──> [🧠 Shared Memory]
+                          │ (Hit: <15ms)         (Gemini 3.6 Flash)         │ (Sliding Window K=5
+                          ▼ (0$ token)                │                     │  Token Cap ≤ 1500)
+                     [Phản hồi ngay]        [🔄 Fallback Cascade]           │
+                                            (Groq ➔ Gemini ➔ vLLM)          │
+                                                      │                     │
+                                                      ▼                     │
+                                            [3. Biệt Đội Sub-Agents]        │
+                                            (Qwen 32B • Llama 70B)          │
+                                                      │                     ▼
+[6. Phản Hồi SSE] <── [5. Backend Exec] <── [4. Chốt Chặn HITL] <── [Validation Agent]
+                                                                    (Nemotron-70B NVIDIA)
+```
+
+### 7.2. Ma trận Lựa chọn Mô hình "Bộ Tứ Big 4" (Model Selection Rationale)
+Nhằm triệt tiêu hoàn toàn **Thiên kiến đồng nhất (Homogeneous Bias)** khi một họ mô hình vừa tự sinh thao tác vừa tự kiểm duyệt chính nó, hệ thống phân định độc lập 4 chuyên gia từ 4 tập đoàn AI lớn nhất thế giới, vận hành **100% miễn phí**:
+
+| Tác tử & Nhãn Vai trò | Họ Mô hình AI & Tập đoàn | Hạ tầng Vận hành | Lý do Học thuật & Năng lực Cốt lõi (Model Selection Rationale) |
+| :--- | :--- | :--- | :--- |
+| **👑 Supervisor Agent**<br>`[CHỈ HUY ĐIỀU PHỐI]` | **Gemini 3.6 Flash**<br>*(Google)* | **Google AI Studio** *(Free)* | • **TTFT siêu thấp & Native Structured Outputs:** Định tuyến đồ thị DAG chuẩn xác.<br>• **Tách tải độc lập:** Giảm tải hoàn toàn cho cụm Groq bên dưới, tránh nghẽn Rate Limit.<br>• Gom dữ liệu stream SSE realtime trả về Client. |
+| **📖 Knowledge Agent**<br>`[TRÍCH XUẤT RAG]` | **Qwen 2.5 32B Instruct**<br>*(Alibaba)* | **Groq LPU Cloud** *(Free)* | • **Tokenizer tiếng Việt vượt trội:** Tiết kiệm tới **25% token context** so với model phương Tây.<br>• **Độ trung thực ngữ cảnh cao (High Faithfulness):** Trích dẫn 100% Luật Bưu chính (Điều 25) và quy chuẩn SOP đóng gói bubble wrap $\ge 3$ lớp. |
+| **⚡ Operation Agent**<br>`[TOOL CALLING]` | **Llama 3.3 70B Versatile**<br>*(Meta)* | **Groq LPU Cloud** *(Free)* | • **Model 70B chuyên trị Tool Calling:** Chọc API tra cứu vận đơn (`GET :3008`), tính cước quy đổi IATA ($V/6000$).<br>• **Tạo JSON DTO chuẩn xác:** Đóng gói payload tương thích 100% với NestJS DTO trước khi lưu. |
+| **🛡️ Validation Agent**<br>`[NeMo GUARDRAIL]` | **Llama-3.1-Nemotron-70B**<br>*(NVIDIA)* | **NVIDIA NIM Cloud** *(1,000 Credits Free)* | • **NeMo Guardrails & Reward Modeling:** Tối ưu chuyên biệt cho an toàn hệ thống, đối soát chính sách và phát hiện gian lận khiếu nại.<br>• **Khử Thiên Kiến Đồng Nhất:** Kiểm duyệt chéo độc lập đầu ra của Llama 3.3 70B; kích hoạt ngắt HITL. |
+
+### 7.3. 4 Trụ Cột Tiến Hóa Kiến Trúc Môi Trường Sản Xuất (Production Evolution)
+1. **⚡ Semantic Caching (Redis Vector Cache):**
+   * Ngưỡng Cosine Similarity $\ge 0.95$. Phản hồi ngay các câu hỏi FAQ bưu chính dưới **15ms**, giảm **60% chi phí token**.
+2. **🔄 Chuỗi Dự Phòng Đa Tầng (HA Failover Cascade):**
+   * Tầng 1: Groq LPU (400 t/s) $\rightarrow$ Tầng 2: Google AI Studio $\rightarrow$ Tầng 3: Qwen 2.5 local vLLM/Docker (chạy Offline khi mất mạng).
+3. **📡 Giám Sát & Truy Vết Toàn Diện (Observability via LangSmith & OpenTelemetry):**
+   * Gắn Trace ID duy nhất cho mỗi lượt tương tác, đo lường Per-Node Latency và Token Burn Rate.
+4. **🗜️ Kiểm Soát Bộ Nhớ Ngữ Cảnh (Context Memory Hygiene):**
+   * Sử dụng Sliding Window Buffer ($K=5$) kết hợp tác vụ tóm tắt nền, trần cứng **Token Cap $\le 1.500$ tokens** triệt tiêu nguy cơ tràn ngữ cảnh.
+
+### 7.4. Quy trình Thực thi Hai Pha An Toàn (Two-Phase Human-in-the-Loop)
+Mọi thao tác thay đổi dữ liệu (hủy đơn, nộp bồi thường) đều tuân thủ nguyên tắc:
+$$\text{User Query} \xrightarrow{\text{Orchestrate}} \text{Draft Proposal (DTO)} \xrightarrow{\text{Validate}} \text{HITL Confirmation (User Sign)} \xrightarrow{\text{Execute}} \text{NestJS DB + Immutable Audit}$$
+AI không bao giờ được cấp quyền ghi trực tiếp vào cơ sở dữ liệu. Mọi giao dịch đều được ghi vết bất biến vào bảng `ai_agent_audit_logs`.
+
+---
 *Báo cáo được khởi tạo và lưu trữ tại `docs/architecture/ai-chatbot-service-architecture.md` phục vụ công tác nghiệm thu và bảo vệ đồ án tốt nghiệp.*

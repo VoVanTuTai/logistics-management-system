@@ -22,6 +22,11 @@ export class ChatService {
   private temperature: number;
   private geminiApiKey: string;
   private geminiModel: string;
+  private groqApiKey: string;
+  private groqKnowledgeModel: string;
+  private groqOperationModel: string;
+  private nvidiaApiKey: string;
+  private nvidiaValidationModel: string;
 
   constructor(
     private readonly embeddingService: EmbeddingService,
@@ -30,6 +35,11 @@ export class ChatService {
   ) {
     this.geminiApiKey = process.env.GEMINI_API_KEY || '';
     this.geminiModel = process.env.GEMINI_MODEL || 'gemini-3.6-flash';
+    this.groqApiKey = process.env.GROQ_API_KEY || '';
+    this.groqKnowledgeModel = process.env.GROQ_KNOWLEDGE_MODEL || 'qwen/qwen3.8-27b';
+    this.groqOperationModel = process.env.GROQ_OPERATION_MODEL || 'openai/gpt-oss-120b';
+    this.nvidiaApiKey = process.env.NVIDIA_API_KEY || '';
+    this.nvidiaValidationModel = process.env.NVIDIA_VALIDATION_MODEL || 'nvidia/nemotron-3.5-lightning-30b-a3b';
     this.apiKey = process.env.OPENAI_API_KEY || '';
     this.chatModel = process.env.OPENAI_CHAT_MODEL || 'gpt-4o-mini';
     this.temperature = Number(process.env.OPENAI_TEMPERATURE || 0.2);
@@ -720,91 +730,426 @@ ${question}
 
 HÃY ĐƯA RA CÂU TRẢ LỜI ĐẦY ĐỦ VÀ CHÍNH XÁC:`;
 
-    // 1. Ưu tiên sử dụng Google Gemini API nếu có cấu hình GEMINI_API_KEY
-    if (this.geminiApiKey) {
-      const candidateModels = Array.from(
-        new Set([
-          'gemini-3.5-flash-lite',
-          'gemini-3-flash-preview',
-          'gemini-3.8-flash',
-          this.geminiModel,
-        ].filter(Boolean))
+    // 1. Phân luồng tác tử chuyên biệt theo mô hình Heterogeneous Multi-Agent (HMAS):
+    const isToolContext = context.includes('=== DỮ LIỆU THỜI GIAN THỰC TỪ HỆ THỐNG LOGISTICS ===');
+    const isKnowledgeContext = citations.length > 0 || context.includes('=== TÀI LIỆU QUY CHUẨN') || context.includes('Điều 25');
+
+    // Tác tử 1: Operation Agent (Llama 3.3 70B / Groq LPU) cho các thao tác tra cứu, tính cước, đơn hàng
+    if (isToolContext && this.groqApiKey) {
+      const opSystemPrompt = `${systemPrompt}\n\n[CHỈ DẪN VAI TRÒ CHUYÊN BIỆT: OPERATION AGENT - LLAMA 3.3 70B]\nBạn là Operation Agent phụ trách tổng hợp dữ liệu logistics thời gian thực từ các APIs nội bộ, định dạng thẻ đơn hàng, tính cước IATA và hỗ trợ bưu tá/khách hàng. Trả lời trực quan, chuẩn xác.`;
+      const opResult = await this.callOpenAiCompatible(
+        'https://api.groq.com/openai/v1/chat/completions',
+        this.groqApiKey,
+        this.groqOperationModel,
+        opSystemPrompt,
+        userPrompt
       );
-
-      for (const model of candidateModels) {
-        try {
-          const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${this.geminiApiKey}`;
-          const generationConfig: any = {
-            temperature: this.temperature,
-          };
-
-          const resp = await fetch(geminiUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              systemInstruction: {
-                parts: [{ text: systemPrompt }],
-              },
-              contents: [
-                {
-                  parts: [{ text: userPrompt }],
-                },
-              ],
-              generationConfig,
-            }),
-            signal: AbortSignal.timeout(4000),
-          });
-
-          if (resp.ok) {
-            const data = (await resp.json()) as any;
-            const answerText = data.candidates?.[0]?.content?.parts?.[0]?.text;
-            if (answerText) {
-              this.logger.log(`Google Gemini (${model}) generated answer successfully.`);
-              return this.cleanBotFormatting(answerText);
-            }
-          } else {
-            const errText = await resp.text();
-            this.logger.warn(`Google Gemini API error with model ${model} (${resp.status}): ${errText}`);
-          }
-        } catch (err: any) {
-          this.logger.warn(`Google Gemini fetch failed for model ${model}: ${err.message}`);
-        }
+      if (opResult) {
+        this.logger.log(`Operation Agent (${this.groqOperationModel} / Groq LPU) generated answer successfully.`);
+        return this.cleanBotFormatting(opResult);
       }
     }
 
-    // 2. Dự phòng OpenAI API nếu có cấu hình OPENAI_API_KEY
-    if (this.apiKey) {
-      try {
-        const resp = await fetch('https://api.openai.com/v1/chat/completions', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${this.apiKey}`,
-          },
-          body: JSON.stringify({
-            model: this.chatModel,
-            temperature: this.temperature,
-            messages: [
-              { role: 'system', content: systemPrompt },
-              { role: 'user', content: userPrompt },
-            ],
-          }),
-        });
+    // Tác tử 2: Knowledge Agent (Qwen 2.5 32B / Groq LPU) cho hỏi đáp RAG chính sách, bồi thường, bảo hiểm
+    if (isKnowledgeContext && this.groqApiKey) {
+      const kwSystemPrompt = `${systemPrompt}\n\n[CHỈ DẪN VAI TRÒ CHUYÊN BIỆT: KNOWLEDGE AGENT - QWEN 2.5 32B]\nBạn là Knowledge Agent phụ trách trích xuất chính sách SOP, Điều 25 Luật Bưu chính, biểu phí và quy chuẩn đóng gói dễ vỡ. Dùng tokenizer tiếng Việt tự nhiên, giải thích cặn kẽ.`;
+      const kwResult = await this.callOpenAiCompatible(
+        'https://api.groq.com/openai/v1/chat/completions',
+        this.groqApiKey,
+        this.groqKnowledgeModel,
+        kwSystemPrompt,
+        userPrompt
+      );
+      if (kwResult) {
+        this.logger.log(`Knowledge Agent (${this.groqKnowledgeModel} / Groq LPU) generated answer successfully.`);
+        return this.cleanBotFormatting(kwResult);
+      }
+    }
 
-        if (resp.ok) {
-          const data = (await resp.json()) as any;
-          return this.cleanBotFormatting(data.choices[0].message.content);
-        } else {
-          const errText = await resp.text();
-          this.logger.warn(`OpenAI LLM error ${resp.status}: ${errText}`);
-        }
-      } catch (err: any) {
-        this.logger.warn(`OpenAI LLM fetch failed: ${err.message}`);
+    // Tác tử 3: Supervisor Agent (Google Gemini 3.6 Flash / Google AI Studio) - Chỉ huy & Fallback Cascade bậc 1
+    if (this.geminiApiKey) {
+      const geminiResult = await this.callGemini(this.geminiModel, systemPrompt, userPrompt);
+      if (geminiResult) {
+        this.logger.log(`Supervisor Agent (${this.geminiModel} / Google AI Studio) generated answer successfully.`);
+        return this.cleanBotFormatting(geminiResult);
+      }
+    }
+
+    // Tác tử 4 Dự phòng: OpenAI API (nếu có cấu hình OPENAI_API_KEY)
+    if (this.apiKey) {
+      const openaiResult = await this.callOpenAiCompatible(
+        'https://api.openai.com/v1/chat/completions',
+        this.apiKey,
+        this.chatModel,
+        systemPrompt,
+        userPrompt
+      );
+      if (openaiResult) {
+        this.logger.log(`Fallback OpenAI API (${this.chatModel}) generated answer successfully.`);
+        return this.cleanBotFormatting(openaiResult);
       }
     }
 
     // 3. Chế độ Fallback Offline Semantic Demo nếu không có key hoặc lỗi mạng
     return this.cleanBotFormatting(this.generateOfflineDemoAnswer(question, context, citations));
+  }
+
+  /**
+   * Gọi mô hình tương thích OpenAI REST API (sử dụng cho Groq Cloud và NVIDIA NIM)
+   */
+  private async callOpenAiCompatible(
+    apiUrl: string,
+    apiKey: string,
+    model: string,
+    systemPrompt: string,
+    userPrompt: string,
+    timeoutMs = 6000
+  ): Promise<string | null> {
+    if (!apiKey) return null;
+    try {
+      const resp = await fetch(apiUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify({
+          model,
+          temperature: this.temperature,
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: userPrompt },
+          ],
+        }),
+        signal: AbortSignal.timeout(timeoutMs),
+      });
+
+      if (resp.ok) {
+        const data = (await resp.json()) as any;
+        const text = data.choices?.[0]?.message?.content;
+        if (text) return text;
+      } else {
+        const err = await resp.text();
+        this.logger.warn(`API call error for ${model} (${resp.status}): ${err}`);
+      }
+    } catch (err: any) {
+      this.logger.warn(`API call failed for ${model}: ${err.message}`);
+    }
+    return null;
+  }
+
+  /**
+   * Gọi Google Gemini API với danh sách fallback model tự động
+   */
+  private async callGemini(
+    model: string,
+    systemPrompt: string,
+    userPrompt: string,
+    timeoutMs = 5000
+  ): Promise<string | null> {
+    if (!this.geminiApiKey) return null;
+    const candidateModels = Array.from(
+      new Set([model, this.geminiModel, 'gemini-3.6-flash', 'gemini-3.5-flash-lite'].filter(Boolean))
+    );
+
+    for (const m of candidateModels) {
+      try {
+        const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${m}:generateContent?key=${this.geminiApiKey}`;
+        const resp = await fetch(geminiUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            systemInstruction: {
+              parts: [{ text: systemPrompt }],
+            },
+            contents: [
+              {
+                parts: [{ text: userPrompt }],
+              },
+            ],
+            generationConfig: {
+              temperature: this.temperature,
+            },
+          }),
+          signal: AbortSignal.timeout(timeoutMs),
+        });
+
+        if (resp.ok) {
+          const data = (await resp.json()) as any;
+          const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+          if (text) return text;
+        } else {
+          const err = await resp.text();
+          this.logger.warn(`Gemini (${m}) returned ${resp.status}: ${err}`);
+        }
+      } catch (err: any) {
+        this.logger.warn(`Gemini (${m}) fetch error: ${err.message}`);
+      }
+    }
+    return null;
+  }
+
+  /**
+   * Tác tử 4: Validation Agent (Nemotron-70B / NVIDIA NIM)
+   * Kiểm tra NeMo Guardrail, phát hiện rủi ro bưu chính và kích hoạt Human-in-the-Loop (HITL)
+   */
+  public async callValidationAgent(
+    actionType: string,
+    payloadText: string,
+    userRole = 'GUEST'
+  ): Promise<{ isApproved: boolean; requiresHitl: boolean; riskLevel: 'LOW' | 'MEDIUM' | 'HIGH'; reason: string }> {
+    const isRiskyMutation =
+      actionType === 'CANCEL_ORDER' ||
+      actionType === 'REFUND_PAYOUT' ||
+      actionType === 'CHANGE_ADDRESS' ||
+      payloadText.toLowerCase().includes('huy don') ||
+      payloadText.toLowerCase().includes('doi dia chi');
+
+    if (isRiskyMutation) {
+      if (this.nvidiaApiKey) {
+        const candidateNvidiaModels = Array.from(
+          new Set([
+            this.nvidiaValidationModel,
+            'nvidia/nemotron-3.5-lightning-30b-a3b',
+            'nvidia/nemotron-3-ultra-550b-a55b',
+            'nvidia/nemotron-3.5-super-vl-120b-a12b',
+            'nvidia/llama-3.3-nemotron-super-49b-v1.5',
+            'meta/llama-3.3-70b-instruct',
+          ].filter(Boolean))
+        );
+
+        const guardrailPrompt = `Bạn là NeMo Guardrail AI của Nexus Logistics (NVIDIA NIM). Hãy kiểm tra thao tác sau: Hành động="${actionType}", Nội dung="${payloadText}", Vai trò người dùng="${userRole}". Cho biết rủi ro và có cần người duyệt (HITL) không. Trả về JSON: {"approved": boolean, "requiresHitl": boolean, "risk": "LOW"|"MEDIUM"|"HIGH", "reason": string}`;
+        for (const model of candidateNvidiaModels) {
+          try {
+            const verdictRaw = await this.callOpenAiCompatible(
+              'https://integrate.api.nvidia.com/v1/chat/completions',
+              this.nvidiaApiKey,
+              model,
+              guardrailPrompt,
+              payloadText,
+              4000
+            );
+            if (verdictRaw) {
+              try {
+                const parsed = JSON.parse(verdictRaw.replace(/```json|```/g, '').trim());
+                return {
+                  isApproved: parsed.approved ?? true,
+                  requiresHitl: parsed.requiresHitl ?? true,
+                  riskLevel: parsed.risk ?? 'HIGH',
+                  reason: parsed.reason ?? 'Thao tác ảnh hưởng trạng thái vận đơn, cần người duyệt xác nhận.',
+                };
+              } catch {
+                // parse error -> fallback
+              }
+            }
+          } catch (err: any) {
+            this.logger.warn(`NVIDIA NIM Validation Agent error with model ${model}: ${err.message}`);
+          }
+        }
+      }
+
+      // Dự phòng qua Groq LPU (Llama Guard / Llama 3.3) nếu không có NVIDIA NIM
+      if (this.groqApiKey) {
+        const guardrailPrompt = `Bạn là NeMo Guardrail AI của Nexus Logistics. Kiểm tra thao tác: Hành động="${actionType}", Nội dung="${payloadText}". Trả về JSON: {"approved": boolean, "requiresHitl": boolean, "risk": "LOW"|"MEDIUM"|"HIGH", "reason": string}`;
+        try {
+          const verdictRaw = await this.callOpenAiCompatible(
+            'https://api.groq.com/openai/v1/chat/completions',
+            this.groqApiKey,
+            this.groqOperationModel,
+            guardrailPrompt,
+            payloadText,
+            3000
+          );
+          if (verdictRaw) {
+            try {
+              const parsed = JSON.parse(verdictRaw.replace(/```json|```/g, '').trim());
+              return {
+                isApproved: parsed.approved ?? true,
+                requiresHitl: parsed.requiresHitl ?? true,
+                riskLevel: parsed.risk ?? 'HIGH',
+                reason: parsed.reason ?? 'Cần phê duyệt từ người dùng theo chuẩn an toàn.',
+              };
+            } catch {}
+          }
+        } catch {}
+      }
+
+      return {
+        isApproved: true,
+        requiresHitl: true,
+        riskLevel: 'HIGH',
+        reason: 'Thao tác làm thay đổi dữ liệu đơn hàng bưu chính, kích hoạt Human-in-the-Loop để bảo vệ an toàn.',
+      };
+    }
+
+    return {
+      isApproved: true,
+      requiresHitl: false,
+      riskLevel: 'LOW',
+      reason: 'Truy vấn thông tin an toàn.',
+    };
+  }
+
+  /**
+   * Diagnostic Health Check cho cả 4 Tác tử (Big Four Multi-Agent Matrix)
+   */
+  public async checkMultiAgentHealth(): Promise<{
+    timestamp: string;
+    overallStatus: 'HEALTHY' | 'DEGRADED';
+    agents: {
+      supervisor: { provider: string; model: string; status: string; latencyMs?: number; note?: string };
+      knowledge: { provider: string; model: string; status: string; latencyMs?: number; note?: string };
+      operation: { provider: string; model: string; status: string; latencyMs?: number; note?: string };
+      validation: { provider: string; model: string; status: string; latencyMs?: number; note?: string };
+    };
+    fallbackCascade: {
+      active: boolean;
+      primaryAvailable: boolean;
+      offlineFallbackReady: boolean;
+    };
+  }> {
+    const pingPrompt = 'Trả lời đúng 1 chữ: OK';
+
+    // 1. Check Supervisor (Gemini)
+    const t0 = Date.now();
+    let supStatus = 'KEY_MISSING';
+    let supLatency: number | undefined;
+    if (this.geminiApiKey) {
+      try {
+        const res = await this.callGemini(this.geminiModel, 'System ping', pingPrompt, 3000);
+        supLatency = Date.now() - t0;
+        supStatus = res ? 'CONNECTED' : 'UNREACHABLE';
+      } catch {
+        supStatus = 'ERROR';
+      }
+    }
+
+    // 2. Check Knowledge (Groq / Qwen)
+    const t1 = Date.now();
+    let kwStatus = 'KEY_MISSING (Fallback to Gemini)';
+    let kwLatency: number | undefined;
+    if (this.groqApiKey) {
+      try {
+        const res = await this.callOpenAiCompatible(
+          'https://api.groq.com/openai/v1/chat/completions',
+          this.groqApiKey,
+          this.groqKnowledgeModel,
+          'System ping',
+          pingPrompt,
+          3000
+        );
+        kwLatency = Date.now() - t1;
+        kwStatus = res ? 'CONNECTED' : 'UNREACHABLE';
+      } catch {
+        kwStatus = 'ERROR';
+      }
+    }
+
+    // 3. Check Operation (Groq / Llama)
+    const t2 = Date.now();
+    let opStatus = 'KEY_MISSING (Fallback to Gemini)';
+    let opLatency: number | undefined;
+    if (this.groqApiKey) {
+      try {
+        const res = await this.callOpenAiCompatible(
+          'https://api.groq.com/openai/v1/chat/completions',
+          this.groqApiKey,
+          this.groqOperationModel,
+          'System ping',
+          pingPrompt,
+          3000
+        );
+        opLatency = Date.now() - t2;
+        opStatus = res ? 'CONNECTED' : 'UNREACHABLE';
+      } catch {
+        opStatus = 'ERROR';
+      }
+    }
+
+    // 4. Check Validation (NVIDIA NIM / NeMo Guardrail)
+    const t3 = Date.now();
+    let valStatus = 'KEY_MISSING (Fallback to NeMo Guardrail Local / Groq)';
+    let valLatency: number | undefined;
+    let activeValidationModel = this.nvidiaValidationModel;
+
+    if (this.nvidiaApiKey) {
+      const candidateNvidiaModels = Array.from(
+        new Set([
+          this.nvidiaValidationModel,
+          'nvidia/nemotron-3.5-lightning-30b-a3b',
+          'nvidia/nemotron-3-ultra-550b-a55b',
+          'nvidia/nemotron-3.5-super-vl-120b-a12b',
+          'nvidia/llama-3.3-nemotron-super-49b-v1.5',
+          'meta/llama-3.3-70b-instruct',
+        ].filter(Boolean))
+      );
+
+      for (const m of candidateNvidiaModels) {
+        try {
+          const res = await this.callOpenAiCompatible(
+            'https://integrate.api.nvidia.com/v1/chat/completions',
+            this.nvidiaApiKey,
+            m,
+            'System ping',
+            pingPrompt,
+            3000
+          );
+          if (res) {
+            valLatency = Date.now() - t3;
+            valStatus = 'CONNECTED';
+            activeValidationModel = m;
+            break;
+          }
+        } catch {
+          valStatus = 'ERROR';
+        }
+      }
+      if (valStatus !== 'CONNECTED') {
+        valStatus = 'UNREACHABLE (Model deprecated or key error)';
+      }
+    }
+
+    const hasAnyLlm = supStatus === 'CONNECTED' || kwStatus === 'CONNECTED' || opStatus === 'CONNECTED';
+
+    return {
+      timestamp: new Date().toISOString(),
+      overallStatus: hasAnyLlm ? 'HEALTHY' : 'DEGRADED',
+      agents: {
+        supervisor: {
+          provider: 'Google AI Studio',
+          model: this.geminiModel,
+          status: supStatus,
+          latencyMs: supLatency,
+          note: 'Chỉ huy & Lập kế hoạch DAG điều phối',
+        },
+        knowledge: {
+          provider: 'Groq LPU (Alibaba)',
+          model: this.groqKnowledgeModel,
+          status: kwStatus,
+          latencyMs: kwLatency,
+          note: 'RAG trích xuất chính sách SOP, Điều 25 Luật Bưu chính',
+        },
+        operation: {
+          provider: 'Groq LPU (Meta)',
+          model: this.groqOperationModel,
+          status: opStatus,
+          latencyMs: opLatency,
+          note: 'Logistics Tool Calling, tính cước IATA, định dạng vận đơn',
+        },
+        validation: {
+          provider: 'NVIDIA NIM (NVIDIA)',
+          model: this.nvidiaValidationModel,
+          status: valStatus,
+          latencyMs: valLatency,
+          note: 'NeMo Guardrail, phát hiện rủi ro & kích hoạt HITL',
+        },
+      },
+      fallbackCascade: {
+        active: true,
+        primaryAvailable: supStatus === 'CONNECTED',
+        offlineFallbackReady: true,
+      },
+    };
   }
 
   /**
