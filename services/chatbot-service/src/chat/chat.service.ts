@@ -36,10 +36,10 @@ export class ChatService {
     this.geminiApiKey = process.env.GEMINI_API_KEY || '';
     this.geminiModel = process.env.GEMINI_MODEL || 'gemini-3.6-flash';
     this.groqApiKey = process.env.GROQ_API_KEY || '';
-    this.groqKnowledgeModel = process.env.GROQ_KNOWLEDGE_MODEL || 'qwen-2.5-32b';
-    this.groqOperationModel = process.env.GROQ_OPERATION_MODEL || 'llama-3.3-70b-versatile';
+    this.groqKnowledgeModel = process.env.GROQ_KNOWLEDGE_MODEL || 'qwen/qwen3.8-27b';
+    this.groqOperationModel = process.env.GROQ_OPERATION_MODEL || 'openai/gpt-oss-120b';
     this.nvidiaApiKey = process.env.NVIDIA_API_KEY || '';
-    this.nvidiaValidationModel = process.env.NVIDIA_VALIDATION_MODEL || 'meta/llama-3.1-nemotron-70b-instruct';
+    this.nvidiaValidationModel = process.env.NVIDIA_VALIDATION_MODEL || 'nvidia/nemotron-3.5-lightning-30b-a3b';
     this.apiKey = process.env.OPENAI_API_KEY || '';
     this.chatModel = process.env.OPENAI_CHAT_MODEL || 'gpt-4o-mini';
     this.temperature = Number(process.env.OPENAI_TEMPERATURE || 0.2);
@@ -907,15 +907,58 @@ HÃY ĐƯA RA CÂU TRẢ LỜI ĐẦY ĐỦ VÀ CHÍNH XÁC:`;
 
     if (isRiskyMutation) {
       if (this.nvidiaApiKey) {
-        const guardrailPrompt = `Bạn là NeMo Guardrail AI của Nexus Logistics (NVIDIA Nemotron-70B). Hãy kiểm tra thao tác sau: Hành động="${actionType}", Nội dung="${payloadText}", Vai trò người dùng="${userRole}". Cho biết rủi ro và có cần người duyệt (HITL) không. Trả về JSON: {"approved": boolean, "requiresHitl": boolean, "risk": "LOW"|"MEDIUM"|"HIGH", "reason": string}`;
+        const candidateNvidiaModels = Array.from(
+          new Set([
+            this.nvidiaValidationModel,
+            'nvidia/nemotron-3.5-lightning-30b-a3b',
+            'nvidia/nemotron-3-ultra-550b-a55b',
+            'nvidia/nemotron-3.5-super-vl-120b-a12b',
+            'nvidia/llama-3.3-nemotron-super-49b-v1.5',
+            'meta/llama-3.3-70b-instruct',
+          ].filter(Boolean))
+        );
+
+        const guardrailPrompt = `Bạn là NeMo Guardrail AI của Nexus Logistics (NVIDIA NIM). Hãy kiểm tra thao tác sau: Hành động="${actionType}", Nội dung="${payloadText}", Vai trò người dùng="${userRole}". Cho biết rủi ro và có cần người duyệt (HITL) không. Trả về JSON: {"approved": boolean, "requiresHitl": boolean, "risk": "LOW"|"MEDIUM"|"HIGH", "reason": string}`;
+        for (const model of candidateNvidiaModels) {
+          try {
+            const verdictRaw = await this.callOpenAiCompatible(
+              'https://integrate.api.nvidia.com/v1/chat/completions',
+              this.nvidiaApiKey,
+              model,
+              guardrailPrompt,
+              payloadText,
+              4000
+            );
+            if (verdictRaw) {
+              try {
+                const parsed = JSON.parse(verdictRaw.replace(/```json|```/g, '').trim());
+                return {
+                  isApproved: parsed.approved ?? true,
+                  requiresHitl: parsed.requiresHitl ?? true,
+                  riskLevel: parsed.risk ?? 'HIGH',
+                  reason: parsed.reason ?? 'Thao tác ảnh hưởng trạng thái vận đơn, cần người duyệt xác nhận.',
+                };
+              } catch {
+                // parse error -> fallback
+              }
+            }
+          } catch (err: any) {
+            this.logger.warn(`NVIDIA NIM Validation Agent error with model ${model}: ${err.message}`);
+          }
+        }
+      }
+
+      // Dự phòng qua Groq LPU (Llama Guard / Llama 3.3) nếu không có NVIDIA NIM
+      if (this.groqApiKey) {
+        const guardrailPrompt = `Bạn là NeMo Guardrail AI của Nexus Logistics. Kiểm tra thao tác: Hành động="${actionType}", Nội dung="${payloadText}". Trả về JSON: {"approved": boolean, "requiresHitl": boolean, "risk": "LOW"|"MEDIUM"|"HIGH", "reason": string}`;
         try {
           const verdictRaw = await this.callOpenAiCompatible(
-            'https://integrate.api.nvidia.com/v1/chat/completions',
-            this.nvidiaApiKey,
-            this.nvidiaValidationModel,
+            'https://api.groq.com/openai/v1/chat/completions',
+            this.groqApiKey,
+            this.groqOperationModel,
             guardrailPrompt,
             payloadText,
-            4000
+            3000
           );
           if (verdictRaw) {
             try {
@@ -924,15 +967,11 @@ HÃY ĐƯA RA CÂU TRẢ LỜI ĐẦY ĐỦ VÀ CHÍNH XÁC:`;
                 isApproved: parsed.approved ?? true,
                 requiresHitl: parsed.requiresHitl ?? true,
                 riskLevel: parsed.risk ?? 'HIGH',
-                reason: parsed.reason ?? 'Thao tác ảnh hưởng trạng thái vận đơn, cần người duyệt xác nhận.',
+                reason: parsed.reason ?? 'Cần phê duyệt từ người dùng theo chuẩn an toàn.',
               };
-            } catch {
-              // fallback
-            }
+            } catch {}
           }
-        } catch (err: any) {
-          this.logger.warn(`NVIDIA NIM Validation Agent error: ${err.message}`);
-        }
+        } catch {}
       }
 
       return {
@@ -1027,24 +1066,46 @@ HÃY ĐƯA RA CÂU TRẢ LỜI ĐẦY ĐỦ VÀ CHÍNH XÁC:`;
       }
     }
 
-    // 4. Check Validation (NVIDIA NIM / Nemotron)
+    // 4. Check Validation (NVIDIA NIM / NeMo Guardrail)
     const t3 = Date.now();
-    let valStatus = 'KEY_MISSING (Fallback to NeMo Guardrail Local)';
+    let valStatus = 'KEY_MISSING (Fallback to NeMo Guardrail Local / Groq)';
     let valLatency: number | undefined;
+    let activeValidationModel = this.nvidiaValidationModel;
+
     if (this.nvidiaApiKey) {
-      try {
-        const res = await this.callOpenAiCompatible(
-          'https://integrate.api.nvidia.com/v1/chat/completions',
-          this.nvidiaApiKey,
+      const candidateNvidiaModels = Array.from(
+        new Set([
           this.nvidiaValidationModel,
-          'System ping',
-          pingPrompt,
-          3000
-        );
-        valLatency = Date.now() - t3;
-        valStatus = res ? 'CONNECTED' : 'UNREACHABLE';
-      } catch {
-        valStatus = 'ERROR';
+          'nvidia/nemotron-3.5-lightning-30b-a3b',
+          'nvidia/nemotron-3-ultra-550b-a55b',
+          'nvidia/nemotron-3.5-super-vl-120b-a12b',
+          'nvidia/llama-3.3-nemotron-super-49b-v1.5',
+          'meta/llama-3.3-70b-instruct',
+        ].filter(Boolean))
+      );
+
+      for (const m of candidateNvidiaModels) {
+        try {
+          const res = await this.callOpenAiCompatible(
+            'https://integrate.api.nvidia.com/v1/chat/completions',
+            this.nvidiaApiKey,
+            m,
+            'System ping',
+            pingPrompt,
+            3000
+          );
+          if (res) {
+            valLatency = Date.now() - t3;
+            valStatus = 'CONNECTED';
+            activeValidationModel = m;
+            break;
+          }
+        } catch {
+          valStatus = 'ERROR';
+        }
+      }
+      if (valStatus !== 'CONNECTED') {
+        valStatus = 'UNREACHABLE (Model deprecated or key error)';
       }
     }
 
