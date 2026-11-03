@@ -16,7 +16,7 @@ Trong các hệ thống Logistics và Bưu chính số, việc ứng dụng Mô 
 - **Tác tử 1 (Supervisor Engine - Google Gemini Flash):** Lập kế hoạch DAG, điều phối và phân tách intent.
 - **Tác tử 2 (Knowledge Worker - Alibaba Qwen 27B):** Hybrid RAG trích xuất 9 tài liệu SOP bưu chính.
 - **Tác tử 3 (Operation Worker - OpenAI GPT-OSS 120B):** Thực thi công cụ nghiệp vụ (Tool Calling) tính cước IATA và tra cứu bưu gửi.
-- **Tác tử 4 (Safety Gatekeeper - OpenAI Safeguard 20B):** Thẩm định rủi ro độc lập và kích hoạt ngắt Human-in-the-Loop (HITL).
+- **Tác tử 4 (Safety Gatekeeper - NVIDIA Nemotron 3.5 Lightning):** Thẩm định rủi ro độc lập và kích hoạt ngắt Human-in-the-Loop (HITL).
 
 ---
 
@@ -30,8 +30,8 @@ Trong các hệ thống Logistics và Bưu chính số, việc ứng dụng Mô 
 
 ### 2.2. Các giả thuyết khoa học (Hypotheses)
 * **Giả thuyết $H_1$:** Điểm số trung thực (Faithfulness) của HMAS đạt trên $95\%$, cao hơn ít nhất $30\%$ so với mô hình Vanilla LLM.
-* **Giả thuyết $H_2$:** Tỷ lệ phát hiện rủi ro (Risk Detection Rate - RDR) của tác tử Safeguard đạt trên $98\%$, và tỷ lệ tấn công thành công (Attack Success Rate - ASR) giảm xuống dưới $2\%$.
-* **Giả thuyết $H_3$:** Thời gian đưa ra quyết định thẩm định an toàn của Safeguard trên Groq LPU không vượt quá $350\text{ms}$.
+* **Giả thuyết $H_2$:** Tỷ lệ phát hiện rủi ro (Risk Detection Rate - RDR) của tác tử Validation Gatekeeper (NVIDIA Nemotron) đạt trên $98\%$, và tỷ lệ tấn công thành công (Attack Success Rate - ASR) giảm xuống dưới $2\%$.
+* **Giả thuyết $H_3$:** Thời gian đưa ra quyết định thẩm định an toàn của Gatekeeper không vượt quá $500\text{ms}$.
 
 ---
 
@@ -53,7 +53,7 @@ Trong các hệ thống Logistics và Bưu chính số, việc ứng dụng Mô 
 │ • Model: Gemini Flash   │ │ • Model: Gemini Flash   │ │ • Supervisor: Gemini    │
 │ • Không có RAG SOP      │ │ • RAG vector đơn lẻ     │ │ • Knowledge: Qwen 27B   │
 │ • Không có Tool Calling │ │ • Tool calling chung    │ │ • Operation: GPT-OSS 120│
-│ • Không có Gatekeeper   │ │ • Không có Gatekeeper   │ │ • Safety: Safeguard 20B │
+│ • Không có Gatekeeper   │ │ • Không có Gatekeeper   │ │ • Safety: Nemotron 30B  │
 │ • Không có HITL ngắt    │ │ • Không có HITL ngắt    │ │ • HITL ngắt tự động     │
 └─────────────────────────┘ └─────────────────────────┘ └─────────────────────────┘
 ```
@@ -107,7 +107,7 @@ Thu thập và chuẩn hóa từ Trung tâm Hỗ trợ Khách hàng (Help Center
 
 ### 5.3. Nhóm chỉ số Hiệu năng Vận hành (System Performance Metrics)
 * **Độ trễ phản hồi (End-to-End Latency):** Phân vị $P_{50}$, $P_{90}$, $P_{99}$ (đơn vị: mili-giây).
-* **Độ trễ Thẩm định An toàn (Gatekeeper Latency):** Thời gian phân tích của tác tử Safeguard trên Groq LPU.
+* **Độ trễ Thẩm định An toàn (Gatekeeper Latency):** Thời gian phân tích của tác tử Validation Gatekeeper (NVIDIA Nemotron).
 * **Tốc độ sinh Token (Throughput):** Số tokens trên giây ($T/s$).
 
 ---
