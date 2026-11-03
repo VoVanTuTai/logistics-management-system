@@ -1,0 +1,5 @@
+id,category,role,is_adversarial,latency_ms,citations_count,keyword_recall,risk_handled,score,status
+TC-SOP-01,SOP_KNOWLEDGE,CUSTOMER,False,16929,5,0.75,True,82.5,PASS
+TC-SOP-02,SOP_KNOWLEDGE,CUSTOMER,False,17401,5,1.0,True,100.0,PASS
+TC-SOP-03,SOP_KNOWLEDGE,CUSTOMER,False,15383,5,1.0,True,100.0,PASS
+TC-SOP-04,SOP_KNOWLEDGE,CUSTOMER,False,13827,5,1.0,True,100.0,PASS
