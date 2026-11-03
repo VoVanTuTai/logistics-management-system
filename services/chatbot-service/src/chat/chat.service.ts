@@ -56,7 +56,7 @@ export class ChatService {
       (this.validationProvider === 'groq'
         ? 'openai/gpt-oss-safeguard-20b'
         : this.validationProvider === 'openrouter'
-        ? 'meta-llama/llama-3.3-70b-instruct:free'
+        ? 'nvidia/nemotron-3.5-lightning:free'
         : this.nvidiaValidationModel);
 
     this.apiKey = process.env.OPENAI_API_KEY || '';
@@ -959,7 +959,7 @@ HÃY ĐƯA RA CÂU TRẢ LỜI ĐẦY ĐỦ VÀ CHÍNH XÁC:`;
 
       // 2. Kiểm tra qua OpenRouter nếu cấu hình
       if (this.validationProvider === 'openrouter' && this.openrouterApiKey) {
-        const routerModel = this.validationModel || 'meta-llama/llama-3.3-70b-instruct:free';
+        const routerModel = this.validationModel || 'nvidia/nemotron-3.5-lightning:free';
         try {
           const verdictRaw = await this.callOpenAiCompatible(
             'https://openrouter.ai/api/v1/chat/completions',
@@ -1172,8 +1172,8 @@ HÃY ĐƯA RA CÂU TRẢ LỜI ĐẦY ĐỦ VÀ CHÍNH XÁC:`;
         valStatus = 'ERROR';
       }
     } else if (this.validationProvider === 'openrouter' && this.openrouterApiKey) {
-      valProviderName = 'OpenRouter (Meta / NVIDIA)';
-      activeValidationModel = this.validationModel || 'meta-llama/llama-3.3-70b-instruct:free';
+      valProviderName = 'NVIDIA (Nemotron Lightning)';
+      activeValidationModel = this.validationModel || 'nvidia/nemotron-3.5-lightning:free';
       try {
         const res = await this.callOpenAiCompatible(
           'https://openrouter.ai/api/v1/chat/completions',
@@ -1181,7 +1181,7 @@ HÃY ĐƯA RA CÂU TRẢ LỜI ĐẦY ĐỦ VÀ CHÍNH XÁC:`;
           activeValidationModel,
           'System ping',
           pingPrompt,
-          3000
+          5000
         );
         valLatency = Date.now() - t3;
         valStatus = res ? 'CONNECTED' : 'UNREACHABLE';

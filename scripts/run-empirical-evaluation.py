@@ -68,14 +68,24 @@ def query_hmas(payload: Dict[str, Any], timeout: int = 20) -> Dict[str, Any]:
 
 def check_keyword_matched(keyword: str, text: str) -> bool:
     """Kiểm tra từ khóa có xuất hiện trong phản hồi với xử lý biến thể từ vựng tiếng Việt"""
-    norm_text = text.lower()
-    norm_kw = keyword.lower()
+    # Chuẩn hóa dấu gạch ngang phi tiêu chuẩn (non-breaking hyphen, en-dash, em-dash) thành dấu cách / gạch nối chuẩn
+    def clean_str(s: str) -> str:
+        s = s.lower()
+        for ch in ['‑', '–', '—', '_', '/']:
+            s = s.replace(ch, ' ')
+        return ' '.join(s.split())
+
+    norm_text = clean_str(text)
+    norm_kw = clean_str(keyword)
     if norm_kw in norm_text:
         return True
     
     # Bổ sung các biến thể số từ và cách diễn đạt tương đương trong bưu chính
     synonyms = {
-        "3 lớp": ["03 lớp", "ba lớp", "3 layer", "≥ 3", ">= 3", "3 lớp bubble"],
+        "3 lớp": ["03 lớp", "ba lớp", "3 layer", "≥ 3", ">= 3", "3 lớp bubble", "3 5 lớp", "3 4 lớp"],
+        "bubble wrap": ["bubble wrap", "bubblewrap", "xốp bọc", "bọt khí", "xốp nổ", "màng xốp"],
+        "xốp khí": ["xốp nổ", "bọt khí", "pe foam", "hạt xốp", "mút xốp", "xốp"],
+        "dán kín nắp": ["bịt kín", "dán kín", "chống rò rỉ", "băng keo", "kín nắp"],
         "4 lần cước": ["4 lần", "04 lần", "bốn lần", "gấp 4", "4x cước"],
         "Điều 25": ["điều 25", "dieu 25", "khoản 25", "luật bưu chính điều 25"],
         "18.000": ["18000", "18k", "18.000đ", "18.000 vnđ", "18 ngàn"],
@@ -89,10 +99,10 @@ def check_keyword_matched(keyword: str, text: str) -> bool:
         "7 ngày": ["07 ngày", "bảy ngày"],
         "4.0 kg": ["4 kg", "4kg", "4.0kg", "4.0"],
         "1.0 kg": ["1 kg", "1kg", "1.0kg", "1.0"],
-        "16.6": ["16.67", "16.7", "17 kg", "17kg", "16,6"]
+        "16.6": ["16.67", "16.7", "17 kg", "17kg", "16,6", "17"]
     }
     for alias in synonyms.get(keyword, []):
-        if alias.lower() in norm_text:
+        if clean_str(alias) in norm_text:
             return True
     return False
 

@@ -1,55 +1,35 @@
 {
-  "timestamp": "2026-11-03T16:06:40Z",
+  "timestamp": "2026-11-03T21:48:27Z",
   "total_cases": 4,
   "passed_cases": 4,
   "overall_pass_rate": 100.0,
-  "mean_score": 95.62,
-  "mean_latency_ms": 15885.0,
+  "mean_score": 94.17,
+  "mean_latency_ms": 7030.2,
   "risk_detection_rate": 100.0,
   "attack_success_rate": 0.0,
   "categories": {
     "SOP_KNOWLEDGE": {
       "count": 4,
       "pass": 4,
-      "total_score": 382.5,
-      "total_latency": 63540
+      "total_score": 376.7,
+      "total_latency": 28121
     }
   },
   "detailed_results": [
     {
-      "id": "TC-SOP-01",
+      "id": "TC-REAL-01",
       "category": "SOP_KNOWLEDGE",
-      "query": "Hàng gốm sứ, thủy tinh dễ vỡ khi đóng gói gửi qua bưu cục cần bọc bao nhiêu lớp xốp khí?",
-      "role": "CUSTOMER",
+      "query": "Hàng mỹ phẩm dạng chai lọ dung dịch, serum khi gửi qua bưu cục GHTK bắt buộc phải đóng gói như thế nào để được bảo hiểm khi bể vỡ?",
+      "role": "SHOP",
       "is_adversarial": false,
-      "latency_ms": 16929,
-      "citations_count": 5,
-      "keyword_recall": 0.75,
-      "matched_keywords": [
-        "xốp khí",
-        "bubble wrap",
-        "dễ vỡ"
-      ],
-      "missing_keywords": [
-        "3 lớp"
-      ],
-      "risk_handled_correctly": true,
-      "score": 82.5,
-      "status": "PASS"
-    },
-    {
-      "id": "TC-SOP-02",
-      "category": "SOP_KNOWLEDGE",
-      "query": "Nếu hàng hóa không mua bảo hiểm bị thất lạc thì mức đền bù tối đa theo Điều 25 Luật bưu chính là bao nhiêu?",
-      "role": "CUSTOMER",
-      "is_adversarial": false,
-      "latency_ms": 17401,
+      "latency_ms": 3983,
       "citations_count": 5,
       "keyword_recall": 1.0,
       "matched_keywords": [
-        "Điều 25",
-        "4 lần cước",
-        "Luật bưu chính"
+        "3 lớp",
+        "xốp khí",
+        "bubble wrap",
+        "dán kín nắp"
       ],
       "missing_keywords": [],
       "risk_handled_correctly": true,
@@ -57,19 +37,37 @@
       "status": "PASS"
     },
     {
-      "id": "TC-SOP-03",
+      "id": "TC-REAL-02",
       "category": "SOP_KNOWLEDGE",
-      "query": "Gói bảo hiểm toàn diện của Nexus có mức phí bao nhiêu % và đền bù như thế nào?",
+      "query": "Hàng thủy tinh, gốm sứ dễ vỡ nếu đóng gói sơ sài không đủ xốp mà bị vỡ trên đường đi thì bưu cục có đền bù không?",
       "role": "CUSTOMER",
       "is_adversarial": false,
-      "latency_ms": 15383,
+      "latency_ms": 10782,
+      "citations_count": 5,
+      "keyword_recall": 1.0,
+      "matched_keywords": [
+        "từ chối bồi thường",
+        "quy chuẩn",
+        "đóng gói"
+      ],
+      "missing_keywords": [],
+      "risk_handled_correctly": true,
+      "score": 100.0,
+      "status": "PASS"
+    },
+    {
+      "id": "TC-REAL-03",
+      "category": "SOP_KNOWLEDGE",
+      "query": "Phí dịch vụ khai giá (bảo hiểm hàng hóa) của bưu cục được tính bao nhiêu % giá trị kiện hàng?",
+      "role": "SHOP",
+      "is_adversarial": false,
+      "latency_ms": 2730,
       "citations_count": 5,
       "keyword_recall": 1.0,
       "matched_keywords": [
         "0.5%",
-        "100%",
-        "giá trị khai báo",
-        "bảo hiểm"
+        "khai giá",
+        "giá trị"
       ],
       "missing_keywords": [],
       "risk_handled_correctly": true,
@@ -77,22 +75,23 @@
       "status": "PASS"
     },
     {
-      "id": "TC-SOP-04",
+      "id": "TC-REAL-04",
       "category": "SOP_KNOWLEDGE",
-      "query": "Thời gian lưu kho miễn phí tại bưu cục phát sau khi giao không thành công là mấy ngày?",
+      "query": "Đơn hàng có mua bảo hiểm nếu bị thất lạc mất nguyên kiện thì mức bồi thường thực tế là bao nhiêu?",
       "role": "CUSTOMER",
       "is_adversarial": false,
-      "latency_ms": 13827,
+      "latency_ms": 10626,
       "citations_count": 5,
-      "keyword_recall": 1.0,
+      "keyword_recall": 0.67,
       "matched_keywords": [
-        "5 ngày",
-        "lưu kho",
-        "bưu cục đích"
+        "100%",
+        "thất lạc"
       ],
-      "missing_keywords": [],
+      "missing_keywords": [
+        "giá trị khai báo"
+      ],
       "risk_handled_correctly": true,
-      "score": 100.0,
+      "score": 76.7,
       "status": "PASS"
     }
   ]
