@@ -311,7 +311,7 @@ def build_svg():
     <text x="103" y="27" font-size="10.5" font-weight="900" fill="#15803D" text-anchor="middle">OPERATION WORKER</text>
 
     <text x="103" y="56" font-size="13.5" font-weight="900" fill="#0F172A" text-anchor="middle">Thực Thi Nghiệp Vụ</text>
-    <text x="103" y="72" font-size="10" font-weight="700" fill="#059669" text-anchor="middle">GPT-OSS 120B / Llama 3.3 (Meta)</text>
+    <text x="103" y="72" font-size="10" font-weight="700" fill="#059669" text-anchor="middle">GPT-OSS 120B (Groq LPU)</text>
 
     <!-- Technical Tool Execution Icon -->
     <g transform="translate(103, 100)">
@@ -352,7 +352,7 @@ def build_svg():
     <text x="103" y="27" font-size="10.5" font-weight="900" fill="#BE123C" text-anchor="middle">SAFETY GATEKEEPER</text>
 
     <text x="103" y="56" font-size="13.5" font-weight="900" fill="#0F172A" text-anchor="middle">Thẩm Định &amp; Guardrails</text>
-    <text x="103" y="72" font-size="10" font-weight="700" fill="#BE123C" text-anchor="middle">Nemotron / NeMo (NVIDIA)</text>
+    <text x="103" y="72" font-size="10" font-weight="700" fill="#BE123C" text-anchor="middle">Safeguard-20B (Groq LPU)</text>
 
     <!-- Technical Shield Icon -->
     <g transform="translate(103, 100)">
@@ -365,16 +365,16 @@ def build_svg():
     <!-- Operational Duties -->
     <g transform="translate(14, 146)">
       <circle cx="4" cy="5" r="2.5" fill="#E11D48"/>
-      <text x="12" y="8" font-size="10" font-weight="800" fill="#9F1239">NeMo Guardrails kiểm duyệt;</text>
-      <text x="12" y="22" font-size="10" font-weight="600" fill="#475569">khử thiên kiến đồng nhất;</text>
+      <text x="12" y="8" font-size="10" font-weight="800" fill="#9F1239">Safety Guardrail chuyên biệt;</text>
+      <text x="12" y="22" font-size="10" font-weight="600" fill="#475569">thẩm định rủi ro đa chiều;</text>
 
       <circle cx="4" cy="42" r="2.5" fill="#E11D48"/>
-      <text x="12" y="45" font-size="10" font-weight="800" fill="#9F1239">Phát hiện gian lận cước COD;</text>
-      <text x="12" y="59" font-size="10" font-weight="600" fill="#475569">kiểm tra trần vật lý 70kg;</text>
+      <text x="12" y="45" font-size="10" font-weight="800" fill="#9F1239">Kiểm tra trần vật lý 70kg;</text>
+      <text x="12" y="59" font-size="10" font-weight="600" fill="#475569">đối soát gian lận cước COD;</text>
 
       <circle cx="4" cy="79" r="2.5" fill="#E11D48"/>
-      <text x="12" y="82" font-size="10" font-weight="800" fill="#9F1239">Chặn hành vi bất hợp lệ;</text>
-      <text x="12" y="96" font-size="10" font-weight="600" fill="#475569">kích hoạt ngắt interrupt HITL.</text>
+      <text x="12" y="82" font-size="10" font-weight="800" fill="#9F1239">Kích hoạt ngắt interrupt HITL;</text>
+      <text x="12" y="96" font-size="10" font-weight="600" fill="#475569">độ trễ siêu tốc chỉ ~260ms.</text>
     </g>
   </g>
 
@@ -389,7 +389,7 @@ def build_svg():
     </g>
 
     <text x="44" y="22" font-size="12.5" font-weight="900" fill="#92400E">
-      Failover Cascade: Groq LPU ➔ Cloud AI Studio ➔ Local vLLM Container
+      Failover Cascade: Groq LPU (Safeguard / Qwen) ➔ Google AI Studio ➔ Local Rule Engine
     </text>
     <text x="44" y="38" font-size="11" font-weight="700" fill="#B45309">
       (Cơ chế chuyển mạch dự phòng chịu lỗi khi quá tải Rate Limit 429 hoặc gián đoạn mạng)
@@ -748,8 +748,8 @@ def build_svg():
     <g transform="translate(950, 48)">
       <rect x="0" y="0" width="370" height="62" rx="6" fill="#FFFFFF" stroke="#E2E8F0" stroke-width="1"/>
       <text x="12" y="20" font-size="11" font-weight="900" fill="#0F172A">Heterogeneous Model Providers</text>
-      <text x="12" y="38" font-size="12" font-weight="800" fill="#1E40AF">Google • Alibaba • Meta • NVIDIA</text>
-      <text x="12" y="52" font-size="9.5" font-weight="600" fill="#64748B">Kiến trúc đa mô hình triệt tiêu thiên kiến đồng nhất</text>
+      <text x="12" y="38" font-size="12" font-weight="800" fill="#1E40AF">Google • Alibaba • OpenAI • Groq LPU</text>
+      <text x="12" y="52" font-size="9.5" font-weight="600" fill="#64748B">Gemini Flash • Qwen 27B • GPT-OSS 120B • Safeguard 20B</text>
     </g>
 
     <!-- Block 5: Observability -->
