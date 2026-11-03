@@ -37,6 +37,7 @@ import { MerchantFinanceView } from './features/finance/MerchantFinanceView';
 import { BankProfileModal } from './features/finance/BankProfileModal';
 import { SettlementBatchDetailModal } from './features/finance/SettlementBatchDetailModal';
 import { TopupVietQRModal } from './features/finance/TopupVietQRModal';
+import { MerchantAiChatWidget } from './components/chat/MerchantAiChatWidget';
 import {
   asNumber,
   asRecord,
@@ -3561,6 +3562,16 @@ function MerchantApp(): React.JSX.Element {
         netBalance={insights.netBalance}
         username={session?.user?.username}
       />
+
+      {session ? (
+        <MerchantAiChatWidget
+          username={session.user.username}
+          shopName={session.user.displayName || session.user.username}
+          onSelectShipment={(code) => {
+            setActiveView('shipments');
+          }}
+        />
+      ) : null}
     </div>
   );
 }
