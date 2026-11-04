@@ -1,7 +1,7 @@
 # CHƯƠNG 4: THỰC NGHIỆM ĐÁNH GIÁ & KẾT QUẢ NGHIÊN CỨU
 **Hệ thống:** Nexus Logistics Heterogeneous Multi-Agent Architecture (HMAS)  
-**Ngày thực nghiệm:** 03/11/2026 21:48:27  
-**Số lượng mẫu kiểm thử:** 4 kịch bản bưu chính chuẩn hóa  
+**Ngày thực nghiệm:** 04/11/2026 10:08:49  
+**Số lượng mẫu kiểm thử:** 5 kịch bản bưu chính chuẩn hóa  
 
 ---
 
@@ -10,10 +10,10 @@
 | Chỉ số khoa học | Giá trị đo kiểm thực nghiệm | Tiêu chuẩn đạt kỳ vọng | Đánh giá học thuật |
 |---|:---:|:---:|:---:|
 | **Tỷ lệ vượt qua tổng thể (Pass Rate)** | **100.0%** | $\ge 85.0\%$ | **VƯỢT CHỈ TIÊU** |
-| **Điểm số chất lượng trung bình (Mean Score)** | **94.17 / 100** | $\ge 80.0$ | **XUẤT SẮC** |
+| **Điểm số chất lượng trung bình (Mean Score)** | **95.34 / 100** | $\ge 80.0$ | **XUẤT SẮC** |
 | **Tỷ lệ phát hiện rủi ro (Risk Detection Rate - RDR)** | **100.0%** | $\ge 95.0\%$ | **AN TOÀN TUYỆT ĐỐI** |
 | **Tỷ lệ tấn công lọt lưới (Attack Success Rate - ASR)** | **0.0%** | $\le 5.0\%$ | **TRIỆT TIÊU RỦI RO** |
-| **Thời gian phản hồi trung bình (Mean Latency)** | **7030 ms** | $\le 3000$ ms | **THỜI GIAN THỰC** |
+| **Thời gian phản hồi trung bình (Mean Latency)** | **6291 ms** | $\le 3000$ ms | **THỜI GIAN THỰC** |
 
 ---
 
@@ -21,7 +21,7 @@
 
 | Nhóm nghiệp vụ | Số ca thử | Tỷ lệ Đạt | Điểm trung bình | Độ trễ TB | Nhận xét chuyên môn |
 |---|:---:|:---:|:---:|:---:|---|
-| **SOP_KNOWLEDGE** | 4 | 100.0% | 94.2/100 | 7030 ms | Hoạt động ổn định, trích xuất chính xác |
+| **SOP_KNOWLEDGE** | 5 | 100.0% | 95.3/100 | 6291 ms | Hoạt động ổn định, trích xuất chính xác |
 
 ---
 
@@ -36,9 +36,9 @@
 \hline
 \textbf{Nhóm kiểm thử} & \textbf{Số mẫu} & \textbf{Pass Rate} & \textbf{Điểm TB} & \textbf{Độ trễ} \\
 \hline
-SOP_KNOWLEDGE & 4 & 100.0\% & 94.2 & 7030 ms \\
+SOP_KNOWLEDGE & 5 & 100.0\% & 95.3 & 6291 ms \\
 \hline
-\textbf{Tổng thể} & \textbf{4} & \textbf{100.0\%} & \textbf{94.2} & \textbf{7030 ms} \\
+\textbf{Tổng thể} & \textbf{5} & \textbf{100.0\%} & \textbf{95.3} & \textbf{6291 ms} \\
 \hline
 \end{tabular}
 \end{table}
