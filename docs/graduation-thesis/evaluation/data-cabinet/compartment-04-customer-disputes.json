@@ -1,0 +1,68 @@
+{
+  "compartment_id": "COMP-04",
+  "compartment_name": "Khiếu nại & Tranh chấp Shop (Voice of Customer & E-Commerce Disputes)",
+  "source_description": "Các tình huống tranh chấp khiếu nại thực tế từ cộng đồng chủ shop thương mại điện tử Shopee, TikTok Shop, Lazada",
+  "last_updated": "2026-11-04T14:30:00Z",
+  "items": [
+    {
+      "id": "DISPUTE-01",
+      "compartment": "COMP-04",
+      "provenance": "Chính sách Cước chuyển hoàn Bom hàng - Quy chế Đối soát Shop Thương mại điện tử",
+      "category": "SOP_KNOWLEDGE",
+      "role": "MERCHANT",
+      "query": "Khách mua hàng trên mạng từ chối nhận hàng (bom hàng) thì shop có phải trả tiền cước quay đầu chuyển hoàn không và tính bao nhiêu %?",
+      "ground_truth_keywords": ["50%", "chuyển hoàn", "cước", "chiều đi", "đối tác VIP"],
+      "expected_tool": "calculateReturnFee",
+      "expected_risk_blocked": false,
+      "expected_citations": ["Chính sách cước chuyển hoàn Carrier SOP"]
+    },
+    {
+      "id": "DISPUTE-02",
+      "compartment": "COMP-04",
+      "provenance": "SOP Giải quyết Bể vỡ khi Đồng kiểm Ngoại quan - Bộ phận Service Quality bưu cục",
+      "category": "SOP_KNOWLEDGE",
+      "role": "CUSTOMER",
+      "query": "Tôi nhận hàng đồng kiểm mở ra thấy bình gốm sứ bị nứt vỡ tan tành thì tôi có phải trả tiền COD cho shipper không và cần làm giấy tờ gì tại chỗ?",
+      "ground_truth_keywords": ["không phải thanh toán", "từ chối nhận", "biên bản bất thường", "chụp ảnh"],
+      "expected_tool": "getDamageAndClaimPolicy",
+      "expected_risk_blocked": false,
+      "expected_citations": ["Quy trình đồng kiểm và giải quyết bể vỡ Carrier SOP"]
+    },
+    {
+      "id": "DISPUTE-03",
+      "compartment": "COMP-04",
+      "provenance": "SOP Xử lý Giao hàng Không Thành công (Non-Delivery Report - NDR Workflow)",
+      "category": "SOP_KNOWLEDGE",
+      "role": "CUSTOMER",
+      "query": "Hôm nay shipper gọi giao hàng mà tôi bận họp không nghe máy thì bưu cục có tự ý hủy đơn trả về shop ngay không hay được giao lại mấy lần?",
+      "ground_truth_keywords": ["gọi 2 lần", "phát lại", "3 lần", "5 ngày", "lưu kho"],
+      "expected_tool": "none",
+      "expected_risk_blocked": false,
+      "expected_citations": ["Quy chế giao lại bưu gửi Carrier SOP"]
+    },
+    {
+      "id": "DISPUTE-04",
+      "compartment": "COMP-04",
+      "provenance": "Quy chế Quản lý Dòng tiền COD & Hạn mức Nợ Bưu tá (Courier Cash Limit Policy)",
+      "category": "SOP_KNOWLEDGE",
+      "role": "MERCHANT",
+      "query": "Tiền thu hộ COD của bưu tá đi phát trong ngày có hạn mức tối đa giữ tiền mặt là bao nhiêu và shop được đối soát tiền vào những ngày nào?",
+      "ground_truth_keywords": ["15 triệu", "khóa tài khoản", "đối soát", "Thứ 2-4-6", "nộp két"],
+      "expected_tool": "none",
+      "expected_risk_blocked": false,
+      "expected_citations": ["Quy chế quản lý dòng tiền COD Carrier SOP"]
+    },
+    {
+      "id": "DISPUTE-05",
+      "compartment": "COMP-04",
+      "provenance": "SOP Kiểm soát Gian lận Trọng lượng Kích thước qua Cổng Cân quét Tự động DWS",
+      "category": "SOP_KNOWLEDGE",
+      "role": "MERCHANT",
+      "query": "Nếu shop tự khai báo đơn hàng 1kg nhưng qua cổng quét tự động DWS tại Hub cân lại ra 2.5kg thì bưu cục xử lý phạt và tính cước chênh lệch thế nào?",
+      "ground_truth_keywords": ["DWS", "truy thu", "chênh lệch", "15%", "phạt"],
+      "expected_tool": "none",
+      "expected_risk_blocked": false,
+      "expected_citations": ["Quy chế đối soát trọng lượng DWS Carrier SOP"]
+    }
+  ]
+}

@@ -1,0 +1,44 @@
+{
+  "compartment_id": "COMP-06",
+  "compartment_name": "Dữ liệu Crawl Bổ sung Định kỳ (Crawled Dynamic Feeds & Real-World Events)",
+  "source_description": "Dữ liệu thu thập định kỳ từ thông cáo Cục Đường bộ Việt Nam, biến động giá xăng dầu Liên Bộ Công Thương - Tài chính, quy định phân luồng xe tải đô thị",
+  "last_updated": "2026-11-04T14:30:00Z",
+  "items": [
+    {
+      "id": "CRAWL-01",
+      "compartment": "COMP-06",
+      "provenance": "Thông cáo Cục Đường bộ VN: Bão lũ sạt lở Quốc lộ 1A miền Trung & Điều khoản Bất khả kháng Force Majeure",
+      "category": "SOP_KNOWLEDGE",
+      "role": "CUSTOMER",
+      "query": "Tuyến xe tải liên tỉnh Bắc Nam bị chậm do sạt lở đèo mùa bão lũ thì bưu cục có phải đền bù vi phạm thời gian cam kết giao hàng không?",
+      "ground_truth_keywords": ["bất khả kháng", "thiên tai", "miễn trừ", "chậm trễ", "thời tiết"],
+      "expected_tool": "none",
+      "expected_risk_blocked": false,
+      "expected_citations": ["Điều khoản miễn trừ trách nhiệm bất khả kháng Carrier SOP"]
+    },
+    {
+      "id": "CRAWL-02",
+      "compartment": "COMP-06",
+      "provenance": "Quyết định UBND TP.HCM về Quy định khung giờ cấm xe tải lưu thông nội đô",
+      "category": "SOP_KNOWLEDGE",
+      "role": "MERCHANT",
+      "query": "Xe tải vận chuyển hàng trung chuyển bưu cục vào nội thành TP.HCM có bị cấm giờ cao điểm không và khung giờ cấm là những giờ nào?",
+      "ground_truth_keywords": ["giờ cao điểm", "cấm xe tải", "nội đô", "bưu cục"],
+      "expected_tool": "none",
+      "expected_risk_blocked": false,
+      "expected_citations": ["Quy định phân luồng vận tải đô thị"]
+    },
+    {
+      "id": "CRAWL-03",
+      "compartment": "COMP-06",
+      "provenance": "Thông tư điều chỉnh Phụ phí Nhiên liệu Xăng dầu vận tải hàng hóa theo kỳ điều hành",
+      "category": "SOP_KNOWLEDGE",
+      "role": "MERCHANT",
+      "query": "Phụ phí nhiên liệu xăng dầu của dịch vụ chuyển phát nhanh được tính như thế nào khi giá xăng biến động trên thị trường?",
+      "ground_truth_keywords": ["phụ phí", "nhiên liệu", "xăng dầu", "cước"],
+      "expected_tool": "none",
+      "expected_risk_blocked": false,
+      "expected_citations": ["Biểu phí phụ phí nhiên liệu vận tải"]
+    }
+  ]
+}

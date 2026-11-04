@@ -199,6 +199,8 @@ def evaluate_test_case(tc: Dict[str, Any], response: Dict[str, Any]) -> Dict[str
 
     return {
         "id": tc["id"],
+        "compartment": tc.get("compartment", "DEFAULT"),
+        "provenance": tc.get("provenance", "Static Benchmark Dataset"),
         "category": tc["category"],
         "query": tc["query"],
         "role": tc["role"],
@@ -222,6 +224,9 @@ def evaluate_test_case(tc: Dict[str, Any], response: Dict[str, Any]) -> Dict[str
 
 def main():
     parser = argparse.ArgumentParser(description="Chạy thực nghiệm đánh giá mô hình Đa tác tử Nexus HMAS")
+    parser.add_argument("--cabinet", action="store_true", help="Chạy thực nghiệm từ Kho Tủ Dữ liệu Đa tầng (Nexus Data Cabinet Lakehouse)")
+    parser.add_argument("--compartment", type=str, default="", help="Chỉ định ngăn tủ cụ thể (COMP-01 đến COMP-06)")
+    parser.add_argument("-k", "--sample-per-compartment", type=int, default=1, help="Số ca bốc ngẫu nhiên từ MỖI ngăn tủ khi dùng --cabinet (mặc định 1)")
     parser.add_argument("--dataset", type=str, default="", help="Đường dẫn hoặc tên tệp dataset JSON (mặc định: benchmark-dataset.json cũ)")
     parser.add_argument("--source", type=str, choices=["file", "live-db"], default="file", help="Nguồn dữ liệu: 'file' (từ tệp JSON) hoặc 'live-db' (trích xuất tự động từ PostgreSQL :3002)")
     parser.add_argument("--case", type=str, default="", help="Chạy riêng 1 ca kiểm thử cụ thể theo ID (ví dụ: TC-REAL-01 hoặc ADV-02)")
@@ -232,7 +237,37 @@ def main():
     args = parser.parse_args()
 
     # 1. Xác định Nguồn Dữ liệu (Data Source)
-    if args.source == "live-db":
+    if args.cabinet:
+        cabinet_dir = os.path.join(EVAL_DIR, "data-cabinet")
+        if not os.path.exists(cabinet_dir):
+            print(f"❌ Không tìm thấy thư mục tủ dữ liệu: {cabinet_dir}")
+            sys.exit(1)
+
+        comp_files = sorted([os.path.join(cabinet_dir, f) for f in os.listdir(cabinet_dir) if f.endswith(".json")])
+        print("🗄️  NGUỒN DỮ LIỆU: Kho Tủ Dữ liệu Đa tầng (Nexus Data Cabinet Lakehouse)")
+        
+        if args.seed is not None:
+            random.seed(args.seed)
+
+        test_cases = []
+        for cf in comp_files:
+            try:
+                with open(cf, "r", encoding="utf-8") as cfp:
+                    comp_data = json.load(cfp)
+                    cid = comp_data.get("compartment_id", "")
+                    if args.compartment and cid.lower() != args.compartment.lower():
+                        continue
+                    items = comp_data.get("items", [])
+                    k = min(args.sample_per_compartment, len(items)) if args.sample_per_compartment > 0 else len(items)
+                    picked = random.sample(items, k) if k < len(items) else items
+                    for it in picked:
+                        it["compartment_name"] = comp_data.get("compartment_name", "")
+                    test_cases.extend(picked)
+                    comp_title = comp_data.get('compartment_name', '').split('(')[0].strip()
+                    print(f"  • [{cid}] {comp_title}: Bốc {len(picked)}/{len(items)} ca ngẫu nhiên")
+            except Exception as e:
+                print(f"⚠️ Lỗi đọc ngăn {cf}: {e}")
+    elif args.source == "live-db":
         print("🌐 NGUỒN DỮ LIỆU: Trích xuất trực tiếp từ Cơ sở dữ liệu PostgreSQL thực tế (shipment-service :3002)")
         test_cases = fetch_live_db_cases(limit=args.limit if args.limit > 0 else 10)
         if not test_cases:
@@ -264,12 +299,12 @@ def main():
     if args.category:
         test_cases = [tc for tc in test_cases if tc.get("category", "") == args.category]
 
-    if args.sample > 0 and len(test_cases) > args.sample:
+    if not args.cabinet and args.sample > 0 and len(test_cases) > args.sample:
         if args.seed is not None:
             random.seed(args.seed)
         test_cases = random.sample(test_cases, args.sample)
         print(f"🎲 Đã lấy ngẫu nhiên {len(test_cases)} ca kiểm thử (Seed: {args.seed})")
-    elif args.limit > 0:
+    elif not args.cabinet and args.limit > 0:
         test_cases = test_cases[:args.limit]
 
     print("=" * 75)
@@ -282,7 +317,8 @@ def main():
     category_stats = {}
 
     for idx, tc in enumerate(test_cases, 1):
-        print(f"[{idx:02d}/{len(test_cases):02d}] Đang chạy {tc['id']} ({tc['category']})... ", end="", flush=True)
+        cid_tag = f"[{tc.get('compartment')}] " if tc.get('compartment') else ""
+        print(f"[{idx:02d}/{len(test_cases):02d}] {cid_tag}{tc['id']} ({tc['category']})... ", end="", flush=True)
         
         payload = {
             "message": tc["query"],
