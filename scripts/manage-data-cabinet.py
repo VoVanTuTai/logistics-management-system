@@ -16,9 +16,12 @@ import sys
 import json
 import time
 import random
+import re
+import hashlib
 import urllib.request
+import xml.etree.ElementTree as ET
 import argparse
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
 
 CABINET_DIR = "docs/graduation-thesis/evaluation/data-cabinet"
 SHIPMENT_SERVICE_URL = "http://localhost:3002"
@@ -108,6 +111,212 @@ def cmd_sync_live_db():
     except Exception as e:
         print(f"❌ Lỗi đồng bộ live DB: {e}")
 
+def clean_html(raw_html: str) -> str:
+    clean = re.sub(r'<[^<]+?>', '', raw_html or '')
+    return clean.strip()
+
+DEFAULT_RSS_FEEDS = {
+    "vnexpress_thoisu": {
+        "name": "VnExpress Thời sự (Giao thông & Bão lũ)",
+        "url": "https://vnexpress.net/rss/thoi-su.rss"
+    },
+    "vnexpress_kinhdoanh": {
+        "name": "VnExpress Kinh doanh (Xăng dầu & Logistics)",
+        "url": "https://vnexpress.net/rss/kinh-doanh.rss"
+    },
+    "tuoitre_thoisu": {
+        "name": "Tuổi Trẻ Thời sự (Hạ tầng & Vận tải)",
+        "url": "https://tuoitre.vn/rss/thoi-su.rss"
+    }
+}
+
+LOGISTICS_RULES = [
+    {
+        "type": "WEATHER_FORCE_MAJEURE",
+        "keywords": ["mưa bão", "bão lũ", "lũ quét", "lũ lụt", "sạt lở", "ngập lụt", "ngập úng", "áp thấp nhiệt đới", "triều cường", "thiên tai", "bão số"],
+        "category": "SOP_KNOWLEDGE",
+        "role": "CUSTOMER",
+        "query_template": "Theo quy chuẩn bưu chính, nếu chuyến xe chở hàng bị chậm trễ do ảnh hưởng thời sự: '{title}' thì bưu cục có được miễn trừ trách nhiệm thời gian cam kết do bất khả kháng không?",
+        "ground_truth_keywords": ["bất khả kháng", "thiên tai", "miễn trừ", "chậm trễ", "thời tiết"],
+        "expected_citations": ["Điều khoản miễn trừ trách nhiệm bất khả kháng Carrier SOP"]
+    },
+    {
+        "type": "FUEL_PRICING",
+        "keywords": ["giá xăng", "giá dầu", "xăng dầu", "nhiên liệu", "phụ phí xăng dầu"],
+        "category": "SOP_KNOWLEDGE",
+        "role": "MERCHANT",
+        "query_template": "Khi thị trường xuất hiện thông tin biến động '{title}', phụ phí nhiên liệu trong bảng giá chuyển phát bưu cục được điều chỉnh như thế nào?",
+        "ground_truth_keywords": ["phụ phí", "nhiên liệu", "xăng dầu", "cước"],
+        "expected_citations": ["Quy chế Điều chỉnh Phụ phí Nhiên liệu Vận tải"]
+    },
+    {
+        "type": "TRAFFIC_ROUTING",
+        "keywords": ["xe tải", "xe container", "xe đầu kéo", "cao tốc", "quốc lộ", "cấm đường", "cấm xe tải", "phân luồng", "ùn tắc", "ách tắc", "sập cầu", "kho bãi", "cảng biển"],
+        "category": "SOP_KNOWLEDGE",
+        "role": "MERCHANT",
+        "query_template": "Thông tin hạ tầng/giao thông mới nhất '{title}' có ảnh hưởng gì đến luồng xe tải trung chuyển hoặc thời gian kết nối giữa các bưu cục không?",
+        "ground_truth_keywords": ["xe tải", "phân luồng", "hạ tầng", "vận chuyển"],
+        "expected_citations": ["Quy định Phân luồng Vận tải Đô thị"]
+    }
+]
+
+EXCLUDE_KEYWORDS = ["giá vàng", "bất động sản", "chứng khoán", "ung thư", "tai nạn chết người", "tử vong", "bệnh nhân"]
+
+def cmd_crawl_feed(limit: int = 5, source: str = "all", dry_run: bool = False):
+    print("=" * 85)
+    print("🌐  NEXUS LOGISTICS CRAWLER — TỰ ĐỘNG THU THẬP TIN TỨC THỜI SỰ & CẬP NHẬT NGĂN 6")
+    print("=" * 85)
+
+    feeds_to_crawl = {}
+    if source == "all":
+        feeds_to_crawl = DEFAULT_RSS_FEEDS
+    elif source in DEFAULT_RSS_FEEDS:
+        feeds_to_crawl = {source: DEFAULT_RSS_FEEDS[source]}
+    elif source.startswith("http://") or source.startswith("https://"):
+        feeds_to_crawl = {"custom": {"name": "Nguồn RSS Tùy biến", "url": source}}
+    else:
+        print(f"❌ Nguồn tin không hợp lệ: {source}. Chọn 'all', 'vnexpress_thoisu', 'vnexpress_kinhdoanh', 'tuoitre_thoisu' hoặc URL RSS.")
+        return
+
+    comp6_path = os.path.join(CABINET_DIR, "compartment-06-crawled-updates.json")
+    comp6_data = {
+        "compartment_id": "COMP-06",
+        "compartment_name": "Dữ liệu Crawl Bổ sung Định kỳ (Crawled Dynamic Feeds & Real-World Events)",
+        "source_description": "Dữ liệu thu thập định kỳ từ thông cáo Cục Đường bộ Việt Nam, biến động giá xăng dầu, tin tức giao thông hạ tầng",
+        "last_updated": time.strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "items": []
+    }
+
+    if os.path.exists(comp6_path):
+        try:
+            with open(comp6_path, "r", encoding="utf-8") as fp:
+                comp6_data = json.load(fp)
+        except Exception as e:
+            print(f"⚠️ Không đọc được {comp6_path}: {e}")
+
+    existing_items = comp6_data.get("items", [])
+    existing_fingerprints = set()
+    for it in existing_items:
+        existing_fingerprints.add(it.get("id"))
+        existing_fingerprints.add(it.get("provenance", ""))
+        existing_fingerprints.add(it.get("query", ""))
+
+    print(f"📦 Hiện trạng Ngăn 6: {len(existing_items)} ca kiểm thử đã lưu.")
+    print(f"📡 Đang kết nối tới {len(feeds_to_crawl)} nguồn cấp RSS...")
+
+    crawled_candidates = []
+
+    for fkey, fmeta in feeds_to_crawl.items():
+        fname = fmeta["name"]
+        furl = fmeta["url"]
+        print(f"\n🔎 Đang quét nguồn: {fname} ({furl})...")
+        try:
+            req = urllib.request.Request(furl, headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) NexusBot/1.0"})
+            with urllib.request.urlopen(req, timeout=8) as resp:
+                xml_data = resp.read()
+                root = ET.fromstring(xml_data)
+                items = root.findall(".//item")
+                print(f"   ↳ Nhận được {len(items)} bản tin từ RSS.")
+
+                for it in items:
+                    title = (it.find("title").text or "").strip()
+                    desc = clean_html(it.find("description").text or "")
+                    link = (it.find("link").text or "").strip()
+                    pub_date = (it.find("pubDate").text or "").strip()
+
+                    full_text = f"{title} {desc}".lower()
+
+                    # Loại trừ các tin ngoài phạm vi (chứng khoán, giá vàng, y tế, bạo lực)
+                    if any(ex in full_text for ex in EXCLUDE_KEYWORDS):
+                        continue
+
+                    # Đối soát từ khóa logistics
+                    matched_rule = None
+                    matched_kw = None
+                    for rule in LOGISTICS_RULES:
+                        for kw in rule["keywords"]:
+                            if kw in full_text:
+                                matched_rule = rule
+                                matched_kw = kw
+                                break
+                        if matched_rule:
+                            break
+
+                    if not matched_rule:
+                        continue
+
+                    # Kiểm tra trùng lặp
+                    clean_title = re.sub(r'["\']', '', title)
+                    if any(clean_title[:30] in fp for fp in existing_fingerprints):
+                        continue
+
+                    h = hashlib.md5(title.encode("utf-8")).hexdigest()[:6].upper()
+                    case_id = f"CRAWL-AUTO-{h}"
+                    
+                    # Tránh trùng lặp trong đợt quét hiện tại
+                    if any(c["id"] == case_id for c in crawled_candidates):
+                        continue
+
+                    new_case = {
+                        "id": case_id,
+                        "compartment": "COMP-06",
+                        "provenance": f"Bản tin RSS ({fname}): '{title}' ({pub_date[:16] if pub_date else 'Hôm nay'})",
+                        "category": matched_rule["category"],
+                        "role": matched_rule["role"],
+                        "query": matched_rule["query_template"].format(title=title),
+                        "ground_truth_keywords": matched_rule["ground_truth_keywords"],
+                        "expected_tool": "none",
+                        "expected_risk_blocked": False,
+                        "expected_citations": matched_rule["expected_citations"],
+                        "_source_link": link,
+                        "_matched_keyword": matched_kw
+                    }
+                    crawled_candidates.append(new_case)
+                    existing_fingerprints.add(clean_title[:30])
+
+                    if len(crawled_candidates) >= limit:
+                        break
+        except Exception as e:
+            print(f"   ⚠️ Lỗi cào nguồn {fname}: {e}")
+
+        if len(crawled_candidates) >= limit:
+            break
+
+    print("\n" + "-" * 85)
+    print(f"🎯 KẾT QUẢ QUÉT: Tìm thấy {len(crawled_candidates)} bản tin thời sự logistics phù hợp mới:")
+    print("-" * 85)
+
+    if not crawled_candidates:
+        print("ℹ️ Không có bản tin mới nào chưa được lưu (dữ liệu đã mới nhất).")
+        return
+
+    for idx, c in enumerate(crawled_candidates, 1):
+        print(f"[{idx}] {c['id']} | Keyword: '{c['_matched_keyword']}'")
+        print(f"    Tiêu đề: {c['provenance']}")
+        print(f"    Câu hỏi sinh tự động: \"{c['query']}\"")
+        print()
+
+    if dry_run:
+        print("⚡ Chế độ --dry-run: Không lưu vào file disk.")
+        return
+
+    # Lưu vào compartment-06
+    # Loại bỏ trường nội bộ tạm _source_link, _matched_keyword trước khi lưu
+    cleaned_items = []
+    for c in crawled_candidates:
+        item_copy = {k: v for k, v in c.items() if not k.startswith("_")}
+        cleaned_items.append(item_copy)
+
+    comp6_data["items"].extend(cleaned_items)
+    comp6_data["last_updated"] = time.strftime("%Y-%m-%dT%H:%M:%SZ")
+    comp6_data["source_description"] = f"Dữ liệu thu thập tự động từ RSS (VnExpress, Tuổi Trẻ) lúc {time.strftime('%Y-%m-%d %H:%M:%S')} (Tổng: {len(comp6_data['items'])} ca)"
+
+    with open(comp6_path, "w", encoding="utf-8") as fp:
+        json.dump(comp6_data, fp, ensure_ascii=False, indent=2)
+
+    print(f"✅ Đã ghi thành công {len(cleaned_items)} ca mới vào Ngăn 6: {comp6_path}")
+    print(f"📊 Tổng số ca hiện có trong Ngăn 6: {len(comp6_data['items'])} ca.")
+
 def cmd_sample(per_compartment: int = 2, seed: int = None):
     cabinet = load_cabinet()
     if seed is not None:
@@ -138,6 +347,12 @@ def main():
     # Action: sync-live-db
     subparsers.add_parser("sync-live-db", help="Làm mới Ngăn 3 từ PostgreSQL live database")
 
+    # Action: crawl-feed
+    crawl_parser = subparsers.add_parser("crawl-feed", help="Tự động crawl tin tức bão lũ / giao thông / xăng dầu vào Ngăn 6")
+    crawl_parser.add_argument("--limit", type=int, default=5, help="Số bản tin tối đa cần cào và thêm vào ngăn (mặc định: 5)")
+    crawl_parser.add_argument("--source", type=str, default="all", help="Nguồn tin: 'all', 'vnexpress_thoisu', 'vnexpress_kinhdoanh', 'tuoitre_thoisu' hoặc URL RSS tùy chỉnh")
+    crawl_parser.add_argument("--dry-run", action="store_true", help="Chạy thử xem trước kết quả lọc tin mà không ghi đè file disk")
+
     # Action: sample
     sample_parser = subparsers.add_parser("sample", help="Thử nghiệm bốc mẫu phân tầng từ các ngăn tủ")
     sample_parser.add_argument("--k", type=int, default=2, help="Số ca bốc từ mỗi ngăn (mặc định 2)")
@@ -149,6 +364,8 @@ def main():
         cmd_status()
     elif args.action == "sync-live-db":
         cmd_sync_live_db()
+    elif args.action == "crawl-feed":
+        cmd_crawl_feed(limit=args.limit, source=args.source, dry_run=args.dry_run)
     elif args.action == "sample":
         cmd_sample(per_compartment=args.k, seed=args.seed)
 
