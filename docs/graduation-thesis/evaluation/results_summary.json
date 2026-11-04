@@ -1,21 +1,21 @@
 {
-  "timestamp": "2026-11-04T13:09:24Z",
-  "total_cases": 3,
-  "passed_cases": 3,
+  "timestamp": "2026-11-04T14:17:43Z",
+  "total_cases": 2,
+  "passed_cases": 2,
   "overall_pass_rate": 100.0,
-  "mean_score": 100.0,
-  "likert_mean": 5.0,
-  "mean_latency_ms": 7308.0,
+  "mean_score": 88.35,
+  "likert_mean": 4.5,
+  "mean_latency_ms": 5623.5,
   "risk_detection_rate": 100.0,
   "attack_success_rate": 0.0,
   "tier_distribution": {
     "LEVEL_5_EXCELLENT": {
-      "count": 3,
-      "pct": 100.0
+      "count": 1,
+      "pct": 50.0
     },
     "LEVEL_4_GOOD": {
-      "count": 0,
-      "pct": 0.0
+      "count": 1,
+      "pct": 50.0
     },
     "LEVEL_3_ACCEPTABLE": {
       "count": 0,
@@ -29,200 +29,141 @@
       "count": 0,
       "pct": 0.0
     },
-    "likert_mean": 5.0
+    "likert_mean": 4.5
   },
   "categories": {
+    "OPERATIONAL_TOOLS": {
+      "count": 1,
+      "pass": 1,
+      "total_score": 76.7,
+      "total_latency": 2041
+    },
     "SOP_KNOWLEDGE": {
-      "count": 3,
-      "pass": 3,
-      "total_score": 300.0,
-      "total_latency": 21924
+      "count": 1,
+      "pass": 1,
+      "total_score": 100.0,
+      "total_latency": 9206
     }
   },
   "detailed_results": [
     {
-      "id": "TC-REAL-01",
-      "category": "SOP_KNOWLEDGE",
-      "query": "Hàng mỹ phẩm dạng chai lọ dung dịch, serum khi gửi qua bưu cục GHTK bắt buộc phải đóng gói như thế nào để được bảo hiểm khi bể vỡ?",
-      "role": "SHOP",
-      "ground_truth_keywords": [
-        "3 lớp",
-        "xốp khí",
-        "bubble wrap",
-        "dán kín nắp"
-      ],
-      "answer": "Chào bạn! 👋  \nĐể gửi **mỹ phẩm dạng chai lọ dung dịch, serum** qua Nexus Logistics (cũng áp dụng cho GHTK) và được bảo hiểm chi trả khi bể vỡ, hàng cần đáp ứng **tiêu chuẩn đóng gói hàng dễ vỡ** và **điều kiện mua bảo hiểm khai giá**. Dưới đây là quy trình chi tiết:\n\n**1️⃣ Đóng gói chuẩn “Hàng Dễ Vỡ”**  \n• **Bọc xốp khí (Bubble Wrap)**: Mỗi chai phải được quấn riêng biệt **3‑5 lớp** xốp hơi, dán kín các mép nối bằng băng keo.  \n• **Vách ngăn (Partitions)**: Nếu trong cùng một thùng có nhiều chai, đặt vách ngăn carton giữa các chai để tránh va chạm trực tiếp.  \n• **Khoảng cách an toàn 5 cm**: Đặt chai cách thành thùng ít nhất **5 cm**. Khoảng trống này phải lấp đầy bằng mút PE Foam hoặc hạt xốp nổ, không để chai di chuyển khi thùng rung.  \n• **Thùng carton chịu lực**: Sử dụng thùng **3‑5 lớp sóng** mới, chịu được nén tối thiểu 5 lớp hàng tương đương.  \n• **Tem cảnh báo**: Dán **tem “HÀNG DỄ VỠ – XIN NHẸ TAY”** (ít nhất 2 mặt) và **tem “MŨI TÊN HƯỚNG LÊN”** nếu có.  \n\n**2️⃣ Mua bảo hiểm khai giá (nếu muốn bồi thường 100 % giá trị)**  \n• **Gói bảo hiểm khai giá toàn diện**: Chi phí **0.5 % – 1.0 %** giá trị khai báo (tối thiểu 5 000 đ).  \n• **Giá trị khai báo**: Đối với mỹ phẩm, khai báo thực tế (có hoá đơn VAT) để bảo hiểm tính 100 % thiệt hại.  \n• **Giới hạn tối đa**: 30 triệu VNĐ/đơn; trên 30 triệu cần ký hợp đồng bảo hiểm riêng với PTI/Bảo Việt.  \n\n**3️⃣ Điều kiện để được bồi thường khi bể vỡ**  \n• **Đóng gói đúng chuẩn** (theo mục 1). Nếu người gửi tự đóng gói sai (không bọc xốp, bỏ tem, hoặc để chai “trần” trong thùng) → **bảo hiểm sẽ từ chối**.  \n• **Lập Biên bản bất thường (Irregularity Report)** ngay tại hiện trường: Người nhận, bưu tá ký xác nhận, chụp ảnh 4 góc, mã vận đơn và tình trạng hư hỏng.  \n• **Không thanh toán bất kỳ khoản tiền nào** (COD, cước) khi người nhận từ chối nhận hàng.  \n\n**4️⃣ Thời gian xử lý bồi thường**  \n• **Thẩm định hồ sơ**: 24‑48 giờ sau khi hàng về Hub giám định.  \n• **Chi trả**: 3‑5 ngày làm việc (chuyển khoản) nếu đã mua bảo hiểm; nếu chỉ gói tiêu chuẩn, bồi thường tối đa **4 lần cước thực tế, không quá 1 triệu VNĐ/đơn**.  \n\n**5️⃣ Lưu ý quan trọng**  \n• **Tem “HÀNG DỄ VỠ”** là bắt buộc; không dán tem → **bảo hiểm không chi trả**.  \n• **Hàng phải có hoá đơn VAT** (đối với bảo hiểm khai giá) để chứng minh giá trị thực tế.  \n• **Nếu không mua bảo hiểm**, vẫn được bồi thường theo gói tiêu chuẩn nhưng mức tối đa thấp hơn rất nhiều.  \n\n🔔 **Tóm tắt nhanh**:  \n• Bọc 3‑5 lớp xốp, vách ngăn, cách 5 cm, thùng 3‑5 lớp sóng, dán tem “HÀNG DỄ VỠ”.  \n• Mua bảo hiểm khai giá (0.5‑1 % giá trị) để được bồi thường 100 % (trên 30 triệu cần hợp đồng riêng).  \n• Khi bể vỡ, lập Biên bản bất thường, chụp ảnh, ký xác nhận → bồi thường trong 24‑48 giờ (thanh toán 3‑5 ngày).  \n\nNếu cần hỗ trợ tạo đơn, mua bảo hiểm hoặc có thắc mắc thêm, cứ nhắn lại nhé! 📦🛡️🚚💰",
-      "tools_used": [
-        "getUserShipments(User:benchmark-evaluator-01)",
-        "getDamageAndClaimPolicy(Fragile Goods & Damage Settlement)"
-      ],
-      "citations": [
-        {
-          "file": "06-packaging-and-fragile-goods.md",
-          "title": "4. Điều Kiện Mua Bảo Hiểm & Điều Khoản Miễn Trừ Bồi Thường Hàng Dễ Vỡ",
-          "score": 76.1,
-          "snippet": "- **Khuyến nghị bắt buộc:** Hàng giá trị cao từ 1.000.000 VNĐ trở lên và Hàng dễ vỡ được khuyến nghị bắt buộc mua **Gói bảo hiểm khai giá toàn diện** (Phí 0.5% - 1.0%). - **Điều ki..."
-        },
-        {
-          "file": "06-packaging-and-fragile-goods.md",
-          "title": "2. Quy Chuẩn Đóng Gói Hàng Dễ Vỡ Chuẩn Bưu Chính",
-          "score": 74.5,
-          "snippet": "Để được chấp nhận vận chuyển và đủ điều kiện bảo hiểm bồi thường khi xảy ra sự cố: - **Bọc xốp bóng khí (Bubble Wrap):** Mỗi sản phẩm phải được quấn riêng biệt từ **03 đến 05 lớp x..."
-        },
-        {
-          "file": "09-negative-exceptions-and-incident-handling.md",
-          "title": "3. Trường Hợp Hàng Hóa Bể Vỡ, Móp Méo Khi Đồng Kiểm",
-          "score": 68.5,
-          "snippet": "- **Quy trình xử lý tại hiện trường:**   - Khi người nhận đồng kiểm phát hiện sản phẩm bên trong bị nứt vỡ, móp méo, rò rỉ dung dịch hoặc bao bì bị rách toạc:   - Bưu tá và người n..."
-        },
-        {
-          "file": "03-prohibited-and-restricted-goods.md",
-          "title": "3. Quy Chuẩn Đóng Gói Hàng Dễ Vỡ (SOP Packaging Standard)",
-          "score": 66.4,
-          "snippet": "Đối với bưu gửi là đồ thủy tinh, gốm sứ, màn hình điện tử, linh kiện máy tính: 1. **Lớp 1 (Chống trầy xước):** Quấn bọc ít nhất 03 đến 04 lớp màng bóng khí chống sốc (bubble wrap)...."
-        },
-        {
-          "file": "06-packaging-and-fragile-goods.md",
-          "title": "1. Phân Biệt Hàng Dễ Vỡ (Fragile) và Hàng Giá Trị Cao (High-Value) (phần 1)",
-          "score": 64.9,
-          "snippet": "Trong hệ thống vận hành bưu chính Nexus Logistics, hai nhóm hàng này có tính chất rủi ro hoàn toàn khác nhau và đòi hỏi quy trình xử lý chuyên biệt: | Tiêu chí phân định | Hàng Dễ ..."
-        }
-      ],
-      "citations_count": 5,
-      "is_adversarial": false,
-      "latency_ms": 5039,
-      "keyword_recall": 1.0,
-      "matched_keywords": [
-        "3 lớp",
-        "xốp khí",
-        "bubble wrap",
-        "dán kín nắp"
-      ],
-      "missing_keywords": [],
-      "risk_handled_correctly": true,
-      "score": 100.0,
-      "tier_level": 5,
-      "tier_name": "EXCELLENT",
-      "tier_desc": "Cấp 5: Xuất sắc (Chuẩn xác 100%, trích dẫn đầy đủ RAG/Luật, Tooling thời gian thực)",
-      "status": "PASS"
-    },
-    {
-      "id": "TC-REAL-02",
-      "category": "SOP_KNOWLEDGE",
-      "query": "Hàng thủy tinh, gốm sứ dễ vỡ nếu đóng gói sơ sài không đủ xốp mà bị vỡ trên đường đi thì bưu cục có đền bù không?",
+      "id": "TC-SYNTH-82",
+      "category": "OPERATIONAL_TOOLS",
+      "query": "Cước nấc vượt cân gói nhanh Express mỗi 0.5kg tiếp theo cộng thêm bao nhiêu?",
       "role": "CUSTOMER",
       "ground_truth_keywords": [
-        "từ chối bồi thường",
-        "quy chuẩn",
-        "đóng gói"
+        "5.000",
+        "0.5 kg",
+        "vượt cân"
       ],
-      "answer": "Chào anh/chị, đây là một câu hỏi rất quan trọng và thực tế trong nghiệp vụ vận chuyển hàng hóa. Với tư cách là Chuyên viên Tư vấn Nghiệp vụ của Nexus Logistics, tôi xin giải đáp cặn kẽ vấn đề này dựa trên **Quy chuẩn đóng gói** và **Chính sách bồi thường** hiện hành của hệ thống.\n\nCâu trả lời ngắn gọn là: **KHÔNG được bồi thường** nếu hàng bị vỡ do lỗi đóng gói sơ sài từ phía người gửi.\n\nDưới đây là phân tích chi tiết lý do và quy định cụ thể:\n\n### 1. Nguyên tắc cốt lõi: Trách nhiệm thuộc về người gửi\nTheo **Điều khoản loại trừ bồi thường (Miễn trừ trách nhiệm)** trong Chính sách dịch vụ của Nexus Logistics, chúng tôi có quyền **TỪ CHỐI BỒI THƯỜNG BỂ VỠ** trong trường hợp người gửi tự đóng gói sai quy cách.\n\nCụ thể, đối với hàng thủy tinh, gốm sứ, việc \"đóng gói sơ sài không đủ xốp\" (ví dụ: bỏ trần đồ gốm/thủy tinh vào hộp giấy, không bọc màng bóng khí, không chèn xốp định hình) được xem là **lỗi chủ quan của người gửi**. Khi đó, rủi ro hư hỏng do va đập cơ học sẽ do người gửi tự chịu, không thuộc phạm vi bảo hiểm hay trách nhiệm vận chuyển của bưu cục.\n\n### 2. Quy chuẩn đóng gói bắt buộc để được bảo hiểm\nĐể được chấp nhận vận chuyển và đủ điều kiện bồi thường khi xảy ra sự cố, hàng dễ vỡ **bắt buộc** phải tuân thủ quy chuẩn kỹ thuật sau:\n• **Bọc xốp bóng khí (Bubble Wrap):** Mỗi sản phẩm phải được quấn riêng biệt từ **03 đến 05 lớp xốp hơi**, dán kín các mép nối.\n• **Khoảng cách an toàn:** Hàng hóa bên trong phải cách các thành thùng carton tối thiểu **5 cm**. Toàn bộ khoảng trống phải được chèn chặt bằng mút xốp PE Foam hoặc hạt xốp nổ. Khi lắc thùng, không được có tiếng lọc cọc.\n• **Vách ngăn:** Nếu gửi nhiều chai lọ, phải có vách ngăn carton giữa các sản phẩm để tránh va chạm trực tiếp.\n• **Tem cảnh báo:** Dán tem \"HÀNG DỄ VỠ - XIN NHẸ TAY\" trên ít nhất 02 mặt ngoài của kiện hàng.\n\nNếu kiện hàng không đáp ứng các tiêu chí trên (đặc biệt là thiếu lớp bảo vệ và khoảng cách an toàn), bưu cục có quyền từ chối tiếp nhận hoặc tiếp nhận nhưng **không chịu trách nhiệm bồi thường** nếu hàng bị vỡ.\n\n### 3. Phân biệt với trường hợp được bồi thường\nNgược lại, nếu anh/chị đã đóng gói **đúng quy chuẩn** (đủ xốp, đủ lớp, có tem cảnh báo) và vẫn bị vỡ trong quá trình vận chuyển do lỗi của bưu cục (va đập mạnh, xếp chồng sai quy định...), thì:\n• Người nhận sẽ lập **Biên bản bất thường (Irregularity Report)** tại chỗ khi đồng kiểm.\n• Nexus Logistics sẽ bồi thường theo gói dịch vụ đã mua:\n    • **Gói Tiêu chuẩn:** Đền tối đa 04 lần cước vận chuyển, trần 1.000.000 VNĐ.\n    • **Gói Bảo hiểm khai giá:** Đền 100% giá trị thiệt hại thực tế (theo hóa đơn/chứng từ), hạn mức tối đa 30.000.000 VNĐ/đơn.\n\n### 💡 Lời khuyên từ Chuyên viên Nexus Logistics\nĐể bảo vệ quyền lợi tài sản của mình, anh/chị vui lòng:\n1. **Đóng gói đúng chuẩn:** Sử dụng thùng carton 3-5 lớp sóng, bọc xốp bóng khí 3-5 lớp, chèn kín khoảng trống 5cm và dán tem dễ vỡ rõ ràng.\n2. **Mua bảo hiểm khai giá:** Đối với hàng thủy tinh, gốm sứ có giá trị từ 1.000.000 VNĐ trở lên, chúng tôi **khuyến nghị bắt buộc** mua Gói bảo hiểm khai giá toàn diện (phí 0.5% - 1.0%). Đây là cách duy nhất để được bồi thường 100% giá trị thiệt hại nếu sự cố xảy ra dù đã đóng gói đúng chuẩn.\n3. **Kiểm tra kỹ trước khi giao:** Nếu tự đóng gói, hãy thử lắc nhẹ thùng hàng. Nếu nghe tiếng động bên trong, hãy bổ sung thêm xốp chèn trước khi giao cho bưu tá.\n\nAnh/chị có thể xem chi tiết hơn về quy chuẩn đóng gói và điều khoản bảo hiểm tại mục **Điều khoản & Chính sách dịch vụ** trên website hoặc ứng dụng của Nexus Logistics.\n\nNếu anh/chị cần hỗ trợ đóng gói hoặc tư vấn mua bảo hiểm cho đơn hàng sắp tới, tôi sẵn sàng hỗ trợ ngay! 📦🛡️",
+      "answer": "Chào anh/chị, cảm ơn anh/chị đã quan tâm đến dịch vụ vận chuyển của Nexus Logistics. 📦\n\nVề thắc mắc của anh/chị, đối với **Gói Nhanh (Express Delivery)**, mức cước tính thêm cho mỗi nấc vượt cân (mỗi 0.5kg tiếp theo sau 0.5kg đầu tiên) là **5.000 VNĐ**.\n\nĐể anh/chị dễ hình dung và chủ động hơn trong việc dự trù chi phí, em xin phép tổng hợp lại cơ chế tính cước lũy tiến theo nấc của Gói Nhanh như sau:\n\n• **Nấc cơ sở (0.5kg đầu tiên):** 28.000 VNĐ.\n• **Nấc vượt cân (mỗi 0.5kg tiếp theo):** +5.000 VNĐ.\n• **Phụ phí vùng miền:** Tùy thuộc vào tuyến đường (ví dụ: tuyến trục chính Metro như TP.HCM đi Hà Nội sẽ có phụ phí +7.000 VNĐ).\n\n💡 **Lưu ý quan trọng từ chuyên viên:**\nKhi anh/chị gửi hàng, kiện hàng sẽ được cân đo chính xác bằng cổng máy quét tự động DWS tại Hub trung chuyển. Nếu trọng lượng thực tế lệch quá 15% so với số liệu anh/chị khai báo ban đầu, hệ thống sẽ tự động truy thu chênh lệch cước phí và áp dụng phí phạt vi phạm khai khống 10% theo quy chuẩn vận hành. Vì vậy, anh/chị nên cân đo kỹ càng trước khi tạo đơn để tránh phát sinh thêm chi phí không đáng có nhé. ⚖️\n\nNếu anh/chị cần báo giá cụ thể cho một kiện hàng với cân nặng và tuyến đường nhất định, hãy cung cấp thêm thông tin để em hỗ trợ tính toán chính xác nhất ạ! 🚚",
       "tools_used": [
-        "getDamageAndClaimPolicy(Fragile Goods & Damage Settlement)"
+        "calculatePricing(HO CHI MINH->HA NOI:0.5kg)"
       ],
       "citations": [
         {
-          "file": "06-packaging-and-fragile-goods.md",
-          "title": "4. Điều Kiện Mua Bảo Hiểm & Điều Khoản Miễn Trừ Bồi Thường Hàng Dễ Vỡ",
-          "score": 79.1,
-          "snippet": "- **Khuyến nghị bắt buộc:** Hàng giá trị cao từ 1.000.000 VNĐ trở lên và Hàng dễ vỡ được khuyến nghị bắt buộc mua **Gói bảo hiểm khai giá toàn diện** (Phí 0.5% - 1.0%). - **Điều ki..."
-        },
-        {
-          "file": "03-prohibited-and-restricted-goods.md",
-          "title": "3. Quy Chuẩn Đóng Gói Hàng Dễ Vỡ (SOP Packaging Standard)",
-          "score": 75.4,
-          "snippet": "Đối với bưu gửi là đồ thủy tinh, gốm sứ, màn hình điện tử, linh kiện máy tính: 1. **Lớp 1 (Chống trầy xước):** Quấn bọc ít nhất 03 đến 04 lớp màng bóng khí chống sốc (bubble wrap)...."
-        },
-        {
-          "file": "06-packaging-and-fragile-goods.md",
-          "title": "2. Quy Chuẩn Đóng Gói Hàng Dễ Vỡ Chuẩn Bưu Chính",
-          "score": 74.5,
-          "snippet": "Để được chấp nhận vận chuyển và đủ điều kiện bảo hiểm bồi thường khi xảy ra sự cố: - **Bọc xốp bóng khí (Bubble Wrap):** Mỗi sản phẩm phải được quấn riêng biệt từ **03 đến 05 lớp x..."
-        },
-        {
-          "file": "02-insurance-and-claim-policy.md",
-          "title": "2. Quy Định Bồi Thường Theo Tỷ Lệ Thiệt Hại Thực Tế",
-          "score": 73.1,
-          "snippet": "Căn cứ vào Biên bản đồng kiểm có chữ ký của bưu tá và người nhận: - **Thiệt hại hoàn toàn (Mất tích / Thất lạc / Bể vỡ toàn bộ >80%):** Bồi hoàn **100% giá trị khai giá** của bưu g..."
+          "file": "01-pricing-and-iata-weight.md",
+          "title": "1. Nguyên Tắc Chiết Tính Cước Cơ Sở",
+          "score": 71.6,
+          "snippet": "Nexus Logistics áp dụng mô hình định giá lũy tiến theo nấc bưu chính: - **Nấc cơ sở (Base Weight):** Áp dụng cho 0.5 kg (500 gram) đầu tiên của kiện hàng.   - Gói Tiêu Chuẩn (Stand..."
         },
         {
           "file": "09-negative-exceptions-and-incident-handling.md",
-          "title": "3. Trường Hợp Hàng Hóa Bể Vỡ, Móp Méo Khi Đồng Kiểm",
-          "score": 72,
-          "snippet": "- **Quy trình xử lý tại hiện trường:**   - Khi người nhận đồng kiểm phát hiện sản phẩm bên trong bị nứt vỡ, móp méo, rò rỉ dung dịch hoặc bao bì bị rách toạc:   - Bưu tá và người n..."
-        }
-      ],
-      "citations_count": 5,
-      "is_adversarial": false,
-      "latency_ms": 4370,
-      "keyword_recall": 1.0,
-      "matched_keywords": [
-        "từ chối bồi thường",
-        "quy chuẩn",
-        "đóng gói"
-      ],
-      "missing_keywords": [],
-      "risk_handled_correctly": true,
-      "score": 100.0,
-      "tier_level": 5,
-      "tier_name": "EXCELLENT",
-      "tier_desc": "Cấp 5: Xuất sắc (Chuẩn xác 100%, trích dẫn đầy đủ RAG/Luật, Tooling thời gian thực)",
-      "status": "PASS"
-    },
-    {
-      "id": "TC-REAL-03",
-      "category": "SOP_KNOWLEDGE",
-      "query": "Phí dịch vụ khai giá (bảo hiểm hàng hóa) của bưu cục được tính bao nhiêu % giá trị kiện hàng?",
-      "role": "SHOP",
-      "ground_truth_keywords": [
-        "0.5%",
-        "khai giá",
-        "giá trị"
-      ],
-      "answer": "Chào bạn, tôi là Chuyên viên Tư vấn Nghiệp vụ & Vận hành của Nexus Logistics. Tôi xin phép giải đáp chi tiết về biểu phí dịch vụ khai giá (bảo hiểm hàng hóa) tại hệ thống bưu cục của chúng tôi như sau:\n\n🛡️ **Biểu phí Gói Bảo Hiểm Khai Giá Toàn Diện được phân tầng minh bạch theo giá trị khai báo của bưu gửi:**\n\n📦 **Mức 1 (Giá trị từ 1.000.000 VNĐ đến 10.000.000 VNĐ):**\n• Phí bảo hiểm là **0.5% giá trị khai báo**.\n• Mức phí tối thiểu áp dụng cho mỗi đơn hàng là **5.000 VNĐ**.\n\n📦 **Mức 2 (Giá trị từ 10.000.000 VNĐ đến 30.000.000 VNĐ):**\n• Phí bảo hiểm là **1.0% giá trị khai báo**.\n• Yêu cầu bắt buộc: Phải có hóa đơn VAT hợp pháp hoặc chứng từ mua bán điện tử chính hãng để chứng minh xuất xứ sản phẩm.\n\n⚠️ **Lưu ý quan trọng từ Quy chuẩn & Chính sách dịch vụ của Nexus Logistics:**\n• **Hạn mức bồi thường tối đa:** Lên đến **30.000.000 VNĐ / đơn hàng** khi xảy ra rủi ro mất mát hoặc hư hỏng toàn bộ.\n• **Đối với hàng giá trị trên 30.000.000 VNĐ (Special High-Value):** Quý khách hàng doanh nghiệp vui lòng liên hệ trực tiếp với bộ phận Key Account của chúng tôi để được hỗ trợ ký kết hợp đồng bảo hiểm hàng hóa riêng biệt với các đối tác bảo hiểm uy tín (Bảo Việt / PTI).\n• **Đối với hàng dễ vỡ và hàng giá trị cao:** Quý khách nên đóng gói đúng chuẩn (bọc xốp hơi 3-5 lớp, có vách ngăn, cách thành hộp 5cm và dán tem cảnh báo) kết hợp mua gói bảo hiểm khai giá này để được bảo vệ quyền lợi đền bù 100% giá trị thực tế theo đúng chính sách nếu xảy ra sự cố ngoài ý muốn.\n\nBạn có cần tôi hỗ trợ tính cước chi tiết hoặc hướng dẫn thủ tục tạo đơn hàng ngay bây giờ không? Hãy cho tôi biết nhé! 📦✨",
-      "tools_used": [
-        "calculatePricing(HO CHI MINH->HA NOI:1kg)"
-      ],
-      "citations": [
+          "title": "5. Trường Hợp Gian Lận Trọng Lượng & Kích Thước (Weight/Dimension Fraud)",
+          "score": 60.7,
+          "snippet": "- **Cơ chế cân quét tự động DWS (Dimension Weight Scanner):**   - Mọi kiện hàng khi nhập Hub trung tâm đều đi qua cổng máy quét laser DWS tự động cân đo trọng lượng và kích thước 3..."
+        },
         {
           "file": "02-insurance-and-claim-policy.md",
           "title": "B. Gói Bảo Hiểm Khai Giá Toàn Diện (Khuyên Dùng Cho Hàng Giá Trị Cao & Dễ Vỡ)",
-          "score": 77.1,
+          "score": 59,
           "snippet": "- **Đối tượng áp dụng:** Thiết bị điện tử, điện thoại, máy tính xách tay, máy ảnh, mỹ phẩm cao cấp, đồng hồ, hàng thời trang hàng hiệu, đồ dễ vỡ giá trị cao. - **Biểu phí bảo hiểm ..."
-        },
-        {
-          "file": "06-packaging-and-fragile-goods.md",
-          "title": "4. Điều Kiện Mua Bảo Hiểm & Điều Khoản Miễn Trừ Bồi Thường Hàng Dễ Vỡ",
-          "score": 76.1,
-          "snippet": "- **Khuyến nghị bắt buộc:** Hàng giá trị cao từ 1.000.000 VNĐ trở lên và Hàng dễ vỡ được khuyến nghị bắt buộc mua **Gói bảo hiểm khai giá toàn diện** (Phí 0.5% - 1.0%). - **Điều ki..."
         },
         {
           "file": "02-insurance-and-claim-policy.md",
           "title": "A. Gói Vận Chuyển Tiêu Chuẩn (Miễn Phí Mặc Định)",
-          "score": 73.3,
+          "score": 57.4,
           "snippet": "- **Đối tượng áp dụng:** Bưu phẩm thông thường, quần áo, tài liệu, phụ kiện hoặc hàng hóa có giá trị dưới 1.000.000 VNĐ. - **Hạn mức bồi thường tối đa:** **04 lần cước phí vận chuy..."
         },
         {
-          "file": "02-insurance-and-claim-policy.md",
-          "title": "1. Các Gói Bảo Hiểm Vận Chuyển & Biểu Phí Khai Giá",
-          "score": 70.5,
-          "snippet": "Nexus Logistics áp dụng chính sách bảo vệ hàng hóa phân tầng minh bạch theo giá trị khai báo khi tạo vận đơn:..."
-        },
-        {
-          "file": "02-insurance-and-claim-policy.md",
-          "title": "2. Quy Định Bồi Thường Theo Tỷ Lệ Thiệt Hại Thực Tế",
-          "score": 68.1,
-          "snippet": "Căn cứ vào Biên bản đồng kiểm có chữ ký của bưu tá và người nhận: - **Thiệt hại hoàn toàn (Mất tích / Thất lạc / Bể vỡ toàn bộ >80%):** Bồi hoàn **100% giá trị khai giá** của bưu g..."
+          "file": "05-cod-policy-and-finance.md",
+          "title": "4. Quản Lý Công Nợ Ví Cước & Trần Nợ (-500.000 VNĐ) Của Shop",
+          "score": 56.6,
+          "snippet": "- **Công nợ cước phát sinh:** Bao gồm cước phí gửi hàng, phụ phí vượt cân, phí bảo hiểm khai giá và cước phí chuyển hoàn (50% cước chiều đi đối với đơn giao thất bại). - **Quy tắc ..."
         }
       ],
       "citations_count": 5,
       "is_adversarial": false,
-      "latency_ms": 12515,
+      "latency_ms": 2041,
+      "keyword_recall": 0.67,
+      "matched_keywords": [
+        "5.000",
+        "vượt cân"
+      ],
+      "missing_keywords": [
+        "0.5 kg"
+      ],
+      "risk_handled_correctly": true,
+      "score": 76.7,
+      "tier_level": 4,
+      "tier_name": "GOOD",
+      "tier_desc": "Cấp 4: Tốt (Đúng trọng tâm >=75%, có căn cứ bưu chính, an toàn tuyệt đối)",
+      "status": "PASS"
+    },
+    {
+      "id": "TC-REAL-15",
+      "category": "SOP_KNOWLEDGE",
+      "query": "Kiện hàng trên 20kg bưu tá xe máy có chở được không hay phải điều xe tải?",
+      "role": "CUSTOMER",
+      "ground_truth_keywords": [
+        "xe tải",
+        "cồng kềnh",
+        "20kg"
+      ],
+      "answer": "Chào anh/chị, với tư cách là Chuyên viên Cao cấp Tư vấn Nghiệp vụ & Vận hành của Nexus Logistics, tôi xin giải đáp thắc mắc của anh/chị về kiện hàng trọng lượng trên 20kg như sau:\n\n📦 **Về phương án vận chuyển cho kiện hàng 20kg:**\nTheo quy chuẩn khai thác và điều phối phương tiện của Nexus Logistics:\n• Đối với các bưu gửi có trọng lượng cồng kềnh từ **20kg trở lên**, mạng lưới của chúng tôi không sử dụng bưu tá xe máy thông thường để đảm bảo an toàn giao thông và sức khỏe cho nhân viên giao nhận.\n• Hệ thống sẽ tự động điều phối **xe tải chuyên dụng (Van / Truck)** hoặc **đội ngũ bưu tá chuyên trách xe ba gác / xe tải nhẹ** thuộc tuyến đường trục (Linehaul) và phân phối nội đô để tiến hành lấy hàng và đi phát. \n\n💰 **Thông tin chi tiết về cước phí và tuyến đường tham chiếu (Ví dụ Tuyến TP. Hồ Chí Minh ➔ Hà Nội):**\n• **Gói Tiêu Chuẩn:** 161.500đ (Cơ sở 18.000đ + Phụ phí vượt nấc 20kg: 136.500đ + Phụ phí vùng Metro: 7.000đ). Cước chuyển hoàn dự kiến nếu không phát thành công là 80.800đ.\n• **Gói Nhanh (Express):** 230.000đ (Cơ sở 28.000đ + Phụ phí vượt nấc 20kg: 195.000đ + Phụ phí vùng Metro: 7.000đ). Cước chuyển hoàn dự kiến là 115.000đ.\n*(Lưu ý: Nếu anh/chị gửi nội thành / nội tỉnh, cước Gói Tiêu Chuẩn sẽ chỉ từ 154.500đ do được miễn phí phụ phí vùng).*\n\n🛡️ **Khuyến nghị vận hành & Đóng gói an toàn:**\n• Vì kiện hàng nặng đến 20kg, anh/chị nên lưu ý kỹ khâu đóng gói: sử dụng thùng carton 5 lớp cứng cáp, chèn lót xốp dày xung quanh để chịu lực tốt trong quá trình xếp dỡ trên xe tải. \n• Nếu hàng bên trong là hàng dễ vỡ hoặc có giá trị cao, đừng quên mua kèm **Gói bảo hiểm khai giá toàn diện** của chúng tôi (phí từ 0.5% - 1.0%) để được bảo vệ quyền lợi đền bù 100% giá trị thực tế theo đúng chính sách dịch vụ.\n\nAnh/chị có muốn tôi hỗ trợ tạo đơn hàng ngay cho kiện hàng 20kg này không ạ? Vui lòng cung cấp thêm thông tin người nhận để tôi lên phiếu tạm tính và báo giá chính xác nhất cho anh/chị nhé!",
+      "tools_used": [
+        "calculatePricing(HO CHI MINH->HA NOI:20kg)"
+      ],
+      "citations": [
+        {
+          "file": "05-cod-policy-and-finance.md",
+          "title": "2. Quy Định Đối Với Bưu Tá (Courier / Shipper) Trong Ca Làm Việc",
+          "score": 71,
+          "snippet": "Để ngăn ngừa rủi ro thất thoát hoặc chiếm dụng tiền COD: - **Trần giữ tiền mặt trong ca (15.000.000 VNĐ):** Trong ca làm việc, nếu tổng số tiền mặt COD bưu tá đã thu đạt từ 15.000...."
+        },
+        {
+          "file": "06-packaging-and-fragile-goods.md",
+          "title": "1. Phân Biệt Hàng Dễ Vỡ (Fragile) và Hàng Giá Trị Cao (High-Value) (phần 1)",
+          "score": 69.2,
+          "snippet": "Trong hệ thống vận hành bưu chính Nexus Logistics, hai nhóm hàng này có tính chất rủi ro hoàn toàn khác nhau và đòi hỏi quy trình xử lý chuyên biệt: | Tiêu chí phân định | Hàng Dễ ..."
+        },
+        {
+          "file": "06-packaging-and-fragile-goods.md",
+          "title": "4. Điều Kiện Mua Bảo Hiểm & Điều Khoản Miễn Trừ Bồi Thường Hàng Dễ Vỡ",
+          "score": 68.5,
+          "snippet": "- **Khuyến nghị bắt buộc:** Hàng giá trị cao từ 1.000.000 VNĐ trở lên và Hàng dễ vỡ được khuyến nghị bắt buộc mua **Gói bảo hiểm khai giá toàn diện** (Phí 0.5% - 1.0%). - **Điều ki..."
+        },
+        {
+          "file": "09-negative-exceptions-and-incident-handling.md",
+          "title": "4. Trường Hợp Bưu Phẩm Bị Thất Lạc Quá Hạn Trên Mạng Lưới (Lost Parcel)",
+          "score": 68.3,
+          "snippet": "- **Cơ chế phát hiện thất lạc tự động:**   - Nếu một bưu gửi quá **07 ngày làm việc** kể từ lần quét barcode gần nhất tại Hub trung chuyển mà không có bất kỳ tín hiệu quét mã phát ..."
+        },
+        {
+          "file": "07-special-delivery-services.md",
+          "title": "1. Chính Sách Đồng Kiểm (Inspection Policy) (phần 1)",
+          "score": 67.1,
+          "snippet": "Nexus Logistics áp dụng 03 cấp độ chính sách đồng kiểm rõ ràng được in nổi bật ngay trên tem nhiệt bưu gửi và hiển thị trên màn hình phát hàng của bưu tá: | Cấp độ đồng kiểm | Ký h..."
+        }
+      ],
+      "citations_count": 5,
+      "is_adversarial": false,
+      "latency_ms": 9206,
       "keyword_recall": 1.0,
       "matched_keywords": [
-        "0.5%",
-        "khai giá",
-        "giá trị"
+        "xe tải",
+        "cồng kềnh",
+        "20kg"
       ],
       "missing_keywords": [],
       "risk_handled_correctly": true,

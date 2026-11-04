@@ -23,6 +23,7 @@ import os
 import sys
 import json
 import time
+import random
 import urllib.request
 import urllib.error
 import argparse
@@ -31,6 +32,34 @@ from typing import Dict, Any, List
 EVAL_DIR = "docs/graduation-thesis/evaluation"
 DATASET_FILE = os.path.join(EVAL_DIR, "benchmark-dataset.json")
 API_URL = "http://localhost:3013/api/v1/chat/message"
+SHIPMENT_SERVICE_URL = "http://localhost:3002"
+
+def fetch_live_db_cases(limit: int = 10) -> List[Dict[str, Any]]:
+    """Lấy danh sách vận đơn thực tế từ PostgreSQL (shipment-service :3002) để tự động tạo bộ dữ liệu kiểm thử thời gian thực"""
+    url = f"{SHIPMENT_SERVICE_URL}/shipments?limit={limit}"
+    req = urllib.request.Request(url)
+    try:
+        with urllib.request.urlopen(req, timeout=5) as response:
+            data = json.loads(response.read().decode("utf-8"))
+            items = data.get("items", [])
+            cases = []
+            for it in items:
+                code = it.get("code")
+                status = it.get("currentStatus", "IN_TRANSIT")
+                cases.append({
+                    "id": f"LIVE-TRACK-{code}",
+                    "category": "OPERATIONAL_TOOLS",
+                    "role": "CUSTOMER",
+                    "query": f"Tra cứu hành trình đơn hàng {code}",
+                    "ground_truth_keywords": [code],
+                    "expected_tool": "trackShipment",
+                    "expected_risk_blocked": False,
+                    "expected_citations": []
+                })
+            return cases
+    except Exception as e:
+        print(f"⚠️ Không thể kết nối shipment-service (:3002): {e}. Tự động fallback về bộ benchmark JSON.")
+        return []
 
 def query_hmas(payload: Dict[str, Any], timeout: int = 20) -> Dict[str, Any]:
     """Gửi yêu cầu tới HMAS AI Chatbot Service"""
@@ -193,20 +222,54 @@ def evaluate_test_case(tc: Dict[str, Any], response: Dict[str, Any]) -> Dict[str
 
 def main():
     parser = argparse.ArgumentParser(description="Chạy thực nghiệm đánh giá mô hình Đa tác tử Nexus HMAS")
+    parser.add_argument("--dataset", type=str, default="", help="Đường dẫn hoặc tên tệp dataset JSON (mặc định: benchmark-dataset.json cũ)")
+    parser.add_argument("--source", type=str, choices=["file", "live-db"], default="file", help="Nguồn dữ liệu: 'file' (từ tệp JSON) hoặc 'live-db' (trích xuất tự động từ PostgreSQL :3002)")
+    parser.add_argument("--case", type=str, default="", help="Chạy riêng 1 ca kiểm thử cụ thể theo ID (ví dụ: TC-REAL-01 hoặc ADV-02)")
+    parser.add_argument("--sample", type=int, default=0, help="Lấy ngẫu nhiên N câu hỏi từ bộ dataset để kiểm thử tính khái quát")
+    parser.add_argument("--seed", type=int, default=None, help="Hạt giống ngẫu nhiên (Random seed) để tái lập mẫu")
     parser.add_argument("--limit", type=int, default=0, help="Giới hạn số lượng test cases (0 = toàn bộ)")
     parser.add_argument("--category", type=str, default="", help="Lọc theo nhóm: SOP_KNOWLEDGE, OPERATIONAL_TOOLS, ADVERSARIAL_SAFETY, OUT_OF_DOMAIN")
     args = parser.parse_args()
 
-    if not os.path.exists(DATASET_FILE):
-        print(f"❌ Không tìm thấy tệp dataset: {DATASET_FILE}")
-        sys.exit(1)
+    # 1. Xác định Nguồn Dữ liệu (Data Source)
+    if args.source == "live-db":
+        print("🌐 NGUỒN DỮ LIỆU: Trích xuất trực tiếp từ Cơ sở dữ liệu PostgreSQL thực tế (shipment-service :3002)")
+        test_cases = fetch_live_db_cases(limit=args.limit if args.limit > 0 else 10)
+        if not test_cases:
+            print("⚠️ Không lấy được dữ liệu từ DB sống, chuyển sang đọc tệp JSON mặc định.")
+            with open(DATASET_FILE, "r", encoding="utf-8") as f:
+                test_cases = json.load(f)
+    else:
+        # Đọc từ file: Cho phép truyền tên file mới hoặc dùng file cũ mặc định
+        dataset_path = DATASET_FILE
+        if args.dataset:
+            if os.path.exists(args.dataset):
+                dataset_path = args.dataset
+            elif os.path.exists(os.path.join(EVAL_DIR, args.dataset)):
+                dataset_path = os.path.join(EVAL_DIR, args.dataset)
+            else:
+                print(f"❌ Không tìm thấy tệp dataset: {args.dataset}")
+                sys.exit(1)
 
-    with open(DATASET_FILE, "r", encoding="utf-8") as f:
-        test_cases = json.load(f)
+        print(f"📁 NGUỒN DỮ LIỆU: Đọc từ tệp [{dataset_path}]")
+        with open(dataset_path, "r", encoding="utf-8") as f:
+            test_cases = json.load(f)
 
+    # 2. Lọc & Lấy mẫu theo yêu cầu người dùng
+    if args.case:
+        test_cases = [tc for tc in test_cases if tc.get("id", "").lower() == args.case.lower()]
+        if not test_cases:
+            print(f"❌ Không tìm thấy ca kiểm thử có ID '{args.case}'")
+            sys.exit(1)
     if args.category:
-        test_cases = [tc for tc in test_cases if tc["category"] == args.category]
-    if args.limit > 0:
+        test_cases = [tc for tc in test_cases if tc.get("category", "") == args.category]
+
+    if args.sample > 0 and len(test_cases) > args.sample:
+        if args.seed is not None:
+            random.seed(args.seed)
+        test_cases = random.sample(test_cases, args.sample)
+        print(f"🎲 Đã lấy ngẫu nhiên {len(test_cases)} ca kiểm thử (Seed: {args.seed})")
+    elif args.limit > 0:
         test_cases = test_cases[:args.limit]
 
     print("=" * 75)
