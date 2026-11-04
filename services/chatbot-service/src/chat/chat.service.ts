@@ -937,7 +937,7 @@ HÃY ĐƯA RA CÂU TRẢ LỜI ĐẦY ĐỦ VÀ CHÍNH XÁC:`;
             groqModel,
             guardrailPrompt,
             payloadText,
-            4000
+            8000
           );
           if (verdictRaw) {
             try {
@@ -967,7 +967,7 @@ HÃY ĐƯA RA CÂU TRẢ LỜI ĐẦY ĐỦ VÀ CHÍNH XÁC:`;
             routerModel,
             guardrailPrompt,
             payloadText,
-            4000
+            8000
           );
           if (verdictRaw) {
             try {
@@ -1181,7 +1181,7 @@ HÃY ĐƯA RA CÂU TRẢ LỜI ĐẦY ĐỦ VÀ CHÍNH XÁC:`;
           activeValidationModel,
           'System ping',
           pingPrompt,
-          5000
+          8000
         );
         valLatency = Date.now() - t3;
         valStatus = res ? 'CONNECTED' : 'UNREACHABLE';
