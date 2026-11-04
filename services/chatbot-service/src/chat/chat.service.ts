@@ -27,6 +27,9 @@ export class ChatService {
   private groqOperationModel: string;
   private nvidiaApiKey: string;
   private nvidiaValidationModel: string;
+  private validationProvider: string;
+  private validationModel: string;
+  private openrouterApiKey: string;
 
   constructor(
     private readonly embeddingService: EmbeddingService,
@@ -40,6 +43,22 @@ export class ChatService {
     this.groqOperationModel = process.env.GROQ_OPERATION_MODEL || 'openai/gpt-oss-120b';
     this.nvidiaApiKey = process.env.NVIDIA_API_KEY || '';
     this.nvidiaValidationModel = process.env.NVIDIA_VALIDATION_MODEL || 'nvidia/nemotron-3.5-lightning-30b-a3b';
+    this.openrouterApiKey = process.env.OPENROUTER_API_KEY || '';
+
+    // Tự động xác định Validation Provider (ưu tiên nvidia nếu có key, nếu không tự động dùng groq safeguard)
+    this.validationProvider = (
+      process.env.VALIDATION_PROVIDER ||
+      (this.nvidiaApiKey ? 'nvidia' : (this.openrouterApiKey ? 'openrouter' : 'groq'))
+    ).toLowerCase();
+
+    this.validationModel =
+      process.env.VALIDATION_MODEL ||
+      (this.validationProvider === 'groq'
+        ? 'openai/gpt-oss-safeguard-20b'
+        : this.validationProvider === 'openrouter'
+        ? 'nvidia/nemotron-3.5-lightning:free'
+        : this.nvidiaValidationModel);
+
     this.apiKey = process.env.OPENAI_API_KEY || '';
     this.chatModel = process.env.OPENAI_CHAT_MODEL || 'gpt-4o-mini';
     this.temperature = Number(process.env.OPENAI_TEMPERATURE || 0.2);
@@ -906,7 +925,70 @@ HÃY ĐƯA RA CÂU TRẢ LỜI ĐẦY ĐỦ VÀ CHÍNH XÁC:`;
       payloadText.toLowerCase().includes('doi dia chi');
 
     if (isRiskyMutation) {
-      if (this.nvidiaApiKey) {
+      const guardrailPrompt = `Bạn là Safety Guardrail AI của Nexus Logistics. Hãy kiểm tra thao tác sau: Hành động="${actionType}", Nội dung="${payloadText}", Vai trò người dùng="${userRole}". Cho biết rủi ro và có cần người duyệt (HITL) không. Trả về JSON: {"approved": boolean, "requiresHitl": boolean, "risk": "LOW"|"MEDIUM"|"HIGH", "reason": string}`;
+
+      // 1. Kiểm tra qua Groq Safeguard nếu dùng provider groq (hoặc khi không có NVIDIA key)
+      if ((this.validationProvider === 'groq' || !this.nvidiaApiKey) && this.groqApiKey) {
+        const groqModel = this.validationModel || 'openai/gpt-oss-safeguard-20b';
+        try {
+          const verdictRaw = await this.callOpenAiCompatible(
+            'https://api.groq.com/openai/v1/chat/completions',
+            this.groqApiKey,
+            groqModel,
+            guardrailPrompt,
+            payloadText,
+            4000
+          );
+          if (verdictRaw) {
+            try {
+              const parsed = JSON.parse(verdictRaw.replace(/```json|```/g, '').trim());
+              return {
+                isApproved: parsed.approved ?? false,
+                requiresHitl: parsed.requiresHitl ?? true,
+                riskLevel: parsed.risk ?? 'HIGH',
+                reason: parsed.reason ?? 'Cần phê duyệt từ người dùng theo chuẩn an toàn bưu chính.',
+              };
+            } catch {
+              // parse error -> fallback
+            }
+          }
+        } catch (err: any) {
+          this.logger.warn(`Groq Validation Agent error with model ${groqModel}: ${err.message}`);
+        }
+      }
+
+      // 2. Kiểm tra qua OpenRouter nếu cấu hình
+      if (this.validationProvider === 'openrouter' && this.openrouterApiKey) {
+        const routerModel = this.validationModel || 'nvidia/nemotron-3.5-lightning:free';
+        try {
+          const verdictRaw = await this.callOpenAiCompatible(
+            'https://openrouter.ai/api/v1/chat/completions',
+            this.openrouterApiKey,
+            routerModel,
+            guardrailPrompt,
+            payloadText,
+            4000
+          );
+          if (verdictRaw) {
+            try {
+              const parsed = JSON.parse(verdictRaw.replace(/```json|```/g, '').trim());
+              return {
+                isApproved: parsed.approved ?? false,
+                requiresHitl: parsed.requiresHitl ?? true,
+                riskLevel: parsed.risk ?? 'HIGH',
+                reason: parsed.reason ?? 'Cần phê duyệt từ người dùng theo chuẩn an toàn.',
+              };
+            } catch {
+              // parse error
+            }
+          }
+        } catch (err: any) {
+          this.logger.warn(`OpenRouter Validation Agent error: ${err.message}`);
+        }
+      }
+
+      // 3. Kiểm tra qua NVIDIA NIM nếu cấu hình và có key
+      if (this.validationProvider === 'nvidia' && this.nvidiaApiKey) {
         const candidateNvidiaModels = Array.from(
           new Set([
             this.nvidiaValidationModel,
@@ -918,7 +1000,6 @@ HÃY ĐƯA RA CÂU TRẢ LỜI ĐẦY ĐỦ VÀ CHÍNH XÁC:`;
           ].filter(Boolean))
         );
 
-        const guardrailPrompt = `Bạn là NeMo Guardrail AI của Nexus Logistics (NVIDIA NIM). Hãy kiểm tra thao tác sau: Hành động="${actionType}", Nội dung="${payloadText}", Vai trò người dùng="${userRole}". Cho biết rủi ro và có cần người duyệt (HITL) không. Trả về JSON: {"approved": boolean, "requiresHitl": boolean, "risk": "LOW"|"MEDIUM"|"HIGH", "reason": string}`;
         for (const model of candidateNvidiaModels) {
           try {
             const verdictRaw = await this.callOpenAiCompatible(
@@ -1066,13 +1147,49 @@ HÃY ĐƯA RA CÂU TRẢ LỜI ĐẦY ĐỦ VÀ CHÍNH XÁC:`;
       }
     }
 
-    // 4. Check Validation (NVIDIA NIM / NeMo Guardrail)
+    // 4. Check Validation (Groq Safeguard / OpenRouter / NVIDIA NIM / Local Rule Engine)
     const t3 = Date.now();
-    let valStatus = 'KEY_MISSING (Fallback to NeMo Guardrail Local / Groq)';
+    let valProviderName = 'NVIDIA NIM (NVIDIA)';
+    let valStatus = 'KEY_MISSING (Fallback to Local Rule Engine)';
     let valLatency: number | undefined;
-    let activeValidationModel = this.nvidiaValidationModel;
+    let activeValidationModel = this.validationModel;
 
-    if (this.nvidiaApiKey) {
+    if (this.validationProvider === 'groq' && this.groqApiKey) {
+      valProviderName = 'Groq LPU (Safeguard / OpenAI)';
+      activeValidationModel = this.validationModel || 'openai/gpt-oss-safeguard-20b';
+      try {
+        const res = await this.callOpenAiCompatible(
+          'https://api.groq.com/openai/v1/chat/completions',
+          this.groqApiKey,
+          activeValidationModel,
+          'System ping',
+          pingPrompt,
+          3000
+        );
+        valLatency = Date.now() - t3;
+        valStatus = res ? 'CONNECTED' : 'UNREACHABLE';
+      } catch {
+        valStatus = 'ERROR';
+      }
+    } else if (this.validationProvider === 'openrouter' && this.openrouterApiKey) {
+      valProviderName = 'NVIDIA (Nemotron Lightning)';
+      activeValidationModel = this.validationModel || 'nvidia/nemotron-3.5-lightning:free';
+      try {
+        const res = await this.callOpenAiCompatible(
+          'https://openrouter.ai/api/v1/chat/completions',
+          this.openrouterApiKey,
+          activeValidationModel,
+          'System ping',
+          pingPrompt,
+          5000
+        );
+        valLatency = Date.now() - t3;
+        valStatus = res ? 'CONNECTED' : 'UNREACHABLE';
+      } catch {
+        valStatus = 'ERROR';
+      }
+    } else if (this.nvidiaApiKey) {
+      valProviderName = 'NVIDIA NIM (NVIDIA)';
       const candidateNvidiaModels = Array.from(
         new Set([
           this.nvidiaValidationModel,
@@ -1107,9 +1224,27 @@ HÃY ĐƯA RA CÂU TRẢ LỜI ĐẦY ĐỦ VÀ CHÍNH XÁC:`;
       if (valStatus !== 'CONNECTED') {
         valStatus = 'UNREACHABLE (Model deprecated or key error)';
       }
+    } else if (this.groqApiKey) {
+      // Tự động dùng Groq Safeguard nếu không có key nào khác
+      valProviderName = 'Groq LPU (Safeguard / OpenAI)';
+      activeValidationModel = 'openai/gpt-oss-safeguard-20b';
+      try {
+        const res = await this.callOpenAiCompatible(
+          'https://api.groq.com/openai/v1/chat/completions',
+          this.groqApiKey,
+          activeValidationModel,
+          'System ping',
+          pingPrompt,
+          3000
+        );
+        valLatency = Date.now() - t3;
+        valStatus = res ? 'CONNECTED' : 'UNREACHABLE';
+      } catch {
+        valStatus = 'ERROR';
+      }
     }
 
-    const hasAnyLlm = supStatus === 'CONNECTED' || kwStatus === 'CONNECTED' || opStatus === 'CONNECTED';
+    const hasAnyLlm = supStatus === 'CONNECTED' || kwStatus === 'CONNECTED' || opStatus === 'CONNECTED' || valStatus === 'CONNECTED';
 
     return {
       timestamp: new Date().toISOString(),
@@ -1130,18 +1265,18 @@ HÃY ĐƯA RA CÂU TRẢ LỜI ĐẦY ĐỦ VÀ CHÍNH XÁC:`;
           note: 'RAG trích xuất chính sách SOP, Điều 25 Luật Bưu chính',
         },
         operation: {
-          provider: 'Groq LPU (Meta)',
+          provider: 'Groq LPU (OpenAI)',
           model: this.groqOperationModel,
           status: opStatus,
           latencyMs: opLatency,
           note: 'Logistics Tool Calling, tính cước IATA, định dạng vận đơn',
         },
         validation: {
-          provider: 'NVIDIA NIM (NVIDIA)',
-          model: this.nvidiaValidationModel,
+          provider: valProviderName,
+          model: activeValidationModel,
           status: valStatus,
           latencyMs: valLatency,
-          note: 'NeMo Guardrail, phát hiện rủi ro & kích hoạt HITL',
+          note: 'Safety Guardrail & Audit, phát hiện rủi ro & kích hoạt HITL',
         },
       },
       fallbackCascade: {
