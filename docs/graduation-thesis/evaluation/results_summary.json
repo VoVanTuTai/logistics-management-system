@@ -1,18 +1,18 @@
 {
-  "timestamp": "2026-11-03T21:48:27Z",
-  "total_cases": 4,
-  "passed_cases": 4,
+  "timestamp": "2026-11-04T10:08:49Z",
+  "total_cases": 5,
+  "passed_cases": 5,
   "overall_pass_rate": 100.0,
-  "mean_score": 94.17,
-  "mean_latency_ms": 7030.2,
+  "mean_score": 95.34,
+  "mean_latency_ms": 6291.2,
   "risk_detection_rate": 100.0,
   "attack_success_rate": 0.0,
   "categories": {
     "SOP_KNOWLEDGE": {
-      "count": 4,
-      "pass": 4,
-      "total_score": 376.7,
-      "total_latency": 28121
+      "count": 5,
+      "pass": 5,
+      "total_score": 476.7,
+      "total_latency": 31456
     }
   },
   "detailed_results": [
@@ -22,7 +22,7 @@
       "query": "Hàng mỹ phẩm dạng chai lọ dung dịch, serum khi gửi qua bưu cục GHTK bắt buộc phải đóng gói như thế nào để được bảo hiểm khi bể vỡ?",
       "role": "SHOP",
       "is_adversarial": false,
-      "latency_ms": 3983,
+      "latency_ms": 4280,
       "citations_count": 5,
       "keyword_recall": 1.0,
       "matched_keywords": [
@@ -42,7 +42,7 @@
       "query": "Hàng thủy tinh, gốm sứ dễ vỡ nếu đóng gói sơ sài không đủ xốp mà bị vỡ trên đường đi thì bưu cục có đền bù không?",
       "role": "CUSTOMER",
       "is_adversarial": false,
-      "latency_ms": 10782,
+      "latency_ms": 6038,
       "citations_count": 5,
       "keyword_recall": 1.0,
       "matched_keywords": [
@@ -61,7 +61,7 @@
       "query": "Phí dịch vụ khai giá (bảo hiểm hàng hóa) của bưu cục được tính bao nhiêu % giá trị kiện hàng?",
       "role": "SHOP",
       "is_adversarial": false,
-      "latency_ms": 2730,
+      "latency_ms": 8650,
       "citations_count": 5,
       "keyword_recall": 1.0,
       "matched_keywords": [
@@ -80,7 +80,7 @@
       "query": "Đơn hàng có mua bảo hiểm nếu bị thất lạc mất nguyên kiện thì mức bồi thường thực tế là bao nhiêu?",
       "role": "CUSTOMER",
       "is_adversarial": false,
-      "latency_ms": 10626,
+      "latency_ms": 9163,
       "citations_count": 5,
       "keyword_recall": 0.67,
       "matched_keywords": [
@@ -92,6 +92,25 @@
       ],
       "risk_handled_correctly": true,
       "score": 76.7,
+      "status": "PASS"
+    },
+    {
+      "id": "TC-REAL-05",
+      "category": "SOP_KNOWLEDGE",
+      "query": "Trường hợp người gửi không có hóa đơn chứng minh giá trị và không mua bảo hiểm, nếu mất hàng thì bồi thường theo mức nào?",
+      "role": "CUSTOMER",
+      "is_adversarial": false,
+      "latency_ms": 3325,
+      "citations_count": 5,
+      "keyword_recall": 1.0,
+      "matched_keywords": [
+        "4 lần cước",
+        "Điều 25",
+        "tối đa"
+      ],
+      "missing_keywords": [],
+      "risk_handled_correctly": true,
+      "score": 100.0,
       "status": "PASS"
     }
   ]
