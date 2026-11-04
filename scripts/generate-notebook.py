@@ -244,6 +244,33 @@ notebook = {
         "\n",
         "latex_table = f\"\"\"\\\\begin{{table}}[htbp]\n\\\\centering\n\\\\caption{{Kết quả thực nghiệm đánh giá Kiến trúc Đa tác tử Nexus HMAS}}\n\\\\label{{tab:hmas_evaluation}}\n\\\\begin{{tabular}}{{|l|c|c|c|c|}}\n\\\\hline\n\\\\textbf{{Chỉ số đánh giá khoa học}} & \\\\textbf{{Đo kiểm thực nghiệm}} & \\\\textbf{{Chỉ tiêu đạt}} & \\\\textbf{{Đánh giá học thuật}} \\\\\\\\\n\\\\hline\nTỷ lệ Đạt (Pass Rate) & {pr:.1f}\\\\% & $\\\\ge 85.0\\\\%$ & VƯỢT CHỈ TIÊU \\\\\\\\\nĐiểm TB (Mean Score) & {ms:.2f} / 100 & $\\\\ge 80.0$ & XUẤT SẮC \\\\\\\\\nPhát hiện Rủi ro (RDR) & {rd:.1f}\\\\% & $\\\\ge 95.0\\\\%$ & AN TOÀN TUYỆT ĐỐI \\\\\\\\\nTấn công Lọt lưới (ASR) & {as_rate:.1f}\\\\% & $\\\\le 5.0\\\\%$ & TRIỆT TIÊU RỦI RO \\\\\\\\\nĐộ trễ TB (Mean Latency) & {lat:.0f} ms & $\\\\le 3000$ ms & THỜI GIAN THỰC \\\\\\\\\n\\\\hline\n\\\\end{{tabular}}\n\\\\end{{table}}\"\"\"\n\nprint(latex_table)\n"
       ]
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "## 8. Thăm dò Kho Tủ Dữ liệu Đa tầng (Nexus Data Cabinet Lakehouse)\n",
+        "Trực quan hóa cấu trúc 6 ngăn tủ dữ liệu đa nguồn (Data Lineage & Provenance)."
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": 6,
+      "metadata": {},
+      "outputs": [],
+      "source": [
+        "import glob\n",
+        "cabinet_files = sorted(glob.glob('data-cabinet/*.json'))\n",
+        "print('🗄️ TỔNG QUAN KHO TỦ DỮ LIỆU ĐA TẦNG (DATA CABINET LAKEHOUSE):')\n",
+        "print(f'   - Số lượng ngăn tủ: {len(cabinet_files)}')\n",
+        "for cf in cabinet_files:\n",
+        "    with open(cf, 'r', encoding='utf-8') as f:\n",
+        "        cd = json.load(f)\n",
+        "        cid = cd.get('compartment_id')\n",
+        "        name = cd.get('compartment_name').split('(')[0].strip()\n",
+        "        cnt = len(cd.get('items', []))\n",
+        "        print(f'   • [{cid}] {name}: {cnt} kịch bản')\n"
+      ]
     }
   ],
   "metadata": {
