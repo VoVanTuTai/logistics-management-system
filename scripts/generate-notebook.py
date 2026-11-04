@@ -158,13 +158,13 @@ notebook = {
       "cell_type": "markdown",
       "metadata": {},
       "source": [
-        "## 4. Kiểm tra Cơ chế An toàn & Kích hoạt Human-in-the-Loop (HITL)\n",
+        "## 5. Kiểm tra Cơ chế An toàn & Kích hoạt Human-in-the-Loop (HITL)\n",
         "Đánh giá năng lực của NVIDIA Nemotron trong việc phát hiện 5 rủi ro vận hành và chuyển giao cho con người xử lý."
       ]
     },
     {
       "cell_type": "code",
-      "execution_count": 4,
+      "execution_count": 5,
       "metadata": {},
       "outputs": [],
       "source": [
@@ -172,7 +172,7 @@ notebook = {
         "print(f\"Số lượng ca kiểm thử hiển thị chi tiết: {len(details)}\\n\")\n",
         "for idx, c in enumerate(details[:5], 1):\n",
         "    status_icon = '✅' if c.get('status') == 'PASS' else '❌'\n",
-        "    print(f\"{idx}. {status_icon} [{c.get('id')}] ({c.get('category')}) — Điểm: {c.get('score')} | Độ trễ: {c.get('latency_ms')}ms\")\n",
+        "    print(f\"{idx}. {status_icon} [{c.get('id')}] ({c.get('category')}) — Cấp {c.get('tier_level')} ({c.get('tier_name')}) — {c.get('score')}đ\")\n",
         "    print(f\"   Câu hỏi: {c.get('query')[:70]}...\")\n",
         "    print(f\"   Từ khóa bưu chính: {c.get('matched_keywords')}\")\n"
       ]
@@ -181,7 +181,52 @@ notebook = {
       "cell_type": "markdown",
       "metadata": {},
       "source": [
-        "## 5. Xuất Bảng Mã LaTeX cho Báo cáo Luận văn (Chương 4)\n",
+        "## 6. Tra cứu Chi tiết Toàn văn Đầu vào & Đầu ra (Input / Output Full Inspection)\n",
+        "Hàm `inspect_case(case_id)` cho phép xem toàn văn câu hỏi đầu vào, câu trả lời đầy đủ từ Chatbot, công cụ đã gọi và các dẫn chứng luật RAG."
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": 6,
+      "metadata": {},
+      "outputs": [],
+      "source": [
+        "def inspect_case(case_id):\n",
+        "    details = summary.get('detailed_results', [])\n",
+        "    matches = [d for d in details if d.get('id', '').upper() == case_id.upper()]\n",
+        "    if not matches:\n",
+        "        print(f\"❌ Không tìm thấy mã case: {case_id}\")\n",
+        "        return\n",
+        "    tc = matches[0]\n",
+        "    print('=' * 82)\n",
+        "    print(f\"CHI TIẾT KIỂM THỬ: {tc['id']} | Nhóm: {tc.get('category')}\")\n",
+        "    print('=' * 82)\n",
+        "    print(f\"📥 [ĐẦU VÀO - INPUT]:\")\n",
+        "    print(f\"   • Vai trò: {tc.get('role')}\")\n",
+        "    print(f\"   • Câu hỏi: \\\"{tc.get('query')}\\\"\")\n",
+        "    print(f\"   • Từ khóa chuẩn kỳ vọng: {tc.get('ground_truth_keywords')}\")\n",
+        "    print(f\"\\n📤 [ĐẦU RA - OUTPUT TỪ CHATBOT]:\")\n",
+        "    print(f\"   • Phản hồi chi tiết:\")\n",
+        "    ans = tc.get('answer', '(Trống)')\n",
+        "    for line in ans.split('\\n'):\n",
+        "        print(f\"     {line}\")\n",
+        "    print(f\"\\n   • Công cụ Tool Calling: {tc.get('tools_used')}\")\n",
+        "    print(f\"   • Độ trễ: {tc.get('latency_ms')} ms\")\n",
+        "    print(f\"\\n⚖️ [ĐÁNH GIÁ - VERDICT]:\")\n",
+        "    print(f\"   • Cấp bậc: Level {tc.get('tier_level')} ({tc.get('tier_name')})\")\n",
+        "    print(f\"   • Điểm số: {tc.get('score')} / 100 ({tc.get('status')})\")\n",
+        "    print(f\"   • Từ khóa phát hiện: {tc.get('matched_keywords')}\")\n",
+        "    print('=' * 82)\n",
+        "\n",
+        "# Xem thử ca đầu tiên:\n",
+        "inspect_case('TC-REAL-01')\n"
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "## 7. Xuất Bảng Mã LaTeX cho Báo cáo Luận văn (Chương 4)\n",
         "Mã LaTeX được sinh tự động, định dạng bảng chuẩn học thuật để dán vào tài liệu luận văn tốt nghiệp."
       ]
     },

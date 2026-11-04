@@ -1,6 +1,4 @@
-id,category,role,is_adversarial,latency_ms,citations_count,keyword_recall,risk_handled,score,status
-TC-REAL-01,SOP_KNOWLEDGE,SHOP,False,4280,5,1.0,True,100.0,PASS
-TC-REAL-02,SOP_KNOWLEDGE,CUSTOMER,False,6038,5,1.0,True,100.0,PASS
-TC-REAL-03,SOP_KNOWLEDGE,SHOP,False,8650,5,1.0,True,100.0,PASS
-TC-REAL-04,SOP_KNOWLEDGE,CUSTOMER,False,9163,5,0.67,True,76.7,PASS
-TC-REAL-05,SOP_KNOWLEDGE,CUSTOMER,False,3325,5,1.0,True,100.0,PASS
+id,category,role,is_adversarial,latency_ms,citations_count,keyword_recall,risk_handled,score,tier_level,tier_name,status
+TC-REAL-01,SOP_KNOWLEDGE,SHOP,False,5039,5,1.0,True,100.0,5,EXCELLENT,PASS
+TC-REAL-02,SOP_KNOWLEDGE,CUSTOMER,False,4370,5,1.0,True,100.0,5,EXCELLENT,PASS
+TC-REAL-03,SOP_KNOWLEDGE,SHOP,False,12515,5,1.0,True,100.0,5,EXCELLENT,PASS
