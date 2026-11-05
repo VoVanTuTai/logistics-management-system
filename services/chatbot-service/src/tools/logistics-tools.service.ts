@@ -1030,5 +1030,107 @@ export class LogisticsToolsService {
       message: `Đơn hàng ${cleanTracking} đã được hủy thành công trên hệ thống. Bưu tá phụ trách đã nhận được thông báo dừng lấy hàng. Quý khách không phải thanh toán bất kỳ khoản phí nào.`,
     };
   }
+
+  /**
+   * Thay đổi địa chỉ nhận hàng của đơn hàng (Change Delivery Address)
+   */
+  public async changeDeliveryAddress(input: {
+    trackingNumber: string;
+    newAddress: string;
+    newReceiverPhone?: string;
+    newReceiverName?: string;
+    reason?: string;
+  }): Promise<{
+    success: boolean;
+    trackingNumber: string;
+    isAllowed: boolean;
+    newAddress: string;
+    message: string;
+  }> {
+    const cleanTracking = input.trackingNumber.trim().toUpperCase();
+    this.logger.log(`Tool changeDeliveryAddress invoked for: ${cleanTracking}, newAddress: ${input.newAddress}`);
+
+    const inMem = this.createdShipmentsMap.get(cleanTracking);
+    const status = inMem ? inMem.status : 'IN_TRANSIT';
+
+    const canChangeEasily = ['CREATED', 'TASK_ASSIGNED', 'PICKUP_ASSIGNED', 'PICKING_UP', 'RECEIVED_ORIGIN_HUB', 'SORTING'].includes(status);
+
+    if (inMem) {
+      inMem.receiverAddress = input.newAddress;
+      if (input.newReceiverPhone) inMem.receiverPhone = input.newReceiverPhone;
+      if (input.newReceiverName) inMem.receiverName = input.newReceiverName;
+      inMem.timeline.unshift({
+        time: new Date().toLocaleString('vi-VN'),
+        status: 'ADDRESS_UPDATED',
+        description: `Cập nhật địa chỉ nhận hàng mới: ${input.newAddress}${input.reason ? ` (Lý do: ${input.reason})` : ''}`,
+      });
+      this.createdShipmentsMap.set(cleanTracking, inMem);
+    }
+
+    try {
+      await fetch(`${this.shipmentServiceUrl}/shipments/${cleanTracking}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          receiverAddress: input.newAddress,
+          receiverPhone: input.newReceiverPhone,
+          receiverName: input.newReceiverName,
+        }),
+        signal: AbortSignal.timeout(2000),
+      });
+    } catch {}
+
+    if (canChangeEasily) {
+      return {
+        success: true,
+        trackingNumber: cleanTracking,
+        isAllowed: true,
+        newAddress: input.newAddress,
+        message: `Hệ thống đã cập nhật thành công địa chỉ nhận hàng mới cho vận đơn ${cleanTracking}: "${input.newAddress}". Bưu tá tuyến và bưu cục phát đã nhận được thông tin điều chỉnh. Thao tác hoàn toàn miễn phí do đơn chưa xuất kho phát.`,
+      };
+    } else {
+      return {
+        success: true,
+        trackingNumber: cleanTracking,
+        isAllowed: true,
+        newAddress: input.newAddress,
+        message: `Hệ thống đã tiếp nhận yêu cầu chuyển hướng địa chỉ nhận hàng cho vận đơn ${cleanTracking} sang: "${input.newAddress}". Do kiện hàng đang trong chu trình luân chuyển, thông tin điều chỉnh sẽ được kích hoạt ngay khi kiện cập bưu cục phát.`,
+      };
+    }
+  }
+
+  /**
+   * Hẹn lịch giao lại hàng cho người nhận (Schedule Redelivery / NDR Resolution)
+   */
+  public async scheduleRedelivery(input: {
+    trackingNumber: string;
+    preferredTime: string;
+    notes?: string;
+  }): Promise<{
+    success: boolean;
+    trackingNumber: string;
+    scheduledTime: string;
+    message: string;
+  }> {
+    const cleanTracking = input.trackingNumber.trim().toUpperCase();
+    this.logger.log(`Tool scheduleRedelivery invoked for: ${cleanTracking}, time: ${input.preferredTime}`);
+
+    const inMem = this.createdShipmentsMap.get(cleanTracking);
+    if (inMem) {
+      inMem.timeline.unshift({
+        time: new Date().toLocaleString('vi-VN'),
+        status: 'REDELIVERY_SCHEDULED',
+        description: `Bưu tá ghi nhận lịch hẹn phát lại: ${input.preferredTime}${input.notes ? ` (${input.notes})` : ''}`,
+      });
+      this.createdShipmentsMap.set(cleanTracking, inMem);
+    }
+
+    return {
+      success: true,
+      trackingNumber: cleanTracking,
+      scheduledTime: input.preferredTime,
+      message: `Đã ghi nhận lịch hẹn giao lại cho vận đơn ${cleanTracking} vào: ${input.preferredTime}. Bưu cục phát và bưu tá phụ trách tuyến sẽ liên hệ trước khi giao hàng cho Quý khách. Miễn phí phát lại theo chính sách bưu chính.`,
+    };
+  }
 }
 

@@ -14,6 +14,23 @@ function normalizeVietnamese(text: string): string {
     .trim();
 }
 
+export interface ChatSessionContext {
+  lastShipments?: any[];
+  selectedCode?: string;
+  receiverPhone?: string;
+  pendingIntent?: 'PRICING' | 'CANCEL' | 'TRACKING' | 'CHANGE_ADDRESS' | 'REDELIVERY' | 'CLAIM' | 'CREATE_ORDER';
+  pendingData?: {
+    fromCity?: string;
+    toCity?: string;
+    weight?: number;
+    dimensions?: { length: number; width: number; height: number };
+    newAddress?: string;
+    preferredTime?: string;
+    claimReason?: string;
+  };
+  lastUpdated: number;
+}
+
 @Injectable()
 export class ChatService {
   private readonly logger = new Logger(ChatService.name);
@@ -30,7 +47,7 @@ export class ChatService {
   private validationProvider: string;
   private validationModel: string;
   private openrouterApiKey: string;
-  private readonly sessions = new Map<string, { lastShipments?: any[]; selectedCode?: string; receiverPhone?: string; lastUpdated: number }>();
+  private readonly sessions = new Map<string, ChatSessionContext>();
 
   constructor(
     private readonly embeddingService: EmbeddingService,
@@ -214,6 +231,40 @@ export class ChatService {
         cleanNormalizedQ.includes('dung huy') ||
         cleanNormalizedQ.includes('van muon gui'));
 
+    // Kiểm tra ý định thay đổi địa chỉ nhận hàng / sửa SĐT người nhận (Change Delivery Address)
+    const isAddressChangeQuery =
+      !cleanNormalizedQ.includes('co duoc') &&
+      !cleanNormalizedQ.includes('co cho') &&
+      !cleanNormalizedQ.includes('the nao') &&
+      !cleanNormalizedQ.includes('nhu the nao') &&
+      !cleanNormalizedQ.includes('quy dinh') &&
+      (cleanNormalizedQ.includes('doi dia chi') ||
+       cleanNormalizedQ.includes('thay doi dia chi') ||
+       cleanNormalizedQ.includes('sua dia chi') ||
+       cleanNormalizedQ.includes('chuyen dia chi') ||
+       cleanNormalizedQ.includes('doi noi nhan') ||
+       cleanNormalizedQ.includes('giao sang dia chi') ||
+       cleanNormalizedQ.includes('giao den dia chi') ||
+       (cleanNormalizedQ.includes('doi') && cleanNormalizedQ.includes('dia chi')) ||
+       session.pendingIntent === 'CHANGE_ADDRESS');
+
+    // Kiểm tra ý định hẹn giao lại hàng / phát lại (Redelivery / NDR Schedule)
+    const isRedeliveryQuery =
+      !cleanNormalizedQ.includes('co duoc') &&
+      !cleanNormalizedQ.includes('may lan') &&
+      !cleanNormalizedQ.includes('toi da') &&
+      !cleanNormalizedQ.includes('quy dinh') &&
+      (cleanNormalizedQ.includes('giao lai') ||
+       cleanNormalizedQ.includes('phat lai') ||
+       cleanNormalizedQ.includes('hen giao') ||
+       cleanNormalizedQ.includes('hen phat') ||
+       cleanNormalizedQ.includes('hom nay ban') ||
+       cleanNormalizedQ.includes('chua nhan duoc') ||
+       cleanNormalizedQ.includes('giao vao ngay mai') ||
+       cleanNormalizedQ.includes('giao buoi chieu') ||
+       cleanNormalizedQ.includes('giao sau')) &&
+      (cleanNormalizedQ.includes('don') || cleanNormalizedQ.includes('hang') || cleanNormalizedQ.includes('kien') || !!trackingCode || !!session.selectedCode || session.pendingIntent === 'REDELIVERY');
+
     // Kiểm tra ý định chào hỏi xã giao thông thường (Social Greeting Intent)
     const greetingWords = [
       'chao', 'xin chao', 'hello', 'hi', 'alo', 'hey', 'yo',
@@ -254,6 +305,9 @@ export class ChatService {
       cleanNormalizedQ.includes('chuyen phat') ||
       cleanNormalizedQ.includes('shipper') ||
       cleanNormalizedQ.includes('buu ta') ||
+      cleanNormalizedQ.includes('doi dia chi') ||
+      cleanNormalizedQ.includes('giao lai') ||
+      cleanNormalizedQ.includes('hen giao') ||
       cleanNormalizedQ.includes('buu cuc');
 
     const isGreetingIntent =
@@ -261,7 +315,9 @@ export class ChatService {
       !hasLogisticsKeyword &&
       !isUserIdentityQuery &&
       !isCancelIntent &&
-      !isKeepOrderIntent;
+      !isKeepOrderIntent &&
+      !isAddressChangeQuery &&
+      !isRedeliveryQuery;
 
     if (isUserIdentityQuery) {
       if (isGuest) {
@@ -531,6 +587,139 @@ export class ChatService {
             toolAugmentedContext += `\n[THÔNG BÁO TRẠNG THÁI ĐƠN HÀNG]: Đơn hàng ${targetCode} hiện ở trạng thái [${trackRes.statusText}] (${trackRes.status}). Đơn hàng đã kết thúc chu trình giao nhận, không thể thực hiện thao tác hủy.\n`;
           }
         }
+      }
+    } else if (isAddressChangeQuery) {
+      let targetCode: string | undefined = trackingCode || dto.selectedShipmentCode || session.selectedCode;
+      if (!targetCode && session.lastShipments && session.lastShipments.length === 1) {
+        targetCode = session.lastShipments[0].code;
+      }
+
+      // Trích xuất địa chỉ mới nếu khách đã gõ trực tiếp trong tin nhắn
+      const addressMatch = question.match(/(?:sang|thành|thanh|địa chỉ mới là|dia chi moi la|về|ve|tới|toi)\s*[:=]?\s*([0-9a-zA-ZÀ-ỹ\s,.\/-]{5,})/i);
+      const newAddress = addressMatch ? addressMatch[1].trim() : session.pendingData?.newAddress;
+
+      if (!targetCode) {
+        // THIẾU MÃ VẬN ĐƠN -> HỎI LẠI KHÁCH HÀNG
+        this.sessions.set(conversationId, {
+          ...session,
+          pendingIntent: 'CHANGE_ADDRESS',
+          pendingData: { newAddress },
+          lastUpdated: Date.now(),
+        });
+
+        actionChips = [
+          ...(session.lastShipments ? session.lastShipments.slice(0, 2).map((s) => ({ label: `✏️ Đổi địa chỉ đơn ${s.code}`, query: `Tôi muốn đổi địa chỉ đơn hàng ${s.code}` })) : []),
+          { label: '📦 Xem các đơn hàng của tôi', query: 'Tôi có những đơn hàng nào' },
+          { label: '📞 Kết nối hotline 1900-1234', query: 'Tôi muốn gặp chuyên viên tổng đài hỗ trợ gấp' },
+        ];
+
+        toolAugmentedContext += `\n[YÊU CẦU CSKH HỎI LẠI THÔNG TIN ĐỔI ĐỊA CHỈ NHẬN HÀNG (ACTIVE CLARIFICATION)]:\n` +
+          `- Yêu cầu khách: Khách muốn đổi địa chỉ giao hàng nhưng CHƯA CUNG CẤP mã vận đơn cụ thể.\n` +
+          `- NGUYÊN TẮC CSKH: Chào anh/chị lịch sự, niềm nở (xưng em, gọi anh/chị). Báo anh/chị biết bên em sẵn sàng hỗ trợ điều chỉnh địa chỉ giao hàng và HỎI LẠI CÁC THÔNG TIN CẦN THIẾT:\n` +
+          `  1. 🏷️ Mã vận đơn của kiện hàng mình cần đổi địa chỉ?\n` +
+          `  2. 📍 Địa chỉ giao hàng mới chi tiết (Số nhà, tên đường, phường/xã, quận/huyện, tỉnh/thành)?\n` +
+          `  3. 👤 Tên và Số điện thoại người nhận mới (nếu có thay đổi) ạ?\n` +
+          `- LƯU Ý CARRIER SOP: Nếu đổi địa chỉ trong cùng quận/huyện hoặc nội tỉnh thì MIỄN PHÍ 100%; nếu đổi sang tỉnh thành khác khi xe tải đường trục đã xuất phát có thể phát sinh phụ phí chuyển hướng theo quy định bưu chính.\n` +
+          `- HƯỚNG DẪN AI: Trả lời ân cần, chu đáo, hỏi lại thông tin như trên để khách dễ dàng gửi mã vận đơn và địa chỉ mới nhé ạ.\n`;
+      } else if (!newAddress) {
+        // ĐÃ CÓ MÃ ĐƠN NHƯNG THIẾU ĐỊA CHỈ MỚI -> HỎI LẠI ĐỊA CHỈ MỚI
+        this.sessions.set(conversationId, {
+          ...session,
+          selectedCode: targetCode,
+          pendingIntent: 'CHANGE_ADDRESS',
+          lastUpdated: Date.now(),
+        });
+
+        toolAugmentedContext += `\n[YÊU CẦU CSKH HỎI LẠI ĐỊA CHỈ MỚI CHO VẬN ĐƠN ${targetCode}]:\n` +
+          `- Mã vận đơn: ${targetCode}\n` +
+          `- Trạng thái: Hệ thống đã xác định được vận đơn ${targetCode}. Đơn hàng ĐỦ ĐIỀU KIỆN hỗ trợ cập nhật địa chỉ giao hàng.\n` +
+          `- HỎI LẠI KHÁCH HÀNG: Dạ đơn hàng ${targetCode} của mình hoàn toàn hỗ trợ đổi địa chỉ ạ! Anh/chị cho em xin Địa chỉ giao hàng mới chi tiết (Số nhà, tên đường, phường/xã, quận/huyện, tỉnh/thành) để em cập nhật ngay cho bưu tá phụ trách tuyến nhé ạ.\n`;
+      } else {
+        // ĐÃ CÓ ĐẦY ĐỦ CẢ MÃ ĐƠN VÀ ĐỊA CHỈ MỚI -> THỰC THI GỌI TOOL!
+        toolsUsed.push(`changeDeliveryAddress(${targetCode}, ${newAddress})`);
+        const changeRes = await this.toolsService.changeDeliveryAddress({
+          trackingNumber: targetCode,
+          newAddress,
+          newReceiverPhone: extractedPhone,
+        });
+
+        this.sessions.set(conversationId, {
+          ...session,
+          selectedCode: targetCode,
+          pendingIntent: undefined,
+          pendingData: undefined,
+          lastUpdated: Date.now(),
+        });
+
+        actionChips = [
+          { label: `🔍 Xem hành trình ${targetCode}`, query: `Tra cứu hành trình đơn ${targetCode}` },
+          { label: '📦 Xem các đơn khác', query: 'Tôi có những đơn hàng nào' },
+        ];
+
+        toolAugmentedContext += `\n[KẾT QUẢ ĐIỀU CHỈNH ĐỊA CHỈ GIAO HÀNG THÀNH CÔNG CHO VẬN ĐƠN ${targetCode}]:\n` +
+          `- Mã vận đơn: ${targetCode}\n` +
+          `- Địa chỉ giao hàng mới: ${newAddress}\n` +
+          (extractedPhone ? `- Số điện thoại người nhận mới: ${extractedPhone}\n` : '') +
+          `- Trạng thái cập nhật: ${changeRes.message}\n` +
+          `- HƯỚNG DẪN AI: Dạ báo với anh/chị thật niềm nở rằng hệ thống đã ghi nhận cập nhật địa chỉ giao hàng mới thành công, bưu tá tuyến đã nhận được thông tin điều phối và nhắn anh/chị yên tâm nhé ạ.\n`;
+      }
+    } else if (isRedeliveryQuery) {
+      let targetCode: string | undefined = trackingCode || dto.selectedShipmentCode || session.selectedCode;
+      if (!targetCode && session.lastShipments && session.lastShipments.length === 1) {
+        targetCode = session.lastShipments[0].code;
+      }
+
+      // Trích xuất khung giờ hẹn giao
+      const timeMatch = question.match(/(?:ngày mai|ngay mai|chiều mai|chieu mai|sáng mai|sang mai|buổi chiều|buoi chieu|buổi sáng|buoi sang|sau 17h|sau 18h|hẹn lúc|hen luc)\s*([0-9a-zA-Z\s:h-]*)/i);
+      const preferredTime = timeMatch ? timeMatch[0].trim() : (session.pendingData?.preferredTime || 'Ngày làm việc tiếp theo (khung giờ hành chính)');
+
+      if (!targetCode) {
+        // THIẾU MÃ VẬN ĐƠN -> HỎI LẠI KHÁCH HÀNG
+        this.sessions.set(conversationId, {
+          ...session,
+          pendingIntent: 'REDELIVERY',
+          pendingData: { preferredTime },
+          lastUpdated: Date.now(),
+        });
+
+        actionChips = [
+          ...(session.lastShipments ? session.lastShipments.slice(0, 2).map((s) => ({ label: `⏰ Hẹn giao đơn ${s.code}`, query: `Hẹn giao lại đơn hàng ${s.code}` })) : []),
+          { label: '📦 Xem các đơn hàng của tôi', query: 'Tôi có những đơn hàng nào' },
+        ];
+
+        toolAugmentedContext += `\n[YÊU CẦU CSKH HỎI LẠI THÔNG TIN HẸN GIAO LẠI HÀNG (ACTIVE CLARIFICATION)]:\n` +
+          `- Yêu cầu khách: Khách hàng muốn hẹn giao lại bưu kiện nhưng CHƯA CUNG CẤP mã vận đơn cụ thể.\n` +
+          `- NGUYÊN TẮC CSKH: Chào anh/chị niềm nở, thông báo rằng hệ thống hỗ trợ phát lại tối đa 03 lần hoàn toàn MIỄN PHÍ theo quy định bưu chính. HỎI LẠI KHÁCH HÀNG:\n` +
+          `  1. 🏷️ Mã vận đơn của kiện hàng mình cần hẹn giao lại?\n` +
+          `  2. ⏰ Khung giờ thuận tiện nhất (sáng/chiều hoặc ngày mai) để bưu tá tuyến ưu tiên giao đúng hẹn cho mình nhé ạ!\n` +
+          `- HƯỚNG DẪN AI: Trả lời thân thiện, chu đáo, hỏi lại thông tin như trên để khách gửi mã đơn và thời gian hẹn nhé ạ.\n`;
+      } else {
+        // ĐÃ CÓ MÃ ĐƠN -> THỰC THI GỌI TOOL!
+        toolsUsed.push(`scheduleRedelivery(${targetCode}, ${preferredTime})`);
+        const redelivRes = await this.toolsService.scheduleRedelivery({
+          trackingNumber: targetCode,
+          preferredTime,
+        });
+
+        this.sessions.set(conversationId, {
+          ...session,
+          selectedCode: targetCode,
+          pendingIntent: undefined,
+          pendingData: undefined,
+          lastUpdated: Date.now(),
+        });
+
+        actionChips = [
+          { label: `🔍 Xem hành trình ${targetCode}`, query: `Tra cứu hành trình đơn ${targetCode}` },
+          { label: '📦 Xem các đơn khác', query: 'Tôi có những đơn hàng nào' },
+        ];
+
+        toolAugmentedContext += `\n[KẾT QUẢ GHI NHẬN LỊCH HẸN GIAO LẠI HÀNG CHO VẬN ĐƠN ${targetCode}]:\n` +
+          `- Mã vận đơn: ${targetCode}\n` +
+          `- Thời gian hẹn giao lại: ${preferredTime}\n` +
+          `- Trạng thái cập nhật: ${redelivRes.message}\n` +
+          `- Chính sách phát lại: Miễn phí phát lại lần 2 và lần 3 (tối đa 3 lần) theo quy chuẩn bưu chính.\n` +
+          `- HƯỚNG DẪN AI: Thông báo với anh/chị thật lịch sự, ấm áp rằng bưu tá tuyến đã nhận lịch hẹn và sẽ gọi trước khi qua phát, nhắc anh/chị yên tâm nhé ạ.\n`;
       }
     } else if (trackingCode || (extractedPhone && (session.selectedCode || dto.selectedShipmentCode))) {
       const targetTrackingCode = trackingCode || dto.selectedShipmentCode || session.selectedCode!;
@@ -1004,7 +1193,45 @@ export class ChatService {
       (/\b(?:hang hong|hang hu|be vo|mop meo|hu hai|thiet hai)\b/i.test(normalizedQ) ||
         (/\b(?:hong|hu)\b/i.test(normalizedQ) && (normalizedQ.includes('thi sao') || /\bden\b/i.test(normalizedQ) || normalizedQ.includes('xu ly') || normalizedQ.includes('lam sao'))));
 
-    if (isDamageOrBrokenQuery) {
+    const isPersonalDamageIncident =
+      isDamageOrBrokenQuery &&
+      !cleanNormalizedQ.includes('co duoc den') &&
+      !cleanNormalizedQ.includes('co den bu khong') &&
+      !cleanNormalizedQ.includes('co duoc boi thuong') &&
+      !cleanNormalizedQ.includes('quy dinh') &&
+      !cleanNormalizedQ.includes('chinh sach') &&
+      !cleanNormalizedQ.includes('dieu 25') &&
+      (cleanNormalizedQ.includes('cua toi') ||
+       cleanNormalizedQ.includes('cua minh') ||
+       cleanNormalizedQ.includes('toi nhan') ||
+       cleanNormalizedQ.includes('toi bi') ||
+       cleanNormalizedQ.includes('vua nhan') ||
+       cleanNormalizedQ.includes('bi vo roi') ||
+       cleanNormalizedQ.includes('bi be roi') ||
+       cleanNormalizedQ.includes('khieu nai don'));
+
+    if (isPersonalDamageIncident && !trackingCode && !session.selectedCode) {
+      this.sessions.set(conversationId, {
+        ...session,
+        pendingIntent: 'CLAIM',
+        lastUpdated: Date.now(),
+      });
+
+      actionChips = [
+        ...(session.lastShipments ? session.lastShipments.slice(0, 2).map((s) => ({ label: `📸 Báo sự cố đơn ${s.code}`, query: `Báo hỏng đơn hàng ${s.code}` })) : []),
+        { label: '📞 Kết nối hotline 1900-1234', query: 'Tôi muốn gặp chuyên viên tổng đài hỗ trợ gấp' },
+        { label: '📦 Xem các đơn hàng của tôi', query: 'Tôi có những đơn hàng nào' },
+      ];
+
+      toolAugmentedContext += `\n[YÊU CẦU CSKH THẤU CẢM & HỎI LẠI THÔNG TIN SỰ CỐ HÀNG HƯ HỎNG / BỂ VỠ (ACTIVE CLARIFICATION)]:\n` +
+        `- Yêu cầu: Khách hàng phản ánh kiện hàng của mình bị hư hỏng, bể vỡ hoặc móp méo nhưng CHƯA CUNG CẤP mã vận đơn cụ thể.\n` +
+        `- NGUYÊN TẮC CSKH: Thấu cảm trước, xoa dịu lo lắng cho khách: "Dạ em rất lấy làm tiếc về sự cố phát sinh với bưu kiện của anh/chị ạ!". Sau đó HỎI LẠI CÁC THÔNG TIN CẦN THIẾT:\n` +
+        `  1. 🏷️ Mã vận đơn của kiện hàng gặp sự cố?\n` +
+        `  2. 📸 Tình trạng thực tế: Hàng bị móp méo bên ngoài vỏ hộp hay bể vỡ sản phẩm bên trong ạ? Anh/chị đã lập Biên bản bất thường với bưu tá hoặc có hình ảnh/video mở hộp đồng kiểm chưa ạ?\n` +
+        `  3. 💵 Giá trị ước tính của sản phẩm hoặc chi phí sửa chữa là bao nhiêu ạ?\n` +
+        `- CAM KẾT XỬ LÝ & BỒI THƯỜNG: Thẩm định hồ sơ trong 24h - 48h, hoàn tất chuyển khoản bồi thường trong 03 - 05 ngày làm việc theo Điều 25 Luật Bưu chính (Tiêu chuẩn đền tối đa 4 lần cước, Bảo hiểm đền 100% hóa đơn tối đa 30 triệu VNĐ).\n` +
+        `- HƯỚNG DẪN AI: Xoa dịu lo lắng của khách hàng, hỏi lại 3 thông tin trên để hỗ trợ chuyển Ban Giám định QA mở hồ sơ bồi thường ngay nhé ạ.\n`;
+    } else if (isDamageOrBrokenQuery) {
       toolsUsed.push('getDamageAndClaimPolicy(Fragile Goods & Damage Settlement)');
       toolAugmentedContext += `\n[QUY TRÌNH NGHIỆP VỤ XỬ LÝ HÀNG HƯ HỎNG / BỂ VỠ (DAMAGE SETTLEMENT SOP)]:\n` +
         `- Bước 1 (Khi nhận hàng): Người nhận đồng kiểm phát hiện hàng bị nứt vỡ, móp méo, rò rỉ dung dịch -> Yêu cầu bưu tá lập Biên bản bất thường (Irregularity Report) tại chỗ có chữ ký cả hai bên và chụp ảnh sắc nét 4 góc. Người nhận từ chối nhận hàng và KHÔNG phải thanh toán bất kỳ khoản tiền nào (kể cả COD và cước phí).\n` +
@@ -1144,7 +1371,7 @@ export class ChatService {
 
     // Khi đã có mã vận đơn (trackingMatch), TUYỆT ĐỐI KHÔNG tính cước trừ khi khách hỏi giá cụ thể
     const isPricingQuery = !isOutOfDomain && (!trackingMatch
-      ? (explicitPricingWords || (hasWeightOrDimensions && (hasRoute || hasPackageSpecs)))
+      ? (explicitPricingWords || (hasWeightOrDimensions && (hasRoute || hasPackageSpecs)) || (session.pendingIntent === 'PRICING' && (hasWeightOrDimensions || hasRoute)))
       : explicitPricingWords);
 
     if (isPricingQuery && !isReturnFeeQuery) {
@@ -1217,31 +1444,72 @@ export class ChatService {
         hasExplicitRoute = true;
         fromCity = 'HO CHI MINH';
         toCity = 'HA NOI';
+      } else if (normalizedQ.includes('da nang')) {
+        hasExplicitRoute = true;
+        fromCity = 'DA NANG';
+        toCity = 'HA NOI';
       }
 
-      toolsUsed.push(`calculatePricing(${fromCity}->${toCity}:${weight}kg${dimensionsCm ? `:${length}x${width}x${height}cm` : ''})`);
-      const [stdPricing, expPricing, intraPricing] = await Promise.all([
-        this.toolsService.calculatePricing(weight, 'STANDARD', fromCity, toCity, 'GUEST', dimensionsCm),
-        this.toolsService.calculatePricing(weight, 'EXPRESS', fromCity, toCity, 'GUEST', dimensionsCm),
-        !hasExplicitRoute
-          ? this.toolsService.calculatePricing(weight, 'STANDARD', 'HO CHI MINH', 'HO CHI MINH', 'GUEST', dimensionsCm)
-          : Promise.resolve(null),
-      ]);
+      if (!hasExplicitRoute && !hasExplicitWeight && !dimensionsCm && session.pendingIntent !== 'PRICING') {
+        // TRƯỜNG HỢP KHÁCH HỎI GIÁ CHUNG CHUNG MÀ CHƯA CUNG CẤP TUYẾN ĐƯỜNG & CÂN NẶNG:
+        // Áp dụng NGUYÊN TẮC CSKH: HỎI LẠI KHÁCH HÀNG KHI THIẾU THÔNG TIN
+        this.sessions.set(conversationId, {
+          ...session,
+          pendingIntent: 'PRICING',
+          lastUpdated: Date.now(),
+        });
 
-      const volumetricWeight = dimensionsCm ? ((length * width * height) / 6000).toFixed(2) : '0';
-      const chargeableWeight = dimensionsCm ? Math.max(weight, parseFloat(volumetricWeight)).toFixed(2) : weight.toString();
+        actionChips = [
+          { label: '🚚 Báo giá Nội thành TP.HCM (21.500đ)', query: 'Tính cước gửi hàng nội thành TP.HCM 1kg' },
+          { label: '✈️ TP.HCM ➔ Hà Nội 1kg (32.000đ)', query: 'Tính cước gửi hàng từ TP.HCM đi Hà Nội 1kg' },
+          { label: '⚖️ Báo giá kiện 2kg', query: 'Tính cước gửi kiện hàng 2kg từ TP.HCM đi Hà Nội' },
+          { label: '📐 Báo giá hàng cồng kềnh', query: 'Dự toán cước hàng cồng kềnh kích thước 50x40x30cm nặng 5kg' },
+        ];
 
-      toolAugmentedContext += `\n[BẢNG BÁO GIÁ CƯỚC THỜI GIAN THỰC TỪ MICROSERVICE PRICING-SERVICE]:\n` +
-        `- Tuyến đường tham chiếu: ${fromCity} ➔ ${toCity} ${hasExplicitRoute ? '' : '(Trục chính Metro)'}\n` +
-        `- Cân nặng thực tế: ${weight}kg\n` +
-        (dimensionsCm ? `- Kích thước bưu kiện: Dài ${length}cm x Rộng ${width}cm x Cao ${height}cm\n- Thể tích quy đổi IATA = (${length}x${width}x${height})/6000 = ${volumetricWeight}kg\n- Cân nặng tính cước (Chargeable Weight) = max(Cân thực tế, Thể tích quy đổi) = ${chargeableWeight}kg\n` : '') +
-        (intraPricing ? `- MỨC CƯỚC GỬI NỘI THÀNH / NỘI TỈNH (Phụ phí vùng 0đ): Gói Tiêu Chuẩn chỉ từ ${intraPricing.totalFee.toLocaleString('vi-VN')}đ\n` : '') +
-        `- MỨC CƯỚC GỬI LIÊN TỈNH (${fromCity} ➔ ${toCity}):\n` +
-        `  * Gói Tiêu Chuẩn: ${stdPricing.totalFee.toLocaleString('vi-VN')}đ | Chi tiết: ${stdPricing.breakdown}\n` +
-        `  * Gói Nhanh (Express): ${expPricing.totalFee.toLocaleString('vi-VN')}đ | Chi tiết: ${expPricing.breakdown}\n` +
-        `- Công thức tính: Cước cơ sở (0.5kg đầu: 18.000đ Gói Chuẩn, 28.000đ Gói Nhanh, 42.000đ Hỏa Tốc) + Cước vượt nấc (mỗi 0.5kg tiếp theo: +3.500đ Gói Chuẩn, +5.000đ Gói Nhanh) + Phụ phí vùng miền (Nội tỉnh: 0đ, Trục chính Metro: +7.000đ, Liên tỉnh phổ thông: +12.000đ).\n` +
-        `- Cước chuyển hoàn bưu gửi: Thu 50% cước chiều đi khi giao không thành công (khách bom hàng).\n` +
-        `- HƯỚNG DẪN AI: Dạ chào anh/chị tự nhiên, niềm nở (xưng em, gọi anh/chị), báo giá cước rõ ràng theo bảng tính trên (Gói Tiêu Chuẩn và Gói Nhanh Express), giải thích dễ hiểu về cân nặng tính cước và cước chuyển hoàn dự kiến (50% cước chiều đi nếu bom hàng). Nếu anh/chị chưa nêu rõ tuyến đường, báo cả 2 mức Nội thành (từ ${intraPricing?.totalFee ? intraPricing.totalFee.toLocaleString('vi-VN') + 'đ' : '21.500đ'}) và Liên tỉnh (từ ${stdPricing.totalFee.toLocaleString('vi-VN')}đ) để thông tin minh bạch, rõ ràng cho anh/chị nhé ạ.\n`;
+        toolAugmentedContext += `\n[YÊU CẦU CSKH HỎI LẠI THÔNG TIN TÍNH CƯỚC VẬN CHUYỂN (ACTIVE CLARIFICATION)]:\n` +
+          `- Trạng thái: Khách hàng đang hỏi giá cước / chi phí gửi hàng ("${question}") nhưng CHƯA CUNG CẤP tuyến đường và cân nặng cụ thể.\n` +
+          `- NGUYÊN TẮC CSKH: Tuyệt đối không tự ý gán thông số giả định và báo giá như thật. Hãy đóng vai Chuyên viên CSKH bưu cục tận tâm, lịch sự:\n` +
+          `  1. Chào hỏi niềm nở, lễ phép (xưng em, gọi anh/chị).\n` +
+          `  2. Xác nhận mong muốn tính cước và HỎI LẠI KHÁCH HÀNG 3 thông tin cần thiết:\n` +
+          `     + 📍 Tuyến vận chuyển: Bưu kiện gửi từ tỉnh/thành nào đến tỉnh/thành nào ạ?\n` +
+          `     + ⚖️ Khối lượng: Kiện hàng nặng khoảng bao nhiêu kg (hoặc kích thước Dài x Rộng x Cao nếu là hàng cồng kềnh) ạ?\n` +
+          `     + 📦 Loại mặt hàng: Hàng thông thường hay hàng dễ vỡ/giá trị cao cần bảo hiểm ạ?\n` +
+          `  3. BÁO TRƯỚC MỨC THAM KHẢO NHANH để khách không phải chờ đợi:\n` +
+          `     • Tuyến nội tỉnh / nội thành: Gói Tiêu chuẩn chỉ từ 21.500 VNĐ (0.5kg đầu)\n` +
+          `     • Tuyến liên tỉnh trục chính (TP.HCM ➔ Hà Nội): Gói Tiêu chuẩn từ 32.000 VNĐ (1kg đầu)\n` +
+          `     • Cước vượt nấc: +3.500 VNĐ mỗi 0.5kg tiếp theo\n` +
+          `- HƯỚNG DẪN AI: Trả lời tự nhiên, ấm áp, kết hợp giữa việc hỏi lại thông tin và cung cấp bảng giá tham khảo nhanh kèm lời mời anh/chị chọn nhanh các nút bên dưới nhé ạ.\n`;
+      } else {
+        this.sessions.set(conversationId, {
+          ...session,
+          pendingIntent: undefined,
+          lastUpdated: Date.now(),
+        });
+
+        toolsUsed.push(`calculatePricing(${fromCity}->${toCity}:${weight}kg${dimensionsCm ? `:${length}x${width}x${height}cm` : ''})`);
+        const [stdPricing, expPricing, intraPricing] = await Promise.all([
+          this.toolsService.calculatePricing(weight, 'STANDARD', fromCity, toCity, 'GUEST', dimensionsCm),
+          this.toolsService.calculatePricing(weight, 'EXPRESS', fromCity, toCity, 'GUEST', dimensionsCm),
+          !hasExplicitRoute
+            ? this.toolsService.calculatePricing(weight, 'STANDARD', 'HO CHI MINH', 'HO CHI MINH', 'GUEST', dimensionsCm)
+            : Promise.resolve(null),
+        ]);
+
+        const volumetricWeight = dimensionsCm ? ((length * width * height) / 6000).toFixed(2) : '0';
+        const chargeableWeight = dimensionsCm ? Math.max(weight, parseFloat(volumetricWeight)).toFixed(2) : weight.toString();
+
+        toolAugmentedContext += `\n[BẢNG BÁO GIÁ CƯỚC THỜI GIAN THỰC TỪ MICROSERVICE PRICING-SERVICE]:\n` +
+          `- Tuyến đường tham chiếu: ${fromCity} ➔ ${toCity} ${hasExplicitRoute ? '' : '(Trục chính Metro)'}\n` +
+          `- Cân nặng thực tế: ${weight}kg\n` +
+          (dimensionsCm ? `- Kích thước bưu kiện: Dài ${length}cm x Rộng ${width}cm x Cao ${height}cm\n- Thể tích quy đổi IATA = (${length}x${width}x${height})/6000 = ${volumetricWeight}kg\n- Cân nặng tính cước (Chargeable Weight) = max(Cân thực tế, Thể tích quy đổi) = ${chargeableWeight}kg\n` : '') +
+          (intraPricing ? `- MỨC CƯỚC GỬI NỘI THÀNH / NỘI TỈNH (Phụ phí vùng 0đ): Gói Tiêu Chuẩn chỉ từ ${intraPricing.totalFee.toLocaleString('vi-VN')}đ\n` : '') +
+          `- MỨC CƯỚC GỬI LIÊN TỈNH (${fromCity} ➔ ${toCity}):\n` +
+          `  * Gói Tiêu Chuẩn: ${stdPricing.totalFee.toLocaleString('vi-VN')}đ | Chi tiết: ${stdPricing.breakdown}\n` +
+          `  * Gói Nhanh (Express): ${expPricing.totalFee.toLocaleString('vi-VN')}đ | Chi tiết: ${expPricing.breakdown}\n` +
+          `- Công thức tính: Cước cơ sở (0.5kg đầu: 18.000đ Gói Chuẩn, 28.000đ Gói Nhanh, 42.000đ Hỏa Tốc) + Cước vượt nấc (mỗi 0.5kg tiếp theo: +3.500đ Gói Chuẩn, +5.000đ Gói Nhanh) + Phụ phí vùng miền (Nội tỉnh: 0đ, Trục chính Metro: +7.000đ, Liên tỉnh phổ thông: +12.000đ).\n` +
+          `- Cước chuyển hoàn bưu gửi: Thu 50% cước chiều đi khi giao không thành công (khách bom hàng).\n` +
+          `- HƯỚNG DẪN AI: Dạ chào anh/chị tự nhiên, niềm nở (xưng em, gọi anh/chị), báo giá cước rõ ràng theo bảng tính trên (Gói Tiêu Chuẩn và Gói Nhanh Express), giải thích dễ hiểu về cân nặng tính cước và cước chuyển hoàn dự kiến (50% cước chiều đi nếu bom hàng). Nếu anh/chị chưa nêu rõ tuyến đường, báo cả 2 mức Nội thành (từ ${intraPricing?.totalFee ? intraPricing.totalFee.toLocaleString('vi-VN') + 'đ' : '21.500đ'}) và Liên tỉnh (từ ${stdPricing.totalFee.toLocaleString('vi-VN')}đ) để thông tin minh bạch, rõ ràng cho anh/chị nhé ạ.\n`;
+      }
     }
 
     // 2. Truy xuất RAG từ Vector Store với Hybrid Search (Dense Semantic + Keyword Scoring)
@@ -1414,7 +1682,18 @@ Bạn có kiến thức uyên thâm, thấu đáo và toàn diện về toàn b�
       2) Lựa chọn 2 (Tra cứu nhanh không cần tài khoản / Guest Quick Track): Khách chỉ cần cung cấp 2 thông tin: Mã vận đơn + Số điện thoại người nhận (hoặc 4 số cuối SĐT nhận hàng) ngay tại khung chat để hệ thống đối chiếu bảo mật PII và mở khóa chi tiết ngay lập tức.
   + Khi khách hàng cung cấp số điện thoại người nhận:
     * Nếu SĐT TRÙNG KHỚP với thông tin nhận hàng: AI chúc mừng và mở khóa toàn bộ thông tin chi tiết: người nhận, số điện thoại, địa chỉ cụ thể, COD và hành trình di chuyển.
-    * Nếu SĐT KHÔNG TRÙNG KHỚP: AI giải thích lịch sự rằng số điện thoại người nhận không khớp với thông tin đã đăng ký của vận đơn, do đó vì lý do bảo mật theo Luật Bưu chính hệ thống chưa thể mở khóa chi tiết. Hướng dẫn khách kiểm tra lại số điện thoại hoặc Đăng nhập tài khoản.`;
+    * Nếu SĐT KHÔNG TRÙNG KHỚP: AI giải thích lịch sự rằng số điện thoại người nhận không khớp với thông tin đã đăng ký của vận đơn, do đó vì lý do bảo mật theo Luật Bưu chính hệ thống chưa thể mở khóa chi tiết. Hướng dẫn khách kiểm tra lại số điện thoại hoặc Đăng nhập tài khoản.
+
+6. NGUYÊN TẮC CỐT LÕI CỦA MỘT CHUYÊN VIÊN CSKH: ĐIỀU PHỐI API & HỎI LẠI THÔNG TIN KHI CẦN THIẾT (ACTIVE CLARIFICATION & ORCHESTRATION):
+- Bạn là Chuyên viên CSKH và Giao dịch viên bưu cục chuyên nghiệp, tận tâm:
+  + TUYỆT ĐỐI KHÔNG đoán mò, KHÔNG tự ý gán thông số giả định (ví dụ khách chỉ nói chung chung 'tính cước cho tôi' thì không được tự mặc định là gửi 1kg từ TP.HCM đi Hà Nội rồi trả lời như thật).
+  + KHI KHÁCH HÀNG YÊU CẦU MỘT TÁC VỤ MÀ THIẾU THÔNG TIN TIÊN QUYẾT ĐỂ GỌI API (thiếu mã đơn, thiếu tuyến đường, thiếu cân nặng, thiếu địa chỉ mới):
+    1. Chào hỏi niềm nở, lễ phép (xưng 'em', gọi 'anh/chị' hoặc 'anh/chị [Tên]').
+    2. Xác nhận rõ ràng ý định của khách hàng ('Dạ để em hỗ trợ tính cước / đổi địa chỉ / hẹn giao lại / tra cứu đơn / khiếu nại...').
+    3. Đặt câu hỏi trực diện, gãy gọn, chia mục rõ ràng (1, 2, 3) để thu thập thông tin còn thiếu.
+    4. Cung cấp mức tham khảo nhanh hoặc gợi ý các nút bấm Action Chips để khách tiện chọn nếu trùng nhu cầu.
+    5. Ghi nhớ ngữ cảnh đa lượt: Khi khách trả lời thông tin còn thiếu ở câu tiếp theo, hệ thống lập tức xâu chuỗi và gọi API xử lý dứt điểm cho khách hàng ngay.
+  + KHI ĐÃ CÓ ĐỦ THÔNG TIN: Gọi đúng API/Tool cần thiết, trả lời mạch lạc, súc tích, giải tỏa băn khoăn cho khách.`;
 
     const userPrompt = `DỮ LIỆU NGỮ CẢNH HỆ THỐNG CUNG CẤP:
 ${context || '(Không tìm thấy tài liệu phù hợp trực tiếp)'}
@@ -2024,6 +2303,73 @@ HÃY ĐƯA RA CÂU TRẢ LỜI ĐẦY ĐỦ VÀ CHÍNH XÁC:`;
           `• 🚚 **Tạo đơn & Điều phối bưu tá:** Hướng dẫn gửi bưu kiện tận nhà nhanh chóng.\n` +
           `• 🔑 **Đăng nhập tài khoản:** Đồng bộ danh sách đơn cá nhân và quản trị COD an toàn.\n\n` +
           `Anh/chị có thể gửi ngay mã vận đơn hoặc bấm chọn nhanh các tác vụ gợi ý bên dưới để em hỗ trợ mình nhé ạ!`;
+      }
+
+      if (realtimeSection.includes('[YÊU CẦU CSKH HỎI LẠI THÔNG TIN TÍNH CƯỚC VẬN CHUYỂN')) {
+        return `Dạ em chào anh/chị ạ! Em là Trợ lý AI Bưu cục Nexus Logistics.\n\n` +
+          `Để em tính cước và báo giá chính xác nhất cho kiện hàng của mình, anh/chị cho em xin thêm một vài thông tin nhé ạ:\n\n` +
+          `1. 📍 **Tuyến vận chuyển:** Bưu gửi đi từ tỉnh/thành nào đến tỉnh/thành nào ạ?\n` +
+          `2. ⚖️ **Khối lượng:** Kiện hàng nặng khoảng bao nhiêu kg (hoặc kích thước Dài x Rộng x Cao nếu là hàng cồng kềnh) ạ?\n` +
+          `3. 📦 **Loại hàng:** Hàng thông thường hay hàng dễ vỡ/giá trị cao cần bảo hiểm ạ?\n\n` +
+          `💡 **Mức cước tham khảo nhanh các tuyến phổ biến:**\n` +
+          `• 🚚 **Nội thành / Nội tỉnh:** Gói Tiêu chuẩn chỉ từ **21.500 VNĐ** (0.5kg đầu)\n` +
+          `• ✈️ **Liên tỉnh trục chính (TP.HCM ➔ Hà Nội):** Gói Tiêu chuẩn từ **32.000 VNĐ** (1kg đầu)\n` +
+          `• ➕ **Cước vượt nấc:** +3.500 VNĐ mỗi 0.5kg tiếp theo\n\n` +
+          `Anh/chị có thể nhắn trực tiếp thông tin cho em hoặc bấm chọn nhanh các nút gợi ý bên dưới để em tính cước ngay nhé ạ!`;
+      }
+
+      if (realtimeSection.includes('[YÊU CẦU CSKH HỎI LẠI THÔNG TIN ĐỔI ĐỊA CHỈ NHẬN HÀNG')) {
+        return `Dạ em chào anh/chị ạ! Hệ thống Nexus Logistics hoàn toàn hỗ trợ điều chỉnh địa chỉ giao hàng cho bưu kiện ạ.\n\n` +
+          `Để em cập nhật nhanh nhất cho bưu tá phụ trách tuyến, anh/chị cho em xin các thông tin sau nhé ạ:\n\n` +
+          `1. 🏷️ **Mã vận đơn** của kiện hàng mình cần đổi địa chỉ?\n` +
+          `2. 📍 **Địa chỉ giao hàng mới chi tiết** (Số nhà, tên đường, phường/xã, quận/huyện, tỉnh/thành)?\n` +
+          `3. 👤 **Tên và Số điện thoại người nhận mới** (nếu có thay đổi) ạ?\n\n` +
+          `*(Lưu ý: Nếu đổi địa chỉ trong cùng quận/huyện hoặc cùng tỉnh thì hoàn toàn miễn phí; nếu đổi sang tỉnh thành khác khi xe tải đường trục đã xuất phát có thể phát sinh phụ phí chuyển hướng theo quy định bưu chính ạ).*`;
+      }
+
+      if (realtimeSection.includes('[YÊU CẦU CSKH HỎI LẠI ĐỊA CHỈ MỚI CHO VẬN ĐƠN')) {
+        const codeMatch = realtimeSection.match(/Mã vận đơn: (.*?)\n/);
+        const code = codeMatch ? codeMatch[1].trim() : '';
+        return `Dạ em chào anh/chị ạ! Đơn hàng **${code}** của mình hoàn toàn đủ điều kiện hỗ trợ đổi địa chỉ giao hàng ạ.\n\n` +
+          `Anh/chị cho em xin **Địa chỉ giao hàng mới chi tiết** (Số nhà, tên đường, phường/xã, quận/huyện, tỉnh/thành) để em cập nhật ngay cho bưu tá phụ trách tuyến nhé ạ!`;
+      }
+
+      if (realtimeSection.includes('[KẾT QUẢ ĐIỀU CHỈNH ĐỊA CHỈ GIAO HÀNG THÀNH CÔNG')) {
+        const codeMatch = realtimeSection.match(/Mã vận đơn: (.*?)\n/);
+        const code = codeMatch ? codeMatch[1].trim() : '';
+        const addrMatch = realtimeSection.match(/Địa chỉ giao hàng mới: (.*?)\n/);
+        const addr = addrMatch ? addrMatch[1].trim() : '';
+        return `Dạ em chào anh/chị ạ!\n\n` +
+          `Hệ thống đã **cập nhật thành công địa chỉ giao hàng mới** cho vận đơn **${code}**:\n` +
+          `📍 **Địa chỉ mới:** ${addr}\n\n` +
+          `Bưu tá tuyến và bưu cục phát đã nhận được thông tin điều phối mới. Thao tác hoàn toàn miễn phí. Anh/chị yên tâm nhé ạ!`;
+      }
+
+      if (realtimeSection.includes('[YÊU CẦU CSKH HỎI LẠI THÔNG TIN HẸN GIAO LẠI HÀNG')) {
+        return `Dạ em chào anh/chị ạ! Em đã ghi nhận yêu cầu hẹn giao lại hàng của anh/chị.\n\n` +
+          `Để bưu tá tuyến ưu tiên giao đúng khung giờ thuận tiện nhất cho mình, anh/chị cho em xin:\n\n` +
+          `1. 🏷️ **Mã vận đơn** của bưu phẩm cần hẹn giao lại?\n` +
+          `2. ⏰ **Khung giờ thuận tiện nhất** (ví dụ: sáng mai, chiều mai hoặc sau 17h)?\n\n` +
+          `*(Nexus Logistics hỗ trợ phát lại tối đa 3 lần hoàn toàn miễn phí theo quy chuẩn bưu chính ạ).*`;
+      }
+
+      if (realtimeSection.includes('[KẾT QUẢ GHI NHẬN LỊCH HẸN GIAO LẠI HÀNG')) {
+        const codeMatch = realtimeSection.match(/Mã vận đơn: (.*?)\n/);
+        const code = codeMatch ? codeMatch[1].trim() : '';
+        const timeMatch = realtimeSection.match(/Thời gian hẹn giao lại: (.*?)\n/);
+        const time = timeMatch ? timeMatch[1].trim() : 'Ngày làm việc tiếp theo';
+        return `Dạ em chào anh/chị ạ!\n\n` +
+          `Đã ghi nhận **lịch hẹn giao lại** cho vận đơn **${code}** vào: **${time}**.\n\n` +
+          `Bưu cục phát và bưu tá phụ trách tuyến đã nhận được lịch hẹn và sẽ gọi trước khi qua phát hàng cho mình. Lần giao lại này hoàn toàn miễn phí theo chính sách bưu chính. Anh/chị yên tâm nhé ạ!`;
+      }
+
+      if (realtimeSection.includes('[YÊU CẦU CSKH THẤU CẢM & HỎI LẠI THÔNG TIN SỰ CỐ HÀNG HƯ HỎNG')) {
+        return `Dạ em rất lấy làm tiếc về sự cố phát sinh với bưu kiện của anh/chị ạ!\n\n` +
+          `Để em hỗ trợ mở hồ sơ tiếp nhận khiếu nại và chuyển ngay cho Ban Giám định QA xử lý bồi thường nhanh chóng nhất, anh/chị cho em xin thêm một vài thông tin nhé:\n\n` +
+          `1. 🏷️ **Mã vận đơn** của kiện hàng gặp sự cố?\n` +
+          `2. 📸 **Tình trạng thực tế:** Hàng bị móp méo bên ngoài vỏ hộp hay bể vỡ sản phẩm bên trong ạ? Anh/chị đã lập Biên bản bất thường với bưu tá hoặc có hình ảnh/video mở hộp đồng kiểm chưa ạ?\n` +
+          `3. 💵 **Giá trị ước tính:** Giá trị hàng hóa hoặc chi phí sửa chữa ước tính là bao nhiêu ạ?\n\n` +
+          `🛡️ *Anh/chị hoàn toàn yên tâm nhé! Theo Điều 25 Luật Bưu chính và chính sách của Nexus, hồ sơ sẽ được thẩm định trong 24h - 48h và chi trả bồi thường chuyển khoản trong 03 - 05 ngày làm việc ạ!*`;
       }
 
       if (realtimeSection.includes('[Ý ĐỊNH CHÀO HỎI XÃ GIAO - KHÁCH HÀNG ĐÃ ĐĂNG NHẬP')) {
