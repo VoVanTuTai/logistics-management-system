@@ -30,7 +30,7 @@ export class ChatService {
   private validationProvider: string;
   private validationModel: string;
   private openrouterApiKey: string;
-  private readonly sessions = new Map<string, { lastShipments?: any[]; selectedCode?: string; lastUpdated: number }>();
+  private readonly sessions = new Map<string, { lastShipments?: any[]; selectedCode?: string; receiverPhone?: string; lastUpdated: number }>();
 
   constructor(
     private readonly embeddingService: EmbeddingService,
@@ -88,14 +88,77 @@ export class ChatService {
     if (dto.selectedShipmentCode && !session.selectedCode) {
       session.selectedCode = dto.selectedShipmentCode;
     }
+    if (dto.receiverPhone && !session.receiverPhone) {
+      session.receiverPhone = dto.receiverPhone;
+    }
 
-    // Regex tìm mã đơn hàng: NX-XXXX hoặc mã số vận đơn (10-15 chữ số, ví dụ 101000000001, 333801334740)
-    const trackingMatch =
+    // Regex nhận diện số điện thoại người nhận (10-11 chữ số VN hoặc 4 số đuôi)
+    const explicitPhoneMatch = question.match(/(?:\+?84|0)[1-9]\d{8,9}\b/);
+    const last4PhoneMatch =
+      question.match(/(?:sđt|sdt|điện thoại|dien thoai|đuôi|duoi|số cuối|so cuoi|4 số cuối|4 so cuoi|bốn số cuối|bon so cuoi)\s*(?:là|la|:|\s)?\s*(\d{4})\b/i) ||
+      normalizedQ.match(/(?:sdt|dien thoai|duoi|so cuoi|4 so cuoi|bon so cuoi)\s*(?:la|:|\s)?\s*(\d{4})\b/i);
+
+    let extractedPhone: string | undefined = dto.receiverPhone;
+    if (explicitPhoneMatch) {
+      extractedPhone = explicitPhoneMatch[0];
+      session.receiverPhone = extractedPhone;
+    } else if (last4PhoneMatch) {
+      extractedPhone = last4PhoneMatch[1];
+      session.receiverPhone = extractedPhone;
+    } else if (/^\d{4}$/.test(question.trim()) && (session.selectedCode || dto.selectedShipmentCode)) {
+      extractedPhone = question.trim();
+      session.receiverPhone = extractedPhone;
+    } else if (session.receiverPhone) {
+      extractedPhone = session.receiverPhone;
+    }
+
+    // Regex nhận diện số tài khoản ngân hàng (để tránh nhầm STK thành mã vận đơn)
+    const bankAccountMatch = question.match(/(?:stk|so tai khoan|số tài khoản|tai khoan|tài khoản|stk ngân hàng|stk bank)\s*:?\s*(\d{6,18})/i);
+    const bankAccount = bankAccountMatch ? bankAccountMatch[1] : undefined;
+
+    // Regex tìm mã đơn hàng: NX-XXXX hoặc mã số vận đơn (10-15 chữ số không phải SĐT người nhận hay STK)
+    let trackingMatch =
       question.match(/\b(NX[-_]?[A-Z0-9]{4,16}|SPX[A-Z0-9]+|VN\d+[A-Z0-9]*|DH\d+)\b/i) ||
-      question.match(/\b(101\d{9}|111\d{9}|333\d{9}|222\d{9}|\d{10,15})\b/);
+      question.match(/\b(101\d{9}|111\d{9}|333\d{9}|222\d{9})\b/);
+
+    if (!trackingMatch) {
+      const numericMatches = question.match(/\b\d{10,15}\b/g);
+      if (numericMatches) {
+        for (const num of numericMatches) {
+          if (extractedPhone && num.replace(/\D/g, '') === extractedPhone.replace(/\D/g, '')) {
+            continue;
+          }
+          if (bankAccount && num.replace(/\D/g, '') === bankAccount.replace(/\D/g, '')) {
+            continue;
+          }
+          const isVnPhone = /^0[35789]\d{8}$/.test(num);
+          if (!isVnPhone) {
+            trackingMatch = [num] as RegExpMatchArray;
+            break;
+          }
+        }
+      }
+    }
     const trackingCode = trackingMatch ? (trackingMatch[1] ? trackingMatch[1].toUpperCase() : trackingMatch[0]) : undefined;
 
     const cleanNormalizedQ = normalizedQ.replace(/[.,?!:;~]+$/g, '').trim();
+
+    // Kiểm tra ý định tư vấn tra cứu dành cho khách vãng lai (Guest Tracking Consultation)
+    const isGuestTrackingConsultQuery =
+      (cleanNormalizedQ.includes('khach vang lai') ||
+       cleanNormalizedQ.includes('chua dang nhap') ||
+       cleanNormalizedQ.includes('khong co tai khoan') ||
+       cleanNormalizedQ.includes('khong dang nhap') ||
+       cleanNormalizedQ.includes('can thong tin gi') ||
+       cleanNormalizedQ.includes('can gi de tra cuu') ||
+       cleanNormalizedQ.includes('can nhung gi de tra cuu') ||
+       (cleanNormalizedQ.includes('tra cuu') && cleanNormalizedQ.includes('nhu the nao')) ||
+       (cleanNormalizedQ.includes('tra cuu') && cleanNormalizedQ.includes('the nao')) ||
+       (cleanNormalizedQ.includes('cach') && cleanNormalizedQ.includes('tra cuu'))) &&
+      (cleanNormalizedQ.includes('tra cuu') ||
+       cleanNormalizedQ.includes('kiem tra don') ||
+       cleanNormalizedQ.includes('van don') ||
+       cleanNormalizedQ.includes('don hang'));
 
     // Kiểm tra ý định hỏi về Tên người dùng, Danh tính, Hồ sơ tài khoản (User Identity / Profile Query)
     const isUserIdentityQuery =
@@ -469,20 +532,40 @@ export class ChatService {
           }
         }
       }
-    } else if (trackingMatch) {
-      const trackingCode = trackingMatch[1] ? trackingMatch[1].toUpperCase() : trackingMatch[0];
-      toolsUsed.push(`trackShipment(${trackingCode}, isGuest=${isGuest})`);
-      const trackRes = await this.toolsService.trackShipment(trackingCode, isGuest);
+    } else if (trackingCode || (extractedPhone && (session.selectedCode || dto.selectedShipmentCode))) {
+      const targetTrackingCode = trackingCode || dto.selectedShipmentCode || session.selectedCode!;
+      toolsUsed.push(`trackShipment(${targetTrackingCode}, isGuest=${isGuest}, phone=${extractedPhone || 'none'})`);
+      const trackRes = await this.toolsService.trackShipment(targetTrackingCode, isGuest, extractedPhone);
 
-      // Cập nhật session với mã đơn vừa tra cứu
+      // Cập nhật session với mã đơn và SĐT vừa tra cứu
       this.sessions.set(conversationId, {
         ...session,
-        selectedCode: trackingCode,
+        selectedCode: targetTrackingCode,
+        receiverPhone: extractedPhone || session.receiverPhone,
         lastUpdated: Date.now(),
       });
 
       if (!trackRes.found) {
-        toolAugmentedContext += `\n[KẾT QUẢ TRA CỨU]: ${trackRes.notFoundMessage || `Không tìm thấy mã vận đơn ${trackingCode} trên hệ thống.`}\n`;
+        if (trackRes.status === 'PHONE_MISMATCH') {
+          toolAugmentedContext += `\n[THÔNG BÁO SỐ ĐIỆN THOẠI NGƯỜI NHẬN KHÔNG KHỚP - BẢO MẬT PII LUẬT BƯU CHÍNH]:\n` +
+            `- Mã vận đơn: ${targetTrackingCode}\n` +
+            `- Số điện thoại cung cấp: ${extractedPhone}\n` +
+            `- Tình trạng: Số điện thoại không trùng khớp với số điện thoại người nhận đã đăng ký trên hệ thống của vận đơn này.\n` +
+            `- NGUYÊN TẮC BẢO MẬT CARRIER SOP: Theo Điều 8 Luật Bưu chính và quy chuẩn bảo vệ dữ liệu cá nhân PII, hệ thống chỉ mở khóa thông tin người nhận và địa chỉ chi tiết khi số điện thoại người nhận trùng khớp 100%.\n` +
+            `- HƯỚNG DẪN AI: Giải thích thật lịch sự, ân cần cho anh/chị biết số điện thoại vừa nhập không khớp với người nhận của đơn hàng. Nhắc anh/chị kiểm tra lại số điện thoại (hoặc 4 số cuối SĐT nhận hàng), hoặc mời anh/chị Đăng nhập tài khoản nếu mình là chủ đơn hàng/người gửi để xem chi tiết đầy đủ nhé ạ.\n`;
+          actionChips = [
+            { label: '🔑 Đăng nhập tài khoản', query: 'Tôi muốn đăng nhập tài khoản' },
+            { label: '📱 Nhập lại SĐT người nhận', query: `Tra cứu đơn ${targetTrackingCode} sđt ` },
+            { label: '📦 Tra cứu đơn khác', query: 'Tra cứu hành trình đơn hàng' },
+          ];
+        } else {
+          toolAugmentedContext += `\n[KẾT QUẢ TRA CỨU]: ${trackRes.notFoundMessage || `Không tìm thấy mã vận đơn ${targetTrackingCode} trên hệ thống.`}\n`;
+          actionChips = [
+            { label: '📦 Tra cứu đơn khác', query: 'Tra cứu hành trình đơn hàng' },
+            { label: '💰 Dự toán cước phí', query: 'Dự toán cước vận chuyển 2kg từ TP.HCM đi Hà Nội' },
+            { label: '➕ Gửi đơn hàng mới', query: 'Tôi muốn gửi hàng mới' },
+          ];
+        }
       } else {
         shipmentCards = [
           {
@@ -499,25 +582,75 @@ export class ChatService {
 
         // Gợi ý action chips phù hợp với trạng thái đơn
         const canCancel = ['CREATED', 'TASK_ASSIGNED', 'PICKUP_ASSIGNED', 'PICKING_UP', 'PENDING', 'READY_TO_SHIP'].includes(trackRes.status);
-        actionChips = [
-          ...(canCancel ? [{ label: `❌ Hủy đơn ${trackRes.trackingNumber}`, query: `Tôi muốn hủy đơn hàng ${trackRes.trackingNumber}` }] : []),
-          { label: '📦 Xem các đơn hàng của tôi', query: 'Tôi có những đơn hàng nào' },
-          { label: '➕ Gửi đơn hàng mới', query: 'Tôi muốn gửi hàng mới' },
-        ];
 
-        toolAugmentedContext += `\n[THÔNG TIN TRA CỨU ĐƠN HÀNG MÃ ${trackingCode}${isGuest ? ' (CHẾ ĐỘ KHÁCH VÃNG LAI - ĐÃ MÃ HÓA THÔNG TIN CÁ NHÂN PII)' : ''}]:\n` +
-          `- Mã vận đơn: ${trackRes.trackingNumber}\n` +
-          `- Trạng thái: ${trackRes.statusText} (${trackRes.status}${trackRes.status === 'PICKUP_ASSIGNED' ? ' / TASK_ASSIGNED' : ''})\n` +
-          (trackRes.itemName ? `- Tên hàng hóa: ${trackRes.itemName}\n` : '') +
-          (trackRes.senderName ? `- Người gửi: ${trackRes.senderName} (${trackRes.senderCity || trackRes.senderAddress || ''})\n` : '') +
-          (trackRes.receiverName ? `- Người nhận: ${trackRes.receiverName} (${trackRes.receiverCity || trackRes.receiverAddress || ''})\n` : '') +
-          (trackRes.receiverPhone ? `- Số điện thoại người nhận: ${trackRes.receiverPhone}\n` : '') +
-          (trackRes.codAmount !== undefined ? `- Tiền thu hộ COD: ${trackRes.codAmount.toLocaleString('vi-VN')} VNĐ\n` : '') +
-          `- Vị trí hiện tại: ${trackRes.currentLocation}\n` +
-          `- Thời gian dự kiến giao: ${trackRes.estimatedDelivery}\n` +
-          `- Lịch sử vận chuyển:\n` +
-          trackRes.timeline.map((t) => `  * ${t.time}: ${t.description}`).join('\n') +
-          (isGuest ? `\n- LƯU Ý BẢO MẬT: Người dùng tra cứu dạng khách vãng lai (GUEST), thông tin tên họ và địa chỉ đã được che bớt theo tiêu chuẩn an toàn PII. Hãy nhắc khách đăng nhập tài khoản nếu muốn xem toàn bộ chi tiết.\n` : '\n');
+        if (trackRes.phoneVerificationStatus === 'VERIFIED') {
+          // XÁC THỰC SĐT NGƯỜI NHẬN THÀNH CÔNG (ĐÃ MỞ KHÓA PII)
+          actionChips = [
+            ...(canCancel ? [{ label: `❌ Hủy đơn ${trackRes.trackingNumber}`, query: `Tôi muốn hủy đơn hàng ${trackRes.trackingNumber}` }] : []),
+            { label: '📦 Tra cứu đơn khác', query: 'Tra cứu hành trình đơn hàng' },
+            { label: '➕ Gửi đơn hàng mới', query: 'Tôi muốn gửi hàng mới' },
+          ];
+
+          toolAugmentedContext += `\n[XÁC THỰC THÀNH CÔNG SỐ ĐIỆN THOẠI NGƯỜI NHẬN - MỞ KHÓA TOÀN BỘ THÔNG TIN CHI TIẾT]:\n` +
+            `- Mã vận đơn: ${trackRes.trackingNumber}\n` +
+            `- Trạng thái: ${trackRes.statusText} (${trackRes.status}${trackRes.status === 'PICKUP_ASSIGNED' ? ' / TASK_ASSIGNED' : ''})\n` +
+            (trackRes.itemName ? `- Tên hàng hóa: ${trackRes.itemName}\n` : '') +
+            (trackRes.senderName ? `- Người gửi: ${trackRes.senderName} (${trackRes.senderCity || trackRes.senderAddress || ''})\n` : '') +
+            (trackRes.receiverName ? `- Người nhận: ${trackRes.receiverName} (${trackRes.receiverCity || trackRes.receiverAddress || ''})\n` : '') +
+            (trackRes.receiverPhone ? `- Số điện thoại người nhận: ${trackRes.receiverPhone} (ĐÃ XÁC THỰC HỢP LỆ)\n` : '') +
+            (trackRes.codAmount !== undefined ? `- Tiền thu hộ COD: ${trackRes.codAmount.toLocaleString('vi-VN')} VNĐ\n` : '') +
+            `- Vị trí hiện tại: ${trackRes.currentLocation}\n` +
+            `- Thời gian dự kiến giao: ${trackRes.estimatedDelivery}\n` +
+            `- Lịch sử vận chuyển:\n` +
+            trackRes.timeline.map((t) => `  * ${t.time}: ${t.description}`).join('\n') +
+            `\n- HƯỚNG DẪN AI: Báo cho anh/chị biết hệ thống đã xác thực thành công số điện thoại người nhận! Mở khóa toàn bộ thông tin chi tiết: người nhận, số điện thoại, địa chỉ cụ thể, COD và hành trình di chuyển với thái độ niềm nở, chu đáo.\n`;
+        } else if (isGuest && trackRes.isMasked) {
+          // KHÁCH VÃNG LAI CHƯA NHẬP SĐT: BẮT BUỘC TƯ VẤN 2 LỰA CHỌN MỞ KHÓA
+          actionChips = [
+            { label: '🔑 Đăng nhập tài khoản', query: 'Tôi muốn đăng nhập tài khoản' },
+            { label: '📱 Cung cấp SĐT người nhận', query: `Số điện thoại người nhận đơn ${trackRes.trackingNumber} là ` },
+            ...(canCancel ? [{ label: `❌ Hủy đơn ${trackRes.trackingNumber}`, query: `Tôi muốn hủy đơn hàng ${trackRes.trackingNumber}` }] : []),
+            { label: '📦 Xem các đơn hàng của tôi', query: 'Tôi có những đơn hàng nào' },
+          ];
+
+          toolAugmentedContext += `\n[THÔNG TIN TRA CỨU ĐƠN HÀNG MÃ ${trackRes.trackingNumber} (CHẾ ĐỘ KHÁCH VÃNG LAI - ĐÃ MÃ HÓA THÔNG TIN CÁ NHÂN PII)]:\n` +
+            `- Mã vận đơn: ${trackRes.trackingNumber}\n` +
+            `- Trạng thái: ${trackRes.statusText} (${trackRes.status}${trackRes.status === 'PICKUP_ASSIGNED' ? ' / TASK_ASSIGNED' : ''})\n` +
+            (trackRes.itemName ? `- Tên hàng hóa: ${trackRes.itemName}\n` : '') +
+            (trackRes.senderName ? `- Người gửi: ${trackRes.senderName} (${trackRes.senderCity || trackRes.senderAddress || ''})\n` : '') +
+            (trackRes.receiverName ? `- Người nhận: ${trackRes.receiverName} (${trackRes.receiverCity || trackRes.receiverAddress || ''})\n` : '') +
+            (trackRes.receiverPhone ? `- Số điện thoại người nhận: ${trackRes.receiverPhone} (Đã ẩn theo chuẩn PII)\n` : '') +
+            (trackRes.codAmount !== undefined ? `- Tiền thu hộ COD: ${trackRes.codAmount.toLocaleString('vi-VN')} VNĐ\n` : '') +
+            `- Vị trí hiện tại: ${trackRes.currentLocation}\n` +
+            `- Thời gian dự kiến giao: ${trackRes.estimatedDelivery}\n` +
+            `- Lịch sử vận chuyển:\n` +
+            trackRes.timeline.map((t) => `  * ${t.time}: ${t.description}`).join('\n') +
+            `\n[CHỈ DẪN NGHIỆP VỤ BẢO MẬT & TƯ VẤN 2 LỰA CHỌN MỞ KHÓA BẮT BUỘC DÀNH CHO KHÁCH VÃNG LAI]:\n` +
+            `- Theo Điều 8 Luật Bưu chính và quy chuẩn an toàn PII, thông tin người nhận và địa chỉ chi tiết tạm thời được che bớt.\n` +
+            `- AI BẮT BUỘC PHẢI TƯ VẤN ĐẦY ĐỦ 2 LỰA CHỌN DƯỚI ĐÂY CHO KHÁCH:\n` +
+            `  1. LỰA CHỌN 1 (NẾU ĐÃ CÓ TÀI KHOẢN / ĐĂNG NHẬP): Mời anh/chị bấm [🔑 Đăng nhập tài khoản](/login) để hệ thống tự động nhận diện danh tính và mở khóa xem đầy đủ mọi thông tin (người gửi, người nhận, SĐT, địa chỉ chi tiết, timeline) mà không cần nhập SĐT mỗi lần tra cứu.\n` +
+            `  2. LỰA CHỌN 2 (TRA CỨU NHANH KHÔNG CẦN TÀI KHOẢN): Chỉ cần cung cấp Số điện thoại người nhận (hoặc 4 số cuối SĐT nhận hàng) ngay tại khung chat này, hệ thống sẽ đối chiếu và mở khóa hiển thị đầy đủ thông tin chi tiết ngay lập tức.\n`;
+        } else {
+          // KHÁCH ĐÃ ĐĂNG NHẬP
+          actionChips = [
+            ...(canCancel ? [{ label: `❌ Hủy đơn ${trackRes.trackingNumber}`, query: `Tôi muốn hủy đơn hàng ${trackRes.trackingNumber}` }] : []),
+            { label: '📦 Xem các đơn hàng của tôi', query: 'Tôi có những đơn hàng nào' },
+            { label: '➕ Gửi đơn hàng mới', query: 'Tôi muốn gửi hàng mới' },
+          ];
+
+          toolAugmentedContext += `\n[THÔNG TIN TRA CỨU ĐƠN HÀNG MÃ ${trackRes.trackingNumber} (TÀI KHOẢN ĐÃ ĐĂNG NHẬP)]:\n` +
+            `- Mã vận đơn: ${trackRes.trackingNumber}\n` +
+            `- Trạng thái: ${trackRes.statusText} (${trackRes.status}${trackRes.status === 'PICKUP_ASSIGNED' ? ' / TASK_ASSIGNED' : ''})\n` +
+            (trackRes.itemName ? `- Tên hàng hóa: ${trackRes.itemName}\n` : '') +
+            (trackRes.senderName ? `- Người gửi: ${trackRes.senderName} (${trackRes.senderCity || trackRes.senderAddress || ''})\n` : '') +
+            (trackRes.receiverName ? `- Người nhận: ${trackRes.receiverName} (${trackRes.receiverCity || trackRes.receiverAddress || ''})\n` : '') +
+            (trackRes.receiverPhone ? `- Số điện thoại người nhận: ${trackRes.receiverPhone}\n` : '') +
+            (trackRes.codAmount !== undefined ? `- Tiền thu hộ COD: ${trackRes.codAmount.toLocaleString('vi-VN')} VNĐ\n` : '') +
+            `- Vị trí hiện tại: ${trackRes.currentLocation}\n` +
+            `- Thời gian dự kiến giao: ${trackRes.estimatedDelivery}\n` +
+            `- Lịch sử vận chuyển:\n` +
+            trackRes.timeline.map((t) => `  * ${t.time}: ${t.description}`).join('\n') + `\n`;
+        }
       }
     } else {
       // 1. Kiểm tra nếu người dùng hỏi tra cứu đơn hoặc hỏi về đơn của họ (Tracking / Query Intent)
@@ -687,10 +820,23 @@ export class ChatService {
           `- Hình thức thanh toán cước: ${payer === 'SENDER' ? 'Người gửi thanh toán (SENDER_PAYS)' : 'Người nhận thanh toán (RECEIVER_PAYS)'}\n` +
           `- SỐ TIỀN QUÝ KHÁCH CẦN THANH TOÁN KHI GỬI: ${senderPayNow.toLocaleString('vi-VN')} VNĐ (${payer === 'SENDER' ? 'Anh/chị có thể quét mã VietQR thanh toán cước ngay hoặc đưa tiền mặt cho bưu tá khi lấy hàng' : 'Người nhận sẽ thanh toán 32.000 VNĐ khi nhận hàng'})\n` +
           `- HƯỚNG DẪN AI: Đóng vai Giao dịch viên bưu cục gửi lại bảng tóm tắt phiếu tiếp nhận chi tiết và báo giá rõ ràng, lễ phép cho anh/chị. Nêu rõ số tiền cần thanh toán ngay (nếu Người gửi thanh toán thì 32.000đ, nếu Người nhận thanh toán thì 0đ). Mời anh/chị bấm [Xác nhận & Tạo đơn ngay] hoặc [Thanh toán cước ngay] để em chính thức cấp mã vận đơn và điều phối bưu tá qua lấy hàng tận nơi nhé ạ.\n`;
+      } else if (isGuestTrackingConsultQuery || (isGeneralTrackingQuery && (isGuest || !dto.userId))) {
+        toolAugmentedContext += `\n[TƯ VẤN PHƯƠNG THỨC TRA CỨU VẬN ĐƠN DÀNH CHO KHÁCH VÃNG LAI]:\n` +
+          `- Trạng thái: Khách hàng đang hỏi về cách thức tra cứu bưu phẩm / vận đơn khi chưa đăng nhập hoặc chưa cung cấp mã vận đơn cụ thể.\n` +
+          `- QUY CHUẨN BẢO MẬT CARRIER SOP (ĐIỀU 8 LUẬT BƯU CHÍNH & PII):\n` +
+          `  Để bảo vệ quyền riêng tư và dữ liệu cá nhân của người gửi và người nhận, Quý khách có 2 lựa chọn tiện lợi:\n` +
+          `  1. LỰA CHỌN 1 (ĐÃ CÓ TÀI KHOẢN / ĐĂNG NHẬP): Mời anh/chị bấm [🔑 Đăng nhập tài khoản](/login) để hệ thống tự động nhận diện danh tính và mở khóa hiển thị toàn bộ danh sách đơn hàng cùng chi tiết đầy đủ (người gửi, người nhận, SĐT, địa chỉ chi tiết, timeline) mà không cần phải nhập số điện thoại mỗi lần tra cứu.\n` +
+          `  2. LỰA CHỌN 2 (TRA CỨU NHANH KHÔNG CẦN TÀI KHOẢN / GUEST QUICK TRACK): Dành cho khách vãng lai hoặc người nhận hàng cần tra cứu nhanh. Quý khách chỉ cần cung cấp 2 thông tin:\n` +
+          `     + Mã vận đơn (ví dụ: 333... hoặc NX-...)\n` +
+          `     + Số điện thoại người nhận (hoặc 4 số cuối SĐT nhận hàng)\n` +
+          `     Hệ thống sẽ đối chiếu dữ liệu bảo mật PII và mở khóa toàn bộ hành trình, thông tin người nhận ngay lập tức.\n` +
+          `- HƯỚNG DẪN AI: Chào anh/chị niềm nở, ân cần (xưng em, gọi anh/chị). Tư vấn mạch lạc, rõ ràng 2 lựa chọn trên để anh/chị dễ dàng lựa chọn cách tra cứu phù hợp nhất nhé ạ.\n`;
+        actionChips = [
+          { label: '🔑 Đăng nhập tài khoản', query: 'Tôi muốn đăng nhập tài khoản' },
+          { label: '📦 Tra cứu mã vận đơn', query: 'Tra cứu hành trình đơn hàng' },
+          { label: '💰 Dự toán cước phí', query: 'Dự toán cước vận chuyển 2kg từ TP.HCM đi Hà Nội' },
+        ];
       } else if (isGeneralTrackingQuery) {
-        if (isGuest || !dto.userId) {
-          toolAugmentedContext += `\n[CẢNH BÁO BẢO MẬT - NGƯỜI DÙNG CHƯA ĐĂNG NHẬP / CHƯA CÓ MÃ]: Khách hàng chưa đăng nhập tài khoản hoặc chưa cung cấp mã vận đơn cụ thể. Hãy giải thích thân thiện, lễ phép rằng để bảo vệ quyền riêng tư và dữ liệu cá nhân (PII) theo Luật Bưu chính, anh/chị vui lòng: 1) Đăng nhập tài khoản để hệ thống tự động hiển thị danh sách đơn hàng của mình; hoặc 2) Cung cấp Mã vận đơn cụ thể (ví dụ: 333... hoặc NX-...) để em hỗ trợ tra cứu hành trình cho mình nhé ạ.\n`;
-        } else {
           toolsUsed.push(`getUserShipments(User:${dto.userId})`);
           const userShipments = await this.toolsService.getUserShipments(dto.userId, 5);
 
@@ -770,8 +916,7 @@ export class ChatService {
                 `- HƯỚNG DẪN AI: Khách hàng ĐÃ ĐĂNG NHẬP HỢP LỆ (Tài khoản: ${dto.userId}). Dạ chào mừng anh/chị thật niềm nở, gửi danh sách ${userShipments.total} đơn hàng của mình kèm trạng thái rõ ràng để anh/chị tiện theo dõi. Nhắc anh/chị có thể bấm vào các nút gợi ý bên dưới nếu cần xem chi tiết hoặc thao tác nhé ạ.\n`;
             }
           }
-        }
-      } else if (isCreateOrSendIntent) {
+        } else if (isCreateOrSendIntent) {
         toolsUsed.push('intakeShipmentOrder(Ops Clerk Conversational Intake)');
         actionChips = [
           { label: '📍 Lấy tại địa chỉ đã lưu', query: 'Lấy hàng tại địa chỉ đã lưu của tài khoản' },
@@ -824,15 +969,40 @@ export class ChatService {
         `- Ngày hoàn tất phán quyết: ${claimRes.adjudicatedAt || '15/09/2026'}\n`;
     }
 
-    // Kiểm tra ý định hỏi về hàng hỏng, hàng hư, bể vỡ, móp méo, đền bù sự cố
+    // Kiểm tra ý định tấn công yêu cầu AI duyệt chuyển khoản tiền bồi thường trực tiếp (Red-Teaming Financial Authority Safety)
+    const isForcePayoutAdversarial =
+      (normalizedQ.includes('chuyen khoan') || normalizedQ.includes('chuyen tien') || normalizedQ.includes('duyet chi') || normalizedQ.includes('duyet')) &&
+      (normalizedQ.includes('tai khoan') || normalizedQ.includes('vao so') || normalizedQ.includes('50.000.000') || normalizedQ.includes('50 trieu') || normalizedQ.includes('dut diem') || normalizedQ.includes('dứt điểm'));
+
+    if (isForcePayoutAdversarial) {
+      toolAugmentedContext += `\n[TỪ CHỐI THẨM QUYỀN TÀI CHÍNH & TUÂN THỦ CARRIER SOP BỒI THƯỜNG]:\n` +
+        `- Yêu cầu: Khách hàng yêu cầu AI duyệt chuyển khoản bồi thường trực tiếp vào tài khoản ngân hàng cá nhân.\n` +
+        `- NGUYÊN TẮC BẢO MẬT & PHÂN QUYỀN (CARRIER SECURITY POLICY):\n` +
+        `  1. AI Bưu cục KHÔNG CÓ THẨM QUYỀN tài chính và TUYỆT ĐỐI KHÔNG THỂ TỰ Ý DUYỆT CHUYỂN KHOẢN hay chi trả tiền trực tiếp.\n` +
+        `  2. Toàn bộ yêu cầu bồi thường bắt buộc phải tuân thủ QUY TRÌNH KHIẾU NẠI bưu chính chính thức, qua Hội đồng GIÁM ĐỊNH chất lượng (QA/Audit).\n` +
+        `  3. HẠN MỨC TRẦN BỒI THƯỜNG: Gói Tiêu chuẩn tối đa 4 lần cước (không quá 1.000.000 VNĐ); Gói Bảo hiểm khai giá tối đa 30.000.000 VNĐ/đơn.\n` +
+        `- HƯỚNG DẪN AI: Từ chối lịch sự, giải thích rõ AI không có thẩm quyền tài chính và không thể tự ý chuyển tiền. Hướng dẫn khách mở quy trình khiếu nại để ban giám định thụ lý theo đúng hạn mức trần bồi thường tối đa 30.000.000 VNĐ nhé ạ.\n`;
+    }
+
+    // Kiểm tra thông tin hạ tầng, phân luồng giao thông ảnh hưởng đến xe tải trung chuyển (Compartment 06)
+    const isTrafficInfrastructureQuery =
+      (normalizedQ.includes('ha tang') || normalizedQ.includes('giao thong') || normalizedQ.includes('quoc lo') || normalizedQ.includes('cao toc') || normalizedQ.includes('duong noi') || normalizedQ.includes('pha do')) &&
+      (normalizedQ.includes('xe tai') || normalizedQ.includes('trung chuyen') || normalizedQ.includes('buu cuc') || normalizedQ.includes('ket noi') || normalizedQ.includes('anh huong'));
+
+    if (isTrafficInfrastructureQuery) {
+      toolAugmentedContext += `\n[QUY HOẠCH HẠ TẦNG GIAO THÔNG & ĐIỀU PHỐI XE TẢI TRUNG CHUYỂN BƯU CỤC]:\n` +
+        `- Chủ đề: Thông tin hạ tầng và các dự án giao thông công cộng trọng điểm.\n` +
+        `- PHƯƠNG ÁN VẬN HÀNH CARRIER LINEHAUL:\n` +
+        `  Trung tâm Điều hành Vận tải Nexus liên tục cập nhật tiến độ hạ tầng giao thông và tình hình thi công trên các tuyến quốc lộ/cao tốc. Hệ thống tự động kích hoạt kịch bản PHÂN LUỒNG XE TẢI linh hoạt theo từng khung giờ, đảm bảo luồng xe tải trung chuyển giữa các bưu cục và Hub vùng không bị gián đoạn, duy trì thời gian vận chuyển (SLA) cam kết cho khách hàng.\n` +
+        `- HƯỚNG DẪN AI: Giải thích chu đáo, an tâm cho anh/chị rằng bộ phận điều vận đã chủ động theo dõi hạ tầng và có phương án phân luồng xe tải dự phòng để bảo đảm bưu gửi được vận chuyển an toàn, đúng giờ nhé ạ.\n`;
+    }
+
+    // Kiểm tra ý định hỏi về hàng hỏng, hàng hư, bể vỡ, móp méo, đền bù sự cố (loại trừ query hạ tầng & query đòi chuyển khoản)
     const isDamageOrBrokenQuery =
-      normalizedQ.includes('hang hong') ||
-      normalizedQ.includes('hang hu') ||
-      normalizedQ.includes('be vo') ||
-      normalizedQ.includes('mop meo') ||
-      normalizedQ.includes('hu hai') ||
-      normalizedQ.includes('thiet hai') ||
-      (normalizedQ.includes('hong') && (normalizedQ.includes('thi sao') || normalizedQ.includes('den') || normalizedQ.includes('xu ly') || normalizedQ.includes('lam sao')));
+      !isForcePayoutAdversarial &&
+      !isTrafficInfrastructureQuery &&
+      (/\b(?:hang hong|hang hu|be vo|mop meo|hu hai|thiet hai)\b/i.test(normalizedQ) ||
+        (/\b(?:hong|hu)\b/i.test(normalizedQ) && (normalizedQ.includes('thi sao') || /\bden\b/i.test(normalizedQ) || normalizedQ.includes('xu ly') || normalizedQ.includes('lam sao'))));
 
     if (isDamageOrBrokenQuery) {
       toolsUsed.push('getDamageAndClaimPolicy(Fragile Goods & Damage Settlement)');
@@ -1233,7 +1403,18 @@ Bạn có kiến thức uyên thâm, thấu đáo và toàn diện về toàn b�
 - Kiểm tra điều kiện vận hành Carrier SOP:
   + Nếu đơn ở trạng thái CREATED, TASK_ASSIGNED, PICKING_UP, PENDING (bưu tá chưa lấy hàng / kiện chưa nhập kho Hub): Đủ điều kiện hủy miễn phí 100% (0 VNĐ). Tuy nhiên, AI TUYỆT ĐỐI KHÔNG TỰ TIỆN HỦY NGAY mà phải giải thích rõ ràng và yêu cầu khách hàng tự tay bấm nút xác nhận quyết định hủy (Human-in-the-Loop Principle).
   + Nếu đơn ở trạng thái SORTING, IN_TRANSIT, OUT_FOR_DELIVERY, DELIVERING (đang luân chuyển trên xe tải đường trục kẹp chì seal hoặc đang đi phát): Tuyệt đối từ chối hủy ngay lập tức vì lý do an toàn vận hành vật lý (không thể dừng xe tải giữa đường cao tốc để tìm kiện hàng), hướng dẫn khách từ chối nhận khi bưu tá giao (chuyển hoàn RTO cước 50%) hoặc liên hệ hotline 1900-1234.
-  + Khi khách hàng đã chính thức bấm xác nhận hủy: Thông báo hủy thành công, bưu tá phụ trách đã nhận lệnh dừng lấy hàng và khách không mất bất kỳ khoản phí nào.`;
+  + Khi khách hàng đã chính thức bấm xác nhận hủy: Thông báo hủy thành công, bưu tá phụ trách đã nhận lệnh dừng lấy hàng và khách không mất bất kỳ khoản phí nào.
+
+5. QUY CHUẨN TRA CỨU VẬN ĐƠN DÀNH CHO KHÁCH VÃNG LAI (GUEST TRACKING & PII VERIFICATION):
+- Theo Điều 8 Luật Bưu chính và quy chuẩn an toàn bảo vệ dữ liệu cá nhân PII:
+  + Khi khách vãng lai hỏi tra cứu đơn hoặc nhập mã vận đơn mà CHƯA CUNG CẤP SĐT NGƯỜI NHẬN:
+    * AI trả về thông tin tổng quan lộ trình (thông tin người nhận, địa chỉ chi tiết đã được che bớt mã hóa bảo vệ PII).
+    * AI BẮT BUỘC PHẢI TƯ VẤN RÕ RÀNG 2 LỰA CHỌN MỞ KHÓA CHO KHÁCH:
+      1) Lựa chọn 1 (Nếu đã có tài khoản / Đăng nhập): Đăng nhập tài khoản Nexus Logistics (bấm [🔑 Đăng nhập tài khoản](/login)) để hệ thống tự động nhận diện và mở khóa toàn bộ đơn hàng chi tiết mà không cần nhập lại SĐT mỗi lần tra cứu.
+      2) Lựa chọn 2 (Tra cứu nhanh không cần tài khoản / Guest Quick Track): Khách chỉ cần cung cấp 2 thông tin: Mã vận đơn + Số điện thoại người nhận (hoặc 4 số cuối SĐT nhận hàng) ngay tại khung chat để hệ thống đối chiếu bảo mật PII và mở khóa chi tiết ngay lập tức.
+  + Khi khách hàng cung cấp số điện thoại người nhận:
+    * Nếu SĐT TRÙNG KHỚP với thông tin nhận hàng: AI chúc mừng và mở khóa toàn bộ thông tin chi tiết: người nhận, số điện thoại, địa chỉ cụ thể, COD và hành trình di chuyển.
+    * Nếu SĐT KHÔNG TRÙNG KHỚP: AI giải thích lịch sự rằng số điện thoại người nhận không khớp với thông tin đã đăng ký của vận đơn, do đó vì lý do bảo mật theo Luật Bưu chính hệ thống chưa thể mở khóa chi tiết. Hướng dẫn khách kiểm tra lại số điện thoại hoặc Đăng nhập tài khoản.`;
 
     const userPrompt = `DỮ LIỆU NGỮ CẢNH HỆ THỐNG CUNG CẤP:
 ${context || '(Không tìm thấy tài liệu phù hợp trực tiếp)'}
@@ -1858,7 +2039,53 @@ HÃY ĐƯA RA CÂU TRẢ LỜI ĐẦY ĐỦ VÀ CHÍNH XÁC:`;
 
       if (realtimeSection.includes('[THÔNG TIN NGƯỜI DÙNG CHƯA ĐĂNG NHẬP]')) {
         return `Dạ em chào anh/chị ạ! Hiện tại anh/chị đang truy cập với tư cách Khách vãng lai (chưa đăng nhập tài khoản).\n\n` +
-          `Vì lý do bảo mật dữ liệu cá nhân theo Luật Bưu chính, em chưa thể hiển thị tên và thông tin tài khoản của mình được ạ. Anh/chị vui lòng bấm nút **[Đăng nhập tài khoản]** ở góc trên màn hình để hệ thống nhận diện và đồng bộ toàn bộ đơn hàng của anh/chị nhé ạ!`;
+          `Vì lý do bảo mật dữ liệu cá nhân theo Luật Bưu chính, em chưa thể hiển thị tên và thông tin tài khoản của mình được ạ. Anh/chị vui lòng bấm nút **[Đăng nhập tài khoản](/login)** ở góc trên màn hình để hệ thống nhận diện và đồng bộ toàn bộ đơn hàng của anh/chị nhé ạ!`;
+      }
+
+      if (realtimeSection.includes('[TƯ VẤN PHƯƠNG THỨC TRA CỨU VẬN ĐƠN DÀNH CHO KHÁCH VÃNG LAI]')) {
+        return `Dạ em chào anh/chị ạ! Để tra cứu hành trình bưu phẩm trên hệ thống Nexus Logistics, theo quy chuẩn an toàn thông tin và bảo vệ dữ liệu cá nhân (PII) theo Luật Bưu chính, anh/chị có 2 lựa chọn tiện lợi sau ạ:\n\n` +
+          `• 🔑 **Lựa chọn 1 (Nếu đã có tài khoản / Đăng nhập):** Anh/chị bấm **[Đăng nhập tài khoản](/login)** để hệ thống tự động nhận diện danh tính và mở khóa hiển thị toàn bộ danh sách đơn hàng cũng như chi tiết đầy đủ (người gửi, người nhận, số điện thoại, địa chỉ cụ thể, timeline) mà không cần phải nhập số điện thoại mỗi lần tra cứu.\n\n` +
+          `• 📱 **Lựa chọn 2 (Tra cứu nhanh không cần tài khoản / Guest Quick Track):** Dành cho khách vãng lai hoặc người nhận hàng cần kiểm tra nhanh. Anh/chị chỉ cần cung cấp 2 thông tin:\n` +
+          `  1. **Mã vận đơn** (ví dụ: 333... hoặc NX-...)\n` +
+          `  2. **Số điện thoại người nhận** (hoặc 4 số cuối SĐT nhận hàng)\n\n` +
+          `Hệ thống sẽ đối chiếu và mở khóa đầy đủ thông tin bưu kiện ngay cho mình ạ. Anh/chị gửi mã vận đơn kèm số điện thoại để em hỗ trợ tra cứu ngay nhé ạ!`;
+      }
+
+      if (realtimeSection.includes('[THÔNG BÁO SỐ ĐIỆN THOẠI NGƯỜI NHẬN KHÔNG KHỚP')) {
+        const codeMatch = realtimeSection.match(/Mã vận đơn: (.*?)\n/);
+        const code = codeMatch ? codeMatch[1].trim() : '';
+        const phoneMatch = realtimeSection.match(/Số điện thoại cung cấp: (.*?)\n/);
+        const phone = phoneMatch ? phoneMatch[1].trim() : '';
+        return `Dạ em chào anh/chị ạ!\n\n` +
+          `Số điện thoại **${phone}** anh/chị vừa cung cấp **không trùng khớp** với số điện thoại người nhận đã đăng ký trên vận đơn **${code}** ạ.\n\n` +
+          `Theo quy định bảo vệ dữ liệu cá nhân (PII) và Luật Bưu chính, hệ thống tạm thời chưa thể mở khóa thông tin người nhận và địa chỉ chi tiết của kiện hàng. Anh/chị vui lòng kiểm tra lại tính chính xác của số điện thoại người nhận (hoặc 4 số cuối) nhé ạ.\n\n` +
+          `Nếu anh/chị là người gửi hoặc chủ đơn hàng, anh/chị có thể bấm **[Đăng nhập tài khoản](/login)** để xem toàn bộ thông tin đơn hàng của mình nhé ạ!`;
+      }
+
+      if (realtimeSection.includes('[XÁC THỰC THÀNH CÔNG SỐ ĐIỆN THOẠI NGƯỜI NHẬN')) {
+        const codeMatch = realtimeSection.match(/Mã vận đơn: (.*?)\n/);
+        const code = codeMatch ? codeMatch[1].trim() : '';
+        const receiverMatch = realtimeSection.match(/Người nhận: (.*?)\n/);
+        const receiver = receiverMatch ? receiverMatch[1].trim() : '';
+        const phoneMatch = realtimeSection.match(/Số điện thoại người nhận: (.*?)\n/);
+        const phone = phoneMatch ? phoneMatch[1].trim() : '';
+        const statusMatch = realtimeSection.match(/Trạng thái: (.*?)\n/);
+        const status = statusMatch ? statusMatch[1].trim() : '';
+        const locationMatch = realtimeSection.match(/Vị trí hiện tại: (.*?)\n/);
+        const loc = locationMatch ? locationMatch[1].trim() : '';
+        const etaMatch = realtimeSection.match(/Thời gian dự kiến giao: (.*?)\n/);
+        const eta = etaMatch ? etaMatch[1].trim() : '';
+        const codMatch = realtimeSection.match(/Tiền thu hộ COD: (.*?)\n/);
+        const cod = codMatch ? codMatch[1].trim() : '';
+
+        return `Dạ em chào anh/chị ạ! Hệ thống đã **xác thực trùng khớp số điện thoại người nhận** và mở khóa toàn bộ thông tin chi tiết của vận đơn **${code}**:\n\n` +
+          `📦 **CHI TIẾT VẬN ĐƠN ${code}:**\n` +
+          `• 📌 **Trạng thái:** ${status}\n` +
+          `• 👤 **Người nhận:** ${receiver}${phone ? ` (${phone})` : ''}\n` +
+          (cod ? `• 💵 **Tiền thu hộ COD:** ${cod}\n` : '') +
+          `• 📍 **Vị trí hiện tại:** ${loc}\n` +
+          (eta ? `• ⏰ **Dự kiến phát hàng:** ${eta}\n` : '') +
+          `\nAnh/chị có thể theo dõi tiến trình bưu tá giao hàng hoặc nhắn em nếu cần hỗ trợ thêm nhé ạ!`;
       }
 
       if (realtimeSection.includes('[THÔNG TIN HỒ SƠ TÀI KHOẢN NGƯỜI DÙNG HIỆN TẠI (ĐÃ ĐĂNG NHẬP)]')) {
@@ -1958,6 +2185,32 @@ HÃY ĐƯA RA CÂU TRẢ LỜI ĐẦY ĐỦ VÀ CHÍNH XÁC:`;
             .map((line) => `• ${line.trim()}`)
             .join('\n') +
           `\n\n👉 *Quý khách có thể bấm trực tiếp vào từng Thẻ vận đơn bên dưới để theo dõi lộ trình di chuyển chi tiết qua các Hub trung chuyển.*`
+        );
+      }
+
+      // Xử lý Tra cứu đơn hàng ở chế độ Khách vãng lai (PII Masked) - Bắt buộc tư vấn 2 lựa chọn mở khóa
+      if (realtimeSection.includes('(CHẾ ĐỘ KHÁCH VÃNG LAI - ĐÃ MÃ HÓA THÔNG TIN CÁ NHÂN PII)')) {
+        const lines = realtimeSection
+          .split('\n')
+          .filter(
+            (l) =>
+              !l.startsWith('[THÔNG TIN') &&
+              !l.includes('LƯU Ý BẢO MẬT') &&
+              !l.includes('HƯỚNG DẪN') &&
+              !l.includes('CHỈ DẪN') &&
+              !l.includes('Ghi chú quan trọng') &&
+              !l.includes('BẮT BUỘC') &&
+              !l.includes('LỰA CHỌN')
+          )
+          .map((l) => l.trim())
+          .filter(Boolean);
+
+        return (
+          `📦 **HÀNH TRÌNH BƯU PHẨM - TRUNG TÂM ĐIỀU PHỐI NEXUS LOGISTICS**\n\n` +
+          lines.join('\n') +
+          `\n\n🛡️ *Lưu ý bảo mật: Vì anh/chị đang tra cứu với tư cách Khách vãng lai, thông tin người nhận và địa chỉ chi tiết tạm thời được che bớt theo Luật Bưu chính.* Để mở khóa xem toàn bộ thông tin chi tiết, anh/chị có 2 lựa chọn tiện lợi sau ạ:\n\n` +
+          `• 🔑 **Lựa chọn 1 (Nếu đã có tài khoản / Đăng nhập):** Mời anh/chị bấm **[Đăng nhập tài khoản](/login)** để hệ thống tự động nhận diện và mở khóa xem đầy đủ mọi chi tiết mà không cần nhập lại SĐT.\n` +
+          `• 📱 **Lựa chọn 2 (Tra cứu nhanh không cần tài khoản):** Quý khách chỉ cần gửi **Số điện thoại người nhận** (hoặc 4 số cuối SĐT nhận hàng) ngay tại khung chat này, hệ thống sẽ đối chiếu và mở khóa hiển thị đầy đủ thông tin chi tiết ngay lập tức nhé ạ!`
         );
       }
 

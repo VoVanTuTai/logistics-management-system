@@ -77,7 +77,7 @@ const FormattedChatMessage: React.FC<{ text: string; isUser: boolean }> = ({ tex
 
   const renderInlineFormatted = (content: string) => {
     // Matches markdown links: [text](url) and bold: **text**
-    const regex = /\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)|\*\*([^*]+)\*\*/g;
+    const regex = /\[([^\]]+)\]\((https?:\/\/[^\s)]+|\/[^\s)]*)\)|\*\*([^*]+)\*\*/g;
     const elements: React.ReactNode[] = [];
     let lastIndex = 0;
     let match: RegExpExecArray | null;
@@ -88,13 +88,13 @@ const FormattedChatMessage: React.FC<{ text: string; isUser: boolean }> = ({ tex
       }
 
       if (match[1] && match[2]) {
-        // [link text](url) -> Clickable Link
+        // [link text](url) -> Clickable Link (supports both internal /login and external https)
+        const isInternal = match[2].startsWith('/');
         elements.push(
           <a
             key={`link-${match.index}`}
             href={match[2]}
-            target="_blank"
-            rel="noopener noreferrer"
+            {...(!isInternal ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
             className="text-blue-600 hover:text-blue-800 underline font-semibold inline-block break-all"
           >
             {match[1]}
@@ -658,7 +658,15 @@ export const FloatingAiChatWidget: React.FC = () => {
                             <button
                               key={chipIdx}
                               type="button"
-                              onClick={() => handleSendMessage(chip.query)}
+                              onClick={() => {
+                                if (chip.query.endsWith('là ') || chip.query.endsWith('sđt ')) {
+                                  setInputMessage(chip.query);
+                                } else if (chip.label.includes('Đăng nhập')) {
+                                  window.location.href = '/login';
+                                } else {
+                                  handleSendMessage(chip.query);
+                                }
+                              }}
                               className="px-3 py-1 bg-blue-50/70 hover:bg-blue-100/90 text-blue-700 border border-blue-200/80 text-xs font-semibold transition rounded-full cursor-pointer shadow-xs active:scale-95 whitespace-nowrap"
                             >
                               {chip.label}
