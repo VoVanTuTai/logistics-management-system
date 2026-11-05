@@ -85,6 +85,9 @@ export class ChatService {
 
     // Lấy session hiện tại của phiên hội thoại (Multi-turn conversational memory)
     const session = this.sessions.get(conversationId) || { lastUpdated: Date.now() };
+    if (dto.selectedShipmentCode && !session.selectedCode) {
+      session.selectedCode = dto.selectedShipmentCode;
+    }
 
     // Regex tìm mã đơn hàng: NX-XXXX hoặc mã số vận đơn (10-15 chữ số, ví dụ 101000000001, 333801334740)
     const trackingMatch =
@@ -113,14 +116,33 @@ export class ChatService {
       (cleanNormalizedQ.includes('xac nhan') || cleanNormalizedQ.includes('dong y') || cleanNormalizedQ.includes('chot huy')) &&
       (cleanNormalizedQ.includes('huy don') || cleanNormalizedQ.includes('huy van don') || cleanNormalizedQ.includes('huy'));
 
+    // Khách hỏi chính sách / tình huống giả định (Inquiry về NDR, giao lại, chứ không phải muốn thực thi hủy đơn)
+    const isCancelInquiry =
+      cleanNormalizedQ.includes('co tu y huy') ||
+      cleanNormalizedQ.includes('co bi huy') ||
+      cleanNormalizedQ.includes('bi huy don') ||
+      cleanNormalizedQ.includes('tai sao huy') ||
+      cleanNormalizedQ.includes('sao lai huy') ||
+      cleanNormalizedQ.includes('khi nao bi huy') ||
+      cleanNormalizedQ.includes('co huy don khong') ||
+      cleanNormalizedQ.includes('hay duoc giao lai') ||
+      cleanNormalizedQ.includes('giao lai may lan') ||
+      cleanNormalizedQ.includes('chinh sach huy') ||
+      cleanNormalizedQ.includes('khong nghe may');
+
     const isCancelIntent =
-      isCancelExplicitConfirm ||
-      cleanNormalizedQ.includes('huy don') ||
-      cleanNormalizedQ.includes('huy van don') ||
-      cleanNormalizedQ.includes('khong gui nua') ||
-      cleanNormalizedQ.includes('cancel don') ||
-      cleanNormalizedQ.includes('huy kien hang') ||
-      (cleanNormalizedQ.includes('huy') && (cleanNormalizedQ.includes('don hang') || cleanNormalizedQ.includes('don nay') || cleanNormalizedQ.includes('don')));
+      !isCancelInquiry &&
+      (isCancelExplicitConfirm ||
+        cleanNormalizedQ.includes('huy don') ||
+        cleanNormalizedQ.includes('huy van don') ||
+        cleanNormalizedQ.includes('khong gui nua') ||
+        cleanNormalizedQ.includes('cancel don') ||
+        cleanNormalizedQ.includes('huy kien hang') ||
+        cleanNormalizedQ.includes('huy giup') ||
+        cleanNormalizedQ === 'huy' ||
+        cleanNormalizedQ.startsWith('huy ') ||
+        cleanNormalizedQ.endsWith(' huy') ||
+        (cleanNormalizedQ.includes('huy') && (cleanNormalizedQ.includes('don hang') || cleanNormalizedQ.includes('don nay') || cleanNormalizedQ.includes('don'))));
 
     const isKeepOrderIntent =
       !isCancelIntent &&
@@ -228,7 +250,7 @@ export class ChatService {
         ];
       }
     } else if (isKeepOrderIntent) {
-      const codeToKeep = trackingCode || session.selectedCode || (session.lastShipments && session.lastShipments[0]?.code);
+      const codeToKeep = trackingCode || dto.selectedShipmentCode || session.selectedCode || (session.lastShipments && session.lastShipments[0]?.code);
       toolAugmentedContext += `\n[XÁC NHẬN GIỮ LẠI ĐƠN HÀNG]:\n` +
         `- Mã vận đơn: ${codeToKeep || 'Đơn hàng của Quý khách'}\n` +
         `- Trạng thái: Đã ghi nhận giữ lại đơn hàng theo quyết định của Quý khách. Đơn hàng tiếp tục được vận chuyển/lấy hàng bình thường theo quy trình.\n` +
@@ -239,7 +261,7 @@ export class ChatService {
       ];
     } else if (isCancelIntent) {
       // 1. Phân giải ngữ cảnh đa lượt: Xác định mã vận đơn khách đang đề cập
-      let targetCode: string | undefined = trackingCode;
+      let targetCode: string | undefined = trackingCode || dto.selectedShipmentCode || session.selectedCode;
 
       if (!targetCode && session.lastShipments && session.lastShipments.length > 0) {
         // Kiểm tra xem khách có nhắc đến mã nào trong danh sách session không
@@ -932,7 +954,12 @@ export class ChatService {
     }
 
     // Kiểm tra ý định tính cước / hỏi giá cước / bưu gửi có trọng lượng, kích thước, hoặc tuyến đường
-    const explicitPricingWords = /\b(?:cuoc|gia|phi|bao nhieu tien|bang gia|du toan|uoc tinh|tinh phi|tinh cuoc|bao gia)\b/i.test(normalizedQ);
+    const isOutOfDomain = /\b(?:chung khoan|vn-index|vnindex|gia vang|co phieu|bitcoin|crypto|thoi tiet|bong da|chinh tri)\b/i.test(normalizedQ);
+
+    const explicitPricingWords =
+      !isOutOfDomain &&
+      (/\b(?:cuoc|phi van chuyen|phi ship|cuoc phi|phi gui|bang gia|du toan|uoc tinh|tinh phi|tinh cuoc|bao gia|gia cuoc)\b/i.test(normalizedQ) ||
+      (/\b(?:gia|phi|bao nhieu tien)\b/i.test(normalizedQ) && /\b(?:gui|ship|van chuyen|buu|kien|don|kg|g|km|tuyen|tu|den|lay|giao)\b/i.test(normalizedQ)));
 
     const hasWeightOrDimensions =
       /(\d+(\.\d+)?)\s*(kg|kí|kilogram|g|gram)/i.test(question) ||
@@ -946,9 +973,9 @@ export class ChatService {
     const hasPackageSpecs = /\b(?:kien|goi|thung|buu kien|kien hang)\b/i.test(normalizedQ);
 
     // Khi đã có mã vận đơn (trackingMatch), TUYỆT ĐỐI KHÔNG tính cước trừ khi khách hỏi giá cụ thể
-    const isPricingQuery = !trackingMatch
+    const isPricingQuery = !isOutOfDomain && (!trackingMatch
       ? (explicitPricingWords || (hasWeightOrDimensions && (hasRoute || hasPackageSpecs)))
-      : explicitPricingWords;
+      : explicitPricingWords);
 
     if (isPricingQuery && !isReturnFeeQuery) {
       // 1. Trích xuất cân nặng nếu có (ví dụ 10kg, 500g)
@@ -1051,8 +1078,8 @@ export class ChatService {
     let matches: any[] = [];
     let citations: Citation[] = [];
 
-    // Chỉ thực hiện truy xuất RAG nghiệp vụ khi không phải lời chào hỏi xã giao hoặc tra cứu danh tính tài khoản
-    if (!isGreetingIntent && !isUserIdentityQuery) {
+    // Chỉ thực hiện truy xuất RAG nghiệp vụ khi không phải lời chào hỏi xã giao, tra cứu danh tính tài khoản, hoặc hủy/giữ đơn
+    if (!isGreetingIntent && !isUserIdentityQuery && !isKeepOrderIntent && !isCancelIntent) {
       const qEmbed = await this.embeddingService.getEmbedding(question);
       matches = this.vectorStore.hybridSearch(qEmbed.embedding, question, 5, 0.15);
 
@@ -1089,7 +1116,7 @@ export class ChatService {
 
     const isPureTracking = toolsUsed.some((t) => t.includes('trackShipment') || t.includes('getUserShipments')) &&
       !/(khiếu nại|bồi thường|bể|vỡ|hỏng|bảo hiểm|lưu kho|cước hoàn|chuyển hoàn|đồng kiểm|phí)/i.test(question);
-    const finalCitations = (isPureTracking || isGreetingIntent || isUserIdentityQuery) ? [] : citations;
+    const finalCitations = (isPureTracking || isGreetingIntent || isUserIdentityQuery || isKeepOrderIntent || isCancelIntent) ? [] : citations;
 
     const latencyMs = Date.now() - startTime;
     return {
@@ -1845,6 +1872,33 @@ HÃY ĐƯA RA CÂU TRẢ LỜI ĐẦY ĐỦ VÀ CHÍNH XÁC:`;
           (uid ? `• 📱 **Số điện thoại / Mã tài khoản:** ${uid}\n` : '') +
           `• 🛡️ **Trạng thái:** Tài khoản hợp lệ, sẵn sàng tạo đơn và tra cứu.\n\n` +
           `Em có thể hỗ trợ anh/chị kiểm tra các đơn hàng của mình hay tạo đơn gửi hàng mới không ạ?`;
+      }
+
+      if (realtimeSection.includes('[THẨM ĐỊNH NGHIỆP VỤ HỦY ĐƠN & YÊU CẦU XÁC NHẬN HUMAN-IN-THE-LOOP]')) {
+        const codeMatch = realtimeSection.match(/Mã vận đơn: (.*?)\n/);
+        const code = codeMatch ? codeMatch[1].trim() : '';
+        const itemMatch = realtimeSection.match(/Hàng hóa: (.*?)\n/);
+        const item = itemMatch ? itemMatch[1].trim() : 'bưu kiện';
+        return `Dạ em chào anh/chị ạ!\n\n` +
+          `Em kiểm tra trên hệ thống thì đơn hàng có mã vận đơn **${code}** (${item}) của mình hiện đang ở trạng thái **Đã phân công bưu tá lấy hàng** (bưu tá chưa qua lấy hàng).\n\n` +
+          `Đơn hàng này **hoàn toàn đủ điều kiện hủy miễn phí 100% (0 VNĐ)** ạ. Tuy nhiên, theo quy chuẩn an toàn vận hành, hệ thống yêu cầu chính tay anh/chị bấm xác nhận để bên em chính thức phát lệnh dừng lấy hàng cho bưu tá.\n\n` +
+          `Anh/chị vui lòng bấm vào nút **[❌ Xác nhận hủy đơn ${code}]** bên dưới để em tiến hành hủy đơn ngay cho mình nhé ạ!`;
+      }
+
+      if (realtimeSection.includes('[KẾT QUẢ HỦY ĐƠN HÀNG THÀNH CÔNG THEO XÁC NHẬN TỪ KHÁCH HÀNG]')) {
+        const codeMatch = realtimeSection.match(/Mã vận đơn: (.*?)\n/);
+        const code = codeMatch ? codeMatch[1].trim() : '';
+        return `Dạ em chào anh/chị ạ!\n\n` +
+          `Đơn hàng **${code}** của anh/chị đã được **hủy thành công** trên hệ thống rồi nhé ạ. Đơn hàng được hủy hoàn toàn **miễn phí 100% (0 VNĐ)** và hệ thống đã phát lệnh dừng lấy hàng khẩn cấp tới bưu tá phụ trách tuyến.\n\n` +
+          `Anh/chị yên tâm nhé! Nếu cần em hỗ trợ tạo đơn hàng mới hay cần tư vấn thêm điều gì, cứ nhắn em ngay ạ!`;
+      }
+
+      if (realtimeSection.includes('[CẢNH BÁO TỪ CHỐI HỦY ĐƠN THEO QUY CHUẨN VẬN HÀNH BƯU CHÍNH')) {
+        const codeMatch = realtimeSection.match(/Mã vận đơn: (.*?)\n/);
+        const code = codeMatch ? codeMatch[1].trim() : '';
+        return `Dạ em chào anh/chị ạ!\n\n` +
+          `Về đơn hàng **${code}**, hiện kiện hàng đang trong quá trình vận chuyển trên xe tải đường trục hoặc bưu tá đang đi phát chặng cuối. Theo quy chuẩn an toàn vận hành vật lý của mạng lưới bưu chính, hệ thống **không thể hủy ngay lập tức** khi xe đang chạy trên đường cao tốc/quốc lộ được ạ.\n\n` +
+          `Dạ anh/chị yên tâm, khi bưu tá liên hệ phát hàng, người nhận có thể **từ chối nhận hàng** (đơn sẽ tự động chuyển hoàn về người gửi theo quy định), hoặc anh/chị có thể liên hệ ngay hotline **1900-1234** để được điều phối viên hỗ trợ gắn cờ chuyển hoàn khi xe cập Hub phát nhé ạ!`;
       }
 
       if (realtimeSection.includes('[KẾT QUẢ TẠO ĐƠN HÀNG THÀNH CÔNG VỚI VAI TRÒ GIAO DỊCH VIÊN OPS BƯU CỤC]')) {

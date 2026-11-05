@@ -242,6 +242,14 @@ export const FloatingAiChatWidget: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
 
   const getStorageKey = (uid: string | null) => `nexus_guest_ai_chat_${uid || 'anonymous'}`;
+  const getConvKey = (uid: string | null) => `nexus_guest_ai_conv_${uid || 'anonymous'}`;
+
+  const [conversationId, setConversationId] = useState<string | null>(() => {
+    try {
+      return sessionStorage.getItem(getConvKey(currentUserId));
+    } catch {}
+    return null;
+  });
 
   const getWelcomeMessage = (uid: string | null, name: string | null): ChatMessage => ({
     id: 'welcome_' + (uid || 'guest'),
@@ -273,6 +281,14 @@ export const FloatingAiChatWidget: React.FC = () => {
     } catch {
       setMessages([getWelcomeMessage(currentUserId, userDisplayName)]);
     }
+
+    try {
+      const convKey = getConvKey(currentUserId);
+      const savedConv = sessionStorage.getItem(convKey);
+      setConversationId(savedConv || null);
+    } catch {
+      setConversationId(null);
+    }
   }, [currentUserId]);
 
   useEffect(() => {
@@ -286,9 +302,23 @@ export const FloatingAiChatWidget: React.FC = () => {
   const handleClearChat = () => {
     const fresh = [getWelcomeMessage(currentUserId, userDisplayName)];
     setMessages(fresh);
+    setConversationId(null);
     try {
       sessionStorage.removeItem(getStorageKey(currentUserId));
+      sessionStorage.removeItem(getConvKey(currentUserId));
     } catch {}
+  };
+
+  const getLastTrackedShipmentCode = (): string | undefined => {
+    for (let i = messages.length - 1; i >= 0; i--) {
+      const msg = messages[i];
+      if (msg.shipmentCards && msg.shipmentCards.length > 0) {
+        return msg.shipmentCards[0].code;
+      }
+      const match = msg.text.match(/\b(101\d{9}|111\d{9}|333\d{9}|222\d{9}|\d{10,15}|NX[-_]?[A-Z0-9]{4,16})\b/);
+      if (match) return match[0];
+    }
+    return undefined;
   };
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -323,7 +353,10 @@ export const FloatingAiChatWidget: React.FC = () => {
     setIsLoading(true);
 
     try {
+      const lastShipmentCode = getLastTrackedShipmentCode();
       const requestPayload = {
+        conversationId: conversationId || undefined,
+        selectedShipmentCode: lastShipmentCode,
         message: query,
         userId: currentUserId || undefined,
         userName: userDisplayName || undefined,
@@ -364,6 +397,13 @@ export const FloatingAiChatWidget: React.FC = () => {
 
       if (!responseData) {
         throw lastErr || new Error('Không thể kết nối đến máy chủ hỗ trợ');
+      }
+
+      if (responseData.conversationId) {
+        setConversationId(responseData.conversationId);
+        try {
+          sessionStorage.setItem(getConvKey(currentUserId), responseData.conversationId);
+        } catch {}
       }
 
       const botMsg: ChatMessage = {

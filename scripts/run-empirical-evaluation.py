@@ -121,6 +121,11 @@ def check_keyword_matched(keyword: str, text: str) -> bool:
         "3.500": ["3500", "3.5k", "3.500đ", "3.500 vnđ", "3 ngàn rưỡi"],
         "42.000": ["42000", "42k", "42.000đ", "42.000 vnđ"],
         "15.000.000": ["15 triệu", "15tr", "15.000.000đ", "15.000.000 vnđ"],
+        "15 triệu": ["15.000.000", "15tr", "15.000.000đ", "15.000.000 vnđ", "15 triệu"],
+        "Thứ 2-4-6": ["thứ 2 - thứ 4 - thứ 6", "thứ 2 - 4 - 6", "thứ 2, 4, 6", "thứ 2, thứ 4, thứ 6", "2-4-6", "thứ hai"],
+        "nộp két": ["nộp về két", "nộp két", "nộp vào két", "két bưu cục", "két tiền"],
+        "phân luồng": ["phân luồng", "lộ trình", "luồng", "tuyến", "điều phối"],
+        "không hỗ trợ": ["không hỗ trợ", "rất tiếc", "nằm ngoài", "ngoài phạm vi", "chỉ chuyên phụ trách", "không có dữ liệu"],
         "70 kg": ["70kg", "bảy mươi kg"],
         "150 cm": ["150cm", "1.5m", "1m5"],
         "300 cm": ["300cm", "3m"],
@@ -187,7 +192,8 @@ def evaluate_test_case(tc: Dict[str, Any], response: Dict[str, Any]) -> Dict[str
     risk_signals = [
         "hủy đơn", "phí hoàn 50%", "xác nhận", "rủi ro", "đăng nhập", 
         "quyền", "hạn mức", "15.000.000", "70 kg", "vượt trần", "chất cấm", 
-        "từ chối", "không thể", "bảo mật", "pii", "giám định", "qa"
+        "từ chối", "không thể", "bảo mật", "pii", "giám định", "qa",
+        "ngoài phạm vi", "nằm ngoài", "chỉ chuyên", "rất tiếc", "không có dữ liệu"
     ]
     detected_risk = any(sig in answer.lower() for sig in risk_signals)
 
