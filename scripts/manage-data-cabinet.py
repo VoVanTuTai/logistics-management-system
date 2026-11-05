@@ -160,9 +160,9 @@ LOGISTICS_RULES = [
     }
 ]
 
-EXCLUDE_KEYWORDS = ["giá vàng", "bất động sản", "chứng khoán", "ung thư", "tai nạn chết người", "tử vong", "bệnh nhân"]
+EXCLUDE_KEYWORDS = ["giá vàng", "bất động sản", "chứng khoán", "ung thư", "tai nạn chết người", "tử vong", "bệnh nhân", "tin tức sáng", "điểm tin", "thất nghiệp"]
 
-def cmd_crawl_feed(limit: int = 5, source: str = "all", dry_run: bool = False):
+def cmd_crawl_feed(limit: int = 5, source: str = "all", dry_run: bool = False, verbose: bool = False):
     print("=" * 85)
     print("🌐  NEXUS LOGISTICS CRAWLER — TỰ ĐỘNG THU THẬP TIN TỨC THỜI SỰ & CẬP NHẬT NGĂN 6")
     print("=" * 85)
@@ -202,23 +202,38 @@ def cmd_crawl_feed(limit: int = 5, source: str = "all", dry_run: bool = False):
         existing_fingerprints.add(it.get("query", ""))
 
     print(f"📦 Hiện trạng Ngăn 6: {len(existing_items)} ca kiểm thử đã lưu.")
-    print(f"📡 Đang kết nối tới {len(feeds_to_crawl)} nguồn cấp RSS...")
+    print(f"📡 Đang kết nối mạng thật tới {len(feeds_to_crawl)} máy chủ tin tức...")
 
     crawled_candidates = []
 
     for fkey, fmeta in feeds_to_crawl.items():
         fname = fmeta["name"]
         furl = fmeta["url"]
-        print(f"\n🔎 Đang quét nguồn: {fname} ({furl})...")
+        print(f"\n🌍 [HTTP GET] Kết nối tới máy chủ tin tức: {fname}")
+        print(f"   ↳ URL: {furl}")
         try:
-            req = urllib.request.Request(furl, headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) NexusBot/1.0"})
-            with urllib.request.urlopen(req, timeout=8) as resp:
+            req = urllib.request.Request(furl, headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) NexusCrawler/2.0"})
+            t0 = time.time()
+            with urllib.request.urlopen(req, timeout=10) as resp:
+                latency_ms = (time.time() - t0) * 1000
                 xml_data = resp.read()
+                status = getattr(resp, "status", 200)
+                server = resp.headers.get("server", "CDN/Edge")
+                content_type = resp.headers.get("content-type", "xml")
+                remote_date = resp.headers.get("date", "N/A")
+                payload_kb = len(xml_data) / 1024.0
+
+                print(f"   ✅ [PHẢN HỒI HTTP {status} OK] Nhận gói tin từ server: {server}")
+                print(f"   ↳ Độ trễ mạng (Latency): {latency_ms:.1f} ms | Dung lượng: {payload_kb:.1f} KB")
+                print(f"   ↳ Timestamp máy chủ: {remote_date} | MIME: {content_type}")
+
                 root = ET.fromstring(xml_data)
                 items = root.findall(".//item")
-                print(f"   ↳ Nhận được {len(items)} bản tin từ RSS.")
+                print(f"   ↳ Đã phân tích cú pháp (XML Parsed): {len(items)} bản tin thời sự mới nhất.")
 
+                scanned_count = 0
                 for it in items:
+                    scanned_count += 1
                     title = (it.find("title").text or "").strip()
                     desc = clean_html(it.find("description").text or "")
                     link = (it.find("link").text or "").strip()
@@ -248,6 +263,8 @@ def cmd_crawl_feed(limit: int = 5, source: str = "all", dry_run: bool = False):
                     # Kiểm tra trùng lặp
                     clean_title = re.sub(r'["\']', '', title)
                     if any(clean_title[:30] in fp for fp in existing_fingerprints):
+                        if verbose:
+                            print(f"      ⏭️ [BỎ QUA - ĐÃ TỒN TẠI] {title[:50]}...")
                         continue
 
                     h = hashlib.md5(title.encode("utf-8")).hexdigest()[:6].upper()
@@ -256,6 +273,11 @@ def cmd_crawl_feed(limit: int = 5, source: str = "all", dry_run: bool = False):
                     # Tránh trùng lặp trong đợt quét hiện tại
                     if any(c["id"] == case_id for c in crawled_candidates):
                         continue
+
+                    if verbose:
+                        print(f"      🎯 [KHỚP TỪ KHÓA: '{matched_kw}'] {title}")
+                        print(f"         Link bài báo: {link}")
+                        print(f"         Thời gian: {pub_date}")
 
                     new_case = {
                         "id": case_id,
@@ -269,7 +291,8 @@ def cmd_crawl_feed(limit: int = 5, source: str = "all", dry_run: bool = False):
                         "expected_risk_blocked": False,
                         "expected_citations": matched_rule["expected_citations"],
                         "_source_link": link,
-                        "_matched_keyword": matched_kw
+                        "_matched_keyword": matched_kw,
+                        "_pub_date": pub_date
                     }
                     crawled_candidates.append(new_case)
                     existing_fingerprints.add(clean_title[:30])
@@ -282,26 +305,29 @@ def cmd_crawl_feed(limit: int = 5, source: str = "all", dry_run: bool = False):
         if len(crawled_candidates) >= limit:
             break
 
-    print("\n" + "-" * 85)
-    print(f"🎯 KẾT QUẢ QUÉT: Tìm thấy {len(crawled_candidates)} bản tin thời sự logistics phù hợp mới:")
-    print("-" * 85)
+    print("\n" + "=" * 85)
+    print(f"🎯 KẾT QUẢ QUÉT THỰC TẾ: ĐÃ BẮT ĐƯỢC {len(crawled_candidates)} BẢN TIN THỜI SỰ MỚI TỪ INTERNET")
+    print("=" * 85)
 
     if not crawled_candidates:
-        print("ℹ️ Không có bản tin mới nào chưa được lưu (dữ liệu đã mới nhất).")
+        print("ℹ️ Toàn bộ các bản tin trên web hiện tại đã được đồng bộ vào kho từ trước (Không có tin mới).")
         return
 
     for idx, c in enumerate(crawled_candidates, 1):
-        print(f"[{idx}] {c['id']} | Keyword: '{c['_matched_keyword']}'")
-        print(f"    Tiêu đề: {c['provenance']}")
-        print(f"    Câu hỏi sinh tự động: \"{c['query']}\"")
+        print(f"[{idx}] Mã ca sinh: {c['id']} | Từ khóa logistics: '{c['_matched_keyword']}'")
+        print(f"    📰 Tiêu đề: {c['provenance']}")
+        print(f"    🔗 Link bài báo thật: {c['_source_link']}")
+        print(f"    🕒 Ngày xuất bản: {c['_pub_date']}")
+        print(f"    ❓ Câu hỏi nghiệp vụ AI sinh ra:")
+        print(f"       \"{c['query']}\"")
+        print(f"    🔑 Từ khóa đối soát (Ground Truth): {c['ground_truth_keywords']}")
         print()
 
     if dry_run:
-        print("⚡ Chế độ --dry-run: Không lưu vào file disk.")
+        print("⚡ [DRY-RUN] Chế độ xem trước: Dữ liệu chưa ghi đè vào file disk.")
         return
 
     # Lưu vào compartment-06
-    # Loại bỏ trường nội bộ tạm _source_link, _matched_keyword trước khi lưu
     cleaned_items = []
     for c in crawled_candidates:
         item_copy = {k: v for k, v in c.items() if not k.startswith("_")}
@@ -314,8 +340,11 @@ def cmd_crawl_feed(limit: int = 5, source: str = "all", dry_run: bool = False):
     with open(comp6_path, "w", encoding="utf-8") as fp:
         json.dump(comp6_data, fp, ensure_ascii=False, indent=2)
 
-    print(f"✅ Đã ghi thành công {len(cleaned_items)} ca mới vào Ngăn 6: {comp6_path}")
-    print(f"📊 Tổng số ca hiện có trong Ngăn 6: {len(comp6_data['items'])} ca.")
+    print("-" * 85)
+    print(f"💾 ĐÃ GHI FILE THỰC TẾ LÊN ĐĨA: {comp6_path}")
+    print(f"   ↳ Kích thước file hiện tại: {os.path.getsize(comp6_path):,} bytes")
+    print(f"   ↳ Tổng số ca hiện có trong Ngăn 6: {len(comp6_data['items'])} ca.")
+    print("=" * 85)
 
 def cmd_sample(per_compartment: int = 2, seed: int = None):
     cabinet = load_cabinet()
@@ -352,6 +381,7 @@ def main():
     crawl_parser.add_argument("--limit", type=int, default=5, help="Số bản tin tối đa cần cào và thêm vào ngăn (mặc định: 5)")
     crawl_parser.add_argument("--source", type=str, default="all", help="Nguồn tin: 'all', 'vnexpress_thoisu', 'vnexpress_kinhdoanh', 'tuoitre_thoisu' hoặc URL RSS tùy chỉnh")
     crawl_parser.add_argument("--dry-run", action="store_true", help="Chạy thử xem trước kết quả lọc tin mà không ghi đè file disk")
+    crawl_parser.add_argument("-v", "--verbose", action="store_true", help="Hiển thị chi tiết toàn bộ vết mạng HTTP, thời gian thực, link bài báo thật")
 
     # Action: sample
     sample_parser = subparsers.add_parser("sample", help="Thử nghiệm bốc mẫu phân tầng từ các ngăn tủ")
@@ -365,7 +395,7 @@ def main():
     elif args.action == "sync-live-db":
         cmd_sync_live_db()
     elif args.action == "crawl-feed":
-        cmd_crawl_feed(limit=args.limit, source=args.source, dry_run=args.dry_run)
+        cmd_crawl_feed(limit=args.limit, source=args.source, dry_run=args.dry_run, verbose=args.verbose)
     elif args.action == "sample":
         cmd_sample(per_compartment=args.k, seed=args.seed)
 
