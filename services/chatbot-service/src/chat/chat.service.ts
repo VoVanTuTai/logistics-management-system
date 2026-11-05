@@ -427,11 +427,11 @@ export class ChatService {
 
               toolAugmentedContext += `\n[THẨM ĐỊNH NGHIỆP VỤ HỦY ĐƠN & YÊU CẦU XÁC NHẬN HUMAN-IN-THE-LOOP]:\n` +
                 `- Mã vận đơn: ${targetCode}\n` +
-                `- Hàng hóa: ${trackRes.itemName || 'Kiện hàng'}\n` +
+                `- Tên hàng hóa: ${trackRes.itemName || 'Kiện hàng'}\n` +
                 `- Trạng thái hiện tại: ${trackRes.statusText} (${trackRes.status})\n` +
                 `- ĐIỀU KIỆN VẬN HÀNH CARRIER SOP: ĐỦ ĐIỀU KIỆN HỦY MIỄN PHÍ 100% (0 VNĐ). Lý do: Bưu tá chưa qua lấy hàng hoặc kiện chưa nhập kho phân loại Hub.\n` +
-                `- NGUYÊN TẮC AN TOÀN VẬN HÀNH (HUMAN-IN-THE-LOOP BẮT BUỘC): Dù AI đã kiểm tra đơn hàng đủ điều kiện hủy, AI TUYỆT ĐỐI KHÔNG ĐƯỢC TỰ TIỆN HỦY ĐƠN NGAY mà BẮT BUỘC CHÍNH TAY KHÁCH HÀNG PHẢI XÁC NHẬN QUYẾT ĐỊNH.\n` +
-                `- HƯỚNG DẪN AI: Dạ báo rõ cho anh/chị biết đơn hàng ${targetCode} hoàn toàn ĐỦ ĐIỀU KIỆN HỦY MIỄN PHÍ (0 VNĐ). Giải thích nguyên tắc an toàn vận hành: mời anh/chị chính tay bấm nút [❌ Xác nhận hủy đơn ${targetCode}] bên dưới hoặc gõ 'Xác nhận hủy đơn ${targetCode}' để bên em chính thức phát lệnh dừng lấy hàng cho bưu tá nhé ạ.\n`;
+                `- NGUYÊN TẮC AN TOÀN VẬN HÀNH (HUMAN-IN-THE-LOOP BẮT BUỘC): Dù AI đã kiểm tra đơn hàng đủ điều kiện hủy, AI TUYỆT ĐỐI KHÔNG ĐƯỢC TỰ TIỆN HỦY ĐƠN NGAY mà BẮT BUỘC PHẢI HỎI XÁC NHẬN CHÍNH TAY KHÁCH HÀNG.\n` +
+                `- HƯỚNG DẪN AI: Hỏi tự nhiên, niềm nở: "Dạ có phải anh/chị đang muốn hủy đơn hàng ${targetCode} (${trackRes.itemName || 'kiện hàng'}) vừa tra cứu đúng không ạ?". Báo rõ cho anh/chị yên tâm là đơn này hoàn toàn ĐỦ ĐIỀU KIỆN HỦY MIỄN PHÍ (0 VNĐ) vì bưu tá chưa qua lấy hàng. Mời anh/chị bấm nút [❌ Xác nhận hủy đơn ${targetCode}] bên dưới hoặc gõ 'Xác nhận hủy đơn ${targetCode}' để bên em chính thức phát lệnh dừng lấy hàng cho bưu tá nhé ạ.\n`;
             }
           } else if (isBlocked) {
             // Kiện hàng đang trên xe tải đường trục hoặc đang đi phát -> Physical Block!
@@ -1877,11 +1877,11 @@ HÃY ĐƯA RA CÂU TRẢ LỜI ĐẦY ĐỦ VÀ CHÍNH XÁC:`;
       if (realtimeSection.includes('[THẨM ĐỊNH NGHIỆP VỤ HỦY ĐƠN & YÊU CẦU XÁC NHẬN HUMAN-IN-THE-LOOP]')) {
         const codeMatch = realtimeSection.match(/Mã vận đơn: (.*?)\n/);
         const code = codeMatch ? codeMatch[1].trim() : '';
-        const itemMatch = realtimeSection.match(/Hàng hóa: (.*?)\n/);
+        const itemMatch = realtimeSection.match(/Tên hàng hóa: (.*?)\n/);
         const item = itemMatch ? itemMatch[1].trim() : 'bưu kiện';
         return `Dạ em chào anh/chị ạ!\n\n` +
-          `Em kiểm tra trên hệ thống thì đơn hàng có mã vận đơn **${code}** (${item}) của mình hiện đang ở trạng thái **Đã phân công bưu tá lấy hàng** (bưu tá chưa qua lấy hàng).\n\n` +
-          `Đơn hàng này **hoàn toàn đủ điều kiện hủy miễn phí 100% (0 VNĐ)** ạ. Tuy nhiên, theo quy chuẩn an toàn vận hành, hệ thống yêu cầu chính tay anh/chị bấm xác nhận để bên em chính thức phát lệnh dừng lấy hàng cho bưu tá.\n\n` +
+          `Có phải anh/chị đang muốn hủy đơn hàng **${code}** (${item}) vừa tra cứu đúng không ạ?\n\n` +
+          `Đơn hàng này hiện bưu tá chưa qua lấy hàng nên **hoàn toàn đủ điều kiện hủy miễn phí 100% (0 VNĐ)** ạ. Tuy nhiên, theo quy chuẩn an toàn vận hành, hệ thống yêu cầu chính tay anh/chị bấm xác nhận để bên em chính thức phát lệnh dừng lấy hàng cho bưu tá.\n\n` +
           `Anh/chị vui lòng bấm vào nút **[❌ Xác nhận hủy đơn ${code}]** bên dưới để em tiến hành hủy đơn ngay cho mình nhé ạ!`;
       }
 
