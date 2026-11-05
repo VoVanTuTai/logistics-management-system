@@ -58,7 +58,7 @@ def fetch_live_db_cases(limit: int = 10) -> List[Dict[str, Any]]:
                 })
             return cases
     except Exception as e:
-        print(f"⚠️ Không thể kết nối shipment-service (:3002): {e}. Tự động fallback về bộ benchmark JSON.")
+        print(f"[WARN] Khong the ket noi shipment-service (:3002): {e}. Tu dong fallback ve bo benchmark JSON.")
         return []
 
 def query_hmas(payload: Dict[str, Any], timeout: int = 20) -> Dict[str, Any]:
@@ -240,11 +240,11 @@ def main():
     if args.cabinet:
         cabinet_dir = os.path.join(EVAL_DIR, "data-cabinet")
         if not os.path.exists(cabinet_dir):
-            print(f"❌ Không tìm thấy thư mục tủ dữ liệu: {cabinet_dir}")
+            print(f"[ERROR] Khong tim thay thu muc tu du lieu: {cabinet_dir}")
             sys.exit(1)
 
         comp_files = sorted([os.path.join(cabinet_dir, f) for f in os.listdir(cabinet_dir) if f.endswith(".json")])
-        print("🗄️  NGUỒN DỮ LIỆU: Kho Tủ Dữ liệu Đa tầng (Nexus Data Cabinet Lakehouse)")
+        print("NGUON DU LIEU: Kho Tu Du lieu Da tang (Nexus Data Cabinet Lakehouse)")
         
         if args.seed is not None:
             random.seed(args.seed)
@@ -264,14 +264,14 @@ def main():
                         it["compartment_name"] = comp_data.get("compartment_name", "")
                     test_cases.extend(picked)
                     comp_title = comp_data.get('compartment_name', '').split('(')[0].strip()
-                    print(f"  • [{cid}] {comp_title}: Bốc {len(picked)}/{len(items)} ca ngẫu nhiên")
+                    print(f"  * [{cid}] {comp_title}: Boc {len(picked)}/{len(items)} ca ngau nhien")
             except Exception as e:
-                print(f"⚠️ Lỗi đọc ngăn {cf}: {e}")
+                print(f"[WARN] Loi doc ngan {cf}: {e}")
     elif args.source == "live-db":
-        print("🌐 NGUỒN DỮ LIỆU: Trích xuất trực tiếp từ Cơ sở dữ liệu PostgreSQL thực tế (shipment-service :3002)")
+        print("NGUON DU LIEU: Trich xuat truc tiep tu Co so du lieu PostgreSQL thuc te (shipment-service :3002)")
         test_cases = fetch_live_db_cases(limit=args.limit if args.limit > 0 else 10)
         if not test_cases:
-            print("⚠️ Không lấy được dữ liệu từ DB sống, chuyển sang đọc tệp JSON mặc định.")
+            print("[WARN] Khong lay duoc du lieu tu DB song, chuyen sang doc tep JSON mac dinh.")
             with open(DATASET_FILE, "r", encoding="utf-8") as f:
                 test_cases = json.load(f)
     else:
@@ -283,10 +283,10 @@ def main():
             elif os.path.exists(os.path.join(EVAL_DIR, args.dataset)):
                 dataset_path = os.path.join(EVAL_DIR, args.dataset)
             else:
-                print(f"❌ Không tìm thấy tệp dataset: {args.dataset}")
+                print(f"[ERROR] Khong tim thay tep dataset: {args.dataset}")
                 sys.exit(1)
 
-        print(f"📁 NGUỒN DỮ LIỆU: Đọc từ tệp [{dataset_path}]")
+        print(f"NGUON DU LIEU: Doc tu tep [{dataset_path}]")
         with open(dataset_path, "r", encoding="utf-8") as f:
             test_cases = json.load(f)
 
@@ -294,7 +294,7 @@ def main():
     if args.case:
         test_cases = [tc for tc in test_cases if tc.get("id", "").lower() == args.case.lower()]
         if not test_cases:
-            print(f"❌ Không tìm thấy ca kiểm thử có ID '{args.case}'")
+            print(f"[ERROR] Khong tim thay ca kiem thu co ID '{args.case}'")
             sys.exit(1)
     if args.category:
         test_cases = [tc for tc in test_cases if tc.get("category", "") == args.category]
@@ -303,14 +303,14 @@ def main():
         if args.seed is not None:
             random.seed(args.seed)
         test_cases = random.sample(test_cases, args.sample)
-        print(f"🎲 Đã lấy ngẫu nhiên {len(test_cases)} ca kiểm thử (Seed: {args.seed})")
+        print(f"[INFO] Da lay ngau nhien {len(test_cases)} ca kiem thu (Seed: {args.seed})")
     elif not args.cabinet and args.limit > 0:
         test_cases = test_cases[:args.limit]
 
     print("=" * 75)
-    print("🔬 BẮT ĐẦU CHẠY THỰC NGHIỆM ĐÁNH GIÁ KHOA HỌC: HMAS LOGISTICS BENCHMARK")
-    print(f"📡 Endpoint API: {API_URL}")
-    print(f"📊 Tổng số ca kiểm thử thực thi: {len(test_cases)}")
+    print("BAT DAU CHAY THUC NGHIEM DANH GIA KHOA HOC: HMAS LOGISTICS BENCHMARK")
+    print(f"Endpoint API: {API_URL}")
+    print(f"Tong so ca kiem thu thuc thi: {len(test_cases)}")
     print("=" * 75)
 
     results = []
@@ -340,10 +340,10 @@ def main():
         category_stats[cat]["total_score"] += eval_result["score"]
         category_stats[cat]["total_latency"] += eval_result["latency_ms"]
 
-        print(f"✅ {eval_result['status']} ({eval_result['score']} pts, {eval_result['latency_ms']}ms)")
+        print(f"[OK] {eval_result['status']} ({eval_result['score']} pts, {eval_result['latency_ms']}ms)")
 
     # =========================================================================
-    # THỐNG KÊ & XUẤT BÁO CÁO KHOA HỌC
+    # THONG KE VA XUAT BAO CAO KHOA HOC
     # =========================================================================
     total_cases = len(results)
     passed_cases = len([r for r in results if r["status"] == "PASS"])
@@ -372,23 +372,23 @@ def main():
     asr = 100.0 - rdr
 
     print("\n" + "=" * 78)
-    print("📈 TỔNG KẾT KẾT QUẢ THỰC NGHIỆM ĐÁNH GIÁ (EMPIRICAL RESULTS SUMMARY)")
+    print("TONG KET KET QUA THUC NGHIEM DANH GIA (EMPIRICAL RESULTS SUMMARY)")
     print("=" * 78)
-    print(f"• Tỷ lệ đạt tổng thể (Overall Pass Rate): {passed_cases}/{total_cases} ({passed_cases/total_cases*100:.1f}%)")
-    print(f"• Điểm chất lượng trung bình (Mean Score): {avg_score:.2f} / 100")
-    print(f"• Điểm Thang đo Likert 5 bậc (Likert Mean): {likert_mean:.2f} / 5.00")
-    print(f"• Độ trễ phản hồi trung bình (Mean Latency): {avg_latency:.1f} ms")
-    print(f"• Tỷ lệ phát hiện rủi ro (Risk Detection Rate - RDR): {rdr:.1f}%")
-    print(f"• Tỷ lệ tấn công lọt lưới (Attack Success Rate - ASR): {asr:.1f}%")
+    print(f"* Ty le dat tong the (Overall Pass Rate): {passed_cases}/{total_cases} ({passed_cases/total_cases*100:.1f}%)")
+    print(f"* Diem chat luong trung binh (Mean Score): {avg_score:.2f} / 100")
+    print(f"* Diem Thang do Likert 5 bac (Likert Mean): {likert_mean:.2f} / 5.00")
+    print(f"* Do tre phan hoi trung binh (Mean Latency): {avg_latency:.1f} ms")
+    print(f"* Ty le phat hien rui ro (Risk Detection Rate - RDR): {rdr:.1f}%")
+    print(f"* Ty le tan cong lot luoi (Attack Success Rate - ASR): {asr:.1f}%")
     print("-" * 78)
-    print("PHÂN BỔ THEO 5 CẤP BẬC HỌC THUẬT (5-TIER ACADEMIC RUBRIC):")
-    print(f"  Level 5 [Xuất sắc - EXCELLENT] (90-100đ):   {tier_counts[5]:>3d} ca ({tier_stats['LEVEL_5_EXCELLENT']['pct']:>5.1f}%)")
-    print(f"  Level 4 [Tốt - GOOD] (75-89đ):              {tier_counts[4]:>3d} ca ({tier_stats['LEVEL_4_GOOD']['pct']:>5.1f}%)")
-    print(f"  Level 3 [Đạt yêu cầu - ACCEPTABLE] (60-74đ):{tier_counts[3]:>3d} ca ({tier_stats['LEVEL_3_ACCEPTABLE']['pct']:>5.1f}%)")
-    print(f"  Level 2 [Dưới chuẩn - MARGINAL] (40-59đ):   {tier_counts[2]:>3d} ca ({tier_stats['LEVEL_2_MARGINAL']['pct']:>5.1f}%)")
-    print(f"  Level 1 [Không đạt - CRITICAL_FAIL] (<40đ): {tier_counts[1]:>3d} ca ({tier_stats['LEVEL_1_CRITICAL_FAIL']['pct']:>5.1f}%)")
+    print("PHAN BO THEO 5 CAP BAC HOC THUAT (5-TIER ACADEMIC RUBRIC):")
+    print(f"  Level 5 [Xuat sac - EXCELLENT] (90-100d):   {tier_counts[5]:>3d} ca ({tier_stats['LEVEL_5_EXCELLENT']['pct']:>5.1f}%)")
+    print(f"  Level 4 [Tot - GOOD] (75-89d):              {tier_counts[4]:>3d} ca ({tier_stats['LEVEL_4_GOOD']['pct']:>5.1f}%)")
+    print(f"  Level 3 [Dat yeu cau - ACCEPTABLE] (60-74d):{tier_counts[3]:>3d} ca ({tier_stats['LEVEL_3_ACCEPTABLE']['pct']:>5.1f}%)")
+    print(f"  Level 2 [Duoi chuan - MARGINAL] (40-59d):   {tier_counts[2]:>3d} ca ({tier_stats['LEVEL_2_MARGINAL']['pct']:>5.1f}%)")
+    print(f"  Level 1 [Khong dat - CRITICAL_FAIL] (<40d): {tier_counts[1]:>3d} ca ({tier_stats['LEVEL_1_CRITICAL_FAIL']['pct']:>5.1f}%)")
     print("-" * 78)
-    print(f"{'Nhóm kiểm thử':<25} | {'Số ca':<6} | {'Đạt (Pass)':<10} | {'Điểm TB':<8} | {'Độ trễ TB'}")
+    print(f"{'Nhom kiem thu':<25} | {'So ca':<6} | {'Dat (Pass)':<10} | {'Diem TB':<8} | {'Do tre TB'}")
     print("-" * 78)
     for cat, stat in category_stats.items():
         c_pass = stat["pass"]
@@ -404,7 +404,7 @@ def main():
         f.write("id,category,role,is_adversarial,latency_ms,citations_count,keyword_recall,risk_handled,score,tier_level,tier_name,status\n")
         for r in results:
             f.write(f"{r['id']},{r['category']},{r['role']},{r['is_adversarial']},{r['latency_ms']},{r['citations_count']},{r['keyword_recall']},{r['risk_handled_correctly']},{r['score']},{r['tier_level']},{r['tier_name']},{r['status']}\n")
-    print(f"💾 Đã lưu dữ liệu thô: {csv_path}")
+    print(f"[SUCCESS] Da luu du lieu tho: {csv_path}")
 
     # 2. Lưu file JSON tóm tắt
     summary_path = os.path.join(EVAL_DIR, "results_summary.json")
@@ -424,7 +424,7 @@ def main():
     }
     with open(summary_path, "w", encoding="utf-8") as f:
         json.dump(summary_data, f, ensure_ascii=False, indent=2)
-    print(f"💾 Đã lưu kết quả tóm tắt: {summary_path}")
+    print(f"[SUCCESS] Da luu ket qua tom tat: {summary_path}")
 
     # 3. Tạo file Markdown báo cáo khoa học (Sẵn sàng copy vào Chương 4 Luận văn)
     report_path = os.path.join(EVAL_DIR, "02-thuc-nghiem-va-ket-qua.md")
@@ -501,7 +501,7 @@ Level 1: Không đạt (CRITICAL\\_FAIL) & 0 -- 39.9 & {tier_counts[1]} & {tier_
 ```
 """)
 
-    print(f"📄 Đã sinh Báo cáo Luận văn Chương 4: {report_path}")
+    print(f"[SUCCESS] Da sinh Bao cao Luan van Chuong 4: {report_path}")
     print("=" * 75)
 
 if __name__ == "__main__":
