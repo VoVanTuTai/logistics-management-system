@@ -143,15 +143,32 @@ export class ShipmentController {
   }
 
   @Patch(':code')
-  update(
+  async update(
     @Param('code') code: string,
     @Body() body: UpdateShipmentInput,
     @Req() request: ScopedRequest,
   ): Promise<Shipment> {
+    const opsScope = getOpsShipmentScopeContext(request);
+    const ownerContext = getAuthenticatedOwnerContext(request, {});
+    const userRoles = getHeaderList(request, 'x-user-roles');
+
+    // Chặn lỗ hổng BOLA (Broken Object Level Authorization):
+    // Chỉ người tạo đơn hoặc Ops được phân quyền mới có thể cập nhật thông tin vận đơn.
+    if (userRoles.includes('CUSTOMER') || (userRoles.includes('MERCHANT') && !opsScope)) {
+      const shipment = await this.shipmentsService.getByCode(code, opsScope);
+      const isOwner =
+        ownerContext.createdByUserId &&
+        shipment.createdByUserId === ownerContext.createdByUserId;
+
+      if (!isOwner) {
+        throw new NotFoundException(`Shipment "${code}" was not found.`);
+      }
+    }
+
     return this.shipmentsService.update(
       code,
       body,
-      getOpsShipmentScopeContext(request),
+      opsScope,
     );
   }
 
@@ -169,15 +186,48 @@ export class ShipmentController {
   }
 
   @Post(':code/cancel')
-  cancel(
+  async cancel(
     @Param('code') code: string,
     @Body() body: CancelShipmentInput,
     @Req() request: ScopedRequest,
   ): Promise<Shipment> {
+    const opsScope = getOpsShipmentScopeContext(request);
+    const ownerContext = getAuthenticatedOwnerContext(request, {});
+    const userRoles = getHeaderList(request, 'x-user-roles');
+    const userPhone = getSingleHeader(request, 'x-user-phone');
+
+    // Chặn lỗ hổng BOLA / IDOR (OWASP API1:2023):
+    // Chỉ người tạo đơn (Sender / Creator) hoặc Merchant chủ shop mới có quyền hủy vận đơn.
+    if (userRoles.includes('CUSTOMER')) {
+      const shipment = await this.shipmentsService.getByCode(code, opsScope);
+      const metadata = asRecord(shipment.metadata);
+      const sender = asRecord(metadata?.sender);
+      const senderPhone =
+        typeof sender?.phone === 'string' ? sender.phone.trim() : null;
+
+      const isSender =
+        (ownerContext.createdByUserId &&
+          shipment.createdByUserId === ownerContext.createdByUserId) ||
+        (userPhone && senderPhone && senderPhone === userPhone);
+
+      if (!isSender) {
+        throw new NotFoundException(`Shipment "${code}" was not found.`);
+      }
+    } else if (userRoles.includes('MERCHANT') && !opsScope) {
+      const shipment = await this.shipmentsService.getByCode(code, opsScope);
+      const isOwner =
+        ownerContext.createdByUserId &&
+        shipment.createdByUserId === ownerContext.createdByUserId;
+
+      if (!isOwner) {
+        throw new NotFoundException(`Shipment "${code}" was not found.`);
+      }
+    }
+
     return this.shipmentsService.cancel(
       code,
       body,
-      getOpsShipmentScopeContext(request),
+      opsScope,
     );
   }
 }

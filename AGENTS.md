@@ -142,3 +142,23 @@ Màn hình Giám định đơn lạc (`/app/function-groups/service-quality/stra
 5. **Quy chuẩn Bắt buộc Xem Toàn cảnh trước khi Thao tác (Mandatory Full-Context Review before Action)**:
    - Không đặt cột/nút thao tác phán quyết trực tiếp ngoài bảng danh sách nhằm triệt tiêu rủi ro bấm nhầm hoặc kết luận vội vàng khi chưa đối soát log.
    - Nhân viên vận hành/QA bắt buộc phải nhấp chuột vào dòng đơn để mở Drawer trượt xem toàn cảnh: đối chiếu báo cáo sơ bộ, xem độ tin cậy AI, rà soát chuỗi vết quét Domino, và kiểm tra video camera CCTV bàn dỡ rồi mới được thực hiện các nút thao tác (Cứu đơn, Phán quyết bồi thường, Nộp phản biện, Gia hạn).
+
+### 5. Quy chuẩn Thiết kế Sơ đồ Kiến trúc & Đồ họa AI (Modern Technical Architecture Infographic Standard):
+Tất cả các sơ đồ kiến trúc hệ thống, quy trình nghiệp vụ và luồng AI Agent từ nay về sau bắt buộc tuân theo phong cách **Modern Technical Architecture Infographic (SaaS Card-Based System Architecture)**:
+1. **Bảng màu Ngữ nghĩa Pastel (Pastel Color-Coding)**:
+   - Header & Supervisor / Não bộ điều phối: Xanh dương đậm sang trọng (`#1D4ED8`, `#2563EB`, `#1E3A8A`).
+   - Knowledge / Tra cứu tri thức / RAG: Xanh biển nhạt / Cyan pastel (`#E0F2FE`, viền `#38BDF8`).
+   - Logistics Operations / Tool Calling / API: Xanh lá mint pastel (`#ECFDF5`, viền `#34D399`).
+   - Validation / Thẩm định rủi ro / Gatekeeper: Tím nhạt / Hồng phấn pastel (`#FEF2F2`, `#FDF2F8`, viền `#F87171` hoặc `#C084FC`).
+   - Human-in-the-Loop (HITL) / Xác nhận phê duyệt: Vàng cam / Hổ phách pastel (`#FEF3C7`, viền `#F59E0B`).
+   - Backend & Cơ sở dữ liệu: Slate / Khung nền trung tính (`#F8FAFC`, `#FFFFFF`, viền `#E2E8F0`).
+2. **Cấu trúc Thẻ Card & Khung phân tầng (Card-Based Layout & Rounded Containers)**:
+   - Thẻ chức năng bo góc mềm mại (`rx = 12px` đến `16px`), viền thanh mảnh (`1px` - `1.5px`), đổ bóng nhẹ (`drop-shadow`).
+   - Vùng bao bọc hệ thống dùng đường viền nét đứt (`stroke-dasharray="6,4"` hoặc `"8,4"`), màu viền tím xám nhạt (`#CBD5E1` hoặc `#A5B4FC`).
+3. **Đánh số Tuần tự Trực quan (Numbered Flow Badges - Storytelling)**:
+   - Các điểm nút và đường truyền dữ liệu chính bắt buộc gắn badge tròn đánh số xanh đậm viền trắng: **① $\rightarrow$ ② $\rightarrow$ ③ $\rightarrow$ ④ $\rightarrow$ ⑤ $\rightarrow$ ⑥** để người xem dễ dàng đọc hiểu theo mạch câu chuyện.
+   - Góc dưới cùng bên phải có hộp tóm tắt luồng hoạt động (Step Summary Card).
+4. **Tích hợp Logo Nhận diện Công nghệ (Brand Tech Logos & Icons)**:
+   - Đưa logo vector thực tế của các công nghệ liên quan: LangChain, LangGraph, Gemini, OpenAI, Qwen, Cohere, Nvidia, NestJS, Docker, PostgreSQL, Redis,... giúp sơ đồ trực quan, sinh động.
+5. **Thanh Footer Tổng kết Hạ tầng (Tech Stack Summary Bar)**:
+   - Đáy sơ đồ luôn có thanh bar ngang với pill header bo tròn tóm tắt nhanh hạ tầng công nghệ lõi.
