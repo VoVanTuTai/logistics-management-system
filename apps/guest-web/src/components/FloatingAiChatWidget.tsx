@@ -326,6 +326,7 @@ export const FloatingAiChatWidget: React.FC = () => {
       const requestPayload = {
         message: query,
         userId: currentUserId || undefined,
+        userName: userDisplayName || undefined,
         senderRole: currentUserId ? 'CUSTOMER' : 'GUEST',
       };
 

@@ -77,7 +77,8 @@ export class ChatService {
     let shipmentCards: ShipmentCardDto[] | undefined;
     let actionChips: ActionChipDto[] | undefined;
 
-    const isGuest = !dto.userId || dto.senderRole === 'GUEST';
+    const isGuest = (!dto.userId && !dto.userName) || dto.senderRole === 'GUEST';
+    const userDisplayName = dto.userName || dto.userId || 'Quý khách';
 
     // 1. Phân tích ý định & gọi Tool nếu cần (Function Calling / Intent Routing)
     let toolAugmentedContext = '';
@@ -90,6 +91,20 @@ export class ChatService {
       question.match(/\b(NX[-_]?[A-Z0-9]{4,16}|SPX[A-Z0-9]+|VN\d+[A-Z0-9]*|DH\d+)\b/i) ||
       question.match(/\b(101\d{9}|111\d{9}|333\d{9}|222\d{9}|\d{10,15})\b/);
     const trackingCode = trackingMatch ? (trackingMatch[1] ? trackingMatch[1].toUpperCase() : trackingMatch[0]) : undefined;
+
+    // Kiểm tra ý định hỏi về Tên người dùng, Danh tính, Hồ sơ tài khoản (User Identity / Profile Query)
+    const isUserIdentityQuery =
+      normalizedQ.includes('ten toi la gi') ||
+      normalizedQ.includes('toi ten la gi') ||
+      normalizedQ.includes('ten cua toi la gi') ||
+      normalizedQ.includes('ten nguoi dung') ||
+      normalizedQ.includes('toi ten gi') ||
+      normalizedQ.includes('ten toi la') ||
+      normalizedQ.includes('toi la ai') ||
+      normalizedQ.includes('tai khoan cua toi') ||
+      normalizedQ.includes('thong tin tai khoan') ||
+      normalizedQ.includes('thong tin cua toi') ||
+      normalizedQ.includes('ho ten toi');
 
     // Kiểm tra ý định hủy đơn hàng & xác nhận hủy đơn (Human-in-the-Loop & Carrier SOP)
     const isCancelExplicitConfirm =
@@ -112,7 +127,33 @@ export class ChatService {
         normalizedQ.includes('dung huy') ||
         normalizedQ.includes('van muon gui'));
 
-    if (isKeepOrderIntent) {
+    if (isUserIdentityQuery) {
+      if (isGuest) {
+        toolAugmentedContext += `\n[THÔNG TIN NGƯỜI DÙNG CHƯA ĐĂNG NHẬP]:\n` +
+          `- Trạng thái: Người dùng đang truy cập với tư cách Khách vãng lai (GUEST / Chưa đăng nhập).\n` +
+          `- CHỈ DẪN AI: Giải thích thân thiện rằng vì lý do bảo mật dữ liệu cá nhân theo Luật Bưu chính, hệ thống chưa ghi nhận tên và thông tin tài khoản của bạn trong phiên này. Mời khách hàng bấm nút [Đăng nhập] ở góc trên màn hình để hệ thống tự động nhận diện danh tính và đồng bộ các đơn hàng của bạn.\n`;
+        actionChips = [
+          { label: '🔑 Đăng nhập tài khoản', query: 'Tôi muốn đăng nhập tài khoản' },
+          { label: '📦 Tra cứu theo mã vận đơn', query: 'Tra cứu hành trình đơn hàng' },
+          { label: '💰 Báo giá cước gửi hàng', query: 'Dự toán cước vận chuyển 2kg từ TP.HCM đi Hà Nội' },
+        ];
+      } else {
+        toolsUsed.push('getUserProfile()');
+        toolAugmentedContext += `\n[THÔNG TIN HỒ SƠ TÀI KHOẢN NGƯỜI DÙNG HIỆN TẠI (ĐÃ ĐĂNG NHẬP)]:\n` +
+          `- Trạng thái xác thực: ĐÃ ĐĂNG NHẬP THÀNH CÔNG (Authenticated Session).\n` +
+          `- Tên người dùng / Tên hiển thị: ${userDisplayName}\n` +
+          (dto.userId ? `- Mã tài khoản / Số điện thoại (User ID): ${dto.userId}\n` : '') +
+          `- Vai trò tài khoản: ${dto.senderRole || 'CUSTOMER'}\n` +
+          `- CHỈ DẪN AI: Khách hàng ĐÃ ĐĂNG NHẬP HỢP LỆ. Hãy trả lời trực diện, niềm nở và chính xác rằng tên của bạn trên hệ thống là "${userDisplayName}"` +
+          (dto.userId && dto.userId !== userDisplayName ? ` (gắn với số điện thoại/mã tài khoản: ${dto.userId})` : '') +
+          `. Nhắc nhở người dùng rằng tài khoản đã sẵn sàng để tra cứu đơn hàng hoặc tạo đơn bưu kiện mới.\n`;
+        actionChips = [
+          { label: '📦 Xem các đơn hàng của tôi', query: 'Tôi có những đơn hàng nào' },
+          { label: '➕ Tạo đơn hàng mới', query: 'Tôi muốn gửi hàng mới' },
+          { label: '💰 Dự toán cước phí', query: 'Dự toán cước vận chuyển' },
+        ];
+      }
+    } else if (isKeepOrderIntent) {
       const codeToKeep = trackingCode || session.selectedCode || (session.lastShipments && session.lastShipments[0]?.code);
       toolAugmentedContext += `\n[XÁC NHẬN GIỮ LẠI ĐƠN HÀNG]:\n` +
         `- Mã vận đơn: ${codeToKeep || 'Đơn hàng của Quý khách'}\n` +
@@ -940,6 +981,11 @@ export class ChatService {
 
     // 3. Ghép nối Ngữ cảnh Grounded Context
     let contextText = '';
+    const userSessionInfo = !isGuest
+      ? `=== THÔNG TIN TÀI KHOẢN KHÁCH HÀNG (ĐÃ ĐĂNG NHẬP) ===\n- Tên người dùng / Tên hiển thị: ${userDisplayName}\n- Mã tài khoản / SĐT (User ID): ${dto.userId || 'N/A'}\n- Vai trò: ${dto.senderRole || 'CUSTOMER'}\n\n`
+      : `=== THÔNG TIN KHÁCH HÀNG ===\n- Khách vãng lai (Chưa đăng nhập)\n\n`;
+    contextText += userSessionInfo;
+
     if (toolAugmentedContext) {
       contextText += `=== DỮ LIỆU THỜI GIAN THỰC TỪ HỆ THỐNG LOGISTICS ===\n${toolAugmentedContext}\n`;
     }
