@@ -247,8 +247,8 @@ export const FloatingAiChatWidget: React.FC = () => {
     id: 'welcome_' + (uid || 'guest'),
     sender: 'bot',
     text: uid
-      ? `Chào ${name || 'bạn'}, mình có thể hỗ trợ gì cho bưu gửi của bạn hôm nay? Bạn gửi mã vận đơn để mình kiểm tra hành trình ngay, hoặc chọn các chủ đề bên dưới nhé.`
-      : 'Chào bạn, mình là trợ lý hỗ trợ trực tuyến của Nexus Logistics. Bạn đang cần kiểm tra đơn hàng hay giải đáp cước phí, bồi thường thì cứ gửi tin nhắn cho mình nhé.',
+      ? `Dạ em chào anh/chị ${name || ''} ạ! Em là Trợ lý AI Bưu cục Nexus Logistics. Em có thể hỗ trợ anh/chị kiểm tra hành trình bưu gửi, dự toán cước phí hoặc tạo đơn hàng mới. Anh/chị gửi mã vận đơn hoặc chọn các chủ đề gợi ý bên dưới nhé ạ!`
+      : 'Dạ em chào anh/chị ạ! Em là Trợ lý AI Bưu cục Nexus Logistics. Em có thể hỗ trợ anh/chị tra cứu hành trình bưu gửi, dự toán cước phí hoặc hướng dẫn gửi hàng. Anh/chị cần em hỗ trợ gì cứ gửi tin nhắn cho em nhé ạ!',
     time: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
   });
 

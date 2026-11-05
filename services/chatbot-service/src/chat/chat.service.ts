@@ -92,40 +92,91 @@ export class ChatService {
       question.match(/\b(101\d{9}|111\d{9}|333\d{9}|222\d{9}|\d{10,15})\b/);
     const trackingCode = trackingMatch ? (trackingMatch[1] ? trackingMatch[1].toUpperCase() : trackingMatch[0]) : undefined;
 
+    const cleanNormalizedQ = normalizedQ.replace(/[.,?!:;~]+$/g, '').trim();
+
     // Kiểm tra ý định hỏi về Tên người dùng, Danh tính, Hồ sơ tài khoản (User Identity / Profile Query)
     const isUserIdentityQuery =
-      normalizedQ.includes('ten toi la gi') ||
-      normalizedQ.includes('toi ten la gi') ||
-      normalizedQ.includes('ten cua toi la gi') ||
-      normalizedQ.includes('ten nguoi dung') ||
-      normalizedQ.includes('toi ten gi') ||
-      normalizedQ.includes('ten toi la') ||
-      normalizedQ.includes('toi la ai') ||
-      normalizedQ.includes('tai khoan cua toi') ||
-      normalizedQ.includes('thong tin tai khoan') ||
-      normalizedQ.includes('thong tin cua toi') ||
-      normalizedQ.includes('ho ten toi');
+      cleanNormalizedQ.includes('ten toi la gi') ||
+      cleanNormalizedQ.includes('toi ten la gi') ||
+      cleanNormalizedQ.includes('ten cua toi la gi') ||
+      cleanNormalizedQ.includes('ten nguoi dung') ||
+      cleanNormalizedQ.includes('toi ten gi') ||
+      cleanNormalizedQ.includes('ten toi la') ||
+      cleanNormalizedQ.includes('toi la ai') ||
+      cleanNormalizedQ.includes('tai khoan cua toi') ||
+      cleanNormalizedQ.includes('thong tin tai khoan') ||
+      cleanNormalizedQ.includes('thong tin cua toi') ||
+      cleanNormalizedQ.includes('ho ten toi');
 
     // Kiểm tra ý định hủy đơn hàng & xác nhận hủy đơn (Human-in-the-Loop & Carrier SOP)
     const isCancelExplicitConfirm =
-      (normalizedQ.includes('xac nhan') || normalizedQ.includes('dong y') || normalizedQ.includes('chot huy')) &&
-      (normalizedQ.includes('huy don') || normalizedQ.includes('huy van don') || normalizedQ.includes('huy'));
+      (cleanNormalizedQ.includes('xac nhan') || cleanNormalizedQ.includes('dong y') || cleanNormalizedQ.includes('chot huy')) &&
+      (cleanNormalizedQ.includes('huy don') || cleanNormalizedQ.includes('huy van don') || cleanNormalizedQ.includes('huy'));
 
     const isCancelIntent =
       isCancelExplicitConfirm ||
-      normalizedQ.includes('huy don') ||
-      normalizedQ.includes('huy van don') ||
-      normalizedQ.includes('khong gui nua') ||
-      normalizedQ.includes('cancel don') ||
-      normalizedQ.includes('huy kien hang') ||
-      (normalizedQ.includes('huy') && (normalizedQ.includes('don hang') || normalizedQ.includes('don nay') || normalizedQ.includes('don')));
+      cleanNormalizedQ.includes('huy don') ||
+      cleanNormalizedQ.includes('huy van don') ||
+      cleanNormalizedQ.includes('khong gui nua') ||
+      cleanNormalizedQ.includes('cancel don') ||
+      cleanNormalizedQ.includes('huy kien hang') ||
+      (cleanNormalizedQ.includes('huy') && (cleanNormalizedQ.includes('don hang') || cleanNormalizedQ.includes('don nay') || cleanNormalizedQ.includes('don')));
 
     const isKeepOrderIntent =
       !isCancelIntent &&
-      (normalizedQ.includes('giu lai don') ||
-        normalizedQ.includes('khong huy') ||
-        normalizedQ.includes('dung huy') ||
-        normalizedQ.includes('van muon gui'));
+      (cleanNormalizedQ.includes('giu lai don') ||
+        cleanNormalizedQ.includes('khong huy') ||
+        cleanNormalizedQ.includes('dung huy') ||
+        cleanNormalizedQ.includes('van muon gui'));
+
+    // Kiểm tra ý định chào hỏi xã giao thông thường (Social Greeting Intent)
+    const greetingWords = [
+      'chao', 'xin chao', 'hello', 'hi', 'alo', 'hey', 'yo',
+      'chao ban', 'chao em', 'chao shop', 'chao ad', 'chao admin', 'chao bot', 'chao nexus',
+      'chao ban nhe', 'chao em nhe', 'chao shop nhe',
+      'ad oi', 'admin oi', 'shop oi', 'em oi', 'bot oi', 'nexus oi',
+      'co ai khong', 'co ai o day khong', 'co ai truc khong',
+    ];
+
+    const hasGreetingWord = greetingWords.some((w) =>
+      cleanNormalizedQ === w ||
+      cleanNormalizedQ.startsWith(w + ' ') ||
+      cleanNormalizedQ.endsWith(' ' + w)
+    );
+
+    const hasLogisticsKeyword =
+      !!trackingCode ||
+      cleanNormalizedQ.includes('cuoc') ||
+      cleanNormalizedQ.includes('phi') ||
+      cleanNormalizedQ.includes('gia') ||
+      cleanNormalizedQ.includes('bao nhieu') ||
+      cleanNormalizedQ.includes('den') ||
+      cleanNormalizedQ.includes('boi thuong') ||
+      cleanNormalizedQ.includes('mat hang') ||
+      cleanNormalizedQ.includes('that lac') ||
+      cleanNormalizedQ.includes('be vo') ||
+      cleanNormalizedQ.includes('hu hong') ||
+      cleanNormalizedQ.includes('dong goi') ||
+      cleanNormalizedQ.includes('tra cuu') ||
+      cleanNormalizedQ.includes('kiem tra') ||
+      cleanNormalizedQ.includes('don hang') ||
+      cleanNormalizedQ.includes('gui hang') ||
+      cleanNormalizedQ.includes('huy') ||
+      cleanNormalizedQ.includes('tien') ||
+      cleanNormalizedQ.includes('lay hang') ||
+      cleanNormalizedQ.includes('giao hang') ||
+      cleanNormalizedQ.includes('van chuyen') ||
+      cleanNormalizedQ.includes('chuyen phat') ||
+      cleanNormalizedQ.includes('shipper') ||
+      cleanNormalizedQ.includes('buu ta') ||
+      cleanNormalizedQ.includes('buu cuc');
+
+    const isGreetingIntent =
+      hasGreetingWord &&
+      !hasLogisticsKeyword &&
+      !isUserIdentityQuery &&
+      !isCancelIntent &&
+      !isKeepOrderIntent;
 
     if (isUserIdentityQuery) {
       if (isGuest) {
@@ -150,6 +201,29 @@ export class ChatService {
         actionChips = [
           { label: '📦 Xem các đơn hàng của tôi', query: 'Tôi có những đơn hàng nào' },
           { label: '➕ Tạo đơn hàng mới', query: 'Tôi muốn gửi hàng mới' },
+          { label: '💰 Dự toán cước phí', query: 'Dự toán cước vận chuyển' },
+        ];
+      }
+    } else if (isGreetingIntent) {
+      if (isGuest) {
+        toolAugmentedContext += `\n[Ý ĐỊNH CHÀO HỎI XÃ GIAO - KHÁCH VÃNG LAI (CHƯA ĐĂNG NHẬP)]:\n` +
+          `- Trạng thái: Người dùng đang gửi lời chào hỏi thông thường ("${question}").\n` +
+          `- CHỈ DẪN AI (BẮT BUỘC): Chào anh/chị niềm nở, ấm áp và lễ phép (xưng "em", gọi "anh/chị"). Giới thiệu ngắn gọn em là Trợ lý AI Bưu cục Nexus Logistics, luôn sẵn sàng hỗ trợ tra cứu hành trình bưu kiện, tính cước vận chuyển, hoặc hướng dẫn tạo đơn gửi hàng mới. Mời anh/chị gửi mã vận đơn hoặc bấm chọn các tác vụ bên dưới.\n` +
+          `- TUYỆT ĐỐI KHÔNG tự tiện đưa ra chính sách bồi thường khiếu nại hay thông tin bưu kiện khi khách chỉ mới chào hỏi xã giao.\n`;
+        actionChips = [
+          { label: '📦 Tra cứu vận đơn', query: 'Tra cứu hành trình đơn hàng' },
+          { label: '💰 Dự toán cước phí', query: 'Dự toán cước vận chuyển 2kg từ TP.HCM đi Hà Nội' },
+          { label: '🚚 Hướng dẫn gửi hàng', query: 'Tôi muốn gửi hàng cho người thân' },
+          { label: '🔑 Đăng nhập tài khoản', query: 'Tôi muốn đăng nhập tài khoản' },
+        ];
+      } else {
+        toolAugmentedContext += `\n[Ý ĐỊNH CHÀO HỎI XÃ GIAO - KHÁCH HÀNG ĐÃ ĐĂNG NHẬP]:\n` +
+          `- Trạng thái: Người dùng ${userDisplayName} đang gửi lời chào hỏi ("${question}").\n` +
+          `- CHỈ DẪN AI (BẮT BUỘC): Chào anh/chị ${userDisplayName} niềm nở, ấm áp và lễ phép (xưng "em", gọi "anh/chị ${userDisplayName}"). Báo anh/chị biết em đã sẵn sàng hỗ trợ quản lý các đơn hàng của mình, tra cứu tiến độ vận chuyển hoặc tạo đơn gửi hàng mới.\n` +
+          `- TUYỆT ĐỐI KHÔNG tự tiện đưa ra chính sách bồi thường khiếu nại hay quy chuẩn kỹ thuật khi khách chỉ mới chào hỏi xã giao.\n`;
+        actionChips = [
+          { label: '📦 Đơn hàng của tôi', query: 'Tôi có những đơn hàng nào' },
+          { label: '➕ Tạo đơn gửi hàng mới', query: 'Tôi muốn gửi hàng cho người thân' },
           { label: '💰 Dự toán cước phí', query: 'Dự toán cước vận chuyển' },
         ];
       }
@@ -974,15 +1048,21 @@ export class ChatService {
     }
 
     // 2. Truy xuất RAG từ Vector Store với Hybrid Search (Dense Semantic + Keyword Scoring)
-    const qEmbed = await this.embeddingService.getEmbedding(question);
-    const matches = this.vectorStore.hybridSearch(qEmbed.embedding, question, 5, 0.15);
+    let matches: any[] = [];
+    let citations: Citation[] = [];
 
-    const citations: Citation[] = matches.map((m) => ({
-      file: m.chunk.sourceFile,
-      title: m.chunk.sectionTitle,
-      score: Math.round(m.score * 1000) / 10,
-      snippet: m.chunk.content.slice(0, 180).replace(/\n+/g, ' ') + '...',
-    }));
+    // Chỉ thực hiện truy xuất RAG nghiệp vụ khi không phải lời chào hỏi xã giao hoặc tra cứu danh tính tài khoản
+    if (!isGreetingIntent && !isUserIdentityQuery) {
+      const qEmbed = await this.embeddingService.getEmbedding(question);
+      matches = this.vectorStore.hybridSearch(qEmbed.embedding, question, 5, 0.15);
+
+      citations = matches.map((m) => ({
+        file: m.chunk.sourceFile,
+        title: m.chunk.sectionTitle,
+        score: Math.round(m.score * 1000) / 10,
+        snippet: m.chunk.content.slice(0, 180).replace(/\n+/g, ' ') + '...',
+      }));
+    }
 
     // 3. Ghép nối Ngữ cảnh Grounded Context
     let contextText = '';
@@ -1009,7 +1089,7 @@ export class ChatService {
 
     const isPureTracking = toolsUsed.some((t) => t.includes('trackShipment') || t.includes('getUserShipments')) &&
       !/(khiếu nại|bồi thường|bể|vỡ|hỏng|bảo hiểm|lưu kho|cước hoàn|chuyển hoàn|đồng kiểm|phí)/i.test(question);
-    const finalCitations = isPureTracking ? [] : citations;
+    const finalCitations = (isPureTracking || isGreetingIntent || isUserIdentityQuery) ? [] : citations;
 
     const latencyMs = Date.now() - startTime;
     return {
@@ -1100,6 +1180,10 @@ Bạn có kiến thức uyên thâm, thấu đáo và toàn diện về toàn b�
 
 3. QUY CHUẨN NGÔN TỪ, PHONG CÁCH GIAO TIẾP TỰ NHIÊN & VAI TRÒ GIAO DỊCH VIÊN BƯU CỤC (QUAN TRỌNG NHẤT):
 - VAI TRÒ: Bạn là Giao dịch viên tiếp nhận & Chuyên viên Chăm sóc Khách hàng bưu cục Nexus Logistics tận tâm, chu đáo, thân thiện và thấu hiểu nghiệp vụ bưu chính.
+- KHI KHÁCH HÀNG CHỈ CHÀO HỎI THÔNG THƯỜNG (ví dụ: "chào bạn", "xin chào", "hello", "hi", "alo"):
+  + Chào lại anh/chị thật niềm nở, tự nhiên và ấm áp (xưng "em", gọi "anh/chị" hoặc "anh/chị [Tên]").
+  + Giới thiệu ngắn gọn mình là Trợ lý AI Bưu cục Nexus Logistics, luôn sẵn sàng hỗ trợ tra cứu hành trình vận đơn, dự toán cước phí hoặc tạo đơn gửi hàng mới.
+  + TUYỆT ĐỐI KHÔNG tự tiện đưa ra chính sách bồi thường khiếu nại, quy chuẩn bưu gửi, hay bất kỳ nội dung nghiệp vụ nào khác khi khách hàng chưa hề hỏi đến!
 - XƯNG HÔ THÂN THIỆN, LỄ PHÉP THEO CHUẨN MỰC VĂN HÓA DỊCH VỤ VIỆT NAM:
   + Luôn xưng "em" (hoặc "bên em" / "Nexus") và gọi khách hàng là "anh/chị" hoặc "anh/chị [Tên]" nếu trong ngữ cảnh đã có tên khách (ví dụ: "Dạ em chào anh Nam ạ", "Dạ em chào chị Lan ạ"). Nếu chưa rõ tên, xưng "em" và gọi "anh/chị" hoặc "Quý khách".
   + TUYỆT ĐỐI KHÔNG xưng "tôi", TUYỆT ĐỐI KHÔNG gọi khách cộc lốc là "bạn" như văn bản dịch máy ("Chào bạn, tôi sẽ giải thích...", "Tôi khuyến khích bạn...").
@@ -1724,6 +1808,45 @@ HÃY ĐƯA RA CÂU TRẢ LỜI ĐẦY ĐỦ VÀ CHÍNH XÁC:`;
     }
 
     if (realtimeSection) {
+      if (realtimeSection.includes('[Ý ĐỊNH CHÀO HỎI XÃ GIAO - KHÁCH VÃNG LAI')) {
+        return `Dạ em chào anh/chị ạ! Em là Trợ lý AI Bưu cục của Nexus Logistics. Rất vui được đồng hành cùng anh/chị hôm nay!\n\n` +
+          `Em luôn sẵn sàng hỗ trợ anh/chị các nghiệp vụ bưu chính như:\n` +
+          `• 📦 **Tra cứu hành trình vận đơn:** Xem trạng thái vị trí bưu gửi theo thời gian thực.\n` +
+          `• 💰 **Dự toán cước vận chuyển:** Báo giá cước tiêu chuẩn & hỏa tốc trên 63 tỉnh thành.\n` +
+          `• 🚚 **Tạo đơn & Điều phối bưu tá:** Hướng dẫn gửi bưu kiện tận nhà nhanh chóng.\n` +
+          `• 🔑 **Đăng nhập tài khoản:** Đồng bộ danh sách đơn cá nhân và quản trị COD an toàn.\n\n` +
+          `Anh/chị có thể gửi ngay mã vận đơn hoặc bấm chọn nhanh các tác vụ gợi ý bên dưới để em hỗ trợ mình nhé ạ!`;
+      }
+
+      if (realtimeSection.includes('[Ý ĐỊNH CHÀO HỎI XÃ GIAO - KHÁCH HÀNG ĐÃ ĐĂNG NHẬP')) {
+        const nameMatch = realtimeSection.match(/Người dùng (.*?) đang gửi lời chào/);
+        const name = nameMatch ? nameMatch[1].trim() : '';
+        return `Dạ em chào anh/chị${name ? ' ' + name : ''} ạ! Em là Trợ lý AI Bưu cục của Nexus Logistics.\n\n` +
+          `Tài khoản của mình đã sẵn sàng trên hệ thống. Em có thể hỗ trợ gì cho anh/chị hôm nay ạ?\n` +
+          `• 📦 Xem danh sách đơn hàng đang luân chuyển\n` +
+          `• 🚚 Tạo đơn gửi bưu phẩm mới và gọi bưu tá lấy tận nhà\n` +
+          `• 💰 Dự toán cước phí và tra cứu tiến độ đối soát COD\n\n` +
+          `Anh/chị cứ nhắn tin cho em hoặc chọn nhanh các nút thao tác bên dưới nhé ạ!`;
+      }
+
+      if (realtimeSection.includes('[THÔNG TIN NGƯỜI DÙNG CHƯA ĐĂNG NHẬP]')) {
+        return `Dạ em chào anh/chị ạ! Hiện tại anh/chị đang truy cập với tư cách Khách vãng lai (chưa đăng nhập tài khoản).\n\n` +
+          `Vì lý do bảo mật dữ liệu cá nhân theo Luật Bưu chính, em chưa thể hiển thị tên và thông tin tài khoản của mình được ạ. Anh/chị vui lòng bấm nút **[Đăng nhập tài khoản]** ở góc trên màn hình để hệ thống nhận diện và đồng bộ toàn bộ đơn hàng của anh/chị nhé ạ!`;
+      }
+
+      if (realtimeSection.includes('[THÔNG TIN HỒ SƠ TÀI KHOẢN NGƯỜI DÙNG HIỆN TẠI (ĐÃ ĐĂNG NHẬP)]')) {
+        const nameMatch = realtimeSection.match(/Tên người dùng \/ Tên hiển thị: (.*?)\n/);
+        const name = nameMatch ? nameMatch[1].trim() : 'Quý khách';
+        const idMatch = realtimeSection.match(/Mã tài khoản \/ Số điện thoại \(User ID\): (.*?)\n/);
+        const uid = idMatch ? idMatch[1].trim() : '';
+        return `Dạ em chào anh/chị ${name} ạ!\n\n` +
+          `Hệ thống ghi nhận anh/chị đã đăng nhập thành công vào tài khoản Nexus Logistics:\n` +
+          `• 👤 **Họ tên hiển thị:** ${name}\n` +
+          (uid ? `• 📱 **Số điện thoại / Mã tài khoản:** ${uid}\n` : '') +
+          `• 🛡️ **Trạng thái:** Tài khoản hợp lệ, sẵn sàng tạo đơn và tra cứu.\n\n` +
+          `Em có thể hỗ trợ anh/chị kiểm tra các đơn hàng của mình hay tạo đơn gửi hàng mới không ạ?`;
+      }
+
       if (realtimeSection.includes('[KẾT QUẢ TẠO ĐƠN HÀNG THÀNH CÔNG VỚI VAI TRÒ GIAO DỊCH VIÊN OPS BƯU CỤC]')) {
         return `🎉 **XÁC NHẬN TẠO ĐƠN HÀNG THÀNH CÔNG TRÊN HỆ THỐNG NEXUS LOGISTICS!**\n\n` +
           `Dạ em là Giao dịch viên bưu cục Nexus Logistics, em đã hoàn tất tạo đơn và chỉ định bưu cục tiếp nhận thành công cho anh/chị:\n\n` +
@@ -1844,7 +1967,16 @@ HÃY ĐƯA RA CÂU TRẢ LỜI ĐẦY ĐỦ VÀ CHÍNH XÁC:`;
     }
 
     if (!context || citations.length === 0) {
+      const qLower = question.toLowerCase();
+      if (qLower.includes('chao') || qLower.includes('hello') || qLower.includes('hi') || qLower.includes('alo')) {
+        return `Dạ em chào anh/chị ạ! Em là Trợ lý AI Bưu cục của Nexus Logistics. Em có thể hỗ trợ anh/chị tra cứu hành trình bưu gửi, dự toán cước phí hoặc tạo đơn hàng mới. Anh/chị cần em hỗ trợ gì cứ gửi tin nhắn cho em nhé ạ!`;
+      }
       return `Dạ em chào anh/chị ạ! Về câu hỏi "${question}", hiện hệ thống bên em chưa có dữ liệu chi tiết cho trường hợp này. Anh/chị có thể liên hệ tổng đài 1900 1234 để được chuyên viên hỗ trợ giải đáp trực tiếp cho mình ngay nhé ạ!`;
+    }
+
+    const qNorm = normalizeVietnamese(question);
+    if (qNorm.startsWith('chao') || qNorm.startsWith('xin chao') || qNorm.startsWith('hello') || qNorm.startsWith('hi') || qNorm.startsWith('alo')) {
+      return `Dạ em chào anh/chị ạ! Em là Trợ lý AI Bưu cục của Nexus Logistics. Em luôn sẵn sàng hỗ trợ anh/chị tra cứu vận đơn, dự toán cước phí vận chuyển hoặc tạo đơn gửi hàng mới. Anh/chị gửi mã vận đơn để em kiểm tra ngay cho mình nhé ạ!`;
     }
 
     const topCitation = citations[0];
