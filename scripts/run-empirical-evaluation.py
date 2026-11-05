@@ -61,7 +61,7 @@ def fetch_live_db_cases(limit: int = 10) -> List[Dict[str, Any]]:
         print(f"[WARN] Khong the ket noi shipment-service (:3002): {e}. Tu dong fallback ve bo benchmark JSON.")
         return []
 
-def query_hmas(payload: Dict[str, Any], timeout: int = 20) -> Dict[str, Any]:
+def query_hmas(payload: Dict[str, Any], timeout: int = 30) -> Dict[str, Any]:
     """Gửi yêu cầu tới HMAS AI Chatbot Service"""
     data = json.dumps(payload).encode("utf-8")
     req = urllib.request.Request(
@@ -128,7 +128,8 @@ def check_keyword_matched(keyword: str, text: str) -> bool:
         "7 ngày": ["07 ngày", "bảy ngày"],
         "4.0 kg": ["4 kg", "4kg", "4.0kg", "4.0"],
         "1.0 kg": ["1 kg", "1kg", "1.0kg", "1.0"],
-        "16.6": ["16.67", "16.7", "17 kg", "17kg", "16,6", "17"]
+        "16.6": ["16.67", "16.7", "17 kg", "17kg", "16,6", "17"],
+        "TASK_ASSIGNED": ["task assigned", "pickup assigned", "da phan cong buu ta lay hang", "phan cong buu ta"]
     }
     for alias in synonyms.get(keyword, []):
         if clean_str(alias) in norm_text:
