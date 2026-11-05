@@ -531,7 +531,73 @@ Tỷ lệ tấn công lọt lưới (ASR) & {asr:.1f}\\% & $\\le 5.0\\%$ & TRI�
     with open(HTML_OUTPUT_FILE, "w", encoding="utf-8") as f:
         f.write(html_content)
 
+def inspect_case_cli(data: Dict[str, Any], target_id: str):
+    """In chi tiết Đầu vào (Input) và Đầu ra (Output) của 1 ca kiểm thử"""
+    details = data.get("detailed_results", [])
+    matched = [d for d in details if d.get("id", "").upper() == target_id.upper()]
+    if not matched:
+        print(f"❌ Không tìm thấy mã test case: {target_id}")
+        return
+
+    tc = matched[0]
+    C_BLUE = "\033[94m"
+    C_CYAN = "\033[96m"
+    C_GREEN = "\033[92m"
+    C_YELLOW = "\033[93m"
+    C_RED = "\033[91m"
+    C_BOLD = "\033[1m"
+    C_DIM = "\033[2m"
+    C_RESET = "\033[0m"
+
+    print("\n" + "=" * 80)
+    print(f"{C_BOLD}{C_CYAN}CHI TIẾT ĐẦU VÀO VÀ ĐẦU RA KIỂM THỬ: {tc.get('id')} ({tc.get('category')}){C_RESET}")
+    print("=" * 80)
+    print(f"\n{C_BOLD}📥 1. ĐẦU VÀO (INPUT TỪ NGƯỜI DÙNG):{C_RESET}")
+    print(f"   • {C_BOLD}Vai trò người gửi:{C_RESET} {tc.get('role', 'N/A')}")
+    print(f"   • {C_BOLD}Câu hỏi / Yêu cầu:{C_RESET} \n     \"{C_YELLOW}{tc.get('query')}{C_RESET}\"")
+    kws = tc.get("ground_truth_keywords", [])
+    if kws:
+        print(f"   • {C_BOLD}Từ khóa Ground Truth kỳ vọng:{C_RESET} {', '.join(kws)}")
+
+    print(f"\n{C_BOLD}📤 2. ĐẦU RA (OUTPUT TỪ HỆ THỐNG AI CHATBOT):{C_RESET}")
+    ans = tc.get("answer", "")
+    if ans:
+        print(f"   • {C_BOLD}Phản hồi thực tế của Chatbot:{C_RESET}\n")
+        for line in ans.split("\n"):
+            print(f"     {line}")
+    else:
+        print("   • (Chưa có nội dung phản hồi lưu trữ)")
+
+    tools = tc.get("tools_used", [])
+    if tools:
+        print(f"\n   • {C_BOLD}Công cụ đã kích hoạt (Tools Used):{C_RESET} {', '.join(tools)}")
+
+    cits = tc.get("citations", [])
+    if cits:
+        print(f"   • {C_BOLD}Tài liệu RAG dẫn chứng:{C_RESET}")
+        for c in cits:
+            print(f"     - [{c.get('file')}] {c.get('title')} (score: {c.get('score')}%)")
+
+    print(f"\n{C_BOLD}⚖️ 3. KẾT QUẢ ĐÁNH GIÁ (SCIENTIFIC EVALUATION):{C_RESET}")
+    st = tc.get("status", "N/A")
+    st_color = C_GREEN if st == "PASS" else C_RED
+    print(f"   • {C_BOLD}Trạng thái:{C_RESET} {st_color}{st}{C_RESET}")
+    print(f"   • {C_BOLD}Điểm số:{C_RESET} {tc.get('score')} / 100")
+    print(f"   • {C_BOLD}Cấp bậc học thuật:{C_RESET} {C_GREEN}Level {tc.get('tier_level')}: {tc.get('tier_name')}{C_RESET}")
+    print(f"   • {C_BOLD}Định nghĩa:{C_RESET} {tc.get('tier_desc')}")
+    print(f"   • {C_BOLD}Độ trễ xử lý:{C_RESET} {tc.get('latency_ms')} ms")
+    print(f"   • {C_BOLD}Từ khóa đã khớp:{C_RESET} {C_GREEN}{', '.join(tc.get('matched_keywords', [])) or 'Không có'}{C_RESET}")
+    missing = tc.get("missing_keywords", [])
+    if missing:
+        print(f"   • {C_BOLD}Từ khóa còn thiếu:{C_RESET} {C_RED}{', '.join(missing)}{C_RESET}")
+    print("=" * 80 + "\n")
+
 def main():
+    import argparse
+    parser = argparse.ArgumentParser(description="Academic Benchmark Visualizer")
+    parser.add_argument("--inspect", "-i", type=str, default="", help="Xem chi tiết Đầu vào và Đầu ra của 1 ca kiểm thử (ví dụ: TC-REAL-01)")
+    args = parser.parse_args()
+
     if not os.path.exists(SUMMARY_FILE):
         print(f"❌ Chưa có dữ liệu thực nghiệm tại: {SUMMARY_FILE}")
         print("💡 Hãy chạy thực nghiệm trước: python3 scripts/run-empirical-evaluation.py --limit 10")
@@ -539,6 +605,10 @@ def main():
 
     with open(SUMMARY_FILE, "r", encoding="utf-8") as f:
         summary_data = json.load(f)
+
+    if args.inspect:
+        inspect_case_cli(summary_data, args.inspect)
+        return
 
     raw_cases = []
     if os.path.exists(RAW_CSV_FILE):

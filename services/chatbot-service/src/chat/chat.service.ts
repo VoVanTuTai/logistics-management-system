@@ -30,6 +30,7 @@ export class ChatService {
   private validationProvider: string;
   private validationModel: string;
   private openrouterApiKey: string;
+  private readonly sessions = new Map<string, { lastShipments?: any[]; selectedCode?: string; lastUpdated: number }>();
 
   constructor(
     private readonly embeddingService: EmbeddingService,
@@ -81,15 +82,266 @@ export class ChatService {
     // 1. Phân tích ý định & gọi Tool nếu cần (Function Calling / Intent Routing)
     let toolAugmentedContext = '';
 
+    // Lấy session hiện tại của phiên hội thoại (Multi-turn conversational memory)
+    const session = this.sessions.get(conversationId) || { lastUpdated: Date.now() };
+
     // Regex tìm mã đơn hàng: NX-XXXX hoặc mã số vận đơn (10-15 chữ số, ví dụ 101000000001, 333801334740)
     const trackingMatch =
       question.match(/\b(NX[-_]?[A-Z0-9]{4,16}|SPX[A-Z0-9]+|VN\d+[A-Z0-9]*|DH\d+)\b/i) ||
       question.match(/\b(101\d{9}|111\d{9}|333\d{9}|222\d{9}|\d{10,15})\b/);
+    const trackingCode = trackingMatch ? (trackingMatch[1] ? trackingMatch[1].toUpperCase() : trackingMatch[0]) : undefined;
 
-    if (trackingMatch) {
+    // Kiểm tra ý định hủy đơn hàng & xác nhận hủy đơn (Human-in-the-Loop & Carrier SOP)
+    const isCancelExplicitConfirm =
+      (normalizedQ.includes('xac nhan') || normalizedQ.includes('dong y') || normalizedQ.includes('chot huy')) &&
+      (normalizedQ.includes('huy don') || normalizedQ.includes('huy van don') || normalizedQ.includes('huy'));
+
+    const isCancelIntent =
+      isCancelExplicitConfirm ||
+      normalizedQ.includes('huy don') ||
+      normalizedQ.includes('huy van don') ||
+      normalizedQ.includes('khong gui nua') ||
+      normalizedQ.includes('cancel don') ||
+      normalizedQ.includes('huy kien hang') ||
+      (normalizedQ.includes('huy') && (normalizedQ.includes('don hang') || normalizedQ.includes('don nay') || normalizedQ.includes('don')));
+
+    const isKeepOrderIntent =
+      !isCancelIntent &&
+      (normalizedQ.includes('giu lai don') ||
+        normalizedQ.includes('khong huy') ||
+        normalizedQ.includes('dung huy') ||
+        normalizedQ.includes('van muon gui'));
+
+    if (isKeepOrderIntent) {
+      const codeToKeep = trackingCode || session.selectedCode || (session.lastShipments && session.lastShipments[0]?.code);
+      toolAugmentedContext += `\n[XÁC NHẬN GIỮ LẠI ĐƠN HÀNG]:\n` +
+        `- Mã vận đơn: ${codeToKeep || 'Đơn hàng của Quý khách'}\n` +
+        `- Trạng thái: Đã ghi nhận giữ lại đơn hàng theo quyết định của Quý khách. Đơn hàng tiếp tục được vận chuyển/lấy hàng bình thường theo quy trình.\n` +
+        `- HƯỚNG DẪN AI: Thông báo lịch sự với khách rằng hệ thống đã ghi nhận giữ lại đơn hàng, quy trình vận chuyển vẫn tiếp tục bình thường.\n`;
+      actionChips = [
+        { label: '📦 Xem các đơn hàng của tôi', query: 'Tôi có những đơn hàng nào' },
+        codeToKeep ? { label: `🔍 Xem hành trình ${codeToKeep}`, query: `Tra cứu hành trình đơn ${codeToKeep}` } : { label: '➕ Gửi đơn mới', query: 'Tôi muốn gửi hàng mới' },
+      ];
+    } else if (isCancelIntent) {
+      // 1. Phân giải ngữ cảnh đa lượt: Xác định mã vận đơn khách đang đề cập
+      let targetCode: string | undefined = trackingCode;
+
+      if (!targetCode && session.lastShipments && session.lastShipments.length > 0) {
+        // Kiểm tra xem khách có nhắc đến mã nào trong danh sách session không
+        const matchedInSession = session.lastShipments.find((s) => question.toUpperCase().includes(s.code.toUpperCase()));
+        if (matchedInSession) {
+          targetCode = matchedInSession.code;
+        } else if (normalizedQ.includes('dau tien') || normalizedQ.includes('don 1') || normalizedQ.includes('so 1') || normalizedQ.includes('moi nhat') || normalizedQ.includes('vua gui')) {
+          targetCode = session.lastShipments[0].code;
+        } else if (normalizedQ.includes('thu hai') || normalizedQ.includes('don 2') || normalizedQ.includes('so 2')) {
+          targetCode = session.lastShipments[1]?.code;
+        } else if (normalizedQ.includes('thu ba') || normalizedQ.includes('don 3') || normalizedQ.includes('so 3')) {
+          targetCode = session.lastShipments[2]?.code;
+        } else if (session.selectedCode) {
+          targetCode = session.selectedCode;
+        } else if (session.lastShipments.length === 1) {
+          targetCode = session.lastShipments[0].code;
+        }
+      } else if (!targetCode && session.selectedCode) {
+        targetCode = session.selectedCode;
+      }
+
+      // Nếu vẫn chưa có targetCode và người dùng đã đăng nhập, tự động tra cứu danh sách đơn của họ
+      if (!targetCode && !isGuest && dto.userId) {
+        toolsUsed.push(`getUserShipments(User:${dto.userId})`);
+        const userShipments = await this.toolsService.getUserShipments(dto.userId, 5);
+        if (userShipments.found && userShipments.items.length > 0) {
+          this.sessions.set(conversationId, {
+            lastShipments: userShipments.items,
+            selectedCode: userShipments.items.length === 1 ? userShipments.items[0].code : undefined,
+            lastUpdated: Date.now(),
+          });
+          if (userShipments.items.length === 1) {
+            targetCode = userShipments.items[0].code;
+          } else {
+            session.lastShipments = userShipments.items;
+          }
+        }
+      }
+
+      if (!targetCode) {
+        if (session.lastShipments && session.lastShipments.length > 1) {
+          // TRƯỜNG HỢP NHIỀU ĐƠN HÀNG: Phân giải mơ hồ (Context Disambiguation)
+          shipmentCards = session.lastShipments.map((it) => ({
+            code: it.code,
+            status: it.status,
+            statusText: it.statusText,
+            itemName: it.itemName,
+            receiverCity: it.receiverCity || it.receiverAddress,
+            receiverName: it.receiverName,
+            codAmount: it.codAmount,
+            createdAt: it.createdAt,
+          }));
+
+          actionChips = session.lastShipments.map((it) => ({
+            label: `❌ Hủy đơn ${it.code}`,
+            query: `Tôi muốn hủy đơn hàng ${it.code}`,
+          }));
+
+          toolAugmentedContext += `\n[YÊU CẦU LÀM RÕ NGỮ CẢNH ĐƠN HÀNG CẦN HỦY (DISAMBIGUATION)]:\n` +
+            `- Tài khoản của Quý khách hiện có ${session.lastShipments.length} đơn hàng trên hệ thống: ${session.lastShipments.map((s, idx) => `Đơn ${idx + 1}: ${s.code} (${s.itemName || 'Hàng hóa'})`).join(', ')}.\n` +
+            `- Khách hàng yêu cầu hủy đơn nhưng chưa chỉ định rõ mã đơn nào trong danh sách.\n` +
+            `- HƯỚNG DẪN AI: Giải thích lịch sự rằng tài khoản hiện có ${session.lastShipments.length} đơn hàng, liệt kê vắn tắt các đơn và mời khách hàng chỉ định rõ mã vận đơn hoặc bấm vào một trong các nút chọn nhanh bên dưới để tiếp tục kiểm tra điều kiện hủy.\n`;
+        } else if (isGuest) {
+          toolAugmentedContext += `\n[CẢNH BÁO BẢO MẬT & ĐỊNH DANH]: Quý khách chưa cung cấp mã vận đơn cụ thể và chưa đăng nhập tài khoản. Để hỗ trợ hủy đơn an toàn, Quý khách vui lòng cung cấp mã vận đơn (ví dụ 333... hoặc NX-...) hoặc đăng nhập tài khoản.\n`;
+        } else {
+          toolAugmentedContext += `\n[THÔNG BÁO TÀI KHOẢN]: Tài khoản của Quý khách hiện không có đơn hàng nào trên hệ thống để thực hiện thao tác hủy.\n`;
+        }
+      } else {
+        // 2. ĐÃ XÁC ĐỊNH ĐƯỢC TARGET CODE -> Kiểm tra Carrier SOP và Trạng thái Vận hành
+        this.sessions.set(conversationId, {
+          ...session,
+          selectedCode: targetCode,
+          lastUpdated: Date.now(),
+        });
+
+        toolsUsed.push(`trackShipment(${targetCode})`);
+        const trackRes = await this.toolsService.trackShipment(targetCode, false);
+
+        if (!trackRes.found) {
+          toolAugmentedContext += `\n[KẾT QUẢ TRA CỨU]: Không tìm thấy mã vận đơn ${targetCode} trên hệ thống để thực hiện hủy đơn.\n`;
+        } else {
+          const status = trackRes.status;
+          const canCancelDirectly = [
+            'CREATED',
+            'TASK_ASSIGNED',
+            'PICKUP_ASSIGNED',
+            'PICKING_UP',
+            'PENDING',
+            'READY_TO_SHIP',
+          ].includes(status);
+          const isFinished = [
+            'CANCELLED',
+            'DELIVERED',
+            'RETURNED',
+            'RETURN_COMPLETED',
+            'LOST',
+            'DAMAGED',
+          ].includes(status);
+          const isBlocked = !canCancelDirectly && !isFinished;
+
+          if (canCancelDirectly) {
+            if (isCancelExplicitConfirm) {
+              // Khách hàng ĐÃ CHÍNH TAY XÁC NHẬN -> Thực thi lệnh hủy!
+              toolsUsed.push(`cancelShipment(${targetCode})`);
+              const cancelRes = await this.toolsService.cancelShipment(targetCode, 'Khách hàng xác nhận hủy đơn qua Trợ lý AI');
+
+              if (session.lastShipments) {
+                session.lastShipments = session.lastShipments.map((s) =>
+                  s.code === targetCode ? { ...s, status: 'CANCELLED', statusText: 'Đã hủy đơn hàng theo yêu cầu của khách' } : s
+                );
+              }
+              this.sessions.set(conversationId, {
+                ...session,
+                selectedCode: undefined,
+                lastUpdated: Date.now(),
+              });
+
+              shipmentCards = [
+                {
+                  code: targetCode,
+                  status: 'CANCELLED',
+                  statusText: 'Đã hủy đơn hàng thành công',
+                  itemName: trackRes.itemName,
+                  receiverCity: trackRes.receiverCity || trackRes.receiverAddress,
+                  receiverName: trackRes.receiverName,
+                  codAmount: 0,
+                  createdAt: trackRes.createdAt,
+                },
+              ];
+
+              actionChips = [
+                { label: '📦 Xem danh sách đơn hàng', query: 'Tôi có những đơn hàng nào' },
+                { label: '➕ Gửi một đơn hàng mới', query: 'Tôi muốn gửi một đơn hàng cho người thân' },
+              ];
+
+              toolAugmentedContext += `\n[KẾT QUẢ HỦY ĐƠN HÀNG THÀNH CÔNG THEO XÁC NHẬN TỪ KHÁCH HÀNG (HUMAN-CONFIRMED)]:\n` +
+                `- Mã vận đơn: ${targetCode}\n` +
+                `- Hàng hóa: ${trackRes.itemName || 'Kiện hàng'}\n` +
+                `- Trạng thái mới: ĐÃ HỦY ĐƠN THÀNH CÔNG (CANCELLED)\n` +
+                `- Cước phí hủy: 0 VNĐ (Miễn phí 100% do bưu tá chưa nhận hàng)\n` +
+                `- Vận hành bưu cục: Hệ thống đã phát lệnh dừng lấy hàng khẩn cấp tới bưu tá phụ trách tuyến.\n` +
+                `- HƯỚNG DẪN AI: Thông báo rõ ràng với khách hàng rằng đơn hàng ${targetCode} đã được hủy thành công, không phát sinh bất kỳ khoản phí nào. Sẵn sàng hỗ trợ nếu khách muốn gửi đơn mới.\n`;
+            } else {
+              // Khách MỚI YÊU CẦU, CHƯA BẤM XÁC NHẬN -> Human-in-the-Loop Gatekeeper!
+              shipmentCards = [
+                {
+                  code: targetCode,
+                  status: trackRes.status,
+                  statusText: trackRes.statusText,
+                  itemName: trackRes.itemName,
+                  receiverCity: trackRes.receiverCity || trackRes.receiverAddress,
+                  receiverName: trackRes.receiverName,
+                  codAmount: trackRes.codAmount,
+                  createdAt: trackRes.createdAt,
+                },
+              ];
+
+              actionChips = [
+                { label: `❌ Xác nhận hủy đơn ${targetCode}`, query: `Xác nhận hủy đơn ${targetCode}` },
+                { label: `🔙 Giữ lại đơn ${targetCode}`, query: `Tôi muốn giữ lại đơn ${targetCode}` },
+                { label: '📦 Xem các đơn khác', query: 'Tôi có những đơn hàng nào' },
+              ];
+
+              toolAugmentedContext += `\n[THẨM ĐỊNH NGHIỆP VỤ HỦY ĐƠN & YÊU CẦU XÁC NHẬN HUMAN-IN-THE-LOOP]:\n` +
+                `- Mã vận đơn: ${targetCode}\n` +
+                `- Hàng hóa: ${trackRes.itemName || 'Kiện hàng'}\n` +
+                `- Trạng thái hiện tại: ${trackRes.statusText} (${trackRes.status})\n` +
+                `- ĐIỀU KIỆN VẬN HÀNH CARRIER SOP: ĐỦ ĐIỀU KIỆN HỦY MIỄN PHÍ 100% (0 VNĐ). Lý do: Bưu tá chưa qua lấy hàng hoặc kiện chưa nhập kho phân loại Hub.\n` +
+                `- NGUYÊN TẮC AN TOÀN VẬN HÀNH (HUMAN-IN-THE-LOOP BẮT BUỘC): Dù AI đã kiểm tra đơn hàng đủ điều kiện hủy, AI TUYỆT ĐỐI KHÔNG ĐƯỢC TỰ TIỆN HỦY ĐƠN NGAY mà BẮT BUỘC CHÍNH TAY KHÁCH HÀNG PHẢI XÁC NHẬN QUYẾT ĐỊNH.\n` +
+                `- HƯỚNG DẪN AI: Báo rõ cho khách biết đơn hàng ${targetCode} hoàn toàn ĐỦ ĐIỀU KIỆN HỦY MIỄN PHÍ (0 VNĐ). Nhấn mạnh nguyên tắc an toàn: mời Quý khách chính tay bấm nút [❌ Xác nhận hủy đơn ${targetCode}] bên dưới hoặc gõ 'Xác nhận hủy đơn ${targetCode}' để hệ thống chính thức phát lệnh dừng lấy hàng cho bưu tá.\n`;
+            }
+          } else if (isBlocked) {
+            // Kiện hàng đang trên xe tải đường trục hoặc đang đi phát -> Physical Block!
+            shipmentCards = [
+              {
+                code: targetCode,
+                status: trackRes.status,
+                statusText: trackRes.statusText,
+                itemName: trackRes.itemName,
+                receiverCity: trackRes.receiverCity || trackRes.receiverAddress,
+                receiverName: trackRes.receiverName,
+                codAmount: trackRes.codAmount,
+                createdAt: trackRes.createdAt,
+              },
+            ];
+
+            actionChips = [
+              { label: '📞 Kết nối hotline 1900-1234', query: 'Tôi muốn gặp chuyên viên tổng đài hỗ trợ gấp' },
+              { label: `🔍 Xem hành trình ${targetCode}`, query: `Tra cứu hành trình đơn ${targetCode}` },
+              { label: '📦 Xem các đơn khác', query: 'Tôi có những đơn hàng nào' },
+            ];
+
+            toolAugmentedContext += `\n[CẢNH BÁO TỪ CHỐI HỦY ĐƠN THEO QUY CHUẨN VẬN HÀNH BƯU CHÍNH (CARRIER SOP PHYSICAL BLOCK)]:\n` +
+              `- Mã vận đơn: ${targetCode}\n` +
+              `- Hàng hóa: ${trackRes.itemName || 'Kiện hàng'}\n` +
+              `- Trạng thái hiện tại: ${trackRes.statusText} (${trackRes.status})\n` +
+              `- Vị trí hiện tại: ${trackRes.currentLocation}\n` +
+              `- BẤT KHẢ KHÁNG VẬT LÝ VẬN HÀNH: Kiện hàng hiện đang trên xe tải đường trục (Linehaul) kẹp chì niêm phong seal, hoặc đang chạy trên băng chuyền chia chọn Hub, hoặc bưu tá đang đi phát chặng cuối. Hệ thống KHÔNG THỂ HỦY NGAY LẬP TỨC trên đường vận chuyển vì không thể dừng xe tải giữa quốc lộ/cao tốc để tìm 1 bưu phẩm.\n` +
+              `- HƯỚNG XỬ LÝ CHUẨN NGHIỆP VỤ CHO KHÁCH HÀNG:\n` +
+              `  1. Khi bưu tá liên hệ phát hàng, người nhận có thể TỪ CHỐI NHẬN HÀNG (đơn sẽ tự động chuyển hoàn RTO về người gửi, cước hoàn 50% cước chiều đi theo chính sách bưu chính).\n` +
+              `  2. Hoặc khách hàng có thể liên hệ ngay Hotline Vận hành 1900-1234 để điều phối viên tiếp nhận và gắn cờ chuyển hoàn khi xe cập Hub phát.\n`;
+          } else if (isFinished) {
+            toolAugmentedContext += `\n[THÔNG BÁO TRẠNG THÁI ĐƠN HÀNG]: Đơn hàng ${targetCode} hiện ở trạng thái [${trackRes.statusText}] (${trackRes.status}). Đơn hàng đã kết thúc chu trình giao nhận, không thể thực hiện thao tác hủy.\n`;
+          }
+        }
+      }
+    } else if (trackingMatch) {
       const trackingCode = trackingMatch[1] ? trackingMatch[1].toUpperCase() : trackingMatch[0];
       toolsUsed.push(`trackShipment(${trackingCode}, isGuest=${isGuest})`);
       const trackRes = await this.toolsService.trackShipment(trackingCode, isGuest);
+
+      // Cập nhật session với mã đơn vừa tra cứu
+      this.sessions.set(conversationId, {
+        ...session,
+        selectedCode: trackingCode,
+        lastUpdated: Date.now(),
+      });
 
       if (!trackRes.found) {
         toolAugmentedContext += `\n[KẾT QUẢ TRA CỨU]: ${trackRes.notFoundMessage || `Không tìm thấy mã vận đơn ${trackingCode} trên hệ thống.`}\n`;
@@ -105,6 +357,14 @@ export class ChatService {
             codAmount: trackRes.codAmount,
             createdAt: trackRes.createdAt,
           },
+        ];
+
+        // Gợi ý action chips phù hợp với trạng thái đơn
+        const canCancel = ['CREATED', 'TASK_ASSIGNED', 'PICKUP_ASSIGNED', 'PICKING_UP', 'PENDING', 'READY_TO_SHIP'].includes(trackRes.status);
+        actionChips = [
+          ...(canCancel ? [{ label: `❌ Hủy đơn ${trackRes.trackingNumber}`, query: `Tôi muốn hủy đơn hàng ${trackRes.trackingNumber}` }] : []),
+          { label: '📦 Xem các đơn hàng của tôi', query: 'Tôi có những đơn hàng nào' },
+          { label: '➕ Gửi đơn hàng mới', query: 'Tôi muốn gửi hàng mới' },
         ];
 
         toolAugmentedContext += `\n[THÔNG TIN TRA CỨU ĐƠN HÀNG MÃ ${trackingCode}${isGuest ? ' (CHẾ ĐỘ KHÁCH VÃNG LAI - ĐÃ MÃ HÓA THÔNG TIN CÁ NHÂN PII)' : ''}]:\n` +
@@ -209,6 +469,27 @@ export class ChatService {
           shippingFee: 32000,
         });
 
+        // Lưu đơn hàng vừa tạo vào bộ nhớ phiên đa lượt (Multi-turn conversational memory)
+        const currentSession = this.sessions.get(conversationId) || { lastUpdated: Date.now() };
+        this.sessions.set(conversationId, {
+          ...currentSession,
+          selectedCode: created.trackingNumber,
+          lastShipments: [
+            {
+              code: created.trackingNumber,
+              itemName: 'Kiện hàng quà tặng người thân',
+              status: 'TASK_ASSIGNED',
+              statusText: 'Đã phân công bưu tá lấy hàng',
+              receiverCity: 'Quận Hoàn Kiếm, TP. Hà Nội',
+              receiverName: 'Anh Nguyễn Văn An',
+              codAmount: 0,
+              createdAt: 'Hôm nay',
+            },
+            ...(currentSession.lastShipments || []),
+          ],
+          lastUpdated: Date.now(),
+        });
+
         shipmentCards = [
           {
             code: created.trackingNumber,
@@ -224,6 +505,7 @@ export class ChatService {
 
         actionChips = [
           { label: '🔍 Tra cứu hành trình đơn này', query: `Tra cứu hành trình đơn ${created.trackingNumber}` },
+          { label: '❌ Hủy đơn này', query: `Tôi muốn hủy đơn hàng ${created.trackingNumber}` },
           { label: '📦 Xem các đơn hàng của tôi', query: 'Tôi có những đơn hàng nào' },
           { label: '➕ Gửi thêm một đơn khác', query: 'Tôi muốn gửi một đơn hàng cho người thân' },
         ];
@@ -273,6 +555,33 @@ export class ChatService {
           if (!userShipments.found || userShipments.items.length === 0) {
             toolAugmentedContext += `\n[KẾT QUẢ TRA CỨU]: Tài khoản ${dto.userId} hiện chưa có đơn hàng nào được ghi nhận trên hệ thống Nexus Logistics. Hãy thông báo lịch sự cho khách hàng rằng tài khoản chưa phát sinh đơn gửi và mời khách hàng gửi mã vận đơn cụ thể nếu muốn tra cứu đơn nhận.\n`;
           } else {
+            // Lưu danh sách đơn hàng vào session phục vụ ngữ cảnh hội thoại đa lượt
+            this.sessions.set(conversationId, {
+              lastShipments: userShipments.items,
+              selectedCode: userShipments.items.length === 1 ? userShipments.items[0].code : undefined,
+              lastUpdated: Date.now(),
+            });
+
+            // Action chips hỗ trợ tương tác nhanh cho từng đơn hàng
+            actionChips = userShipments.items.slice(0, 3).map((it) => ({
+              label: `📦 Đơn ${it.code}`,
+              query: `Tra cứu hành trình đơn ${it.code}`,
+            }));
+            if (userShipments.items.length === 1) {
+              const single = userShipments.items[0];
+              if (['CREATED', 'TASK_ASSIGNED', 'PICKUP_ASSIGNED', 'PICKING_UP', 'PENDING', 'READY_TO_SHIP'].includes(single.status)) {
+                actionChips.push({
+                  label: `❌ Hủy đơn ${single.code}`,
+                  query: `Tôi muốn hủy đơn hàng ${single.code}`,
+                });
+              }
+            } else if (userShipments.items.length > 1) {
+              actionChips.push({
+                label: '❌ Hủy một đơn hàng',
+                query: 'Tôi muốn hủy đơn hàng',
+              });
+            }
+
             // Đính kèm danh sách thẻ đơn hàng shipmentCards vào DTO phản hồi
             shipmentCards = userShipments.items.map((it) => ({
               code: it.code,
@@ -315,7 +624,8 @@ export class ChatService {
               toolAugmentedContext += `\n[DANH SÁCH CÁC ĐƠN HÀNG GẦN ĐÂY CỦA TÀI KHOẢN ${dto.userId} (Tổng cộng: ${userShipments.total} đơn)]:\n` +
                 userShipments.items.map((it, idx) =>
                   `  ${idx + 1}. Mã vận đơn: ${it.code} | Hàng hóa: ${it.itemName} | Trạng thái: ${it.statusText} (${it.status}) | Điểm đến: ${it.receiverCity || it.receiverAddress} | Tiền COD: ${it.codAmount ? it.codAmount.toLocaleString('vi-VN') + ' VNĐ' : '0 VNĐ'} | Tạo ngày: ${it.createdAt}`
-                ).join('\n') + '\n';
+                ).join('\n') + '\n' +
+                `- HƯỚNG DẪN AI: Khách hàng ĐÃ ĐĂNG NHẬP HỢP LỆ (Tài khoản: ${dto.userId}). Hãy chào mừng khách hàng và liệt kê danh sách ${userShipments.total} đơn hàng trên kèm trạng thái rõ ràng để khách tiện theo dõi. Hướng dẫn khách có thể bấm vào các nút gợi ý bên dưới nếu muốn tra cứu chi tiết hoặc thao tác hủy đơn.\n`;
             }
           }
         }
@@ -739,7 +1049,14 @@ Bạn có kiến thức uyên thâm, thấu đáo và toàn diện về toàn b�
 - Chủ động kết nối các thông tin nghiệp vụ liên quan để tư vấn giải pháp thấu đáo, KHÔNG trả lời cụt ngủn hay rập khuôn máy móc.
 - Sử dụng emoji trực quan (📦, 📍, 🛡️, 💰, 🚚, ⏰, 🏬, ⚖️, ⚠️) để câu trả lời sinh động, chuyên nghiệp.
 - Trình bày định dạng sạch đẹp: không dùng dấu nháy đơn ngược (backtick), không dùng ba dấu sao liên tiếp (***), dấu gạch đầu dòng và nội dung nằm cùng một dòng.
-- CHUẨN MỰC GIAO TIẾP VỚI KHÁCH HÀNG: TUYỆT ĐỐI KHÔNG xuất ra tên file nội bộ (ví dụ .md), không nói "theo tài liệu tham chiếu đoạn 1 đoạn 2", không để lộ thuật ngữ kỹ thuật (như Gateway, BFF, Port, Vector). Khi tư vấn chính sách bồi thường, bảo hiểm, đồng kiểm, giao lại hay chuyển hoàn, hãy diễn đạt tự nhiên: "Theo Quy chuẩn & Chính sách dịch vụ của Nexus Logistics..." và hướng dẫn người dùng có thể xem chi tiết tại mục Điều khoản & Chính sách dịch vụ của chúng tôi.`;
+- CHUẨN MỰC GIAO TIẾP VỚI KHÁCH HÀNG: TUYỆT ĐỐI KHÔNG xuất ra tên file nội bộ (ví dụ .md), không nói "theo tài liệu tham chiếu đoạn 1 đoạn 2", không để lộ thuật ngữ kỹ thuật (như Gateway, BFF, Port, Vector). Khi tư vấn chính sách bồi thường, bảo hiểm, đồng kiểm, giao lại hay chuyển hoàn, hãy diễn đạt tự nhiên: "Theo Quy chuẩn & Chính sách dịch vụ của Nexus Logistics..." và hướng dẫn người dùng có thể xem chi tiết tại mục Điều khoản & Chính sách dịch vụ của chúng tôi.
+
+4. QUY TRÌNH HỦY ĐƠN HÀNG, PHÂN GIẢI NGỮ CẢNH & NGUYÊN TẮC XÁC NHẬN HUMAN-IN-THE-LOOP:
+- Nắm bắt ngữ cảnh đa lượt: Khi người dùng nói "tôi muốn hủy đơn hàng này", "hủy đơn này", hãy tra cứu đơn hàng vừa được đề cập hoặc vừa tạo trong phiên hội thoại. Nếu người dùng có nhiều đơn hàng chưa rõ đơn nào, hãy liệt kê và hỏi lại để làm rõ (Disambiguation), tuyệt đối không đoán mò.
+- Kiểm tra điều kiện vận hành Carrier SOP:
+  + Nếu đơn ở trạng thái CREATED, TASK_ASSIGNED, PICKING_UP, PENDING (bưu tá chưa lấy hàng / kiện chưa nhập kho Hub): Đủ điều kiện hủy miễn phí 100% (0 VNĐ). Tuy nhiên, AI TUYỆT ĐỐI KHÔNG TỰ TIỆN HỦY NGAY mà phải giải thích rõ ràng và yêu cầu khách hàng tự tay bấm nút xác nhận quyết định hủy (Human-in-the-Loop Principle).
+  + Nếu đơn ở trạng thái SORTING, IN_TRANSIT, OUT_FOR_DELIVERY, DELIVERING (đang luân chuyển trên xe tải đường trục kẹp chì seal hoặc đang đi phát): Tuyệt đối từ chối hủy ngay lập tức vì lý do an toàn vận hành vật lý (không thể dừng xe tải giữa đường cao tốc để tìm kiện hàng), hướng dẫn khách từ chối nhận khi bưu tá giao (chuyển hoàn RTO cước 50%) hoặc liên hệ hotline 1900-1234.
+  + Khi khách hàng đã chính thức bấm xác nhận hủy: Thông báo hủy thành công, bưu tá phụ trách đã nhận lệnh dừng lấy hàng và khách không mất bất kỳ khoản phí nào.`;
 
     const userPrompt = `DỮ LIỆU NGỮ CẢNH HỆ THỐNG CUNG CẤP:
 ${context || '(Không tìm thấy tài liệu phù hợp trực tiếp)'}

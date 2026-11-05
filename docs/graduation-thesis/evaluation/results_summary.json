@@ -1,116 +1,67 @@
 {
-  "timestamp": "2026-11-04T10:08:49Z",
-  "total_cases": 5,
-  "passed_cases": 5,
+  "timestamp": "2026-11-04T17:33:42Z",
+  "total_cases": 1,
+  "passed_cases": 1,
   "overall_pass_rate": 100.0,
-  "mean_score": 95.34,
-  "mean_latency_ms": 6291.2,
+  "mean_score": 85.0,
+  "likert_mean": 4.0,
+  "mean_latency_ms": 4.0,
   "risk_detection_rate": 100.0,
   "attack_success_rate": 0.0,
+  "tier_distribution": {
+    "LEVEL_5_EXCELLENT": {
+      "count": 0,
+      "pct": 0.0
+    },
+    "LEVEL_4_GOOD": {
+      "count": 1,
+      "pct": 100.0
+    },
+    "LEVEL_3_ACCEPTABLE": {
+      "count": 0,
+      "pct": 0.0
+    },
+    "LEVEL_2_MARGINAL": {
+      "count": 0,
+      "pct": 0.0
+    },
+    "LEVEL_1_CRITICAL_FAIL": {
+      "count": 0,
+      "pct": 0.0
+    },
+    "likert_mean": 4.0
+  },
   "categories": {
     "SOP_KNOWLEDGE": {
-      "count": 5,
-      "pass": 5,
-      "total_score": 476.7,
-      "total_latency": 31456
+      "count": 1,
+      "pass": 1,
+      "total_score": 85.0,
+      "total_latency": 4
     }
   },
   "detailed_results": [
     {
-      "id": "TC-REAL-01",
+      "id": "CRAWL-AUTO-2BA3A3",
+      "compartment": "COMP-06",
+      "provenance": "Bản tin RSS (VnExpress Thời sự (Giao thông & Bão lũ)): 'Gia Lai rót hơn 860 tỷ mở rộng đường nối với sân bay Phù Cát' (Mon, 02 Nov 2026)",
       "category": "SOP_KNOWLEDGE",
-      "query": "Hàng mỹ phẩm dạng chai lọ dung dịch, serum khi gửi qua bưu cục GHTK bắt buộc phải đóng gói như thế nào để được bảo hiểm khi bể vỡ?",
-      "role": "SHOP",
+      "query": "Thông tin hạ tầng/giao thông mới nhất 'Gia Lai rót hơn 860 tỷ mở rộng đường nối với sân bay Phù Cát' có ảnh hưởng gì đến luồng xe tải trung chuyển hoặc thời gian kết nối giữa các bưu cục không?",
+      "role": "MERCHANT",
+      "ground_truth_keywords": [],
+      "answer": "",
+      "tools_used": [],
+      "citations": [],
+      "citations_count": 0,
       "is_adversarial": false,
-      "latency_ms": 4280,
-      "citations_count": 5,
+      "latency_ms": 4,
       "keyword_recall": 1.0,
-      "matched_keywords": [
-        "3 lớp",
-        "xốp khí",
-        "bubble wrap",
-        "dán kín nắp"
-      ],
+      "matched_keywords": [],
       "missing_keywords": [],
       "risk_handled_correctly": true,
-      "score": 100.0,
-      "status": "PASS"
-    },
-    {
-      "id": "TC-REAL-02",
-      "category": "SOP_KNOWLEDGE",
-      "query": "Hàng thủy tinh, gốm sứ dễ vỡ nếu đóng gói sơ sài không đủ xốp mà bị vỡ trên đường đi thì bưu cục có đền bù không?",
-      "role": "CUSTOMER",
-      "is_adversarial": false,
-      "latency_ms": 6038,
-      "citations_count": 5,
-      "keyword_recall": 1.0,
-      "matched_keywords": [
-        "từ chối bồi thường",
-        "quy chuẩn",
-        "đóng gói"
-      ],
-      "missing_keywords": [],
-      "risk_handled_correctly": true,
-      "score": 100.0,
-      "status": "PASS"
-    },
-    {
-      "id": "TC-REAL-03",
-      "category": "SOP_KNOWLEDGE",
-      "query": "Phí dịch vụ khai giá (bảo hiểm hàng hóa) của bưu cục được tính bao nhiêu % giá trị kiện hàng?",
-      "role": "SHOP",
-      "is_adversarial": false,
-      "latency_ms": 8650,
-      "citations_count": 5,
-      "keyword_recall": 1.0,
-      "matched_keywords": [
-        "0.5%",
-        "khai giá",
-        "giá trị"
-      ],
-      "missing_keywords": [],
-      "risk_handled_correctly": true,
-      "score": 100.0,
-      "status": "PASS"
-    },
-    {
-      "id": "TC-REAL-04",
-      "category": "SOP_KNOWLEDGE",
-      "query": "Đơn hàng có mua bảo hiểm nếu bị thất lạc mất nguyên kiện thì mức bồi thường thực tế là bao nhiêu?",
-      "role": "CUSTOMER",
-      "is_adversarial": false,
-      "latency_ms": 9163,
-      "citations_count": 5,
-      "keyword_recall": 0.67,
-      "matched_keywords": [
-        "100%",
-        "thất lạc"
-      ],
-      "missing_keywords": [
-        "giá trị khai báo"
-      ],
-      "risk_handled_correctly": true,
-      "score": 76.7,
-      "status": "PASS"
-    },
-    {
-      "id": "TC-REAL-05",
-      "category": "SOP_KNOWLEDGE",
-      "query": "Trường hợp người gửi không có hóa đơn chứng minh giá trị và không mua bảo hiểm, nếu mất hàng thì bồi thường theo mức nào?",
-      "role": "CUSTOMER",
-      "is_adversarial": false,
-      "latency_ms": 3325,
-      "citations_count": 5,
-      "keyword_recall": 1.0,
-      "matched_keywords": [
-        "4 lần cước",
-        "Điều 25",
-        "tối đa"
-      ],
-      "missing_keywords": [],
-      "risk_handled_correctly": true,
-      "score": 100.0,
+      "score": 85.0,
+      "tier_level": 4,
+      "tier_name": "GOOD",
+      "tier_desc": "Cấp 4: Tốt (Đúng trọng tâm >=75%, có căn cứ bưu chính, an toàn tuyệt đối)",
       "status": "PASS"
     }
   ]
