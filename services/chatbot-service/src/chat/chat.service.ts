@@ -1139,7 +1139,7 @@ export class ChatService {
           `- Hàng hóa: Kiện hàng quà tặng người thân (Trọng lượng: 1.5 kg)\n` +
           `- Tiền thu hộ COD: 0 VNĐ (Quà tặng người thân)\n` +
           `- Cước vận chuyển chuẩn Door-to-Door: ${fee.toLocaleString('vi-VN')} VNĐ (Tuyến TP.HCM ➔ Hà Nội)\n` +
-          `- Bảo hiểm bưu phẩm: Miễn phí gói Tiêu chuẩn (đền bù tối đa 4 lần cước theo Luật Bưu chính)\n` +
+          `- Bảo hiểm bưu phẩm: Miễn phí gói Tiêu chuẩn (bồi thường 04 lần cước theo Điều 25 Nghị định 47 & Điều 40 Luật Bưu chính; trần tối đa 1.000.000 VNĐ theo chính sách công ty)\n` +
           `- Hình thức thanh toán cước: ${payer === 'SENDER' ? 'Người gửi thanh toán (SENDER_PAYS)' : 'Người nhận thanh toán (RECEIVER_PAYS)'}\n` +
           `- SỐ TIỀN QUÝ KHÁCH CẦN THANH TOÁN KHI GỬI: ${senderPayNow.toLocaleString('vi-VN')} VNĐ (${payer === 'SENDER' ? 'Anh/chị có thể quét mã VietQR thanh toán cước ngay hoặc đưa tiền mặt cho bưu tá khi lấy hàng' : 'Người nhận sẽ thanh toán 32.000 VNĐ khi nhận hàng'})\n` +
           `- HƯỚNG DẪN AI: Đóng vai Giao dịch viên bưu cục gửi lại bảng tóm tắt phiếu tiếp nhận chi tiết và báo giá rõ ràng, lễ phép cho anh/chị. Nêu rõ số tiền cần thanh toán ngay (nếu Người gửi thanh toán thì 32.000đ, nếu Người nhận thanh toán thì 0đ). Mời anh/chị bấm [Xác nhận & Tạo đơn ngay] hoặc [Thanh toán cước ngay] để em chính thức cấp mã vận đơn và điều phối bưu tá qua lấy hàng tận nơi nhé ạ.\n`;
@@ -1363,18 +1363,20 @@ export class ChatService {
         `  1. 🏷️ Mã vận đơn của kiện hàng gặp sự cố?\n` +
         `  2. 📸 Tình trạng thực tế: Hàng bị móp méo bên ngoài vỏ hộp hay bể vỡ sản phẩm bên trong ạ? Anh/chị đã lập Biên bản bất thường với bưu tá hoặc có hình ảnh/video mở hộp đồng kiểm chưa ạ?\n` +
         `  3. 💵 Giá trị ước tính của sản phẩm hoặc chi phí sửa chữa là bao nhiêu ạ?\n` +
-        `- CAM KẾT XỬ LÝ & BỒI THƯỜNG: Thẩm định hồ sơ trong 24h - 48h, hoàn tất chuyển khoản bồi thường trong 03 - 05 ngày làm việc theo Điều 25 Nghị định 47/2011/NĐ-CP & Điều 40 Luật Bưu chính 2010 (Gói Tiêu chuẩn bồi thường 04 lần cước, Bảo hiểm đền 100% hóa đơn tối đa 30 triệu VNĐ).\n` +
+        `- CĂN CỨ PHÁP LUẬT & CHÍNH SÁCH BỒI THƯỜNG:\n` +
+        `  * Căn cứ pháp luật (Khoản 1 Điều 25 Nghị định 47/2011/NĐ-CP & Điều 40 Luật Bưu chính 2010): Gói Tiêu chuẩn bồi thường thiệt hại mức tối thiểu 04 lần cước dịch vụ đã thu; Miễn trừ trách nhiệm bồi thường do lỗi tự đóng gói của người gửi theo Điều 41 Luật Bưu chính 2010.\n` +
+        `  * Căn cứ chính sách công ty (Quy chế dịch vụ Nexus Logistics): Bưu phẩm không khai giá áp dụng mức trần tối đa không quá 1.000.000 VNĐ/đơn hàng; Gói Bảo hiểm khai giá toàn diện đền bù 100% giá trị hóa đơn thực tế (tối đa 30.000.000 VNĐ/đơn hàng theo chính sách bảo hiểm của công ty); Thời hạn thẩm định 24h - 48h và chi trả trong 03 - 05 ngày làm việc là cam kết chất lượng dịch vụ của công ty.\n` +
         `- HƯỚNG DẪN AI: Xoa dịu lo lắng của khách hàng, hỏi lại 3 thông tin trên để hỗ trợ chuyển Ban Giám định QA mở hồ sơ bồi thường ngay nhé ạ.\n`;
     } else if (isDamageOrBrokenQuery) {
       toolsUsed.push('getDamageAndClaimPolicy(Fragile Goods & Damage Settlement)');
       toolAugmentedContext += `\n[QUY TRÌNH NGHIỆP VỤ XỬ LÝ HÀNG HƯ HỎNG / BỂ VỠ (DAMAGE SETTLEMENT SOP)]:\n` +
         `- Bước 1 (Khi nhận hàng): Người nhận đồng kiểm phát hiện hàng bị nứt vỡ, móp méo, rò rỉ dung dịch -> Yêu cầu bưu tá lập Biên bản bất thường (Irregularity Report) tại chỗ có chữ ký cả hai bên và chụp ảnh sắc nét 4 góc. Người nhận từ chối nhận hàng và KHÔNG phải thanh toán bất kỳ khoản tiền nào (kể cả COD và cước phí).\n` +
         `- Bước 2 (Hạn mức bồi thường):\n` +
-        `  * Gói Tiêu chuẩn (không mua bảo hiểm): Bồi thường 04 lần cước vận chuyển thực tế (theo Khoản 1 Điều 25 Nghị định 47/2011/NĐ-CP & Điều 40 Luật Bưu chính 2010), không vượt quá 1.000.000 VNĐ/đơn hàng theo Quy chế dịch vụ Nexus.\n` +
-        `  * Gói Bảo hiểm khai giá: Bồi thường 100% giá trị thiệt hại thực tế theo hóa đơn VAT/chứng từ, HẠN MỨC TRẦN TỐI ĐA 30.000.000 VNĐ/đơn hàng. Đơn trên 30 triệu phải ký hợp đồng bảo hiểm riêng với PTI/Bảo Việt.\n` +
-        `- Bước 3 (Hư hỏng một phần): Bồi thường toàn bộ chi phí sửa chữa thay thế linh kiện chính hãng theo báo giá trung tâm bảo hành ủy quyền hoặc theo tỷ lệ giám định thực tế.\n` +
-        `- Bước 4 (Điều kiện loại trừ hàng dễ vỡ): Hàng dễ vỡ bắt buộc phải đóng gói đúng quy chuẩn (bọc xốp hơi 3-5 lớp, cách thành thùng 5cm, dán tem Dễ Vỡ). Nếu người gửi tự đóng gói sai quy chuẩn sẽ bị từ chối bồi thường do lỗi chủ quan của người gửi.\n` +
-        `- Bước 5 (Thời hạn xử lý): Thẩm định hồ sơ trong vòng 24h - 48h, hoàn tất chuyển khoản chi trả bồi thường trong 03 - 05 ngày làm việc.\n`;
+        `  * Căn cứ pháp luật (Khoản 1 Điều 25 Nghị định 47/2011/NĐ-CP & Điều 40 Luật Bưu chính 2010): Gói Tiêu chuẩn bồi thường 04 lần cước vận chuyển thực tế đã thu.\n` +
+        `  * Căn cứ chính sách công ty (Quy chế dịch vụ Nexus): Bưu phẩm không khai giá áp dụng mức trần đền bù tối đa không quá 1.000.000 VNĐ/đơn hàng. Gói Bảo hiểm khai giá toàn diện là chính sách dịch vụ của công ty bồi thường 100% giá trị thiệt hại thực tế theo hóa đơn VAT/chứng từ, hạn mức trần tối đa theo chính sách bảo hiểm của công ty là 30.000.000 VNĐ/đơn hàng (đơn trên 30 triệu thỏa thuận hợp đồng riêng với PTI/Bảo Việt).\n` +
+        `- Bước 3 (Hư hỏng một phần): Bồi thường chi phí sửa chữa thay thế linh kiện chính hãng theo báo giá trung tâm bảo hành ủy quyền hoặc theo tỷ lệ thiệt hại thực tế.\n` +
+        `- Bước 4 (Điều kiện loại trừ hàng dễ vỡ): Hàng dễ vỡ bắt buộc phải đóng gói đúng quy chuẩn SOP của công ty (bọc xốp hơi 3-5 lớp, cách thành thùng 5cm, dán tem Dễ Vỡ). Nếu người gửi tự đóng gói sai quy chuẩn sẽ bị miễn trừ trách nhiệm bồi thường theo Điều 41 Luật Bưu chính 2010 & Điều 24 Nghị định 47/2011/NĐ-CP do lỗi chủ quan của người gửi.\n` +
+        `- Bước 5 (Thời hạn xử lý theo cam kết dịch vụ công ty): Thẩm định hồ sơ trong vòng 24h - 48h, hoàn tất chuyển khoản chi trả bồi thường trong 03 - 05 ngày làm việc.\n`;
     }
 
     // Kiểm tra ý định kết nối chuyên viên CSKH con người hoặc giục giao hàng khẩn cấp (AI Handover & Expedite Delivery)
@@ -1754,10 +1756,12 @@ Bạn có kiến thức uyên thâm, thấu đáo và toàn diện về toàn b�
 - Nếu hệ thống thông báo [KẾT QUẢ TRA CỨU]: Không tìm thấy mã vận đơn: Thông báo rõ ràng là không tìm thấy đơn trên hệ thống, mời khách kiểm tra lại mã với người gửi.
 
 2. AM HIỂU NGHIỆP VỤ SÂU SẮC, BIẾT TỰ SUY LUẬN & XÂU CHUỖI ĐA CHIỀU:
-- Hạn mức bồi thường tối đa:
-  + Gói tiêu chuẩn (mặc định): Bồi thường 04 lần cước vận chuyển (theo Khoản 1 Điều 25 Nghị định 47/2011/NĐ-CP & Điều 40 Luật Bưu chính 2010), trần tối đa không quá 1.000.000 VNĐ/đơn theo Quy chế dịch vụ Nexus.
-  + Gói Bảo hiểm khai giá toàn diện: Đền 100% giá trị thiệt hại thực tế theo hóa đơn VAT/chứng từ, HẠN MỨC TỐI ĐA CHO MỖI LẦN PHÁT SINH ĐỀN BÙ LÀ 30.000.000 VNĐ/đơn hàng. Đơn trên 30 triệu phải ký hợp đồng bảo hiểm riêng với PTI/Bảo Việt.
-  + Hư hỏng một phần: Bồi thường toàn bộ chi phí sửa chữa thay linh kiện chính hãng hoặc theo tỷ lệ giám định thực tế. Thời hạn giải quyết chi trả: 3 - 5 ngày làm việc.
+- Hạn mức bồi thường & Phân định rõ giữa Quy định Pháp luật và Chính sách Dịch vụ Công ty:
+  + Căn cứ quy định Pháp luật (Khoản 1 Điều 25 Nghị định 47/2011/NĐ-CP & Điều 40 Luật Bưu chính 2010): Gói tiêu chuẩn bồi thường thiệt hại mức tối thiểu 04 lần cước dịch vụ đã thu. Doanh nghiệp được miễn trừ trách nhiệm bồi thường nếu hàng hóa hư hại do lỗi người gửi tự đóng gói hoặc hàng cấm gửi (Điều 41 Luật Bưu chính 2010 & Điều 24 Nghị định 47/2011/NĐ-CP).
+  + Căn cứ chính sách công ty Nexus Logistics (Quy chế dịch vụ):
+    * Gói Tiêu chuẩn (mặc định): Áp dụng mức đền bù 04 lần cước, đồng thời quy định mức trần trách nhiệm tối đa không quá 1.000.000 VNĐ/đơn hàng đối với bưu gửi không khai giá.
+    * Gói Bảo hiểm khai giá toàn diện (dịch vụ giá trị gia tăng theo chính sách công ty): Phí 0.5% (từ 1tr-10tr) hoặc 1.0% (từ 10tr-30tr), cam kết đền bù 100% giá trị thiệt hại thực tế theo hóa đơn VAT/chứng từ hợp lệ, hạn mức trần tối đa theo chính sách bảo hiểm của công ty là 30.000.000 VNĐ/đơn hàng (đơn trên 30 triệu thỏa thuận hợp đồng riêng với PTI/Bảo Việt).
+    * Hư hỏng một phần: Bồi thường chi phí sửa chữa thay linh kiện chính hãng hoặc theo tỷ lệ thiệt hại thực tế. Thời hạn xử lý: thẩm định 24h-48h, hoàn tất chi trả 3 - 5 ngày làm việc là cam kết SLA chất lượng dịch vụ của công ty Nexus.
 - Phân biệt Hàng Giá Trị Cao (High-Value Cargo) vs Hàng Dễ Vỡ (Fragile Goods):
   + Khác nhau cốt lõi về bản chất rủi ro: Hàng dễ vỡ có nguy cơ vỡ cơ học do rung lắc va đập; Hàng giá trị cao có nguy cơ mất mát, tráo hàng, thất thoát tài sản.
   + Quy chuẩn đóng gói: Hàng dễ vỡ bắt buộc bọc xốp hơi 3-5 lớp, có vách ngăn, cách thành 5cm, dán tem Hàng Dễ Vỡ; Hàng giá trị cao bắt buộc dán Băng keo an ninh OPEN VOID, đựng trong Bao đỏ an ninh (Red Bag) kẹp chì seal, camera giám sát 24/7 và giao bằng OTP 6 số.
@@ -2523,7 +2527,7 @@ HÃY ĐƯA RA CÂU TRẢ LỜI ĐẦY ĐỦ VÀ CHÍNH XÁC:`;
           `1. 🏷️ **Mã vận đơn** của kiện hàng gặp sự cố?\n` +
           `2. 📸 **Tình trạng thực tế:** Hàng bị móp méo bên ngoài vỏ hộp hay bể vỡ sản phẩm bên trong ạ? Anh/chị đã lập Biên bản bất thường với bưu tá hoặc có hình ảnh/video mở hộp đồng kiểm chưa ạ?\n` +
           `3. 💵 **Giá trị ước tính:** Giá trị hàng hóa hoặc chi phí sửa chữa ước tính là bao nhiêu ạ?\n\n` +
-          `🛡️ *Anh/chị hoàn toàn yên tâm nhé! Theo Điều 25 Nghị định 47/2011/NĐ-CP (Điều 40 Luật Bưu chính 2010) và chính sách dịch vụ của Nexus, hồ sơ sẽ được thẩm định trong 24h - 48h và chi trả bồi thường chuyển khoản trong 03 - 05 ngày làm việc ạ!*`;
+          `🛡️ *Anh/chị hoàn toàn yên tâm nhé! Theo quy định pháp luật (Điều 25 Nghị định 47/2011/NĐ-CP & Điều 40 Luật Bưu chính 2010) và chính sách dịch vụ của công ty Nexus, đơn hàng sẽ được bồi thường đúng quyền lợi. Theo cam kết dịch vụ của công ty Nexus, hồ sơ sẽ được thẩm định trong 24h - 48h và chi trả bồi thường chuyển khoản trong 03 - 05 ngày làm việc ạ!*`;
       }
 
       if (realtimeSection.includes('[Ý ĐỊNH CHÀO HỎI XÃ GIAO - KHÁCH HÀNG ĐÃ ĐĂNG NHẬP')) {
@@ -2651,7 +2655,7 @@ HÃY ĐƯA RA CÂU TRẢ LỜI ĐẦY ĐỦ VÀ CHÍNH XÁC:`;
           `• 📦 **Hàng hóa:** Kiện hàng quà tặng người thân (Trọng lượng: 1.5 kg)\n` +
           `• 💵 **Tiền thu hộ COD:** 0 VNĐ (Quà tặng người thân)\n` +
           `• 🚚 **Cước vận chuyển Door-to-Door:** 32.000 VNĐ (Gói Tiêu chuẩn Tuyến TP.HCM ➔ Hà Nội)\n` +
-          `• 🛡️ **Bảo hiểm bưu phẩm:** Miễn phí gói Tiêu chuẩn (đền bù tối đa 4 lần cước theo Luật Bưu chính)\n` +
+          `• 🛡️ **Bảo hiểm bưu phẩm:** Miễn phí gói Tiêu chuẩn (bồi thường 04 lần cước theo Điều 25 Nghị định 47 & Điều 40 Luật Bưu chính; trần tối đa 1.000.000 VNĐ theo chính sách công ty)\n` +
           `• 💳 **Hình thức thanh toán cước:** Người gửi thanh toán (SENDER_PAYS)\n\n` +
           `💰 **TỔNG TIỀN QUÝ KHÁCH CẦN THANH TOÁN:**\n` +
           `👉 **32.000 VNĐ** (Quý khách có thể thanh toán trực tuyến ngay hoặc gửi tiền mặt cho bưu tá khi đến lấy hàng).\n` +

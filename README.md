@@ -520,7 +520,7 @@ flowchart TD
     WAIVER_TRUE --> PRINT_LABEL
     
     MET_TRUE -.-> RULE_1["Khi xảy ra bể vỡ: Bồi hoàn theo quy chế bảo hiểm"]
-    WAIVER_TRUE -.-> RULE_2["Khi xảy ra bể vỡ mà thùng ngoài nguyên vẹn:<br/>MIỄN TRỪ BỒI THƯỜNG 100% (Điều 24 Luật Bưu chính)"]
+    WAIVER_TRUE -.-> RULE_2["Khi xảy ra bể vỡ mà thùng ngoài nguyên vẹn:<br/>MIỄN TRỪ BỒI THƯỜNG 100% (Điều 41 Luật Bưu chính 2010 &amp; Điều 24 NĐ 47/2011/NĐ-CP)"]
 ```
 
 ---
@@ -923,7 +923,7 @@ sequenceDiagram
 3. `calculate_return_fee(forward_fee, merchant_tier)`: Tính cước chuyển hoàn tự động theo 3 phân tầng khách hàng.
 4. `get_storage_aging_policy()`: Tra cứu thời hạn lưu kho tối đa các cấp Hub, cơ chế cảnh báo tồn đọng hai chiều và quy trình xử lý bưu gửi vô chủ (Điều 18 & 28 Luật Bưu chính 2010).
 5. `get_waybill_format_policy()`: Tra cứu quy hoạch dải mã vận đơn tiền tố 12 chữ số (`101...`, `111...`, `333...`, `222...`) và tiêu chuẩn mã định tuyến 3 đoạn kiểu J&T Express.
-6. `get_compensation_claim_policy()`: Tra cứu chính sách bồi thường Điều 24 & 25 Luật Bưu chính (Ma trận 2x2 + 1).
+6. `get_compensation_claim_policy()`: Tra cứu chính sách bồi thường theo Pháp luật (Điều 40, 41 Luật Bưu chính 2010, Điều 25 NĐ 47) và Chính sách công ty Nexus (Ma trận 2x2 + 1).
 7. `escalate_to_human_agent(user_id, tracking_number, reason)`: Khởi tạo phiếu hỗ trợ Ticket ID và điều hướng khẩn cấp sang Chuyên viên CSKH con người qua tổng đài 1900-1234.
 
 ### 7.2. Kiến trúc Phân đoạn Tri thức (RAG Data Chunking Mechanism)

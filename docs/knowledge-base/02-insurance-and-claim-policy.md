@@ -6,8 +6,8 @@ Nexus Logistics áp dụng chính sách bảo vệ hàng hóa phân tầng minh 
 ### A. Gói Vận Chuyển Tiêu Chuẩn (Miễn Phí Mặc Định)
 - **Đối tượng áp dụng:** Bưu phẩm thông thường, quần áo, tài liệu, phụ kiện hoặc hàng hóa có giá trị dưới 1.000.000 VNĐ.
 - **Mức bồi thường:** **04 lần cước phí vận chuyển thực tế** của bưu phẩm đó (Căn cứ theo Khoản 1 Điều 25 Nghị định 47/2011/NĐ-CP & Điều 40 Luật Bưu chính 2010).
-- **Trần đền bù tối đa:** Không vượt quá **1.000.000 VNĐ / đơn hàng** đối với bưu gửi không khai giá (theo Quy chế dịch vụ Nexus Logistics).
-- **Lưu ý:** Không áp dụng bồi thường 100% giá trị hàng hóa nếu người gửi không khai báo giá trị hoặc không chọn mua gói bảo hiểm khai giá.
+- **Trần đền bù tối đa:** Không vượt quá **1.000.000 VNĐ / đơn hàng** đối với bưu gửi không khai giá (theo Chính sách dịch vụ của công ty Nexus Logistics).
+- **Lưu ý:** Không áp dụng bồi thường 100% giá trị hàng hóa nếu người gửi không khai báo giá trị hoặc không chọn mua gói bảo hiểm khai giá. Trường hợp bưu phẩm bị vỡ do người gửi tự đóng gói không đạt chuẩn SOP thì được miễn trừ bồi thường theo Điều 41 Luật Bưu chính 2010 (Điều 24 Nghị định 47/2011/NĐ-CP).
 
 ### B. Gói Bảo Hiểm Khai Giá Toàn Diện (Khuyên Dùng Cho Hàng Giá Trị Cao & Dễ Vỡ)
 - **Đối tượng áp dụng:** Thiết bị điện tử, điện thoại, máy tính xách tay, máy ảnh, mỹ phẩm cao cấp, đồng hồ, hàng thời trang hàng hiệu, đồ dễ vỡ giá trị cao.

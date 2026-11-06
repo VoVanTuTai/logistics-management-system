@@ -37,18 +37,27 @@ Nếu một hệ thống logistics áp dụng quy tắc ngây thơ: *"Bất kỳ
 
 ---
 
-## 2. CƠ SỞ PHÁP LÝ & CHUẨN MỰC NGÀNH BƯU CHÍNH
+## 2. CƠ SỞ PHÁP LÝ & QUY CHẾ CHÍNH SÁCH DOANH NGHIỆP
 
-Hệ thống NEXUS Express được thiết kế tuân thủ 100% khung pháp luật Việt Nam:
+Hệ thống NEXUS Express được thiết kế phân định rạch ròi giữa **Quy định Pháp luật Nhà nước** và **Điều lệ / Chính sách Dịch vụ của Doanh nghiệp**:
 
+### 2.1. Căn cứ Quy định Pháp luật Nhà nước (Bắt buộc tuân thủ):
 1. **Luật Bưu chính số 49/2010/QH12 (Quốc hội ban hành):**
    * **Điều 41 (Miễn trừ trách nhiệm bồi thường thiệt hại):** Doanh nghiệp cung ứng dịch vụ bưu chính được **miễn trừ hoàn toàn trách nhiệm** bồi thường nếu thiệt hại xảy ra do lỗi của người gửi (đóng gói không đúng quy chuẩn kỹ thuật) hoặc do đặc tính tự nhiên của hàng hóa.
    * **Điều 40 (Nguyên tắc và mức bồi thường):**
      * Đối với bưu gửi **có sử dụng dịch vụ khai giá (bảo hiểm):** Bồi thường theo **giá trị thiệt hại thực tế**, tối đa bằng giá trị đã kê khai.
-     * Đối với bưu gửi **không sử dụng dịch vụ khai giá:** Mức bồi thường được xác định theo hạn mức luật định và quy chế dịch vụ doanh nghiệp công bố.
-2. **Nghị định số 47/2011/NĐ-CP (Điều 25):** Quy định mức giới hạn trách nhiệm bồi thường thiệt hại tối thiểu đối với dịch vụ bưu chính trong nước bằng **04 lần cước dịch vụ đã thu** (đã bao gồm hoàn trả cước). Toàn bộ doanh nghiệp chuyển phát lớn tại Việt Nam áp dụng mức 4 lần cước này cho gói tiêu chuẩn.
+     * Đối với bưu gửi **không sử dụng dịch vụ khai giá:** Mức bồi thường được xác định theo mức giới hạn trách nhiệm luật định và quy chế dịch vụ doanh nghiệp công bố.
+   * **Điều 39 Khoản 2 (Người thụ hưởng bồi thường):** Tiền bồi thường thiệt hại được trả cho người gửi, trừ trường hợp bưu gửi đã phát thành công cho người nhận thì trả cho người nhận.
+2. **Nghị định số 47/2011/NĐ-CP (Chính phủ ban hành):**
+   * **Điều 25 (Khoản 1 Điểm a):** Quy định mức giới hạn trách nhiệm bồi thường thiệt hại tối thiểu đối với dịch vụ bưu chính trong nước bằng **04 lần cước dịch vụ đã thu** (đã bao gồm hoàn trả cước). Toàn bộ doanh nghiệp chuyển phát lớn tại Việt Nam áp dụng mức 4 lần cước này cho gói tiêu chuẩn.
+   * **Điều 24:** Quy định các trường hợp không phải bồi thường thiệt hại (đồng bộ Điều 41 Luật Bưu chính).
 3. **Bộ luật Dân sự số 91/2015/QH13 (Điều 534 - 541):** Quy định về hợp đồng vận chuyển tài sản và nghĩa vụ bồi hoàn thiệt hại của bên gửi nếu gửi hàng hóa có tính chất nguy hại, dễ tràn đổ gây thiệt hại cho bên vận chuyển hoặc tài sản của người khác.
-4. **Tiêu chuẩn đóng gói hàng dễ vỡ TCVN / IATA Standard:** Hàng lỏng, dễ vỡ phải được bọc đệm xốp bọt khí (Bubble Wrap) tối thiểu 3 lớp, chèn mút cố định 6 mặt và chịu được bài kiểm tra lắc không phát ra tiếng động.
+
+### 2.2. Điều lệ & Chính sách Dịch vụ Doanh nghiệp (Nexus Logistics SOP):
+1. **Trần bồi thường tối đa 1.000.000 VNĐ / đơn hàng cho hàng không khai giá:** Đây là **Chính sách dịch vụ nội bộ của Nexus Logistics** nhằm quản trị rủi ro dòng tiền (không phải điều luật của Nhà nước).
+2. **Gói Bảo hiểm khai giá toàn diện (Phí 0.5% - 1.0%):** Dịch vụ giá trị gia tăng theo chính sách công ty, trần đền bù tối đa theo chính sách bảo hiểm của công ty là 30.000.000 VNĐ / đơn hàng (đơn trên 30 triệu thỏa thuận hợp đồng riêng với PTI/Bảo Việt).
+3. **Quy chuẩn đóng gói SOP:** Hàng dễ vỡ bắt buộc quấn 3-5 lớp bọt khí Bubble Wrap, cách thành thùng 5cm và chèn mút cố định 6 mặt.
+4. **Cam kết thời gian xử lý (SLA công ty):** Thẩm định khiếu nại trong 24h - 48h, hoàn tất chi trả bồi thường trong 03 - 05 ngày làm việc.
 
 ---
 
@@ -146,7 +155,7 @@ Hệ thống loại bỏ hoàn toàn các quyết định cảm tính của con 
 
 | TÌNH HUỐNG SỰ CỐ PHÁT SINH | CÓ MUA BẢO HIỂM 100%<br/>*(Đã thanh toán phí 0.5%)* | KHÔNG MUA BẢO HIỂM<br/>*(Phí bảo hiểm 0 VNĐ)* |
 | :--- | :--- | :--- |
-| **THẤT LẠC / MẤT NGUYÊN KIỆN**<br/>*(Lỗi do Hub chia chọn hoặc Tài xế làm mất)* | **ĐỀN ĐÚNG 100% GIÁ TRỊ THỰC TẾ**<br/>*(Căn cứ theo Hóa đơn/Chứng từ hợp lệ)* | **ĐỀN 04 LẦN CƯỚC VẬN CHUYỂN**<br/>*(Trần tối đa 1.000.000 VNĐ theo Luật Bưu chính)* |
+| **THẤT LẠC / MẤT NGUYÊN KIỆN**<br/>*(Lỗi do Hub chia chọn hoặc Tài xế làm mất)* | **ĐỀN ĐÚNG 100% GIÁ TRỊ THỰC TẾ**<br/>*(Theo Chính sách BH công ty & Hóa đơn)* | **ĐỀN 04 LẦN CƯỚC VẬN CHUYỂN**<br/>*(04 lần cước theo NĐ 47; Trần 1.000.000đ theo Chính sách công ty)* |
 | **BỂ VỠ KHI ĐÃ ĐÓNG GÓI ĐẠT CHUẨN SOP**<br/>*(Bọc đệm xốp 3 lớp, chèn 6 mặt)* | **ĐỀN 100% GIÁ TRỊ THỰC TẾ**<br/>*(Hoặc đền theo % hư hại nếu chỉ nứt vỡ một phần)* | **ĐỀN 04 LẦN CƯỚC GỬI**<br/>*(Theo tỷ lệ hư hại thực tế)* |
 | **BỂ VỠ KHI CÓ BIÊN BẢN MIỄN TRỪ**<br/>*(Khách tự gói sơ sài, thùng ngoài nguyên)* | **TỪ CHỐI BỒI THƯỜNG BỂ VỠ**<br/>*(Theo cam kết packagingWaiver)* | **TỪ CHỐI BỒI THƯỜNG BỂ VỠ**<br/>*(Miễn trừ trách nhiệm theo Điều 41 Luật Bưu chính 2010)* |
 
@@ -186,7 +195,7 @@ Dưới đây là 5 câu hỏi trọng tâm mà Hội đồng Giám khảo thư�
 * **Khách hàng:** *"Tiền ship có 35.000đ, sao lại bắt tui trả thêm 50.000đ tiền bảo hiểm nữa?"*
 * **Nhân viên quầy:** 
   > *"Dạ em chào anh/chị, khoản 35.000đ là cước vận chuyển xăng xe và công giao hàng từ đây ra Hà Nội. Còn kiện hàng của mình là điện thoại trị giá 10.000.000đ. Khoản 50.000đ (0.5%) là **Gói bảo hiểm toàn diện 100% giá trị hàng hóa** của NEXUS.  
-  > Khi tham gia gói này, đơn hàng sẽ được đánh dấu giám sát an ninh camera riêng. Nếu có bất kỳ rủi ro mất mát hay tai nạn nào trên đường, NEXUS cam kết **bồi thường ngay 100% đủ 10.000.000đ** cho mình. Nếu không mua bảo hiểm, theo quy định chung của Luật Bưu chính mức đền bù tối đa chỉ được 4 lần tiền cước (khoảng 140.000đ) thôi ạ. Chỉ cần trích 50.000đ là mình hoàn toàn yên tâm kê cao gối ngủ, hàng có sự cố là được đền đủ 100% tiền hàng ngay ạ!"*
+  > Khi tham gia gói này, đơn hàng sẽ được đánh dấu giám sát an ninh camera riêng. Nếu có bất kỳ rủi ro mất mát hay tai nạn nào trên đường, NEXUS cam kết **bồi thường ngay 100% đủ 10.000.000đ** cho mình theo chính sách bảo hiểm của công ty. Nếu không mua bảo hiểm, theo quy định pháp luật (Điều 25 Nghị định 47) và chính sách dịch vụ công ty, mức đền bù cơ bản là 4 lần tiền cước (khoảng 140.000đ) thôi ạ. Chỉ cần trích 50.000đ là mình hoàn toàn yên tâm kê cao gối ngủ, hàng có sự cố là được đền đủ 100% tiền hàng ngay ạ!"*
 
 ### Kịch bản 2: Xử lý khách gửi đồ dễ vỡ nhưng từ chối đóng gói chuẩn
 * **Khách hàng:** *"Hàng này tui gói trong thùng carton này kỹ lắm rồi, dán băng keo là xong, bọc thêm xốp làm gì tốn tiền?"*

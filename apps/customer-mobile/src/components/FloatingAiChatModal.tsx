@@ -372,9 +372,9 @@ export function FloatingAiChatModal({ visible, onClose }: FloatingAiChatModalPro
           `Quy trình xử lý sự cố hàng hư hỏng / bể vỡ theo Quy chuẩn Vận hành Nexus Logistics:\n\n` +
           `1. Khi nhận hàng: Quý khách đồng kiểm với bưu tá, yêu cầu lập Biên bản bất thường tại chỗ (chụp ảnh 4 góc và quay video bưu phẩm nứt vỡ) và từ chối nhận hàng (không thanh toán bất kỳ chi phí nào).\n` +
           `2. Hạn mức bồi thường:\n` +
-          `• Gói Tiêu chuẩn: Bồi thường tối đa 04 lần cước vận chuyển (không quá 1.000.000 VNĐ/đơn theo Luật Bưu chính).\n` +
-          `• Gói Bảo hiểm khai giá: Đền bù 100% giá trị tổn thất thực tế theo hóa đơn, trần tối đa 30.000.000 VNĐ/đơn.\n` +
-          `3. Thời hạn giải quyết: Thẩm định trong 24h - 48h, hoàn tất chi trả bồi thường trong 03 - 05 ngày làm việc.\n\n` +
+          `• Gói Tiêu chuẩn: Bồi thường 04 lần cước vận chuyển (theo Điều 25 Nghị định 47 & Điều 40 Luật Bưu chính; trần tối đa 1.000.000 VNĐ/đơn theo Chính sách công ty).\n` +
+          `• Gói Bảo hiểm khai giá: Đền bù 100% giá trị tổn thất thực tế theo hóa đơn (trần tối đa 30.000.000 VNĐ/đơn theo Chính sách bảo hiểm công ty).\n` +
+          `3. Thời hạn giải quyết (theo cam kết dịch vụ công ty): Thẩm định trong 24h - 48h, hoàn tất chi trả bồi thường trong 03 - 05 ngày làm việc.\n\n` +
           `Quý khách có thể xem chi tiết tại Chính sách & Quy định dịch vụ của chúng tôi.`;
       } else if (isClaimQuery) {
         toolsUsed = ['trackClaimStatus(CLM-Policy)'];
