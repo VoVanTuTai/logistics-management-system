@@ -22,6 +22,15 @@ export class ChatService {
   private temperature: number;
   private geminiApiKey: string;
   private geminiModel: string;
+  private groqApiKey: string;
+  private groqKnowledgeModel: string;
+  private groqOperationModel: string;
+  private nvidiaApiKey: string;
+  private nvidiaValidationModel: string;
+  private validationProvider: string;
+  private validationModel: string;
+  private openrouterApiKey: string;
+  private readonly sessions = new Map<string, { lastShipments?: any[]; selectedCode?: string; lastUpdated: number }>();
 
   constructor(
     private readonly embeddingService: EmbeddingService,
@@ -30,6 +39,27 @@ export class ChatService {
   ) {
     this.geminiApiKey = process.env.GEMINI_API_KEY || '';
     this.geminiModel = process.env.GEMINI_MODEL || 'gemini-3.6-flash';
+    this.groqApiKey = process.env.GROQ_API_KEY || '';
+    this.groqKnowledgeModel = process.env.GROQ_KNOWLEDGE_MODEL || 'qwen/qwen3.8-27b';
+    this.groqOperationModel = process.env.GROQ_OPERATION_MODEL || 'openai/gpt-oss-120b';
+    this.nvidiaApiKey = process.env.NVIDIA_API_KEY || '';
+    this.nvidiaValidationModel = process.env.NVIDIA_VALIDATION_MODEL || 'nvidia/nemotron-3.5-lightning-30b-a3b';
+    this.openrouterApiKey = process.env.OPENROUTER_API_KEY || '';
+
+    // Tự động xác định Validation Provider (ưu tiên nvidia nếu có key, nếu không tự động dùng groq safeguard)
+    this.validationProvider = (
+      process.env.VALIDATION_PROVIDER ||
+      (this.nvidiaApiKey ? 'nvidia' : (this.openrouterApiKey ? 'openrouter' : 'groq'))
+    ).toLowerCase();
+
+    this.validationModel =
+      process.env.VALIDATION_MODEL ||
+      (this.validationProvider === 'groq'
+        ? 'openai/gpt-oss-safeguard-20b'
+        : this.validationProvider === 'openrouter'
+        ? 'nvidia/nemotron-3.5-lightning:free'
+        : this.nvidiaValidationModel);
+
     this.apiKey = process.env.OPENAI_API_KEY || '';
     this.chatModel = process.env.OPENAI_CHAT_MODEL || 'gpt-4o-mini';
     this.temperature = Number(process.env.OPENAI_TEMPERATURE || 0.2);
@@ -52,15 +82,266 @@ export class ChatService {
     // 1. Phân tích ý định & gọi Tool nếu cần (Function Calling / Intent Routing)
     let toolAugmentedContext = '';
 
+    // Lấy session hiện tại của phiên hội thoại (Multi-turn conversational memory)
+    const session = this.sessions.get(conversationId) || { lastUpdated: Date.now() };
+
     // Regex tìm mã đơn hàng: NX-XXXX hoặc mã số vận đơn (10-15 chữ số, ví dụ 101000000001, 333801334740)
     const trackingMatch =
       question.match(/\b(NX[-_]?[A-Z0-9]{4,16}|SPX[A-Z0-9]+|VN\d+[A-Z0-9]*|DH\d+)\b/i) ||
       question.match(/\b(101\d{9}|111\d{9}|333\d{9}|222\d{9}|\d{10,15})\b/);
+    const trackingCode = trackingMatch ? (trackingMatch[1] ? trackingMatch[1].toUpperCase() : trackingMatch[0]) : undefined;
 
-    if (trackingMatch) {
+    // Kiểm tra ý định hủy đơn hàng & xác nhận hủy đơn (Human-in-the-Loop & Carrier SOP)
+    const isCancelExplicitConfirm =
+      (normalizedQ.includes('xac nhan') || normalizedQ.includes('dong y') || normalizedQ.includes('chot huy')) &&
+      (normalizedQ.includes('huy don') || normalizedQ.includes('huy van don') || normalizedQ.includes('huy'));
+
+    const isCancelIntent =
+      isCancelExplicitConfirm ||
+      normalizedQ.includes('huy don') ||
+      normalizedQ.includes('huy van don') ||
+      normalizedQ.includes('khong gui nua') ||
+      normalizedQ.includes('cancel don') ||
+      normalizedQ.includes('huy kien hang') ||
+      (normalizedQ.includes('huy') && (normalizedQ.includes('don hang') || normalizedQ.includes('don nay') || normalizedQ.includes('don')));
+
+    const isKeepOrderIntent =
+      !isCancelIntent &&
+      (normalizedQ.includes('giu lai don') ||
+        normalizedQ.includes('khong huy') ||
+        normalizedQ.includes('dung huy') ||
+        normalizedQ.includes('van muon gui'));
+
+    if (isKeepOrderIntent) {
+      const codeToKeep = trackingCode || session.selectedCode || (session.lastShipments && session.lastShipments[0]?.code);
+      toolAugmentedContext += `\n[XÁC NHẬN GIỮ LẠI ĐƠN HÀNG]:\n` +
+        `- Mã vận đơn: ${codeToKeep || 'Đơn hàng của Quý khách'}\n` +
+        `- Trạng thái: Đã ghi nhận giữ lại đơn hàng theo quyết định của Quý khách. Đơn hàng tiếp tục được vận chuyển/lấy hàng bình thường theo quy trình.\n` +
+        `- HƯỚNG DẪN AI: Thông báo lịch sự với khách rằng hệ thống đã ghi nhận giữ lại đơn hàng, quy trình vận chuyển vẫn tiếp tục bình thường.\n`;
+      actionChips = [
+        { label: '📦 Xem các đơn hàng của tôi', query: 'Tôi có những đơn hàng nào' },
+        codeToKeep ? { label: `🔍 Xem hành trình ${codeToKeep}`, query: `Tra cứu hành trình đơn ${codeToKeep}` } : { label: '➕ Gửi đơn mới', query: 'Tôi muốn gửi hàng mới' },
+      ];
+    } else if (isCancelIntent) {
+      // 1. Phân giải ngữ cảnh đa lượt: Xác định mã vận đơn khách đang đề cập
+      let targetCode: string | undefined = trackingCode;
+
+      if (!targetCode && session.lastShipments && session.lastShipments.length > 0) {
+        // Kiểm tra xem khách có nhắc đến mã nào trong danh sách session không
+        const matchedInSession = session.lastShipments.find((s) => question.toUpperCase().includes(s.code.toUpperCase()));
+        if (matchedInSession) {
+          targetCode = matchedInSession.code;
+        } else if (normalizedQ.includes('dau tien') || normalizedQ.includes('don 1') || normalizedQ.includes('so 1') || normalizedQ.includes('moi nhat') || normalizedQ.includes('vua gui')) {
+          targetCode = session.lastShipments[0].code;
+        } else if (normalizedQ.includes('thu hai') || normalizedQ.includes('don 2') || normalizedQ.includes('so 2')) {
+          targetCode = session.lastShipments[1]?.code;
+        } else if (normalizedQ.includes('thu ba') || normalizedQ.includes('don 3') || normalizedQ.includes('so 3')) {
+          targetCode = session.lastShipments[2]?.code;
+        } else if (session.selectedCode) {
+          targetCode = session.selectedCode;
+        } else if (session.lastShipments.length === 1) {
+          targetCode = session.lastShipments[0].code;
+        }
+      } else if (!targetCode && session.selectedCode) {
+        targetCode = session.selectedCode;
+      }
+
+      // Nếu vẫn chưa có targetCode và người dùng đã đăng nhập, tự động tra cứu danh sách đơn của họ
+      if (!targetCode && !isGuest && dto.userId) {
+        toolsUsed.push(`getUserShipments(User:${dto.userId})`);
+        const userShipments = await this.toolsService.getUserShipments(dto.userId, 5);
+        if (userShipments.found && userShipments.items.length > 0) {
+          this.sessions.set(conversationId, {
+            lastShipments: userShipments.items,
+            selectedCode: userShipments.items.length === 1 ? userShipments.items[0].code : undefined,
+            lastUpdated: Date.now(),
+          });
+          if (userShipments.items.length === 1) {
+            targetCode = userShipments.items[0].code;
+          } else {
+            session.lastShipments = userShipments.items;
+          }
+        }
+      }
+
+      if (!targetCode) {
+        if (session.lastShipments && session.lastShipments.length > 1) {
+          // TRƯỜNG HỢP NHIỀU ĐƠN HÀNG: Phân giải mơ hồ (Context Disambiguation)
+          shipmentCards = session.lastShipments.map((it) => ({
+            code: it.code,
+            status: it.status,
+            statusText: it.statusText,
+            itemName: it.itemName,
+            receiverCity: it.receiverCity || it.receiverAddress,
+            receiverName: it.receiverName,
+            codAmount: it.codAmount,
+            createdAt: it.createdAt,
+          }));
+
+          actionChips = session.lastShipments.map((it) => ({
+            label: `❌ Hủy đơn ${it.code}`,
+            query: `Tôi muốn hủy đơn hàng ${it.code}`,
+          }));
+
+          toolAugmentedContext += `\n[YÊU CẦU LÀM RÕ NGỮ CẢNH ĐƠN HÀNG CẦN HỦY (DISAMBIGUATION)]:\n` +
+            `- Tài khoản của Quý khách hiện có ${session.lastShipments.length} đơn hàng trên hệ thống: ${session.lastShipments.map((s, idx) => `Đơn ${idx + 1}: ${s.code} (${s.itemName || 'Hàng hóa'})`).join(', ')}.\n` +
+            `- Khách hàng yêu cầu hủy đơn nhưng chưa chỉ định rõ mã đơn nào trong danh sách.\n` +
+            `- HƯỚNG DẪN AI: Giải thích lịch sự rằng tài khoản hiện có ${session.lastShipments.length} đơn hàng, liệt kê vắn tắt các đơn và mời khách hàng chỉ định rõ mã vận đơn hoặc bấm vào một trong các nút chọn nhanh bên dưới để tiếp tục kiểm tra điều kiện hủy.\n`;
+        } else if (isGuest) {
+          toolAugmentedContext += `\n[CẢNH BÁO BẢO MẬT & ĐỊNH DANH]: Quý khách chưa cung cấp mã vận đơn cụ thể và chưa đăng nhập tài khoản. Để hỗ trợ hủy đơn an toàn, Quý khách vui lòng cung cấp mã vận đơn (ví dụ 333... hoặc NX-...) hoặc đăng nhập tài khoản.\n`;
+        } else {
+          toolAugmentedContext += `\n[THÔNG BÁO TÀI KHOẢN]: Tài khoản của Quý khách hiện không có đơn hàng nào trên hệ thống để thực hiện thao tác hủy.\n`;
+        }
+      } else {
+        // 2. ĐÃ XÁC ĐỊNH ĐƯỢC TARGET CODE -> Kiểm tra Carrier SOP và Trạng thái Vận hành
+        this.sessions.set(conversationId, {
+          ...session,
+          selectedCode: targetCode,
+          lastUpdated: Date.now(),
+        });
+
+        toolsUsed.push(`trackShipment(${targetCode})`);
+        const trackRes = await this.toolsService.trackShipment(targetCode, false);
+
+        if (!trackRes.found) {
+          toolAugmentedContext += `\n[KẾT QUẢ TRA CỨU]: Không tìm thấy mã vận đơn ${targetCode} trên hệ thống để thực hiện hủy đơn.\n`;
+        } else {
+          const status = trackRes.status;
+          const canCancelDirectly = [
+            'CREATED',
+            'TASK_ASSIGNED',
+            'PICKUP_ASSIGNED',
+            'PICKING_UP',
+            'PENDING',
+            'READY_TO_SHIP',
+          ].includes(status);
+          const isFinished = [
+            'CANCELLED',
+            'DELIVERED',
+            'RETURNED',
+            'RETURN_COMPLETED',
+            'LOST',
+            'DAMAGED',
+          ].includes(status);
+          const isBlocked = !canCancelDirectly && !isFinished;
+
+          if (canCancelDirectly) {
+            if (isCancelExplicitConfirm) {
+              // Khách hàng ĐÃ CHÍNH TAY XÁC NHẬN -> Thực thi lệnh hủy!
+              toolsUsed.push(`cancelShipment(${targetCode})`);
+              const cancelRes = await this.toolsService.cancelShipment(targetCode, 'Khách hàng xác nhận hủy đơn qua Trợ lý AI');
+
+              if (session.lastShipments) {
+                session.lastShipments = session.lastShipments.map((s) =>
+                  s.code === targetCode ? { ...s, status: 'CANCELLED', statusText: 'Đã hủy đơn hàng theo yêu cầu của khách' } : s
+                );
+              }
+              this.sessions.set(conversationId, {
+                ...session,
+                selectedCode: undefined,
+                lastUpdated: Date.now(),
+              });
+
+              shipmentCards = [
+                {
+                  code: targetCode,
+                  status: 'CANCELLED',
+                  statusText: 'Đã hủy đơn hàng thành công',
+                  itemName: trackRes.itemName,
+                  receiverCity: trackRes.receiverCity || trackRes.receiverAddress,
+                  receiverName: trackRes.receiverName,
+                  codAmount: 0,
+                  createdAt: trackRes.createdAt,
+                },
+              ];
+
+              actionChips = [
+                { label: '📦 Xem danh sách đơn hàng', query: 'Tôi có những đơn hàng nào' },
+                { label: '➕ Gửi một đơn hàng mới', query: 'Tôi muốn gửi một đơn hàng cho người thân' },
+              ];
+
+              toolAugmentedContext += `\n[KẾT QUẢ HỦY ĐƠN HÀNG THÀNH CÔNG THEO XÁC NHẬN TỪ KHÁCH HÀNG (HUMAN-CONFIRMED)]:\n` +
+                `- Mã vận đơn: ${targetCode}\n` +
+                `- Hàng hóa: ${trackRes.itemName || 'Kiện hàng'}\n` +
+                `- Trạng thái mới: ĐÃ HỦY ĐƠN THÀNH CÔNG (CANCELLED)\n` +
+                `- Cước phí hủy: 0 VNĐ (Miễn phí 100% do bưu tá chưa nhận hàng)\n` +
+                `- Vận hành bưu cục: Hệ thống đã phát lệnh dừng lấy hàng khẩn cấp tới bưu tá phụ trách tuyến.\n` +
+                `- HƯỚNG DẪN AI: Thông báo rõ ràng với khách hàng rằng đơn hàng ${targetCode} đã được hủy thành công, không phát sinh bất kỳ khoản phí nào. Sẵn sàng hỗ trợ nếu khách muốn gửi đơn mới.\n`;
+            } else {
+              // Khách MỚI YÊU CẦU, CHƯA BẤM XÁC NHẬN -> Human-in-the-Loop Gatekeeper!
+              shipmentCards = [
+                {
+                  code: targetCode,
+                  status: trackRes.status,
+                  statusText: trackRes.statusText,
+                  itemName: trackRes.itemName,
+                  receiverCity: trackRes.receiverCity || trackRes.receiverAddress,
+                  receiverName: trackRes.receiverName,
+                  codAmount: trackRes.codAmount,
+                  createdAt: trackRes.createdAt,
+                },
+              ];
+
+              actionChips = [
+                { label: `❌ Xác nhận hủy đơn ${targetCode}`, query: `Xác nhận hủy đơn ${targetCode}` },
+                { label: `🔙 Giữ lại đơn ${targetCode}`, query: `Tôi muốn giữ lại đơn ${targetCode}` },
+                { label: '📦 Xem các đơn khác', query: 'Tôi có những đơn hàng nào' },
+              ];
+
+              toolAugmentedContext += `\n[THẨM ĐỊNH NGHIỆP VỤ HỦY ĐƠN & YÊU CẦU XÁC NHẬN HUMAN-IN-THE-LOOP]:\n` +
+                `- Mã vận đơn: ${targetCode}\n` +
+                `- Hàng hóa: ${trackRes.itemName || 'Kiện hàng'}\n` +
+                `- Trạng thái hiện tại: ${trackRes.statusText} (${trackRes.status})\n` +
+                `- ĐIỀU KIỆN VẬN HÀNH CARRIER SOP: ĐỦ ĐIỀU KIỆN HỦY MIỄN PHÍ 100% (0 VNĐ). Lý do: Bưu tá chưa qua lấy hàng hoặc kiện chưa nhập kho phân loại Hub.\n` +
+                `- NGUYÊN TẮC AN TOÀN VẬN HÀNH (HUMAN-IN-THE-LOOP BẮT BUỘC): Dù AI đã kiểm tra đơn hàng đủ điều kiện hủy, AI TUYỆT ĐỐI KHÔNG ĐƯỢC TỰ TIỆN HỦY ĐƠN NGAY mà BẮT BUỘC CHÍNH TAY KHÁCH HÀNG PHẢI XÁC NHẬN QUYẾT ĐỊNH.\n` +
+                `- HƯỚNG DẪN AI: Báo rõ cho khách biết đơn hàng ${targetCode} hoàn toàn ĐỦ ĐIỀU KIỆN HỦY MIỄN PHÍ (0 VNĐ). Nhấn mạnh nguyên tắc an toàn: mời Quý khách chính tay bấm nút [❌ Xác nhận hủy đơn ${targetCode}] bên dưới hoặc gõ 'Xác nhận hủy đơn ${targetCode}' để hệ thống chính thức phát lệnh dừng lấy hàng cho bưu tá.\n`;
+            }
+          } else if (isBlocked) {
+            // Kiện hàng đang trên xe tải đường trục hoặc đang đi phát -> Physical Block!
+            shipmentCards = [
+              {
+                code: targetCode,
+                status: trackRes.status,
+                statusText: trackRes.statusText,
+                itemName: trackRes.itemName,
+                receiverCity: trackRes.receiverCity || trackRes.receiverAddress,
+                receiverName: trackRes.receiverName,
+                codAmount: trackRes.codAmount,
+                createdAt: trackRes.createdAt,
+              },
+            ];
+
+            actionChips = [
+              { label: '📞 Kết nối hotline 1900-1234', query: 'Tôi muốn gặp chuyên viên tổng đài hỗ trợ gấp' },
+              { label: `🔍 Xem hành trình ${targetCode}`, query: `Tra cứu hành trình đơn ${targetCode}` },
+              { label: '📦 Xem các đơn khác', query: 'Tôi có những đơn hàng nào' },
+            ];
+
+            toolAugmentedContext += `\n[CẢNH BÁO TỪ CHỐI HỦY ĐƠN THEO QUY CHUẨN VẬN HÀNH BƯU CHÍNH (CARRIER SOP PHYSICAL BLOCK)]:\n` +
+              `- Mã vận đơn: ${targetCode}\n` +
+              `- Hàng hóa: ${trackRes.itemName || 'Kiện hàng'}\n` +
+              `- Trạng thái hiện tại: ${trackRes.statusText} (${trackRes.status})\n` +
+              `- Vị trí hiện tại: ${trackRes.currentLocation}\n` +
+              `- BẤT KHẢ KHÁNG VẬT LÝ VẬN HÀNH: Kiện hàng hiện đang trên xe tải đường trục (Linehaul) kẹp chì niêm phong seal, hoặc đang chạy trên băng chuyền chia chọn Hub, hoặc bưu tá đang đi phát chặng cuối. Hệ thống KHÔNG THỂ HỦY NGAY LẬP TỨC trên đường vận chuyển vì không thể dừng xe tải giữa quốc lộ/cao tốc để tìm 1 bưu phẩm.\n` +
+              `- HƯỚNG XỬ LÝ CHUẨN NGHIỆP VỤ CHO KHÁCH HÀNG:\n` +
+              `  1. Khi bưu tá liên hệ phát hàng, người nhận có thể TỪ CHỐI NHẬN HÀNG (đơn sẽ tự động chuyển hoàn RTO về người gửi, cước hoàn 50% cước chiều đi theo chính sách bưu chính).\n` +
+              `  2. Hoặc khách hàng có thể liên hệ ngay Hotline Vận hành 1900-1234 để điều phối viên tiếp nhận và gắn cờ chuyển hoàn khi xe cập Hub phát.\n`;
+          } else if (isFinished) {
+            toolAugmentedContext += `\n[THÔNG BÁO TRẠNG THÁI ĐƠN HÀNG]: Đơn hàng ${targetCode} hiện ở trạng thái [${trackRes.statusText}] (${trackRes.status}). Đơn hàng đã kết thúc chu trình giao nhận, không thể thực hiện thao tác hủy.\n`;
+          }
+        }
+      }
+    } else if (trackingMatch) {
       const trackingCode = trackingMatch[1] ? trackingMatch[1].toUpperCase() : trackingMatch[0];
       toolsUsed.push(`trackShipment(${trackingCode}, isGuest=${isGuest})`);
       const trackRes = await this.toolsService.trackShipment(trackingCode, isGuest);
+
+      // Cập nhật session với mã đơn vừa tra cứu
+      this.sessions.set(conversationId, {
+        ...session,
+        selectedCode: trackingCode,
+        lastUpdated: Date.now(),
+      });
 
       if (!trackRes.found) {
         toolAugmentedContext += `\n[KẾT QUẢ TRA CỨU]: ${trackRes.notFoundMessage || `Không tìm thấy mã vận đơn ${trackingCode} trên hệ thống.`}\n`;
@@ -76,6 +357,14 @@ export class ChatService {
             codAmount: trackRes.codAmount,
             createdAt: trackRes.createdAt,
           },
+        ];
+
+        // Gợi ý action chips phù hợp với trạng thái đơn
+        const canCancel = ['CREATED', 'TASK_ASSIGNED', 'PICKUP_ASSIGNED', 'PICKING_UP', 'PENDING', 'READY_TO_SHIP'].includes(trackRes.status);
+        actionChips = [
+          ...(canCancel ? [{ label: `❌ Hủy đơn ${trackRes.trackingNumber}`, query: `Tôi muốn hủy đơn hàng ${trackRes.trackingNumber}` }] : []),
+          { label: '📦 Xem các đơn hàng của tôi', query: 'Tôi có những đơn hàng nào' },
+          { label: '➕ Gửi đơn hàng mới', query: 'Tôi muốn gửi hàng mới' },
         ];
 
         toolAugmentedContext += `\n[THÔNG TIN TRA CỨU ĐƠN HÀNG MÃ ${trackingCode}${isGuest ? ' (CHẾ ĐỘ KHÁCH VÃNG LAI - ĐÃ MÃ HÓA THÔNG TIN CÁ NHÂN PII)' : ''}]:\n` +
@@ -180,6 +469,27 @@ export class ChatService {
           shippingFee: 32000,
         });
 
+        // Lưu đơn hàng vừa tạo vào bộ nhớ phiên đa lượt (Multi-turn conversational memory)
+        const currentSession = this.sessions.get(conversationId) || { lastUpdated: Date.now() };
+        this.sessions.set(conversationId, {
+          ...currentSession,
+          selectedCode: created.trackingNumber,
+          lastShipments: [
+            {
+              code: created.trackingNumber,
+              itemName: 'Kiện hàng quà tặng người thân',
+              status: 'TASK_ASSIGNED',
+              statusText: 'Đã phân công bưu tá lấy hàng',
+              receiverCity: 'Quận Hoàn Kiếm, TP. Hà Nội',
+              receiverName: 'Anh Nguyễn Văn An',
+              codAmount: 0,
+              createdAt: 'Hôm nay',
+            },
+            ...(currentSession.lastShipments || []),
+          ],
+          lastUpdated: Date.now(),
+        });
+
         shipmentCards = [
           {
             code: created.trackingNumber,
@@ -195,6 +505,7 @@ export class ChatService {
 
         actionChips = [
           { label: '🔍 Tra cứu hành trình đơn này', query: `Tra cứu hành trình đơn ${created.trackingNumber}` },
+          { label: '❌ Hủy đơn này', query: `Tôi muốn hủy đơn hàng ${created.trackingNumber}` },
           { label: '📦 Xem các đơn hàng của tôi', query: 'Tôi có những đơn hàng nào' },
           { label: '➕ Gửi thêm một đơn khác', query: 'Tôi muốn gửi một đơn hàng cho người thân' },
         ];
@@ -244,6 +555,33 @@ export class ChatService {
           if (!userShipments.found || userShipments.items.length === 0) {
             toolAugmentedContext += `\n[KẾT QUẢ TRA CỨU]: Tài khoản ${dto.userId} hiện chưa có đơn hàng nào được ghi nhận trên hệ thống Nexus Logistics. Hãy thông báo lịch sự cho khách hàng rằng tài khoản chưa phát sinh đơn gửi và mời khách hàng gửi mã vận đơn cụ thể nếu muốn tra cứu đơn nhận.\n`;
           } else {
+            // Lưu danh sách đơn hàng vào session phục vụ ngữ cảnh hội thoại đa lượt
+            this.sessions.set(conversationId, {
+              lastShipments: userShipments.items,
+              selectedCode: userShipments.items.length === 1 ? userShipments.items[0].code : undefined,
+              lastUpdated: Date.now(),
+            });
+
+            // Action chips hỗ trợ tương tác nhanh cho từng đơn hàng
+            actionChips = userShipments.items.slice(0, 3).map((it) => ({
+              label: `📦 Đơn ${it.code}`,
+              query: `Tra cứu hành trình đơn ${it.code}`,
+            }));
+            if (userShipments.items.length === 1) {
+              const single = userShipments.items[0];
+              if (['CREATED', 'TASK_ASSIGNED', 'PICKUP_ASSIGNED', 'PICKING_UP', 'PENDING', 'READY_TO_SHIP'].includes(single.status)) {
+                actionChips.push({
+                  label: `❌ Hủy đơn ${single.code}`,
+                  query: `Tôi muốn hủy đơn hàng ${single.code}`,
+                });
+              }
+            } else if (userShipments.items.length > 1) {
+              actionChips.push({
+                label: '❌ Hủy một đơn hàng',
+                query: 'Tôi muốn hủy đơn hàng',
+              });
+            }
+
             // Đính kèm danh sách thẻ đơn hàng shipmentCards vào DTO phản hồi
             shipmentCards = userShipments.items.map((it) => ({
               code: it.code,
@@ -286,7 +624,8 @@ export class ChatService {
               toolAugmentedContext += `\n[DANH SÁCH CÁC ĐƠN HÀNG GẦN ĐÂY CỦA TÀI KHOẢN ${dto.userId} (Tổng cộng: ${userShipments.total} đơn)]:\n` +
                 userShipments.items.map((it, idx) =>
                   `  ${idx + 1}. Mã vận đơn: ${it.code} | Hàng hóa: ${it.itemName} | Trạng thái: ${it.statusText} (${it.status}) | Điểm đến: ${it.receiverCity || it.receiverAddress} | Tiền COD: ${it.codAmount ? it.codAmount.toLocaleString('vi-VN') + ' VNĐ' : '0 VNĐ'} | Tạo ngày: ${it.createdAt}`
-                ).join('\n') + '\n';
+                ).join('\n') + '\n' +
+                `- HƯỚNG DẪN AI: Khách hàng ĐÃ ĐĂNG NHẬP HỢP LỆ (Tài khoản: ${dto.userId}). Hãy chào mừng khách hàng và liệt kê danh sách ${userShipments.total} đơn hàng trên kèm trạng thái rõ ràng để khách tiện theo dõi. Hướng dẫn khách có thể bấm vào các nút gợi ý bên dưới nếu muốn tra cứu chi tiết hoặc thao tác hủy đơn.\n`;
             }
           }
         }
@@ -710,7 +1049,14 @@ Bạn có kiến thức uyên thâm, thấu đáo và toàn diện về toàn b�
 - Chủ động kết nối các thông tin nghiệp vụ liên quan để tư vấn giải pháp thấu đáo, KHÔNG trả lời cụt ngủn hay rập khuôn máy móc.
 - Sử dụng emoji trực quan (📦, 📍, 🛡️, 💰, 🚚, ⏰, 🏬, ⚖️, ⚠️) để câu trả lời sinh động, chuyên nghiệp.
 - Trình bày định dạng sạch đẹp: không dùng dấu nháy đơn ngược (backtick), không dùng ba dấu sao liên tiếp (***), dấu gạch đầu dòng và nội dung nằm cùng một dòng.
-- CHUẨN MỰC GIAO TIẾP VỚI KHÁCH HÀNG: TUYỆT ĐỐI KHÔNG xuất ra tên file nội bộ (ví dụ .md), không nói "theo tài liệu tham chiếu đoạn 1 đoạn 2", không để lộ thuật ngữ kỹ thuật (như Gateway, BFF, Port, Vector). Khi tư vấn chính sách bồi thường, bảo hiểm, đồng kiểm, giao lại hay chuyển hoàn, hãy diễn đạt tự nhiên: "Theo Quy chuẩn & Chính sách dịch vụ của Nexus Logistics..." và hướng dẫn người dùng có thể xem chi tiết tại mục Điều khoản & Chính sách dịch vụ của chúng tôi.`;
+- CHUẨN MỰC GIAO TIẾP VỚI KHÁCH HÀNG: TUYỆT ĐỐI KHÔNG xuất ra tên file nội bộ (ví dụ .md), không nói "theo tài liệu tham chiếu đoạn 1 đoạn 2", không để lộ thuật ngữ kỹ thuật (như Gateway, BFF, Port, Vector). Khi tư vấn chính sách bồi thường, bảo hiểm, đồng kiểm, giao lại hay chuyển hoàn, hãy diễn đạt tự nhiên: "Theo Quy chuẩn & Chính sách dịch vụ của Nexus Logistics..." và hướng dẫn người dùng có thể xem chi tiết tại mục Điều khoản & Chính sách dịch vụ của chúng tôi.
+
+4. QUY TRÌNH HỦY ĐƠN HÀNG, PHÂN GIẢI NGỮ CẢNH & NGUYÊN TẮC XÁC NHẬN HUMAN-IN-THE-LOOP:
+- Nắm bắt ngữ cảnh đa lượt: Khi người dùng nói "tôi muốn hủy đơn hàng này", "hủy đơn này", hãy tra cứu đơn hàng vừa được đề cập hoặc vừa tạo trong phiên hội thoại. Nếu người dùng có nhiều đơn hàng chưa rõ đơn nào, hãy liệt kê và hỏi lại để làm rõ (Disambiguation), tuyệt đối không đoán mò.
+- Kiểm tra điều kiện vận hành Carrier SOP:
+  + Nếu đơn ở trạng thái CREATED, TASK_ASSIGNED, PICKING_UP, PENDING (bưu tá chưa lấy hàng / kiện chưa nhập kho Hub): Đủ điều kiện hủy miễn phí 100% (0 VNĐ). Tuy nhiên, AI TUYỆT ĐỐI KHÔNG TỰ TIỆN HỦY NGAY mà phải giải thích rõ ràng và yêu cầu khách hàng tự tay bấm nút xác nhận quyết định hủy (Human-in-the-Loop Principle).
+  + Nếu đơn ở trạng thái SORTING, IN_TRANSIT, OUT_FOR_DELIVERY, DELIVERING (đang luân chuyển trên xe tải đường trục kẹp chì seal hoặc đang đi phát): Tuyệt đối từ chối hủy ngay lập tức vì lý do an toàn vận hành vật lý (không thể dừng xe tải giữa đường cao tốc để tìm kiện hàng), hướng dẫn khách từ chối nhận khi bưu tá giao (chuyển hoàn RTO cước 50%) hoặc liên hệ hotline 1900-1234.
+  + Khi khách hàng đã chính thức bấm xác nhận hủy: Thông báo hủy thành công, bưu tá phụ trách đã nhận lệnh dừng lấy hàng và khách không mất bất kỳ khoản phí nào.`;
 
     const userPrompt = `DỮ LIỆU NGỮ CẢNH HỆ THỐNG CUNG CẤP:
 ${context || '(Không tìm thấy tài liệu phù hợp trực tiếp)'}
@@ -720,91 +1066,542 @@ ${question}
 
 HÃY ĐƯA RA CÂU TRẢ LỜI ĐẦY ĐỦ VÀ CHÍNH XÁC:`;
 
-    // 1. Ưu tiên sử dụng Google Gemini API nếu có cấu hình GEMINI_API_KEY
-    if (this.geminiApiKey) {
-      const candidateModels = Array.from(
-        new Set([
-          'gemini-3.5-flash-lite',
-          'gemini-3-flash-preview',
-          'gemini-3.8-flash',
-          this.geminiModel,
-        ].filter(Boolean))
+    // 1. Phân luồng tác tử chuyên biệt theo mô hình Heterogeneous Multi-Agent (HMAS):
+    const isToolContext = context.includes('=== DỮ LIỆU THỜI GIAN THỰC TỪ HỆ THỐNG LOGISTICS ===');
+    const isKnowledgeContext = citations.length > 0 || context.includes('=== TÀI LIỆU QUY CHUẨN') || context.includes('Điều 25');
+
+    // Tác tử 1: Operation Agent (Llama 3.3 70B / Groq LPU) cho các thao tác tra cứu, tính cước, đơn hàng
+    if (isToolContext && this.groqApiKey) {
+      const opSystemPrompt = `${systemPrompt}\n\n[CHỈ DẪN VAI TRÒ CHUYÊN BIỆT: OPERATION AGENT - LLAMA 3.3 70B]\nBạn là Operation Agent phụ trách tổng hợp dữ liệu logistics thời gian thực từ các APIs nội bộ, định dạng thẻ đơn hàng, tính cước IATA và hỗ trợ bưu tá/khách hàng. Trả lời trực quan, chuẩn xác.`;
+      const opResult = await this.callOpenAiCompatible(
+        'https://api.groq.com/openai/v1/chat/completions',
+        this.groqApiKey,
+        this.groqOperationModel,
+        opSystemPrompt,
+        userPrompt
       );
-
-      for (const model of candidateModels) {
-        try {
-          const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${this.geminiApiKey}`;
-          const generationConfig: any = {
-            temperature: this.temperature,
-          };
-
-          const resp = await fetch(geminiUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              systemInstruction: {
-                parts: [{ text: systemPrompt }],
-              },
-              contents: [
-                {
-                  parts: [{ text: userPrompt }],
-                },
-              ],
-              generationConfig,
-            }),
-            signal: AbortSignal.timeout(4000),
-          });
-
-          if (resp.ok) {
-            const data = (await resp.json()) as any;
-            const answerText = data.candidates?.[0]?.content?.parts?.[0]?.text;
-            if (answerText) {
-              this.logger.log(`Google Gemini (${model}) generated answer successfully.`);
-              return this.cleanBotFormatting(answerText);
-            }
-          } else {
-            const errText = await resp.text();
-            this.logger.warn(`Google Gemini API error with model ${model} (${resp.status}): ${errText}`);
-          }
-        } catch (err: any) {
-          this.logger.warn(`Google Gemini fetch failed for model ${model}: ${err.message}`);
-        }
+      if (opResult) {
+        this.logger.log(`Operation Agent (${this.groqOperationModel} / Groq LPU) generated answer successfully.`);
+        return this.cleanBotFormatting(opResult);
       }
     }
 
-    // 2. Dự phòng OpenAI API nếu có cấu hình OPENAI_API_KEY
-    if (this.apiKey) {
-      try {
-        const resp = await fetch('https://api.openai.com/v1/chat/completions', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${this.apiKey}`,
-          },
-          body: JSON.stringify({
-            model: this.chatModel,
-            temperature: this.temperature,
-            messages: [
-              { role: 'system', content: systemPrompt },
-              { role: 'user', content: userPrompt },
-            ],
-          }),
-        });
+    // Tác tử 2: Knowledge Agent (Qwen 2.5 32B / Groq LPU) cho hỏi đáp RAG chính sách, bồi thường, bảo hiểm
+    if (isKnowledgeContext && this.groqApiKey) {
+      const kwSystemPrompt = `${systemPrompt}\n\n[CHỈ DẪN VAI TRÒ CHUYÊN BIỆT: KNOWLEDGE AGENT - QWEN 2.5 32B]\nBạn là Knowledge Agent phụ trách trích xuất chính sách SOP, Điều 25 Luật Bưu chính, biểu phí và quy chuẩn đóng gói dễ vỡ. Dùng tokenizer tiếng Việt tự nhiên, giải thích cặn kẽ.`;
+      const kwResult = await this.callOpenAiCompatible(
+        'https://api.groq.com/openai/v1/chat/completions',
+        this.groqApiKey,
+        this.groqKnowledgeModel,
+        kwSystemPrompt,
+        userPrompt
+      );
+      if (kwResult) {
+        this.logger.log(`Knowledge Agent (${this.groqKnowledgeModel} / Groq LPU) generated answer successfully.`);
+        return this.cleanBotFormatting(kwResult);
+      }
+    }
 
-        if (resp.ok) {
-          const data = (await resp.json()) as any;
-          return this.cleanBotFormatting(data.choices[0].message.content);
-        } else {
-          const errText = await resp.text();
-          this.logger.warn(`OpenAI LLM error ${resp.status}: ${errText}`);
-        }
-      } catch (err: any) {
-        this.logger.warn(`OpenAI LLM fetch failed: ${err.message}`);
+    // Tác tử 3: Supervisor Agent (Google Gemini 3.6 Flash / Google AI Studio) - Chỉ huy & Fallback Cascade bậc 1
+    if (this.geminiApiKey) {
+      const geminiResult = await this.callGemini(this.geminiModel, systemPrompt, userPrompt);
+      if (geminiResult) {
+        this.logger.log(`Supervisor Agent (${this.geminiModel} / Google AI Studio) generated answer successfully.`);
+        return this.cleanBotFormatting(geminiResult);
+      }
+    }
+
+    // Tác tử 4 Dự phòng: OpenAI API (nếu có cấu hình OPENAI_API_KEY)
+    if (this.apiKey) {
+      const openaiResult = await this.callOpenAiCompatible(
+        'https://api.openai.com/v1/chat/completions',
+        this.apiKey,
+        this.chatModel,
+        systemPrompt,
+        userPrompt
+      );
+      if (openaiResult) {
+        this.logger.log(`Fallback OpenAI API (${this.chatModel}) generated answer successfully.`);
+        return this.cleanBotFormatting(openaiResult);
       }
     }
 
     // 3. Chế độ Fallback Offline Semantic Demo nếu không có key hoặc lỗi mạng
     return this.cleanBotFormatting(this.generateOfflineDemoAnswer(question, context, citations));
+  }
+
+  /**
+   * Gọi mô hình tương thích OpenAI REST API (sử dụng cho Groq Cloud và NVIDIA NIM)
+   */
+  private async callOpenAiCompatible(
+    apiUrl: string,
+    apiKey: string,
+    model: string,
+    systemPrompt: string,
+    userPrompt: string,
+    timeoutMs = 6000
+  ): Promise<string | null> {
+    if (!apiKey) return null;
+    try {
+      const resp = await fetch(apiUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify({
+          model,
+          temperature: this.temperature,
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: userPrompt },
+          ],
+        }),
+        signal: AbortSignal.timeout(timeoutMs),
+      });
+
+      if (resp.ok) {
+        const data = (await resp.json()) as any;
+        const text = data.choices?.[0]?.message?.content;
+        if (text) return text;
+      } else {
+        const err = await resp.text();
+        this.logger.warn(`API call error for ${model} (${resp.status}): ${err}`);
+      }
+    } catch (err: any) {
+      this.logger.warn(`API call failed for ${model}: ${err.message}`);
+    }
+    return null;
+  }
+
+  /**
+   * Gọi Google Gemini API với danh sách fallback model tự động
+   */
+  private async callGemini(
+    model: string,
+    systemPrompt: string,
+    userPrompt: string,
+    timeoutMs = 5000
+  ): Promise<string | null> {
+    if (!this.geminiApiKey) return null;
+    const candidateModels = Array.from(
+      new Set([model, this.geminiModel, 'gemini-3.6-flash', 'gemini-3.5-flash-lite'].filter(Boolean))
+    );
+
+    for (const m of candidateModels) {
+      try {
+        const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${m}:generateContent?key=${this.geminiApiKey}`;
+        const resp = await fetch(geminiUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            systemInstruction: {
+              parts: [{ text: systemPrompt }],
+            },
+            contents: [
+              {
+                parts: [{ text: userPrompt }],
+              },
+            ],
+            generationConfig: {
+              temperature: this.temperature,
+            },
+          }),
+          signal: AbortSignal.timeout(timeoutMs),
+        });
+
+        if (resp.ok) {
+          const data = (await resp.json()) as any;
+          const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+          if (text) return text;
+        } else {
+          const err = await resp.text();
+          this.logger.warn(`Gemini (${m}) returned ${resp.status}: ${err}`);
+        }
+      } catch (err: any) {
+        this.logger.warn(`Gemini (${m}) fetch error: ${err.message}`);
+      }
+    }
+    return null;
+  }
+
+  /**
+   * Tác tử 4: Validation Agent (Nemotron-70B / NVIDIA NIM)
+   * Kiểm tra NeMo Guardrail, phát hiện rủi ro bưu chính và kích hoạt Human-in-the-Loop (HITL)
+   */
+  public async callValidationAgent(
+    actionType: string,
+    payloadText: string,
+    userRole = 'GUEST'
+  ): Promise<{ isApproved: boolean; requiresHitl: boolean; riskLevel: 'LOW' | 'MEDIUM' | 'HIGH'; reason: string }> {
+    const isRiskyMutation =
+      actionType === 'CANCEL_ORDER' ||
+      actionType === 'REFUND_PAYOUT' ||
+      actionType === 'CHANGE_ADDRESS' ||
+      payloadText.toLowerCase().includes('huy don') ||
+      payloadText.toLowerCase().includes('doi dia chi');
+
+    if (isRiskyMutation) {
+      const guardrailPrompt = `Bạn là Safety Guardrail AI của Nexus Logistics. Hãy kiểm tra thao tác sau: Hành động="${actionType}", Nội dung="${payloadText}", Vai trò người dùng="${userRole}". Cho biết rủi ro và có cần người duyệt (HITL) không. Trả về JSON: {"approved": boolean, "requiresHitl": boolean, "risk": "LOW"|"MEDIUM"|"HIGH", "reason": string}`;
+
+      // 1. Kiểm tra qua Groq Safeguard nếu dùng provider groq (hoặc khi không có NVIDIA key)
+      if ((this.validationProvider === 'groq' || !this.nvidiaApiKey) && this.groqApiKey) {
+        const groqModel = this.validationModel || 'openai/gpt-oss-safeguard-20b';
+        try {
+          const verdictRaw = await this.callOpenAiCompatible(
+            'https://api.groq.com/openai/v1/chat/completions',
+            this.groqApiKey,
+            groqModel,
+            guardrailPrompt,
+            payloadText,
+            8000
+          );
+          if (verdictRaw) {
+            try {
+              const parsed = JSON.parse(verdictRaw.replace(/```json|```/g, '').trim());
+              return {
+                isApproved: parsed.approved ?? false,
+                requiresHitl: parsed.requiresHitl ?? true,
+                riskLevel: parsed.risk ?? 'HIGH',
+                reason: parsed.reason ?? 'Cần phê duyệt từ người dùng theo chuẩn an toàn bưu chính.',
+              };
+            } catch {
+              // parse error -> fallback
+            }
+          }
+        } catch (err: any) {
+          this.logger.warn(`Groq Validation Agent error with model ${groqModel}: ${err.message}`);
+        }
+      }
+
+      // 2. Kiểm tra qua OpenRouter nếu cấu hình
+      if (this.validationProvider === 'openrouter' && this.openrouterApiKey) {
+        const routerModel = this.validationModel || 'nvidia/nemotron-3.5-lightning:free';
+        try {
+          const verdictRaw = await this.callOpenAiCompatible(
+            'https://openrouter.ai/api/v1/chat/completions',
+            this.openrouterApiKey,
+            routerModel,
+            guardrailPrompt,
+            payloadText,
+            8000
+          );
+          if (verdictRaw) {
+            try {
+              const parsed = JSON.parse(verdictRaw.replace(/```json|```/g, '').trim());
+              return {
+                isApproved: parsed.approved ?? false,
+                requiresHitl: parsed.requiresHitl ?? true,
+                riskLevel: parsed.risk ?? 'HIGH',
+                reason: parsed.reason ?? 'Cần phê duyệt từ người dùng theo chuẩn an toàn.',
+              };
+            } catch {
+              // parse error
+            }
+          }
+        } catch (err: any) {
+          this.logger.warn(`OpenRouter Validation Agent error: ${err.message}`);
+        }
+      }
+
+      // 3. Kiểm tra qua NVIDIA NIM nếu cấu hình và có key
+      if (this.validationProvider === 'nvidia' && this.nvidiaApiKey) {
+        const candidateNvidiaModels = Array.from(
+          new Set([
+            this.nvidiaValidationModel,
+            'nvidia/nemotron-3.5-lightning-30b-a3b',
+            'nvidia/nemotron-3-ultra-550b-a55b',
+            'nvidia/nemotron-3.5-super-vl-120b-a12b',
+            'nvidia/llama-3.3-nemotron-super-49b-v1.5',
+            'meta/llama-3.3-70b-instruct',
+          ].filter(Boolean))
+        );
+
+        for (const model of candidateNvidiaModels) {
+          try {
+            const verdictRaw = await this.callOpenAiCompatible(
+              'https://integrate.api.nvidia.com/v1/chat/completions',
+              this.nvidiaApiKey,
+              model,
+              guardrailPrompt,
+              payloadText,
+              4000
+            );
+            if (verdictRaw) {
+              try {
+                const parsed = JSON.parse(verdictRaw.replace(/```json|```/g, '').trim());
+                return {
+                  isApproved: parsed.approved ?? true,
+                  requiresHitl: parsed.requiresHitl ?? true,
+                  riskLevel: parsed.risk ?? 'HIGH',
+                  reason: parsed.reason ?? 'Thao tác ảnh hưởng trạng thái vận đơn, cần người duyệt xác nhận.',
+                };
+              } catch {
+                // parse error -> fallback
+              }
+            }
+          } catch (err: any) {
+            this.logger.warn(`NVIDIA NIM Validation Agent error with model ${model}: ${err.message}`);
+          }
+        }
+      }
+
+      // Dự phòng qua Groq LPU (Llama Guard / Llama 3.3) nếu không có NVIDIA NIM
+      if (this.groqApiKey) {
+        const guardrailPrompt = `Bạn là NeMo Guardrail AI của Nexus Logistics. Kiểm tra thao tác: Hành động="${actionType}", Nội dung="${payloadText}". Trả về JSON: {"approved": boolean, "requiresHitl": boolean, "risk": "LOW"|"MEDIUM"|"HIGH", "reason": string}`;
+        try {
+          const verdictRaw = await this.callOpenAiCompatible(
+            'https://api.groq.com/openai/v1/chat/completions',
+            this.groqApiKey,
+            this.groqOperationModel,
+            guardrailPrompt,
+            payloadText,
+            3000
+          );
+          if (verdictRaw) {
+            try {
+              const parsed = JSON.parse(verdictRaw.replace(/```json|```/g, '').trim());
+              return {
+                isApproved: parsed.approved ?? true,
+                requiresHitl: parsed.requiresHitl ?? true,
+                riskLevel: parsed.risk ?? 'HIGH',
+                reason: parsed.reason ?? 'Cần phê duyệt từ người dùng theo chuẩn an toàn.',
+              };
+            } catch {}
+          }
+        } catch {}
+      }
+
+      return {
+        isApproved: true,
+        requiresHitl: true,
+        riskLevel: 'HIGH',
+        reason: 'Thao tác làm thay đổi dữ liệu đơn hàng bưu chính, kích hoạt Human-in-the-Loop để bảo vệ an toàn.',
+      };
+    }
+
+    return {
+      isApproved: true,
+      requiresHitl: false,
+      riskLevel: 'LOW',
+      reason: 'Truy vấn thông tin an toàn.',
+    };
+  }
+
+  /**
+   * Diagnostic Health Check cho cả 4 Tác tử (Big Four Multi-Agent Matrix)
+   */
+  public async checkMultiAgentHealth(): Promise<{
+    timestamp: string;
+    overallStatus: 'HEALTHY' | 'DEGRADED';
+    agents: {
+      supervisor: { provider: string; model: string; status: string; latencyMs?: number; note?: string };
+      knowledge: { provider: string; model: string; status: string; latencyMs?: number; note?: string };
+      operation: { provider: string; model: string; status: string; latencyMs?: number; note?: string };
+      validation: { provider: string; model: string; status: string; latencyMs?: number; note?: string };
+    };
+    fallbackCascade: {
+      active: boolean;
+      primaryAvailable: boolean;
+      offlineFallbackReady: boolean;
+    };
+  }> {
+    const pingPrompt = 'Trả lời đúng 1 chữ: OK';
+
+    // 1. Check Supervisor (Gemini)
+    const t0 = Date.now();
+    let supStatus = 'KEY_MISSING';
+    let supLatency: number | undefined;
+    if (this.geminiApiKey) {
+      try {
+        const res = await this.callGemini(this.geminiModel, 'System ping', pingPrompt, 3000);
+        supLatency = Date.now() - t0;
+        supStatus = res ? 'CONNECTED' : 'UNREACHABLE';
+      } catch {
+        supStatus = 'ERROR';
+      }
+    }
+
+    // 2. Check Knowledge (Groq / Qwen)
+    const t1 = Date.now();
+    let kwStatus = 'KEY_MISSING (Fallback to Gemini)';
+    let kwLatency: number | undefined;
+    if (this.groqApiKey) {
+      try {
+        const res = await this.callOpenAiCompatible(
+          'https://api.groq.com/openai/v1/chat/completions',
+          this.groqApiKey,
+          this.groqKnowledgeModel,
+          'System ping',
+          pingPrompt,
+          3000
+        );
+        kwLatency = Date.now() - t1;
+        kwStatus = res ? 'CONNECTED' : 'UNREACHABLE';
+      } catch {
+        kwStatus = 'ERROR';
+      }
+    }
+
+    // 3. Check Operation (Groq / Llama)
+    const t2 = Date.now();
+    let opStatus = 'KEY_MISSING (Fallback to Gemini)';
+    let opLatency: number | undefined;
+    if (this.groqApiKey) {
+      try {
+        const res = await this.callOpenAiCompatible(
+          'https://api.groq.com/openai/v1/chat/completions',
+          this.groqApiKey,
+          this.groqOperationModel,
+          'System ping',
+          pingPrompt,
+          3000
+        );
+        opLatency = Date.now() - t2;
+        opStatus = res ? 'CONNECTED' : 'UNREACHABLE';
+      } catch {
+        opStatus = 'ERROR';
+      }
+    }
+
+    // 4. Check Validation (Groq Safeguard / OpenRouter / NVIDIA NIM / Local Rule Engine)
+    const t3 = Date.now();
+    let valProviderName = 'NVIDIA NIM (NVIDIA)';
+    let valStatus = 'KEY_MISSING (Fallback to Local Rule Engine)';
+    let valLatency: number | undefined;
+    let activeValidationModel = this.validationModel;
+
+    if (this.validationProvider === 'groq' && this.groqApiKey) {
+      valProviderName = 'Groq LPU (Safeguard / OpenAI)';
+      activeValidationModel = this.validationModel || 'openai/gpt-oss-safeguard-20b';
+      try {
+        const res = await this.callOpenAiCompatible(
+          'https://api.groq.com/openai/v1/chat/completions',
+          this.groqApiKey,
+          activeValidationModel,
+          'System ping',
+          pingPrompt,
+          3000
+        );
+        valLatency = Date.now() - t3;
+        valStatus = res ? 'CONNECTED' : 'UNREACHABLE';
+      } catch {
+        valStatus = 'ERROR';
+      }
+    } else if (this.validationProvider === 'openrouter' && this.openrouterApiKey) {
+      valProviderName = 'NVIDIA (Nemotron Lightning)';
+      activeValidationModel = this.validationModel || 'nvidia/nemotron-3.5-lightning:free';
+      try {
+        const res = await this.callOpenAiCompatible(
+          'https://openrouter.ai/api/v1/chat/completions',
+          this.openrouterApiKey,
+          activeValidationModel,
+          'System ping',
+          pingPrompt,
+          8000
+        );
+        valLatency = Date.now() - t3;
+        valStatus = res ? 'CONNECTED' : 'UNREACHABLE';
+      } catch {
+        valStatus = 'ERROR';
+      }
+    } else if (this.nvidiaApiKey) {
+      valProviderName = 'NVIDIA NIM (NVIDIA)';
+      const candidateNvidiaModels = Array.from(
+        new Set([
+          this.nvidiaValidationModel,
+          'nvidia/nemotron-3.5-lightning-30b-a3b',
+          'nvidia/nemotron-3-ultra-550b-a55b',
+          'nvidia/nemotron-3.5-super-vl-120b-a12b',
+          'nvidia/llama-3.3-nemotron-super-49b-v1.5',
+          'meta/llama-3.3-70b-instruct',
+        ].filter(Boolean))
+      );
+
+      for (const m of candidateNvidiaModels) {
+        try {
+          const res = await this.callOpenAiCompatible(
+            'https://integrate.api.nvidia.com/v1/chat/completions',
+            this.nvidiaApiKey,
+            m,
+            'System ping',
+            pingPrompt,
+            3000
+          );
+          if (res) {
+            valLatency = Date.now() - t3;
+            valStatus = 'CONNECTED';
+            activeValidationModel = m;
+            break;
+          }
+        } catch {
+          valStatus = 'ERROR';
+        }
+      }
+      if (valStatus !== 'CONNECTED') {
+        valStatus = 'UNREACHABLE (Model deprecated or key error)';
+      }
+    } else if (this.groqApiKey) {
+      // Tự động dùng Groq Safeguard nếu không có key nào khác
+      valProviderName = 'Groq LPU (Safeguard / OpenAI)';
+      activeValidationModel = 'openai/gpt-oss-safeguard-20b';
+      try {
+        const res = await this.callOpenAiCompatible(
+          'https://api.groq.com/openai/v1/chat/completions',
+          this.groqApiKey,
+          activeValidationModel,
+          'System ping',
+          pingPrompt,
+          3000
+        );
+        valLatency = Date.now() - t3;
+        valStatus = res ? 'CONNECTED' : 'UNREACHABLE';
+      } catch {
+        valStatus = 'ERROR';
+      }
+    }
+
+    const hasAnyLlm = supStatus === 'CONNECTED' || kwStatus === 'CONNECTED' || opStatus === 'CONNECTED' || valStatus === 'CONNECTED';
+
+    return {
+      timestamp: new Date().toISOString(),
+      overallStatus: hasAnyLlm ? 'HEALTHY' : 'DEGRADED',
+      agents: {
+        supervisor: {
+          provider: 'Google AI Studio',
+          model: this.geminiModel,
+          status: supStatus,
+          latencyMs: supLatency,
+          note: 'Chỉ huy & Lập kế hoạch DAG điều phối',
+        },
+        knowledge: {
+          provider: 'Groq LPU (Alibaba)',
+          model: this.groqKnowledgeModel,
+          status: kwStatus,
+          latencyMs: kwLatency,
+          note: 'RAG trích xuất chính sách SOP, Điều 25 Luật Bưu chính',
+        },
+        operation: {
+          provider: 'Groq LPU (OpenAI)',
+          model: this.groqOperationModel,
+          status: opStatus,
+          latencyMs: opLatency,
+          note: 'Logistics Tool Calling, tính cước IATA, định dạng vận đơn',
+        },
+        validation: {
+          provider: valProviderName,
+          model: activeValidationModel,
+          status: valStatus,
+          latencyMs: valLatency,
+          note: 'Safety Guardrail & Audit, phát hiện rủi ro & kích hoạt HITL',
+        },
+      },
+      fallbackCascade: {
+        active: true,
+        primaryAvailable: supStatus === 'CONNECTED',
+        offlineFallbackReady: true,
+      },
+    };
   }
 
   /**

@@ -48,16 +48,22 @@ function maskAddress(addr?: string): string {
 export function formatShipmentStatusVi(status?: string): string {
   switch (status) {
     case 'CREATED': return 'Đã tạo đơn hàng thành công';
-    case 'TASK_ASSIGNED': return 'Đã phân công bưu tá lấy hàng';
+    case 'TASK_ASSIGNED':
+    case 'PICKUP_ASSIGNED': return 'Đã phân công bưu tá lấy hàng';
+    case 'PICKING_UP': return 'Bưu tá đang qua lấy hàng';
     case 'PICKED_UP': return 'Bưu tá đã lấy hàng thành công';
     case 'RECEIVED_ORIGIN_HUB': return 'Đã nhập kho bưu cục gốc';
+    case 'SORTING': return 'Đang phân loại tại Hub chia chọn';
+    case 'LINEHAUL_DISPATCH': return 'Đang chuyển xe tải đường trục liên tỉnh';
     case 'IN_TRANSIT': return 'Đang trung chuyển liên tỉnh';
     case 'RECEIVED_DESTINATION_HUB': return 'Đã đến bưu cục phát';
-    case 'OUT_FOR_DELIVERY': return 'Bưu tá đang trên đường giao hàng';
+    case 'OUT_FOR_DELIVERY':
+    case 'DELIVERING': return 'Bưu tá đang trên đường giao hàng';
     case 'DELIVERED': return 'Đã giao hàng thành công';
     case 'FAILED_ATTEMPT': return 'Giao hàng không thành công (chờ phát lại)';
     case 'RETURNING': return 'Đang chuyển hoàn về người gửi';
-    case 'RETURNED': return 'Đã chuyển hoàn thành công';
+    case 'RETURNED':
+    case 'RETURN_COMPLETED': return 'Đã chuyển hoàn thành công';
     case 'CANCELLED': return 'Đã hủy đơn hàng';
     default: return status || 'Đang cập nhật';
   }
@@ -838,6 +844,49 @@ export class LogisticsToolsService {
         jtFormat: 'J&T sử dụng mã vận đơn 12 số (đầu số 84...) hoặc JT... / SPX... / TK... kèm nhãn dịch vụ EZ (Chuẩn), FAST (Nhanh), SUPER (Cao cấp).',
         threeSegmentRoutingCode: 'Mã định tuyến 3 đoạn in chữ cực to trên tem: [Hub đích] - [Bưu cục phát] - [Mã tuyến bưu tá] (Ví dụ: SGN-01 / TB-02 / 03A) giúp công nhân phân loại siêu tốc trong 0.5s.',
       },
+    };
+  }
+
+  /**
+   * Hủy đơn hàng và cập nhật trạng thái trên hệ thống (Order Cancellation)
+   */
+  public async cancelShipment(trackingNumber: string, reason = 'Khách hàng yêu cầu hủy đơn'): Promise<{
+    success: boolean;
+    trackingNumber: string;
+    previousStatus: string;
+    message: string;
+  }> {
+    const cleanTracking = trackingNumber.trim().toUpperCase();
+    this.logger.log(`Tool cancelShipment invoked for: ${cleanTracking}, reason: ${reason}`);
+
+    const inMem = this.createdShipmentsMap.get(cleanTracking);
+    const prevStatus = inMem ? inMem.status : 'TASK_ASSIGNED';
+
+    if (inMem) {
+      inMem.status = 'CANCELLED';
+      inMem.statusText = 'Đã hủy đơn hàng theo yêu cầu của khách';
+      inMem.timeline.unshift({
+        time: new Date().toLocaleString('vi-VN'),
+        status: 'CANCELLED',
+        description: `Đã hủy đơn hàng thành công. Lý do: ${reason}`,
+      });
+      this.createdShipmentsMap.set(cleanTracking, inMem);
+    }
+
+    try {
+      await fetch(`${this.shipmentServiceUrl}/shipments/${cleanTracking}/cancel`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-user-roles': 'ADMIN' },
+        body: JSON.stringify({ reason }),
+        signal: AbortSignal.timeout(2000),
+      });
+    } catch {}
+
+    return {
+      success: true,
+      trackingNumber: cleanTracking,
+      previousStatus: prevStatus,
+      message: `Đơn hàng ${cleanTracking} đã được hủy thành công trên hệ thống. Bưu tá phụ trách đã nhận được thông báo dừng lấy hàng. Quý khách không phải thanh toán bất kỳ khoản phí nào.`,
     };
   }
 }

@@ -1,0 +1,69 @@
+{
+  "compartment_id": "COMP-02",
+  "compartment_name": "Quy chuẩn Carrier Thực tế (Carrier Operational SOP Compliance)",
+  "source_description": "Bộ quy chuẩn SOP bưu cục thực tế của các mạng lưới chuyển phát: J&T Express, GHTK, SPX Express, Viettel Post",
+  "last_updated": "2026-11-04T14:30:00Z",
+  "items": [
+    {
+      "id": "SOP-01",
+      "compartment": "COMP-02",
+      "provenance": "SOP Đóng gói Hàng Dễ Vỡ & Mỹ phẩm - Cẩm nang Vận hành Bưu cục J&T / GHTK",
+      "category": "SOP_KNOWLEDGE",
+      "role": "MERCHANT",
+      "query": "Hàng mỹ phẩm dạng chai lọ dung dịch, serum khi gửi qua bưu cục bắt buộc phải đóng gói theo quy chuẩn xốp bóng khí mấy lớp và dán nhãn cảnh báo gì?",
+      "ground_truth_keywords": ["3 lớp", "xốp khí", "bubble wrap", "dán kín nắp"],
+      "expected_tool": "getDamageAndClaimPolicy",
+      "expected_risk_blocked": false,
+      "expected_citations": ["Quy chuẩn đóng gói hàng hóa Carrier SOP"]
+    },
+    {
+      "id": "SOP-02",
+      "compartment": "COMP-02",
+      "provenance": "Quy chuẩn Trần Vật lý 3 Tầng Mạng lưới Bưu cục (Network Physical Operational Ceilings)",
+      "category": "SOP_KNOWLEDGE",
+      "role": "MERCHANT",
+      "query": "Giới hạn trần vật lý tối đa của một kiện hàng mà mạng lưới bưu cục chấp nhận vận chuyển là bao nhiêu kg và chiều dài một cạnh tối đa bao nhiêu cm?",
+      "ground_truth_keywords": ["70 kg", "150 cm", "vượt trần", "tách kiện"],
+      "expected_tool": "none",
+      "expected_risk_blocked": false,
+      "expected_citations": ["Quy chuẩn trần vật lý bưu cục Carrier SOP"]
+    },
+    {
+      "id": "SOP-03",
+      "compartment": "COMP-02",
+      "provenance": "Chuẩn Quốc tế IATA/VLA về Quy đổi Trọng lượng Thể tích Hàng cồng kềnh",
+      "category": "OPERATIONAL_TOOLS",
+      "role": "CUSTOMER",
+      "query": "Tôi muốn gửi một thùng carton nhẹ nhưng cồng kềnh kích thước Dài 60cm, Rộng 50cm, Cao 40cm, nặng thực tế 3kg từ TP.HCM ra Hà Nội, hệ thống tính cước theo cân nặng nào?",
+      "ground_truth_keywords": ["20", "thể tích", "6000", "cồng kềnh"],
+      "expected_tool": "calculatePricing",
+      "expected_risk_blocked": false,
+      "expected_citations": ["Công thức tính cước quy đổi IATA"]
+    },
+    {
+      "id": "SOP-04",
+      "compartment": "COMP-02",
+      "provenance": "Quy hoạch Dải số Vận đơn 12 số & So sánh Tiêu chuẩn Định tuyến 3 đoạn J&T",
+      "category": "SOP_KNOWLEDGE",
+      "role": "MERCHANT",
+      "query": "Làm thế nào để phân biệt mã vận đơn gửi từ Shop Merchant với đơn gửi từ Sàn thương mại điện tử qua dải đầu số 12 chữ số?",
+      "ground_truth_keywords": ["101", "111", "merchant", "sàn", "marketplace"],
+      "expected_tool": "getWaybillFormatPolicy",
+      "expected_risk_blocked": false,
+      "expected_citations": ["Quy hoạch dải mã vận đơn Carrier SOP"]
+    },
+    {
+      "id": "SOP-05",
+      "compartment": "COMP-02",
+      "provenance": "SOP Vận chuyển Hàng Giá Trị Cao (High-Value Cargo Security Protocol)",
+      "category": "SOP_KNOWLEDGE",
+      "role": "CUSTOMER",
+      "query": "Điện thoại iPhone và laptop khi gửi bưu phẩm có được để chung với hàng thông thường không và có quy trình an ninh niêm phong thế nào?",
+      "ground_truth_keywords": ["giá trị cao", "seal", "băng keo an ninh", "bao đỏ", "otp"],
+      "expected_tool": "getDamageAndClaimPolicy",
+      "expected_risk_blocked": false,
+      "expected_citations": ["Quy chuẩn bảo vệ hàng giá trị cao Carrier SOP"]
+    }
+  ]
+}
+

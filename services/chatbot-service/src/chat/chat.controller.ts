@@ -1,4 +1,4 @@
-import { Body, Controller, Header, HttpCode, HttpStatus, Post, Res } from '@nestjs/common';
+import { Body, Controller, Get, Header, HttpCode, HttpStatus, Post, Res } from '@nestjs/common';
 import type { Response } from 'express';
 import { ChatService } from './chat.service';
 import { KnowledgeService } from '../rag/knowledge.service';
@@ -10,6 +10,15 @@ export class ChatController {
     private readonly chatService: ChatService,
     private readonly knowledgeService: KnowledgeService
   ) {}
+
+  /**
+   * Endpoint kiểm tra trạng thái sức khỏe của 4 AI Agents (Big Four Multi-Agent Matrix)
+   */
+  @Get('multi-agent-health')
+  @HttpCode(HttpStatus.OK)
+  async getMultiAgentHealth() {
+    return this.chatService.checkMultiAgentHealth();
+  }
 
   /**
    * Endpoint hỏi đáp chuẩn REST (JSON response)

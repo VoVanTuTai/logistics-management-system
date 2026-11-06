@@ -1,0 +1,158 @@
+{
+  "compartment_id": "COMP-03",
+  "compartment_name": "Dữ liệu Sống từ Production (Live Production Database)",
+  "source_description": "Trích xuất tự động từ PostgreSQL shipment-service (:3002) lúc 2026-11-04 14:29:17",
+  "last_updated": "2026-11-04T14:29:17Z",
+  "items": [
+    {
+      "id": "LIVE-TRACK-111419148559",
+      "compartment": "COMP-03",
+      "provenance": "PostgreSQL Record: Table shipments, code=111419148559, status=CANCELLED",
+      "category": "OPERATIONAL_TOOLS",
+      "role": "CUSTOMER",
+      "query": "Tra cứu hành trình đơn hàng 111419148559",
+      "ground_truth_keywords": [
+        "111419148559",
+        "CANCELLED"
+      ],
+      "expected_tool": "trackShipment",
+      "expected_risk_blocked": false,
+      "expected_citations": []
+    },
+    {
+      "id": "LIVE-TRACK-111014942851",
+      "compartment": "COMP-03",
+      "provenance": "PostgreSQL Record: Table shipments, code=111014942851, status=TASK_ASSIGNED",
+      "category": "OPERATIONAL_TOOLS",
+      "role": "CUSTOMER",
+      "query": "Tra cứu hành trình đơn hàng 111014942851",
+      "ground_truth_keywords": [
+        "111014942851",
+        "TASK_ASSIGNED"
+      ],
+      "expected_tool": "trackShipment",
+      "expected_risk_blocked": false,
+      "expected_citations": []
+    },
+    {
+      "id": "LIVE-TRACK-111604222322",
+      "compartment": "COMP-03",
+      "provenance": "PostgreSQL Record: Table shipments, code=111604222322, status=TASK_ASSIGNED",
+      "category": "OPERATIONAL_TOOLS",
+      "role": "CUSTOMER",
+      "query": "Tra cứu hành trình đơn hàng 111604222322",
+      "ground_truth_keywords": [
+        "111604222322",
+        "TASK_ASSIGNED"
+      ],
+      "expected_tool": "trackShipment",
+      "expected_risk_blocked": false,
+      "expected_citations": []
+    },
+    {
+      "id": "LIVE-TRACK-111472521963",
+      "compartment": "COMP-03",
+      "provenance": "PostgreSQL Record: Table shipments, code=111472521963, status=TASK_ASSIGNED",
+      "category": "OPERATIONAL_TOOLS",
+      "role": "CUSTOMER",
+      "query": "Tra cứu hành trình đơn hàng 111472521963",
+      "ground_truth_keywords": [
+        "111472521963",
+        "TASK_ASSIGNED"
+      ],
+      "expected_tool": "trackShipment",
+      "expected_risk_blocked": false,
+      "expected_citations": []
+    },
+    {
+      "id": "LIVE-TRACK-111930517879",
+      "compartment": "COMP-03",
+      "provenance": "PostgreSQL Record: Table shipments, code=111930517879, status=TASK_ASSIGNED",
+      "category": "OPERATIONAL_TOOLS",
+      "role": "CUSTOMER",
+      "query": "Tra cứu hành trình đơn hàng 111930517879",
+      "ground_truth_keywords": [
+        "111930517879",
+        "TASK_ASSIGNED"
+      ],
+      "expected_tool": "trackShipment",
+      "expected_risk_blocked": false,
+      "expected_citations": []
+    },
+    {
+      "id": "LIVE-TRACK-111945275663",
+      "compartment": "COMP-03",
+      "provenance": "PostgreSQL Record: Table shipments, code=111945275663, status=TASK_ASSIGNED",
+      "category": "OPERATIONAL_TOOLS",
+      "role": "CUSTOMER",
+      "query": "Tra cứu hành trình đơn hàng 111945275663",
+      "ground_truth_keywords": [
+        "111945275663",
+        "TASK_ASSIGNED"
+      ],
+      "expected_tool": "trackShipment",
+      "expected_risk_blocked": false,
+      "expected_citations": []
+    },
+    {
+      "id": "LIVE-TRACK-111549591871",
+      "compartment": "COMP-03",
+      "provenance": "PostgreSQL Record: Table shipments, code=111549591871, status=TASK_ASSIGNED",
+      "category": "OPERATIONAL_TOOLS",
+      "role": "CUSTOMER",
+      "query": "Tra cứu hành trình đơn hàng 111549591871",
+      "ground_truth_keywords": [
+        "111549591871",
+        "TASK_ASSIGNED"
+      ],
+      "expected_tool": "trackShipment",
+      "expected_risk_blocked": false,
+      "expected_citations": []
+    },
+    {
+      "id": "LIVE-TRACK-111479293574",
+      "compartment": "COMP-03",
+      "provenance": "PostgreSQL Record: Table shipments, code=111479293574, status=TASK_ASSIGNED",
+      "category": "OPERATIONAL_TOOLS",
+      "role": "CUSTOMER",
+      "query": "Tra cứu hành trình đơn hàng 111479293574",
+      "ground_truth_keywords": [
+        "111479293574",
+        "TASK_ASSIGNED"
+      ],
+      "expected_tool": "trackShipment",
+      "expected_risk_blocked": false,
+      "expected_citations": []
+    },
+    {
+      "id": "LIVE-TRACK-111719131073",
+      "compartment": "COMP-03",
+      "provenance": "PostgreSQL Record: Table shipments, code=111719131073, status=DELIVERED",
+      "category": "OPERATIONAL_TOOLS",
+      "role": "CUSTOMER",
+      "query": "Tra cứu hành trình đơn hàng 111719131073",
+      "ground_truth_keywords": [
+        "111719131073",
+        "DELIVERED"
+      ],
+      "expected_tool": "trackShipment",
+      "expected_risk_blocked": false,
+      "expected_citations": []
+    },
+    {
+      "id": "LIVE-TRACK-111815597430",
+      "compartment": "COMP-03",
+      "provenance": "PostgreSQL Record: Table shipments, code=111815597430, status=TASK_ASSIGNED",
+      "category": "OPERATIONAL_TOOLS",
+      "role": "CUSTOMER",
+      "query": "Tra cứu hành trình đơn hàng 111815597430",
+      "ground_truth_keywords": [
+        "111815597430",
+        "TASK_ASSIGNED"
+      ],
+      "expected_tool": "trackShipment",
+      "expected_risk_blocked": false,
+      "expected_citations": []
+    }
+  ]
+}
