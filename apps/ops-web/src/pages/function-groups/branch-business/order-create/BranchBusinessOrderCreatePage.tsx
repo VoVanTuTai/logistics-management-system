@@ -1555,7 +1555,7 @@ export function BranchBusinessOrderCreatePage(): React.JSX.Element {
                     onChange={(event) => updateForm('declaredValue', event.target.value)}
                   />
                   <small className="ops-branch-order-create__help-text">
-                    Giá trị khai báo là căn cứ pháp lý xác định mức bồi hoàn theo Điều 25 Luật Bưu chính khi phát sinh sự cố mất mát hoặc bể vỡ.
+                    Giá trị khai báo là căn cứ pháp lý xác định mức bồi hoàn theo Điều 40 Luật Bưu chính 2010 khi phát sinh sự cố mất mát hoặc bể vỡ.
                   </small>
                 </label>
 
@@ -1619,7 +1619,7 @@ export function BranchBusinessOrderCreatePage(): React.JSX.Element {
                       Phù hợp cho quần áo, tài liệu, hàng gia dụng thông thường giá trị thấp (&le; 1.000.000 VNĐ).
                     </div>
                     <div className="ops-branch-order-create__tier-policy">
-                      Hạn mức bồi thường: <strong>Tối đa 04 lần cước vận chuyển</strong> (Trần tối đa 1.000.000 VNĐ theo Điều 25 Luật Bưu chính).
+                      Hạn mức bồi thường: <strong>04 lần cước vận chuyển</strong> (theo Điều 25 Nghị định 47/2011/NĐ-CP & Điều 40 Luật Bưu chính 2010, trần 1.000.000 VNĐ theo Quy chế dịch vụ).
                     </div>
                   </div>
 

@@ -120,7 +120,7 @@ function computeMatrixVerdict(claim: CompensationClaim): MatrixVerdict {
         'Bồi thường đúng giá trị khai báo, yêu cầu khách xuất trình hóa đơn mua hàng.',
       suggestedAmount: claim.declaredValue,
       matrixCell: 'INSURED_LOST',
-      legalBasis: 'Điều 25 Luật Bưu chính 2010 - Bồi thường theo giá trị khai giá đã đóng phí bảo hiểm',
+      legalBasis: 'Điều 40 Luật Bưu chính 2010 & Khoản 2 Điều 25 NĐ 47/2011/NĐ-CP - Bồi thường theo giá trị khai giá đã đóng phí bảo hiểm',
       isRejected: false,
     };
   }
@@ -131,10 +131,10 @@ function computeMatrixVerdict(claim: CompensationClaim): MatrixVerdict {
       verdictLabel: `Đền 04 lần cước vận chuyển (${formatCurrency(fourXFreight)})`,
       verdictExplanation:
         'Kiện hàng thất lạc/mất. Không tham gia dịch vụ khai giá bảo hiểm. ' +
-        `Mức bồi thường tối đa: 4 × ${formatCurrency(shippingFee)} = ${formatCurrency(fourXFreight)}, trần 1.000.000đ.`,
+        `Mức bồi thường: 4 × ${formatCurrency(shippingFee)} = ${formatCurrency(fourXFreight)}, trần 1.000.000đ theo quy chế dịch vụ.`,
       suggestedAmount: fourXFreight,
       matrixCell: 'UNINSURED_LOST',
-      legalBasis: 'Điều 25 Khoản 2 Luật Bưu chính 2010 - Hạn mức luật định cho bưu gửi không khai giá',
+      legalBasis: 'Khoản 1 Điều 25 Nghị định 47/2011/NĐ-CP & Điều 40 Luật Bưu chính 2010 - Bồi thường 04 lần cước cho bưu gửi không khai giá',
       isRejected: false,
     };
   }
@@ -148,7 +148,7 @@ function computeMatrixVerdict(claim: CompensationClaim): MatrixVerdict {
         'Bồi thường theo giá trị thiệt hại thực tế, tối đa bằng giá khai báo.',
       suggestedAmount: claim.declaredValue,
       matrixCell: 'INSURED_DAMAGED_SOP',
-      legalBasis: 'Điều 25 Luật Bưu chính 2010 - Bồi thường theo giá trị khai giá đã đóng phí bảo hiểm',
+      legalBasis: 'Điều 40 Luật Bưu chính 2010 & Khoản 2 Điều 25 NĐ 47/2011/NĐ-CP - Bồi thường theo giá trị khai giá đã đóng phí bảo hiểm',
       isRejected: false,
     };
   }
@@ -158,10 +158,10 @@ function computeMatrixVerdict(claim: CompensationClaim): MatrixVerdict {
     verdictLabel: `Đền 04 lần cước vận chuyển (${formatCurrency(fourXFreight)})`,
     verdictExplanation:
       'Hàng bể vỡ/hư hỏng, đóng gói đạt chuẩn SOP. Không tham gia dịch vụ khai giá bảo hiểm. ' +
-      `Mức bồi thường: 4 × ${formatCurrency(shippingFee)} = ${formatCurrency(fourXFreight)}, trần 1.000.000đ.`,
+      `Mức bồi thường: 4 × ${formatCurrency(shippingFee)} = ${formatCurrency(fourXFreight)}, trần 1.000.000đ theo quy chế dịch vụ.`,
     suggestedAmount: fourXFreight,
     matrixCell: 'UNINSURED_DAMAGED_SOP',
-    legalBasis: 'Điều 25 Khoản 2 Luật Bưu chính 2010 - Hạn mức luật định cho bưu gửi không khai giá',
+    legalBasis: 'Khoản 1 Điều 25 Nghị định 47/2011/NĐ-CP & Điều 40 Luật Bưu chính 2010 - Bồi thường 04 lần cước cho bưu gửi không khai giá',
     isRejected: false,
   };
 }

@@ -13,7 +13,7 @@ Nhiều hệ thống logistics gặp thất bại hoặc bị giảng viên hộ
 
 **MÔ HÌNH THIẾT GIÁP TINH GỌN (IRONCLAD LEAN MODEL)** giải quyết triệt để vấn đề này bằng cách:
 * **TINH GỌN:** Chỉ có **02 cờ kiểm soát tại quầy** và **02 gói lựa chọn bảo hiểm** (Khách mất chưa tới 30 giây để hoàn tất).
-* **DỄ PHẢN BIỆN:** Bám chặt 100% vào **Luật Bưu chính Việt Nam (Điều 24, Điều 25 Luật số 49/2010/QH12)**.
+* **DỄ PHẢN BIỆN:** Bám chặt 100% vào **Luật Bưu chính Việt Nam (Điều 40, Điều 41 Luật số 49/2010/QH12 & Điều 25 Nghị định 47/2011/NĐ-CP)**.
 * **BỊT KÍN MỌI LỖ HỔNG:** Không để lại bất kỳ "vùng xám" (Grey Zone) nào cho hành vi trục lợi bảo hiểm hoặc tranh chấp dân sự.
 
 ---
@@ -50,7 +50,7 @@ flowchart TD
 ### Lỗ hổng 1: Khách hàng khai khống giá trị để trục lợi (Moral Hazard & Valuation Fraud)
 * **Kịch bản gian lận:** Món đồ cũ trị giá 300.000 VNĐ nhưng người gửi khai giá 15.000.000 VNĐ. Khi xảy ra sự cố, người gửi đòi đền đủ 15.000.000 VNĐ.
 * **Chốt chặn phần mềm:** 
-  * Nguyên tắc bồi thường được cố định bằng hợp đồng: **"Bồi thường theo GIÁ TRỊ THIỆT HẠI THỰC TẾ, tối đa bằng Giá trị khai báo"** (Chuẩn Điều 25 Luật Bưu chính).
+  * Nguyên tắc bồi thường được cố định bằng hợp đồng: **"Bồi thường theo GIÁ TRỊ THIỆT HẠI THỰC TẾ, tối đa bằng Giá trị khai báo"** (Chuẩn Điều 40 Luật Bưu chính 2010 & Điều 25 Nghị định 47/2011/NĐ-CP).
   * Điều kiện nhận bồi thường 100%: Người gửi phải xuất trình được **Hóa đơn mua hàng hợp lệ (VAT / Hóa đơn điện tử sàn TMĐT / Lịch sử chuyển khoản ngân hàng giao dịch mua bán)**.
   * Nếu không chứng minh được hóa đơn: Hệ thống tự động chuyển sang mức đền bù tối đa theo định mức luật định (tối đa 4 lần cước).
 

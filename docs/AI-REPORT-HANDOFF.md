@@ -46,7 +46,7 @@ Nguyên tắc bắt buộc:
 - 4 trụ cột nghiệp vụ cốt lõi:
   1. Động cơ định giá chuẩn hóa IATA V/6000, 3 vùng cước (Nội tỉnh / Trục chính / Liên tỉnh), tự động bóc tách tiền tố hành chính.
   2. Phân tầng khách hàng 3 cấp (Guest, Standard SME, VIP Enterprise) và chính sách cước hoàn tự động (Return Fee SOP).
-  3. Tiếp nhận hàng dễ vỡ & quy trình bảo hiểm bồi thường 100% (Điều 25 Luật Bưu chính).
+  3. Tiếp nhận hàng dễ vỡ & quy trình bảo hiểm bồi thường 100% (Điều 25 Nghị định 47 & Điều 40 Luật Bưu chính).
   4. Mạng lưới Hub 4 cấp (Mega Hub -> Regional Hub -> Provincial Hub -> Local Station) và điều phối Linehaul.
 - Viết bằng tiếng Việt học thuật, dễ hiểu, phù hợp báo cáo tốt nghiệp/kỹ thuật.
 - Khi viết từng chương, hãy nêu rõ phạm vi, mục tiêu, thành phần, luồng xử lý, dữ liệu vào/ra, ưu điểm thiết kế và giới hạn nếu có.
@@ -113,7 +113,7 @@ AI cần hiểu hệ thống theo 6 lớp, từ tổng quan đến chi tiết:
 - 4 quy chuẩn nghiệp vụ bưu chính cốt lõi:
   1. Định giá chuẩn hóa đa nền tảng theo quy tắc hàng không IATA $V/6000$.
   2. Phân tầng khách hàng 3 cấp và cước hoàn tự động (Reverse Logistics).
-  3. Tiếp nhận hàng dễ vỡ & quy trình bảo hiểm bồi thường 100% (Điều 25 Luật Bưu chính).
+  3. Tiếp nhận hàng dễ vỡ & quy trình bảo hiểm bồi thường 100% (Điều 25 Nghị định 47 & Điều 40 Luật Bưu chính).
   4. Mạng lưới Hub 4 cấp và điều phối xe tải Linehaul.
 - Yêu cầu phi chức năng: độ trễ thấp, streaming phản hồi từ AI, kiểm soát trùng lặp quét mã (Idempotency), hỗ trợ ngoại tuyến (Offline queue trên mobile).
 

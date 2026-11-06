@@ -1363,14 +1363,14 @@ export class ChatService {
         `  1. 🏷️ Mã vận đơn của kiện hàng gặp sự cố?\n` +
         `  2. 📸 Tình trạng thực tế: Hàng bị móp méo bên ngoài vỏ hộp hay bể vỡ sản phẩm bên trong ạ? Anh/chị đã lập Biên bản bất thường với bưu tá hoặc có hình ảnh/video mở hộp đồng kiểm chưa ạ?\n` +
         `  3. 💵 Giá trị ước tính của sản phẩm hoặc chi phí sửa chữa là bao nhiêu ạ?\n` +
-        `- CAM KẾT XỬ LÝ & BỒI THƯỜNG: Thẩm định hồ sơ trong 24h - 48h, hoàn tất chuyển khoản bồi thường trong 03 - 05 ngày làm việc theo Điều 25 Luật Bưu chính (Tiêu chuẩn đền tối đa 4 lần cước, Bảo hiểm đền 100% hóa đơn tối đa 30 triệu VNĐ).\n` +
+        `- CAM KẾT XỬ LÝ & BỒI THƯỜNG: Thẩm định hồ sơ trong 24h - 48h, hoàn tất chuyển khoản bồi thường trong 03 - 05 ngày làm việc theo Điều 25 Nghị định 47/2011/NĐ-CP & Điều 40 Luật Bưu chính 2010 (Gói Tiêu chuẩn bồi thường 04 lần cước, Bảo hiểm đền 100% hóa đơn tối đa 30 triệu VNĐ).\n` +
         `- HƯỚNG DẪN AI: Xoa dịu lo lắng của khách hàng, hỏi lại 3 thông tin trên để hỗ trợ chuyển Ban Giám định QA mở hồ sơ bồi thường ngay nhé ạ.\n`;
     } else if (isDamageOrBrokenQuery) {
       toolsUsed.push('getDamageAndClaimPolicy(Fragile Goods & Damage Settlement)');
       toolAugmentedContext += `\n[QUY TRÌNH NGHIỆP VỤ XỬ LÝ HÀNG HƯ HỎNG / BỂ VỠ (DAMAGE SETTLEMENT SOP)]:\n` +
         `- Bước 1 (Khi nhận hàng): Người nhận đồng kiểm phát hiện hàng bị nứt vỡ, móp méo, rò rỉ dung dịch -> Yêu cầu bưu tá lập Biên bản bất thường (Irregularity Report) tại chỗ có chữ ký cả hai bên và chụp ảnh sắc nét 4 góc. Người nhận từ chối nhận hàng và KHÔNG phải thanh toán bất kỳ khoản tiền nào (kể cả COD và cước phí).\n` +
         `- Bước 2 (Hạn mức bồi thường):\n` +
-        `  * Gói Tiêu chuẩn (không mua bảo hiểm): Bồi thường tối đa 04 lần cước vận chuyển thực tế, không vượt quá 1.000.000 VNĐ/đơn hàng (Khoản 3 Điều 25 Luật Bưu chính).\n` +
+        `  * Gói Tiêu chuẩn (không mua bảo hiểm): Bồi thường 04 lần cước vận chuyển thực tế (theo Khoản 1 Điều 25 Nghị định 47/2011/NĐ-CP & Điều 40 Luật Bưu chính 2010), không vượt quá 1.000.000 VNĐ/đơn hàng theo Quy chế dịch vụ Nexus.\n` +
         `  * Gói Bảo hiểm khai giá: Bồi thường 100% giá trị thiệt hại thực tế theo hóa đơn VAT/chứng từ, HẠN MỨC TRẦN TỐI ĐA 30.000.000 VNĐ/đơn hàng. Đơn trên 30 triệu phải ký hợp đồng bảo hiểm riêng với PTI/Bảo Việt.\n` +
         `- Bước 3 (Hư hỏng một phần): Bồi thường toàn bộ chi phí sửa chữa thay thế linh kiện chính hãng theo báo giá trung tâm bảo hành ủy quyền hoặc theo tỷ lệ giám định thực tế.\n` +
         `- Bước 4 (Điều kiện loại trừ hàng dễ vỡ): Hàng dễ vỡ bắt buộc phải đóng gói đúng quy chuẩn (bọc xốp hơi 3-5 lớp, cách thành thùng 5cm, dán tem Dễ Vỡ). Nếu người gửi tự đóng gói sai quy chuẩn sẽ bị từ chối bồi thường do lỗi chủ quan của người gửi.\n` +
@@ -1755,7 +1755,7 @@ Bạn có kiến thức uyên thâm, thấu đáo và toàn diện về toàn b�
 
 2. AM HIỂU NGHIỆP VỤ SÂU SẮC, BIẾT TỰ SUY LUẬN & XÂU CHUỖI ĐA CHIỀU:
 - Hạn mức bồi thường tối đa:
-  + Gói tiêu chuẩn (mặc định): Đền tối đa 04 lần cước vận chuyển, trần tối đa không quá 1.000.000 VNĐ/đơn (Khoản 3 Điều 25 Luật Bưu chính).
+  + Gói tiêu chuẩn (mặc định): Bồi thường 04 lần cước vận chuyển (theo Khoản 1 Điều 25 Nghị định 47/2011/NĐ-CP & Điều 40 Luật Bưu chính 2010), trần tối đa không quá 1.000.000 VNĐ/đơn theo Quy chế dịch vụ Nexus.
   + Gói Bảo hiểm khai giá toàn diện: Đền 100% giá trị thiệt hại thực tế theo hóa đơn VAT/chứng từ, HẠN MỨC TỐI ĐA CHO MỖI LẦN PHÁT SINH ĐỀN BÙ LÀ 30.000.000 VNĐ/đơn hàng. Đơn trên 30 triệu phải ký hợp đồng bảo hiểm riêng với PTI/Bảo Việt.
   + Hư hỏng một phần: Bồi thường toàn bộ chi phí sửa chữa thay linh kiện chính hãng hoặc theo tỷ lệ giám định thực tế. Thời hạn giải quyết chi trả: 3 - 5 ngày làm việc.
 - Phân biệt Hàng Giá Trị Cao (High-Value Cargo) vs Hàng Dễ Vỡ (Fragile Goods):
@@ -1793,7 +1793,7 @@ Bạn có kiến thức uyên thâm, thấu đáo và toàn diện về toàn b�
   + Trả lời thẳng vào trọng tâm câu hỏi ngay từ đầu (Bottom-Line Up Front), giải tỏa lo lắng cho khách trước rồi mới giải thích chi tiết.
   + TUYỆT ĐỐI KHÔNG cấu trúc bài viết thành bài tiểu luận phân tích khô khan với hàng loạt tiêu đề cấp 3 liên tiếp (như "### 1. Cơ chế...", "### 2. Chính sách...", "### 3. Thời hạn...", "### 💡 Lời khuyên từ chuyên viên").
   + Không biến câu trả lời thành bảng kê danh mục hành chính cứng nhắc. Hãy dùng lời văn đàm thoại mềm mại, kết nối các ý bằng những liên từ tự nhiên ("Dạ anh/chị yên tâm là...", "Bên cạnh đó", "Về mức cước phí...", "Ngoài ra").
-  + Khi giải thích chính sách (bồi thường thất lạc, hàng bể vỡ, đồng kiểm, giao lại, chuyển hoàn): Diễn giải bằng ngôn từ mộc mạc, gần gũi, dễ hiểu, bảo đảm chuẩn xác theo Điều 25 Luật Bưu chính và Carrier SOP nhưng không trích văn bản pháp quy khô cứng. Trấn an khách trước: "Dạ anh/chị yên tâm nhé, trong trường hợp bưu phẩm chẳng may phát sinh sự cố...", sau đó tóm tắt gãy gọn 2 trường hợp (có mua bảo hiểm khai giá vs gói tiêu chuẩn mặc định) và thời hạn hoàn tiền (3 - 5 ngày làm việc).
+  + Khi giải thích chính sách (bồi thường thất lạc, hàng bể vỡ, đồng kiểm, giao lại, chuyển hoàn): Diễn giải bằng ngôn từ mộc mạc, gần gũi, dễ hiểu, bảo đảm chuẩn xác theo Điều 25 Nghị định 47/2011/NĐ-CP, Điều 40 Luật Bưu chính 2010 và Carrier SOP nhưng không trích văn bản pháp quy khô cứng. Trấn an khách trước: "Dạ anh/chị yên tâm nhé, trong trường hợp bưu phẩm chẳng may phát sinh sự cố...", sau đó tóm tắt gãy gọn 2 trường hợp (có mua bảo hiểm khai giá vs gói tiêu chuẩn mặc định) và thời hạn hoàn tiền (3 - 5 ngày làm việc).
   + Khi khách hàng muốn gửi hàng: Đóng vai Giao dịch viên bưu cục niềm nở, hướng dẫn ngắn gọn 4 bước tiếp nhận đơn hàng (địa chỉ lấy mặc định vs mới, người nhận, tên hàng & cân nặng, ai thanh toán cước) và gửi Phiếu tạm tính để khách xác nhận trước khi tạo đơn.
   + Kết thúc câu trả lời chu đáo, luôn sẵn sàng đồng hành: "Nếu anh/chị cần em hỗ trợ thêm thông tin gì khác, cứ nhắn em ngay nhé ạ!" hoặc "Anh/chị có mã vận đơn thì gửi em kiểm tra ngay cho mình nhé ạ!".
 - KIỂM SOÁT EMOJI TINH TẾ & ĐỊNH DẠNG SẠCH ĐẸP:
@@ -1871,7 +1871,7 @@ HÃY ĐƯA RA CÂU TRẢ LỜI ĐẦY ĐỦ VÀ CHÍNH XÁC:`;
 
     // Tác tử 3 Dự phòng chuyên biệt: Knowledge Agent (Qwen 2.5 32B / Groq LPU) cho RAG chính sách SOP
     if (isKnowledgeContext && this.groqApiKey) {
-      const kwSystemPrompt = `${systemPrompt}\n\n[CHỈ DẪN VAI TRÒ CHUYÊN BIỆT: KNOWLEDGE AGENT - QWEN 2.5 32B]\nBạn là Knowledge Agent. Hãy dùng ngôn từ tiếng Việt tự nhiên, ấm áp, thưa gửi lễ phép (xưng em, gọi anh/chị). Diễn giải chính sách SOP, Điều 25 Luật Bưu chính một cách gần gũi, đời thường, dễ hiểu, giúp khách an tâm. Tuyệt đối không xưng 'tôi', không chia tiêu đề bài luận học thuật khô khan.`;
+      const kwSystemPrompt = `${systemPrompt}\n\n[CHỈ DẪN VAI TRÒ CHUYÊN BIỆT: KNOWLEDGE AGENT - QWEN 2.5 32B]\nBạn là Knowledge Agent. Hãy dùng ngôn từ tiếng Việt tự nhiên, ấm áp, thưa gửi lễ phép (xưng em, gọi anh/chị). Diễn giải chính sách SOP, Điều 25 Nghị định 47 & Điều 40 Luật Bưu chính một cách gần gũi, đời thường, dễ hiểu, giúp khách an tâm. Tuyệt đối không xưng 'tôi', không chia tiêu đề bài luận học thuật khô khan.`;
       const kwResult = await this.callOpenAiCompatible(
         'https://api.groq.com/openai/v1/chat/completions',
         this.groqApiKey,
@@ -2354,7 +2354,7 @@ HÃY ĐƯA RA CÂU TRẢ LỜI ĐẦY ĐỦ VÀ CHÍNH XÁC:`;
           model: this.groqKnowledgeModel,
           status: kwStatus,
           latencyMs: kwLatency,
-          note: 'RAG trích xuất chính sách SOP, Điều 25 Luật Bưu chính',
+          note: 'RAG trích xuất chính sách SOP, Điều 25 Nghị định 47 & Điều 40 Luật Bưu chính',
         },
         operation: {
           provider: 'Groq LPU (OpenAI)',
@@ -2523,7 +2523,7 @@ HÃY ĐƯA RA CÂU TRẢ LỜI ĐẦY ĐỦ VÀ CHÍNH XÁC:`;
           `1. 🏷️ **Mã vận đơn** của kiện hàng gặp sự cố?\n` +
           `2. 📸 **Tình trạng thực tế:** Hàng bị móp méo bên ngoài vỏ hộp hay bể vỡ sản phẩm bên trong ạ? Anh/chị đã lập Biên bản bất thường với bưu tá hoặc có hình ảnh/video mở hộp đồng kiểm chưa ạ?\n` +
           `3. 💵 **Giá trị ước tính:** Giá trị hàng hóa hoặc chi phí sửa chữa ước tính là bao nhiêu ạ?\n\n` +
-          `🛡️ *Anh/chị hoàn toàn yên tâm nhé! Theo Điều 25 Luật Bưu chính và chính sách của Nexus, hồ sơ sẽ được thẩm định trong 24h - 48h và chi trả bồi thường chuyển khoản trong 03 - 05 ngày làm việc ạ!*`;
+          `🛡️ *Anh/chị hoàn toàn yên tâm nhé! Theo Điều 25 Nghị định 47/2011/NĐ-CP (Điều 40 Luật Bưu chính 2010) và chính sách dịch vụ của Nexus, hồ sơ sẽ được thẩm định trong 24h - 48h và chi trả bồi thường chuyển khoản trong 03 - 05 ngày làm việc ạ!*`;
       }
 
       if (realtimeSection.includes('[Ý ĐỊNH CHÀO HỎI XÃ GIAO - KHÁCH HÀNG ĐÃ ĐĂNG NHẬP')) {

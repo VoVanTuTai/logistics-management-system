@@ -42,11 +42,11 @@ Nếu một hệ thống logistics áp dụng quy tắc ngây thơ: *"Bất kỳ
 Hệ thống NEXUS Express được thiết kế tuân thủ 100% khung pháp luật Việt Nam:
 
 1. **Luật Bưu chính số 49/2010/QH12 (Quốc hội ban hành):**
-   * **Điều 24 (Miễn trừ trách nhiệm bồi thường thiệt hại):** Doanh nghiệp cung ứng dịch vụ bưu chính được **miễn trừ hoàn toàn trách nhiệm** bồi thường nếu thiệt hại xảy ra do lỗi của người gửi (đóng gói không đúng quy chuẩn kỹ thuật) hoặc do đặc tính tự nhiên của hàng hóa.
-   * **Điều 25 (Nguyên tắc và mức bồi thường):**
+   * **Điều 41 (Miễn trừ trách nhiệm bồi thường thiệt hại):** Doanh nghiệp cung ứng dịch vụ bưu chính được **miễn trừ hoàn toàn trách nhiệm** bồi thường nếu thiệt hại xảy ra do lỗi của người gửi (đóng gói không đúng quy chuẩn kỹ thuật) hoặc do đặc tính tự nhiên của hàng hóa.
+   * **Điều 40 (Nguyên tắc và mức bồi thường):**
      * Đối với bưu gửi **có sử dụng dịch vụ khai giá (bảo hiểm):** Bồi thường theo **giá trị thiệt hại thực tế**, tối đa bằng giá trị đã kê khai.
-     * Đối với bưu gửi **không sử dụng dịch vụ khai giá:** Mức bồi thường được xác định theo hạn mức luật định, thực tế các doanh nghiệp áp dụng tối đa từ **04 đến 10 lần cước dịch vụ đã thu**.
-2. **Nghị định số 47/2011/NĐ-CP:** Hướng dẫn chi tiết thi hành Luật Bưu chính về hợp đồng mẫu và giải quyết khiếu nại.
+     * Đối với bưu gửi **không sử dụng dịch vụ khai giá:** Mức bồi thường được xác định theo hạn mức luật định và quy chế dịch vụ doanh nghiệp công bố.
+2. **Nghị định số 47/2011/NĐ-CP (Điều 25):** Quy định mức giới hạn trách nhiệm bồi thường thiệt hại tối thiểu đối với dịch vụ bưu chính trong nước bằng **04 lần cước dịch vụ đã thu** (đã bao gồm hoàn trả cước). Toàn bộ doanh nghiệp chuyển phát lớn tại Việt Nam áp dụng mức 4 lần cước này cho gói tiêu chuẩn.
 3. **Bộ luật Dân sự số 91/2015/QH13 (Điều 534 - 541):** Quy định về hợp đồng vận chuyển tài sản và nghĩa vụ bồi hoàn thiệt hại của bên gửi nếu gửi hàng hóa có tính chất nguy hại, dễ tràn đổ gây thiệt hại cho bên vận chuyển hoặc tài sản của người khác.
 4. **Tiêu chuẩn đóng gói hàng dễ vỡ TCVN / IATA Standard:** Hàng lỏng, dễ vỡ phải được bọc đệm xốp bọt khí (Bubble Wrap) tối thiểu 3 lớp, chèn mút cố định 6 mặt và chịu được bài kiểm tra lắc không phát ra tiếng động.
 
@@ -148,7 +148,7 @@ Hệ thống loại bỏ hoàn toàn các quyết định cảm tính của con 
 | :--- | :--- | :--- |
 | **THẤT LẠC / MẤT NGUYÊN KIỆN**<br/>*(Lỗi do Hub chia chọn hoặc Tài xế làm mất)* | **ĐỀN ĐÚNG 100% GIÁ TRỊ THỰC TẾ**<br/>*(Căn cứ theo Hóa đơn/Chứng từ hợp lệ)* | **ĐỀN 04 LẦN CƯỚC VẬN CHUYỂN**<br/>*(Trần tối đa 1.000.000 VNĐ theo Luật Bưu chính)* |
 | **BỂ VỠ KHI ĐÃ ĐÓNG GÓI ĐẠT CHUẨN SOP**<br/>*(Bọc đệm xốp 3 lớp, chèn 6 mặt)* | **ĐỀN 100% GIÁ TRỊ THỰC TẾ**<br/>*(Hoặc đền theo % hư hại nếu chỉ nứt vỡ một phần)* | **ĐỀN 04 LẦN CƯỚC GỬI**<br/>*(Theo tỷ lệ hư hại thực tế)* |
-| **BỂ VỠ KHI CÓ BIÊN BẢN MIỄN TRỪ**<br/>*(Khách tự gói sơ sài, thùng ngoài nguyên)* | **TỪ CHỐI BỒI THƯỜNG BỂ VỠ**<br/>*(Theo cam kết packagingWaiver)* | **TỪ CHỐI BỒI THƯỜNG BỂ VỠ**<br/>*(Miễn trừ trách nhiệm theo Điều 24 Luật Bưu chính)* |
+| **BỂ VỠ KHI CÓ BIÊN BẢN MIỄN TRỪ**<br/>*(Khách tự gói sơ sài, thùng ngoài nguyên)* | **TỪ CHỐI BỒI THƯỜNG BỂ VỠ**<br/>*(Theo cam kết packagingWaiver)* | **TỪ CHỐI BỒI THƯỜNG BỂ VỠ**<br/>*(Miễn trừ trách nhiệm theo Điều 41 Luật Bưu chính 2010)* |
 
 ---
 
@@ -158,7 +158,7 @@ Dưới đây là 5 câu hỏi trọng tâm mà Hội đồng Giám khảo thư�
 
 ### ❓ Câu hỏi 1: *"Cơ sở pháp lý nào cho phép hệ thống giới hạn mức đền bù chỉ có 4 lần cước khi khách không mua bảo hiểm?"*
 > **Gợi ý trả lời:**  
-> *"Dạ thưa Thầy/Cô, hệ thống căn cứ chuẩn xác theo **Điều 25 Khoản 2 Luật Bưu chính số 49/2010/QH12** và **Nghị định 47/2011/NĐ-CP**. Luật quy định: Đối với dịch vụ bưu chính không sử dụng dịch vụ khai giá, mức bồi thường được xác định theo hạn mức luật định (từ 4 đến 10 lần cước dịch vụ đã thu). Toàn bộ các doanh nghiệp bưu chính lớn tại Việt Nam như Viettel Post, VNPost, J&T Express đều áp dụng mức trần 4 lần cước này để đảm bảo cân đối quỹ hoạt động."*
+> *"Dạ thưa Thầy/Cô, hệ thống căn cứ chuẩn xác theo **Điều 40 Luật Bưu chính số 49/2010/QH12** và **Khoản 1 Điều 25 Nghị định 47/2011/NĐ-CP**. Theo Điều 25 Nghị định 47, mức bồi thường thiệt hại tối thiểu đối với dịch vụ bưu chính trong nước là 04 lần cước đã thu (bao gồm hoàn cước). Các doanh nghiệp bưu chính lớn tại Việt Nam như Viettel Post, VNPost, J&T Express và Nexus Logistics đều công bố áp dụng mức bồi thường 04 lần cước này cho bưu gửi thông thường không sử dụng dịch vụ khai giá/bảo hiểm."*
 
 ### ❓ Câu hỏi 2: *"Nếu khách hàng gửi một sản phẩm cũ hỏng sẵn, bọc kỹ, khai giá 20 triệu và mua bảo hiểm 100%, sau đó đổ lỗi làm hỏng để ăn vạ thì hệ thống xử lý thế nào?"*
 > **Gợi ý trả lời:**  
@@ -172,7 +172,7 @@ Dưới đây là 5 câu hỏi trọng tâm mà Hội đồng Giám khảo thư�
 
 ### ❓ Câu hỏi 4: *"Cờ packagingWaiver có giá trị pháp lý không nếu xảy ra tranh chấp dân sự?"*
 > **Gợi ý trả lời:**  
-> *"Dạ thưa Thầy/Cô, hoàn toàn có giá trị pháp lý. Theo **Điều 24 Luật Bưu chính**, doanh nghiệp vận chuyển được miễn trừ trách nhiệm nếu thiệt hại xảy ra do lỗi của người gửi đóng gói không đúng quy chuẩn. Khi khách hàng xác nhận gửi hàng với cờ `packagingWaiver: true`, hợp đồng dịch vụ điện tử đã xác lập sự thỏa thuận miễn trừ trách nhiệm bể vỡ do người gửi tự đóng gói."*
+> *"Dạ thưa Thầy/Cô, hoàn toàn có giá trị pháp lý. Theo **Điều 41 Khoản 4 Luật Bưu chính 2010** (và Điều 24 Nghị định 47/2011/NĐ-CP), doanh nghiệp vận chuyển được miễn trừ trách nhiệm bồi thường nếu thiệt hại xảy ra hoàn toàn do lỗi của người gửi (đóng gói không đúng quy chuẩn kỹ thuật). Khi khách hàng xác nhận gửi hàng với cờ `packagingWaiver: true`, hợp đồng dịch vụ điện tử đã xác lập sự thỏa thuận miễn trừ trách nhiệm bể vỡ do người gửi tự đóng gói."*
 
 ### ❓ Câu hỏi 5: *"Tỷ lệ phí bảo hiểm 0.5% được tính toán dựa trên cơ sở kinh tế nào?"*
 > **Gợi ý trả lời:**  

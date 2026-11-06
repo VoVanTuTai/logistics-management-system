@@ -476,7 +476,7 @@ Hệ thống phân tầng khách hàng thành 3 nhóm đối tượng rõ rệt 
 
 ### 15.7 Quy trình tiếp nhận hàng dễ vỡ & Bồi thường bảo hiểm 100% (SOP Bảo Hiểm Bưu Chính)
 
-Để bảo vệ quyền lợi khách hàng và chuẩn hóa nghiệp vụ vận hành, hệ thống thiết lập bộ quy chuẩn nghiêm ngặt tuân thủ **Điều 25 Luật Bưu chính Việt Nam**:
+Để bảo vệ quyền lợi khách hàng và chuẩn hóa nghiệp vụ vận hành, hệ thống thiết lập bộ quy chuẩn nghiêm ngặt tuân thủ **Điều 40 Luật Bưu chính 2010 & Điều 25 Nghị định 47/2011/NĐ-CP**:
 
 1. **Quy cách đóng gói bắt buộc cho hàng dễ vỡ:**
    - Hàng gốm sứ, thủy tinh, đồ điện tử phải bọc tối thiểu 3 - 4 lớp màng xốp bóng khí (bubble wrap) với độ dày tối thiểu 5cm.
@@ -490,7 +490,7 @@ Hệ thống phân tầng khách hàng thành 3 nhóm đối tượng rõ rệt 
 
 3. **Chế tài bồi thường 100% khi xảy ra sự cố:**
    - **Trường hợp bưu gửi có khai giá & đóng gói đúng quy chuẩn:** Bồi thường **100% giá trị khai báo** nếu bưu gửi bị mất mát hoặc vỡ nát hoàn toàn do lỗi vận chuyển của Nexus.
-   - **Trường hợp bưu gửi không khai giá:** Bồi thường theo quy định Điều 25 Luật Bưu chính: tối đa 04 lần cước dịch vụ bưu chính đã thu.
+   - **Trường hợp bưu gửi không khai giá:** Bồi thường theo quy định Khoản 1 Điều 25 Nghị định 47/2011/NĐ-CP & Điều 40 Luật Bưu chính: 04 lần cước dịch vụ bưu chính đã thu.
    - **Xác định trách nhiệm nội bộ:** Biên bản bất thường (Damage Inspection Report) chụp ảnh hiện trường, camera khai thác và lịch sử quét seal; chi phí bồi thường được khấu trừ theo tỷ lệ trách nhiệm của bưu cục làm hỏng/tài xế vi phạm.
 
 ### 15.8 Mạng lưới Hub 4 cấp & Chuyến xe trung chuyển Linehaul (4-Tier Hub Network)
@@ -527,7 +527,7 @@ Mô hình vận hành của Nexus Express System được tổ chức theo mạn
 Phân hệ `@NEXUS/chatbot-service` (Port 3013) là điểm đột phá của hệ thống, cung cấp trợ lý ảo thông minh phục vụ khách hàng trên Web và Mobile:
 
 1. **Kiến trúc Hybrid RAG:**
-   - **Knowledge Base chuẩn hóa:** Chứa các tài liệu Markdown về biểu phí IATA, quy trình bồi thường Điều 25 Luật Bưu chính, danh mục hàng cấm gửi/cấm bay, quy định pin lithium và SOP đóng gói.
+   - **Knowledge Base chuẩn hóa:** Chứa các tài liệu Markdown về biểu phí IATA, quy trình bồi thường Điều 25 Nghị định 47 & Điều 40 Luật Bưu chính, danh mục hàng cấm gửi/cấm bay, quy định pin lithium và SOP đóng gói.
    - **Vector Database:** 768-dim vector embeddings được tính toán trước, cho phép truy xuất ngữ nghĩa chính xác (Semantic Search) ngay cả khi câu hỏi dùng từ ngữ địa phương hoặc tiếng lóng.
 
 2. **Bộ 5 công cụ tra cứu động (Dynamic Tools):**
@@ -695,7 +695,7 @@ Các tài liệu nên đọc tiếp khi viết báo cáo hoặc phát triển t�
 | `docs/architecture/system-design-summary.md` | Tóm tắt nguyên tắc kiến trúc & quyền sở hữu dữ liệu 15 services. |
 | `docs/architecture/diagrams/` | Bộ sưu tập sơ đồ Mermaid chi tiết cho 5 nhóm đối tượng người dùng. |
 | `docs/business-sop/CHINH-SACH-PHAN-TANG-MERCHANT-VA-CUOC-CHUYEN-HOAN.md` | Quy chuẩn 3 tầng khách hàng (Guest, SME, VIP) & cước chuyển hoàn tự động. |
-| `docs/business-sop/NGHIEP-VU-TIEP-NHAN-HANG-DE-VO-VA-BAO-HIEM.md` | Nghiệp vụ tiếp nhận hàng dễ vỡ & quy trình bồi thường 100% (Điều 25 Luật Bưu chính). |
+| `docs/business-sop/NGHIEP-VU-TIEP-NHAN-HANG-DE-VO-VA-BAO-HIEM.md` | Nghiệp vụ tiếp nhận hàng dễ vỡ & quy trình bồi thường 100% (Điều 25 NĐ 47 & Điều 40 Luật Bưu chính). |
 | `docs/business-sop/order-lifecycle-report.md` | Vòng đời bưu phẩm từ lấy -> trung chuyển qua Hub 4 cấp -> phát -> hoàn. |
 | `docs/knowledge-base/` | Kho tri thức bưu chính chuẩn hóa dạng Markdown & Vector Index cho AI. |
 | `docs/runbook/` | Sổ tay hướng dẫn local dev, migration, danh sách tài khoản test và troubleshooting. |
