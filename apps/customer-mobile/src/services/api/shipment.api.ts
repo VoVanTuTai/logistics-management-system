@@ -165,4 +165,19 @@ export const shipmentApi = {
       accessToken,
     });
   },
+
+  cancelShipment: async (
+    accessToken: string,
+    code: string,
+    reason: string = 'Khách hàng yêu cầu hủy đơn',
+  ): Promise<ShipmentResponse> => {
+    return customerApiClient.request<ShipmentResponse>(
+      `/customer/shipment/shipments/${encodeURIComponent(code)}/cancel`,
+      {
+        method: 'POST',
+        accessToken,
+        body: { reason },
+      },
+    );
+  },
 };

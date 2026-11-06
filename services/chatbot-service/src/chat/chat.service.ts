@@ -102,27 +102,34 @@ export class ChatService {
 
     // Lấy session hiện tại của phiên hội thoại (Multi-turn conversational memory)
     const session = this.sessions.get(conversationId) || { lastUpdated: Date.now() };
-    if (dto.selectedShipmentCode && !session.selectedCode) {
+    if (dto.selectedShipmentCode) {
       session.selectedCode = dto.selectedShipmentCode;
     }
-    if (dto.receiverPhone && !session.receiverPhone) {
+    if (dto.receiverPhone) {
       session.receiverPhone = dto.receiverPhone;
     }
 
-    // Regex nhận diện số điện thoại người nhận (10-11 chữ số VN hoặc 4 số đuôi)
-    const explicitPhoneMatch = question.match(/(?:\+?84|0)[1-9]\d{8,9}\b/);
+    // Regex nhận diện số điện thoại người nhận đa định dạng (hỗ trợ cả dấu cách, chấm, gạch nối, +84 hoặc 4 số đuôi)
+    const formattedPhoneMatch = question.match(/(?:\+?84|0)[\s.-]?[1-9](?:[\s.-]?\d){8,9}\b/);
+    const contextualPhoneMatch = question.match(/(?:sđt|sdt|điện thoại|dien thoai|phone|số|so)\s*(?:người nhận|nguoi nhan|nhận|nhan)?\s*(?:là|la|:|\s)?\s*([0-9\s.-]{9,15})/i);
     const last4PhoneMatch =
       question.match(/(?:sđt|sdt|điện thoại|dien thoai|đuôi|duoi|số cuối|so cuoi|4 số cuối|4 so cuoi|bốn số cuối|bon so cuoi)\s*(?:là|la|:|\s)?\s*(\d{4})\b/i) ||
       normalizedQ.match(/(?:sdt|dien thoai|duoi|so cuoi|4 so cuoi|bon so cuoi)\s*(?:la|:|\s)?\s*(\d{4})\b/i);
 
     let extractedPhone: string | undefined = dto.receiverPhone;
-    if (explicitPhoneMatch) {
-      extractedPhone = explicitPhoneMatch[0];
+    if (formattedPhoneMatch) {
+      extractedPhone = formattedPhoneMatch[0].replace(/[\s.-]/g, '').replace(/^\+84/, '0');
+      session.receiverPhone = extractedPhone;
+    } else if (contextualPhoneMatch && contextualPhoneMatch[1].replace(/[\s.-]/g, '').length >= 9) {
+      extractedPhone = contextualPhoneMatch[1].replace(/[\s.-]/g, '').replace(/^\+84/, '0');
       session.receiverPhone = extractedPhone;
     } else if (last4PhoneMatch) {
       extractedPhone = last4PhoneMatch[1];
       session.receiverPhone = extractedPhone;
-    } else if (/^\d{4}$/.test(question.trim()) && (session.selectedCode || dto.selectedShipmentCode)) {
+    } else if (/^\d{4}$/.test(question.trim()) && (session.selectedCode || dto.selectedShipmentCode || (session.lastShipments && session.lastShipments.length > 0))) {
+      extractedPhone = question.trim();
+      session.receiverPhone = extractedPhone;
+    } else if (/^\d{9,11}$/.test(question.trim())) {
       extractedPhone = question.trim();
       session.receiverPhone = extractedPhone;
     } else if (session.receiverPhone) {
@@ -265,6 +272,95 @@ export class ChatService {
        cleanNormalizedQ.includes('giao sau')) &&
       (cleanNormalizedQ.includes('don') || cleanNormalizedQ.includes('hang') || cleanNormalizedQ.includes('kien') || !!trackingCode || !!session.selectedCode || session.pendingIntent === 'REDELIVERY');
 
+    // Xác định mã đơn hàng đang hoạt động trong phiên (Multi-turn Contextual Memory)
+    const activeTrackingCode =
+      trackingCode ||
+      dto.selectedShipmentCode ||
+      session.selectedCode ||
+      (session.lastShipments && session.lastShipments.length === 1 ? session.lastShipments[0].code : undefined);
+
+    // Kiểm tra câu hỏi có đang tương tác hoặc hỏi tiếp về đơn hàng hiện tại trong phiên hay không
+    const isReferencingCurrentShipment =
+      cleanNormalizedQ.includes('don nay') ||
+      cleanNormalizedQ.includes('don do') ||
+      cleanNormalizedQ.includes('don day') ||
+      cleanNormalizedQ.includes('don hang nay') ||
+      cleanNormalizedQ.includes('don hang do') ||
+      cleanNormalizedQ.includes('kien nay') ||
+      cleanNormalizedQ.includes('kien do') ||
+      cleanNormalizedQ.includes('kien hang nay') ||
+      cleanNormalizedQ.includes('hang nay') ||
+      cleanNormalizedQ.includes('buu pham nay') ||
+      cleanNormalizedQ.includes('buu gui nay') ||
+      cleanNormalizedQ.includes('van don nay') ||
+      cleanNormalizedQ === 'no' ||
+      cleanNormalizedQ.includes(' cua no') ||
+      cleanNormalizedQ.startsWith('no ') ||
+      cleanNormalizedQ.includes('don hang cua toi') ||
+      cleanNormalizedQ.includes('don cua toi');
+
+    const isShipmentStatusOrDetailQuery =
+      cleanNormalizedQ.includes('den dau') ||
+      cleanNormalizedQ.includes('toi dau') ||
+      cleanNormalizedQ.includes('o dau') ||
+      cleanNormalizedQ.includes('o mo') ||
+      cleanNormalizedQ.includes('bao gio') ||
+      cleanNormalizedQ.includes('khi nao') ||
+      cleanNormalizedQ.includes('may gio') ||
+      cleanNormalizedQ.includes('bao lau') ||
+      cleanNormalizedQ.includes('may ngay') ||
+      cleanNormalizedQ.includes('tien do') ||
+      cleanNormalizedQ.includes('trang thai') ||
+      cleanNormalizedQ.includes('hanh trinh') ||
+      cleanNormalizedQ.includes('kho nao') ||
+      cleanNormalizedQ.includes('giao chua') ||
+      cleanNormalizedQ.includes('lay chua') ||
+      cleanNormalizedQ.includes('phat chua') ||
+      cleanNormalizedQ.includes('den chua') ||
+      cleanNormalizedQ.includes('toi chua') ||
+      cleanNormalizedQ.includes('sao chua') ||
+      cleanNormalizedQ.includes('sao lau') ||
+      cleanNormalizedQ.includes('cham the') ||
+      cleanNormalizedQ.includes('giuc giao') ||
+      cleanNormalizedQ.includes('giao gap') ||
+      cleanNormalizedQ.includes('giao nhanh') ||
+      cleanNormalizedQ.includes('giao som') ||
+      cleanNormalizedQ.includes('shipper') ||
+      cleanNormalizedQ.includes('buu ta') ||
+      cleanNormalizedQ.includes('ai giao') ||
+      cleanNormalizedQ.includes('ai nhan') ||
+      cleanNormalizedQ.includes('nguoi nhan') ||
+      cleanNormalizedQ.includes('nguoi gui') ||
+      cleanNormalizedQ.includes('dia chi') ||
+      cleanNormalizedQ.includes('so dien thoai') ||
+      cleanNormalizedQ.includes('sdt') ||
+      cleanNormalizedQ.includes('tien cod') ||
+      cleanNormalizedQ.includes('thu ho') ||
+      cleanNormalizedQ.includes('cod') ||
+      cleanNormalizedQ.includes('ai tra') ||
+      cleanNormalizedQ.includes('ai thanh toan') ||
+      cleanNormalizedQ.includes('hang gi') ||
+      cleanNormalizedQ.includes('ten hang') ||
+      cleanNormalizedQ.includes('mon hang') ||
+      cleanNormalizedQ.includes('san pham') ||
+      cleanNormalizedQ.includes('nang bao nhieu') ||
+      cleanNormalizedQ.includes('khoi luong') ||
+      cleanNormalizedQ.includes('kich thuoc') ||
+      cleanNormalizedQ.includes('de vo') ||
+      cleanNormalizedQ.includes('bao hiem') ||
+      cleanNormalizedQ.includes('thong tin don') ||
+      cleanNormalizedQ.includes('chi tiet don') ||
+      cleanNormalizedQ.includes('kiem tra lai') ||
+      cleanNormalizedQ.includes('tra cuu lai') ||
+      cleanNormalizedQ.includes('xem lai') ||
+      cleanNormalizedQ.includes('gui tu dau') ||
+      cleanNormalizedQ.includes('gui ve dau');
+
+    const isTrackingOrFollowUp =
+      !!trackingCode ||
+      (!!extractedPhone && !!activeTrackingCode) ||
+      (!!activeTrackingCode && (isReferencingCurrentShipment || isShipmentStatusOrDetailQuery));
+
     // Kiểm tra ý định chào hỏi xã giao thông thường (Social Greeting Intent)
     const greetingWords = [
       'chao', 'xin chao', 'hello', 'hi', 'alo', 'hey', 'yo',
@@ -282,6 +378,7 @@ export class ChatService {
 
     const hasLogisticsKeyword =
       !!trackingCode ||
+      isTrackingOrFollowUp ||
       cleanNormalizedQ.includes('cuoc') ||
       cleanNormalizedQ.includes('phi') ||
       cleanNormalizedQ.includes('gia') ||
@@ -721,16 +818,17 @@ export class ChatService {
           `- Chính sách phát lại: Miễn phí phát lại lần 2 và lần 3 (tối đa 3 lần) theo quy chuẩn bưu chính.\n` +
           `- HƯỚNG DẪN AI: Thông báo với anh/chị thật lịch sự, ấm áp rằng bưu tá tuyến đã nhận lịch hẹn và sẽ gọi trước khi qua phát, nhắc anh/chị yên tâm nhé ạ.\n`;
       }
-    } else if (trackingCode || (extractedPhone && (session.selectedCode || dto.selectedShipmentCode))) {
-      const targetTrackingCode = trackingCode || dto.selectedShipmentCode || session.selectedCode!;
-      toolsUsed.push(`trackShipment(${targetTrackingCode}, isGuest=${isGuest}, phone=${extractedPhone || 'none'})`);
-      const trackRes = await this.toolsService.trackShipment(targetTrackingCode, isGuest, extractedPhone);
+    } else if (isTrackingOrFollowUp) {
+      const targetTrackingCode = activeTrackingCode!;
+      const phoneToUse = extractedPhone || session.receiverPhone;
+      toolsUsed.push(`trackShipment(${targetTrackingCode}, isGuest=${isGuest}, phone=${phoneToUse || 'none'})`);
+      const trackRes = await this.toolsService.trackShipment(targetTrackingCode, isGuest, phoneToUse);
 
       // Cập nhật session với mã đơn và SĐT vừa tra cứu
       this.sessions.set(conversationId, {
         ...session,
         selectedCode: targetTrackingCode,
-        receiverPhone: extractedPhone || session.receiverPhone,
+        receiverPhone: phoneToUse,
         lastUpdated: Date.now(),
       });
 
@@ -738,7 +836,7 @@ export class ChatService {
         if (trackRes.status === 'PHONE_MISMATCH') {
           toolAugmentedContext += `\n[THÔNG BÁO SỐ ĐIỆN THOẠI NGƯỜI NHẬN KHÔNG KHỚP - BẢO MẬT PII LUẬT BƯU CHÍNH]:\n` +
             `- Mã vận đơn: ${targetTrackingCode}\n` +
-            `- Số điện thoại cung cấp: ${extractedPhone}\n` +
+            `- Số điện thoại cung cấp: ${extractedPhone || phoneToUse}\n` +
             `- Tình trạng: Số điện thoại không trùng khớp với số điện thoại người nhận đã đăng ký trên hệ thống của vận đơn này.\n` +
             `- NGUYÊN TẮC BẢO MẬT CARRIER SOP: Theo Điều 8 Luật Bưu chính và quy chuẩn bảo vệ dữ liệu cá nhân PII, hệ thống chỉ mở khóa thông tin người nhận và địa chỉ chi tiết khi số điện thoại người nhận trùng khớp 100%.\n` +
             `- HƯỚNG DẪN AI: Giải thích thật lịch sự, ân cần cho anh/chị biết số điện thoại vừa nhập không khớp với người nhận của đơn hàng. Nhắc anh/chị kiểm tra lại số điện thoại (hoặc 4 số cuối SĐT nhận hàng), hoặc mời anh/chị Đăng nhập tài khoản nếu mình là chủ đơn hàng/người gửi để xem chi tiết đầy đủ nhé ạ.\n`;
@@ -762,7 +860,7 @@ export class ChatService {
             status: trackRes.status,
             statusText: trackRes.statusText,
             itemName: trackRes.itemName,
-            receiverCity: trackRes.receiverCity || trackRes.receiverAddress,
+            receiverCity: trackRes.receiverAddress || [trackRes.receiverWard, trackRes.receiverDistrict, trackRes.receiverProvince].filter(Boolean).join(', ') || trackRes.receiverCity,
             receiverName: trackRes.receiverName,
             codAmount: trackRes.codAmount,
             createdAt: trackRes.createdAt,
@@ -780,21 +878,35 @@ export class ChatService {
             { label: '➕ Gửi đơn hàng mới', query: 'Tôi muốn gửi hàng mới' },
           ];
 
-          toolAugmentedContext += `\n[XÁC THỰC THÀNH CÔNG SỐ ĐIỆN THOẠI NGƯỜI NHẬN - MỞ KHÓA TOÀN BỘ THÔNG TIN CHI TIẾT]:\n` +
+          toolAugmentedContext += (extractedPhone
+            ? `\n[XÁC THỰC THÀNH CÔNG SỐ ĐIỆN THOẠI NGƯỜI NHẬN - MỞ KHÓA TOÀN BỘ THÔNG TIN CHI TIẾT]:\n`
+            : `\n[HƯỚNG DẪN AI TRẢ LỜI CÂU HỎI TIẾP THEO VỀ ĐƠN HÀNG ${trackRes.trackingNumber}]:\n`) +
             `- Mã vận đơn: ${trackRes.trackingNumber}\n` +
             `- Trạng thái: ${trackRes.statusText} (${trackRes.status}${trackRes.status === 'PICKUP_ASSIGNED' ? ' / TASK_ASSIGNED' : ''})\n` +
             (trackRes.itemName ? `- Tên hàng hóa: ${trackRes.itemName}\n` : '') +
-            (trackRes.senderName ? `- Người gửi: ${trackRes.senderName} (${trackRes.senderCity || trackRes.senderAddress || ''})\n` : '') +
-            (trackRes.receiverName ? `- Người nhận: ${trackRes.receiverName} (${trackRes.receiverCity || trackRes.receiverAddress || ''})\n` : '') +
+            (trackRes.senderName ? `- Người gửi: ${trackRes.senderName}${trackRes.senderAddress ? ` (Địa chỉ gửi: ${trackRes.senderAddress})` : (trackRes.senderCity ? ` (${trackRes.senderCity})` : '')}\n` : '') +
+            (trackRes.receiverName ? `- Người nhận: ${trackRes.receiverName}\n` : '') +
             (trackRes.receiverPhone ? `- Số điện thoại người nhận: ${trackRes.receiverPhone} (ĐÃ XÁC THỰC HỢP LỆ)\n` : '') +
+            (trackRes.receiverAddress ? `- Địa chỉ nhận hàng (Nơi giao đến): ${trackRes.receiverAddress}\n` : (trackRes.receiverCity ? `- Khu vực nhận: ${trackRes.receiverCity}\n` : '')) +
+            (trackRes.receiverWard || trackRes.receiverDistrict ? `- Đơn vị hành chính nơi nhận: ${[trackRes.receiverWard, trackRes.receiverDistrict, trackRes.receiverProvince].filter(Boolean).join(', ')}\n` : '') +
+            (trackRes.destinationHubName ? `- Bưu cục phát phụ trách giao đến người nhận: ${trackRes.destinationHubName}\n` : '') +
             (trackRes.codAmount !== undefined ? `- Tiền thu hộ COD: ${trackRes.codAmount.toLocaleString('vi-VN')} VNĐ\n` : '') +
             `- Vị trí hiện tại: ${trackRes.currentLocation}\n` +
             `- Thời gian dự kiến giao: ${trackRes.estimatedDelivery}\n` +
             `- Lịch sử vận chuyển:\n` +
-            trackRes.timeline.map((t) => `  * ${t.time}: ${t.description}`).join('\n') +
-            `\n- HƯỚNG DẪN AI: Báo cho anh/chị biết hệ thống đã xác thực thành công số điện thoại người nhận! Mở khóa toàn bộ thông tin chi tiết: người nhận, số điện thoại, địa chỉ cụ thể, COD và hành trình di chuyển với thái độ niềm nở, chu đáo.\n`;
+            trackRes.timeline.map((t) => `  * ${t.time}: ${t.description}`).join('\n') + '\n' +
+            `\n[NGUYÊN TẮC BẢO ĐẢM TÍNH CHÍNH XÁC ĐỊA BÀN GIAO NHẬN]:\n` +
+            `- ĐỊA CHỈ NHẬN HÀNG (NƠI GIAO ĐẾN): ${trackRes.receiverAddress || [trackRes.receiverWard, trackRes.receiverDistrict, trackRes.receiverProvince].filter(Boolean).join(', ')}. Khi khách hỏi giao đến đâu, quận nào, người nhận ở đâu, BẮT BUỘC trả lời chính xác theo địa chỉ nhận này!\n` +
+            `- ĐỊA CHỈ GỬI HÀNG (NƠI LẤY): ${trackRes.senderAddress || trackRes.senderCity}.\n` +
+            `- LƯU Ý PHÂN BIỆT: Tuyệt đối không nhầm lẫn bưu cục lấy hàng ban đầu của người gửi (hoặc vị trí Hub bưu tá lấy hàng) thành địa chỉ của người nhận!\n`;
+
+          if (extractedPhone) {
+            toolAugmentedContext += `- HƯỚNG DẪN AI: Báo cho anh/chị biết hệ thống đã xác thực thành công số điện thoại người nhận! Mở khóa toàn bộ thông tin chi tiết: người nhận, số điện thoại, địa chỉ cụ thể, COD và hành trình di chuyển với thái độ niềm nở, chu đáo.\n`;
+          } else {
+            toolAugmentedContext += `- HƯỚNG DẪN AI (QUAN TRỌNG): Số điện thoại người nhận đã được xác thực ở lượt trước đó rồi. Ở lượt này, TUYỆT ĐỐI KHÔNG chúc mừng hay nhắc lại việc xác thực số điện thoại. Hãy TRẢ LỜI NGAY TRỌNG TÂM CÂU HỎI của anh/chị (ví dụ: nếu hỏi COD thì trả lời ngay số tiền COD, nếu hỏi ai nhận thì trả lời ngay người nhận là ${trackRes.receiverName || 'người nhận'} - SĐT ${trackRes.receiverPhone || ''}, nếu hỏi vị trí thì trả lời ngay vị trí hiện tại, nếu hỏi địa chỉ thì trả lời đúng địa chỉ nhận ${trackRes.receiverAddress || ''}...) bằng phong cách thân thiện, chu đáo, xưng em gọi anh/chị.\n`;
+          }
         } else if (isGuest && trackRes.isMasked) {
-          // KHÁCH VÃNG LAI CHƯA NHẬP SĐT: BẮT BUỘC TƯ VẤN 2 LỰA CHỌN MỞ KHÓA
+          // KHÁCH VÃNG LAI CHƯA NHẬP SĐT: BẮT BUỘC TƯ VẤN 2 LỰA CHỌN MỞ KHÓA HOẶC TRẢ LỜI CÂU HỎI TIẾP THEO
           actionChips = [
             { label: '🔑 Đăng nhập tài khoản', query: 'Tôi muốn đăng nhập tài khoản' },
             { label: '📱 Cung cấp SĐT người nhận', query: `Số điện thoại người nhận đơn ${trackRes.trackingNumber} là ` },
@@ -807,18 +919,32 @@ export class ChatService {
             `- Trạng thái: ${trackRes.statusText} (${trackRes.status}${trackRes.status === 'PICKUP_ASSIGNED' ? ' / TASK_ASSIGNED' : ''})\n` +
             (trackRes.itemName ? `- Tên hàng hóa: ${trackRes.itemName}\n` : '') +
             (trackRes.senderName ? `- Người gửi: ${trackRes.senderName} (${trackRes.senderCity || trackRes.senderAddress || ''})\n` : '') +
-            (trackRes.receiverName ? `- Người nhận: ${trackRes.receiverName} (${trackRes.receiverCity || trackRes.receiverAddress || ''})\n` : '') +
+            (trackRes.receiverName ? `- Người nhận: ${trackRes.receiverName} (Đã ẩn theo chuẩn PII)\n` : '') +
             (trackRes.receiverPhone ? `- Số điện thoại người nhận: ${trackRes.receiverPhone} (Đã ẩn theo chuẩn PII)\n` : '') +
+            (trackRes.receiverAddress ? `- Địa chỉ nhận hàng (Nơi giao đến): ${trackRes.receiverAddress} (Đã ẩn số nhà chi tiết, giữ nguyên phường/quận/thành phố)\n` : (trackRes.receiverCity ? `- Khu vực nhận: ${trackRes.receiverCity}\n` : '')) +
+            (trackRes.receiverWard || trackRes.receiverDistrict ? `- Đơn vị hành chính nơi nhận: ${[trackRes.receiverWard, trackRes.receiverDistrict, trackRes.receiverProvince].filter(Boolean).join(', ')}\n` : '') +
+            (trackRes.destinationHubName ? `- Bưu cục phát phụ trách giao đến người nhận: ${trackRes.destinationHubName}\n` : '') +
             (trackRes.codAmount !== undefined ? `- Tiền thu hộ COD: ${trackRes.codAmount.toLocaleString('vi-VN')} VNĐ\n` : '') +
             `- Vị trí hiện tại: ${trackRes.currentLocation}\n` +
             `- Thời gian dự kiến giao: ${trackRes.estimatedDelivery}\n` +
             `- Lịch sử vận chuyển:\n` +
-            trackRes.timeline.map((t) => `  * ${t.time}: ${t.description}`).join('\n') +
-            `\n[CHỈ DẪN NGHIỆP VỤ BẢO MẬT & TƯ VẤN 2 LỰA CHỌN MỞ KHÓA BẮT BUỘC DÀNH CHO KHÁCH VÃNG LAI]:\n` +
-            `- Theo Điều 8 Luật Bưu chính và quy chuẩn an toàn PII, thông tin người nhận và địa chỉ chi tiết tạm thời được che bớt.\n` +
-            `- AI BẮT BUỘC PHẢI TƯ VẤN ĐẦY ĐỦ 2 LỰA CHỌN DƯỚI ĐÂY CHO KHÁCH:\n` +
-            `  1. LỰA CHỌN 1 (NẾU ĐÃ CÓ TÀI KHOẢN / ĐĂNG NHẬP): Mời anh/chị bấm [🔑 Đăng nhập tài khoản](/login) để hệ thống tự động nhận diện danh tính và mở khóa xem đầy đủ mọi thông tin (người gửi, người nhận, SĐT, địa chỉ chi tiết, timeline) mà không cần nhập SĐT mỗi lần tra cứu.\n` +
-            `  2. LỰA CHỌN 2 (TRA CỨU NHANH KHÔNG CẦN TÀI KHOẢN): Chỉ cần cung cấp Số điện thoại người nhận (hoặc 4 số cuối SĐT nhận hàng) ngay tại khung chat này, hệ thống sẽ đối chiếu và mở khóa hiển thị đầy đủ thông tin chi tiết ngay lập tức.\n`;
+            trackRes.timeline.map((t) => `  * ${t.time}: ${t.description}`).join('\n') + '\n' +
+            `\n[NGUYÊN TẮC BẢO ĐẢM TÍNH CHÍNH XÁC ĐỊA BÀN GIAO NHẬN]:\n` +
+            `- ĐỊA CHỈ NHẬN HÀNG (NƠI GIAO ĐẾN): ${trackRes.receiverAddress || [trackRes.receiverWard, trackRes.receiverDistrict, trackRes.receiverProvince].filter(Boolean).join(', ')}. Khi khách hỏi giao đến đâu, quận nào, người nhận ở đâu, BẮT BUỘC trả lời chính xác theo địa chỉ nhận này!\n` +
+            `- ĐỊA CHỈ GỬI HÀNG (NƠI LẤY): ${trackRes.senderAddress || trackRes.senderCity}.\n` +
+            `- LƯU Ý PHÂN BIỆT: Tuyệt đối không nhầm lẫn bưu cục lấy hàng ban đầu của người gửi (hoặc vị trí Hub bưu tá lấy hàng) thành địa chỉ của người nhận!\n`;
+
+          if (!extractedPhone && (isReferencingCurrentShipment || isShipmentStatusOrDetailQuery)) {
+            toolAugmentedContext += `\n[HƯỚNG DẪN AI TRẢ LỜI CÂU HỎI TIẾP THEO VỀ ĐƠN HÀNG ${trackRes.trackingNumber}]:\n` +
+              `- Trả lời TRỰC TIẾP và ĐẦY ĐỦ câu hỏi của anh/chị (ví dụ: vị trí hiện tại: ${trackRes.currentLocation}, trạng thái: ${trackRes.statusText}, thời gian dự kiến giao: ${trackRes.estimatedDelivery}, COD: ${trackRes.codAmount !== undefined ? trackRes.codAmount.toLocaleString('vi-VN') + ' VNĐ' : '0 VNĐ'}, nơi nhận: ${trackRes.receiverAddress || [trackRes.receiverWard, trackRes.receiverDistrict, trackRes.receiverProvince].filter(Boolean).join(', ')}).\n` +
+              `- Nếu câu hỏi liên quan đến số điện thoại hoặc số nhà chi tiết của người nhận (đang bị ẩn bảo mật theo Điều 8 Luật Bưu chính), hãy giải thích lịch sự và mời anh/chị cung cấp SĐT người nhận (hoặc 4 số cuối) hoặc [🔑 Đăng nhập tài khoản](/login) để mở khóa.\n`;
+          } else {
+            toolAugmentedContext += `\n[CHỈ DẪN NGHIỆP VỤ BẢO MẬT & TƯ VẤN 2 LỰA CHỌN MỞ KHÓA BẮT BUỘC DÀNH CHO KHÁCH VÃNG LAI]:\n` +
+              `- Theo Điều 8 Luật Bưu chính và quy chuẩn an toàn PII, thông tin người nhận và địa chỉ chi tiết tạm thời được che bớt.\n` +
+              `- AI BẮT BUỘC PHẢI TƯ VẤN ĐẦY ĐỦ 2 LỰA CHỌN DƯỚI ĐÂY CHO KHÁCH:\n` +
+              `  1. LỰA CHỌN 1 (NẾU ĐÃ CÓ TÀI KHOẢN / ĐĂNG NHẬP): Mời anh/chị bấm [🔑 Đăng nhập tài khoản](/login) để hệ thống tự động nhận diện danh tính và mở khóa xem đầy đủ mọi thông tin (người gửi, người nhận, SĐT, địa chỉ chi tiết, timeline) mà không cần nhập SĐT mỗi lần tra cứu.\n` +
+              `  2. LỰA CHỌN 2 (TRA CỨU NHANH KHÔNG CẦN TÀI KHOẢN): Chỉ cần cung cấp Số điện thoại người nhận (hoặc 4 số cuối SĐT nhận hàng) ngay tại khung chat này, hệ thống sẽ đối chiếu và mở khóa hiển thị đầy đủ thông tin chi tiết ngay lập tức.\n`;
+          }
         } else {
           // KHÁCH ĐÃ ĐĂNG NHẬP
           actionChips = [
@@ -831,14 +957,22 @@ export class ChatService {
             `- Mã vận đơn: ${trackRes.trackingNumber}\n` +
             `- Trạng thái: ${trackRes.statusText} (${trackRes.status}${trackRes.status === 'PICKUP_ASSIGNED' ? ' / TASK_ASSIGNED' : ''})\n` +
             (trackRes.itemName ? `- Tên hàng hóa: ${trackRes.itemName}\n` : '') +
-            (trackRes.senderName ? `- Người gửi: ${trackRes.senderName} (${trackRes.senderCity || trackRes.senderAddress || ''})\n` : '') +
-            (trackRes.receiverName ? `- Người nhận: ${trackRes.receiverName} (${trackRes.receiverCity || trackRes.receiverAddress || ''})\n` : '') +
+            (trackRes.senderName ? `- Người gửi: ${trackRes.senderName}${trackRes.senderAddress ? ` (Địa chỉ gửi: ${trackRes.senderAddress})` : (trackRes.senderCity ? ` (${trackRes.senderCity})` : '')}\n` : '') +
+            (trackRes.receiverName ? `- Người nhận: ${trackRes.receiverName}\n` : '') +
             (trackRes.receiverPhone ? `- Số điện thoại người nhận: ${trackRes.receiverPhone}\n` : '') +
+            (trackRes.receiverAddress ? `- Địa chỉ nhận hàng (Nơi giao đến): ${trackRes.receiverAddress}\n` : (trackRes.receiverCity ? `- Khu vực nhận: ${trackRes.receiverCity}\n` : '')) +
+            (trackRes.receiverWard || trackRes.receiverDistrict ? `- Đơn vị hành chính nơi nhận: ${[trackRes.receiverWard, trackRes.receiverDistrict, trackRes.receiverProvince].filter(Boolean).join(', ')}\n` : '') +
+            (trackRes.destinationHubName ? `- Bưu cục phát phụ trách giao đến người nhận: ${trackRes.destinationHubName}\n` : '') +
             (trackRes.codAmount !== undefined ? `- Tiền thu hộ COD: ${trackRes.codAmount.toLocaleString('vi-VN')} VNĐ\n` : '') +
             `- Vị trí hiện tại: ${trackRes.currentLocation}\n` +
             `- Thời gian dự kiến giao: ${trackRes.estimatedDelivery}\n` +
             `- Lịch sử vận chuyển:\n` +
-            trackRes.timeline.map((t) => `  * ${t.time}: ${t.description}`).join('\n') + `\n`;
+            trackRes.timeline.map((t) => `  * ${t.time}: ${t.description}`).join('\n') + '\n' +
+            `\n[NGUYÊN TẮC BẢO ĐẢM TÍNH CHÍNH XÁC ĐỊA BÀN GIAO NHẬN]:\n` +
+            `- ĐỊA CHỈ NHẬN HÀNG (NƠI GIAO ĐẾN): ${trackRes.receiverAddress || [trackRes.receiverWard, trackRes.receiverDistrict, trackRes.receiverProvince].filter(Boolean).join(', ')}. Khi khách hỏi giao đến đâu, quận nào, người nhận ở đâu, BẮT BUỘC trả lời chính xác theo địa chỉ nhận này!\n` +
+            `- ĐỊA CHỈ GỬI HÀNG (NƠI LẤY): ${trackRes.senderAddress || trackRes.senderCity}.\n` +
+            `- LƯU Ý PHÂN BIỆT: Tuyệt đối không nhầm lẫn bưu cục lấy hàng ban đầu của người gửi (hoặc vị trí Hub bưu tá lấy hàng) thành địa chỉ của người nhận!\n` +
+            `\n- HƯỚNG DẪN AI: Trả lời TRỰC TIẾP và CHÍNH XÁC câu hỏi của anh/chị về đơn hàng ${trackRes.trackingNumber} (tiến độ, thời gian giao, COD, người nhận, địa chỉ nhận...). Luôn giữ thái độ thân thiện, chu đáo, xưng em gọi anh/chị.\n`;
         }
       }
     } else {
@@ -946,7 +1080,7 @@ export class ChatService {
               statusText: 'Đã phân công bưu tá lấy hàng',
               receiverCity: 'Quận Hoàn Kiếm, TP. Hà Nội',
               receiverName: 'Anh Nguyễn Văn An',
-              codAmount: 0,
+              codAmount: created.trackingResult?.codAmount || 0,
               createdAt: 'Hôm nay',
             },
             ...(currentSession.lastShipments || []),
@@ -962,7 +1096,7 @@ export class ChatService {
             statusText: 'Đã phân công bưu tá lấy hàng',
             receiverCity: 'Quận Hoàn Kiếm, TP. Hà Nội',
             receiverName: 'Anh Nguyễn Văn An',
-            codAmount: 0,
+            codAmount: created.trackingResult?.codAmount || 0,
             createdAt: 'Hôm nay',
           },
         ];
@@ -1508,7 +1642,8 @@ export class ChatService {
           `  * Gói Nhanh (Express): ${expPricing.totalFee.toLocaleString('vi-VN')}đ | Chi tiết: ${expPricing.breakdown}\n` +
           `- Công thức tính: Cước cơ sở (0.5kg đầu: 18.000đ Gói Chuẩn, 28.000đ Gói Nhanh, 42.000đ Hỏa Tốc) + Cước vượt nấc (mỗi 0.5kg tiếp theo: +3.500đ Gói Chuẩn, +5.000đ Gói Nhanh) + Phụ phí vùng miền (Nội tỉnh: 0đ, Trục chính Metro: +7.000đ, Liên tỉnh phổ thông: +12.000đ).\n` +
           `- Cước chuyển hoàn bưu gửi: Thu 50% cước chiều đi khi giao không thành công (khách bom hàng).\n` +
-          `- HƯỚNG DẪN AI: Dạ chào anh/chị tự nhiên, niềm nở (xưng em, gọi anh/chị), báo giá cước rõ ràng theo bảng tính trên (Gói Tiêu Chuẩn và Gói Nhanh Express), giải thích dễ hiểu về cân nặng tính cước và cước chuyển hoàn dự kiến (50% cước chiều đi nếu bom hàng). Nếu anh/chị chưa nêu rõ tuyến đường, báo cả 2 mức Nội thành (từ ${intraPricing?.totalFee ? intraPricing.totalFee.toLocaleString('vi-VN') + 'đ' : '21.500đ'}) và Liên tỉnh (từ ${stdPricing.totalFee.toLocaleString('vi-VN')}đ) để thông tin minh bạch, rõ ràng cho anh/chị nhé ạ.\n`;
+          `- HƯỚNG DẪN AI: Dạ chào anh/chị tự nhiên, niềm nở (xưng em, gọi anh/chị), báo giá cước rõ ràng theo bảng tính trên (Gói Tiêu Chuẩn và Gói Nhanh Express), giải thích dễ hiểu về cân nặng tính cước và cước chuyển hoàn dự kiến (50% cước chiều đi nếu bom hàng). Nếu anh/chị chưa nêu rõ tuyến đường, báo cả 2 mức Nội thành (từ ${intraPricing?.totalFee ? intraPricing.totalFee.toLocaleString('vi-VN') + 'đ' : '21.500đ'}) và Liên tỉnh (từ ${stdPricing.totalFee.toLocaleString('vi-VN')}đ) để thông tin minh bạch, rõ ràng cho anh/chị nhé ạ.\n` +
+          `- QUY CHUẨN ĐỊNH DẠNG CÔNG THỨC: Khi trình bày thể tích quy đổi IATA cho khách, ghi hẳn dạng chữ số thuần túy (${length}x${width}x${height})/6000 = ${volumetricWeight}kg. TUYỆT ĐỐI KHÔNG dùng ký hiệu LaTeX toán học như dấu $, \\times, \\text{} hay viết mẫu số 6.000.\n`;
       }
     }
 
@@ -1664,6 +1799,7 @@ Bạn có kiến thức uyên thâm, thấu đáo và toàn diện về toàn b�
 - KIỂM SOÁT EMOJI TINH TẾ & ĐỊNH DẠNG SẠCH ĐẸP:
   + Chỉ dùng 1-2 emoji phù hợp ở đầu ý chính để tạo điểm nhấn trực quan (như 📦, 🛡️, 🚚, 💰). TUYỆT ĐỐI KHÔNG xả cả cụm emoji ngẫu nhiên cuối bài (như 🚚🛡️💰📦📞).
   + Tuyệt đối không dùng dấu nháy đơn ngược (backtick), không dùng ba dấu sao (***), dấu gạch đầu dòng và nội dung nằm cùng một dòng.
+  + TUYỆT ĐỐI KHÔNG dùng cú pháp LaTeX toán học (không dùng dấu $, $$, \(, \), \times, \frac, \text{}). Tất cả công thức tính cước và thể tích quy đổi IATA phải ghi hẳn bằng chữ và số thuần túy: ghi thẳng ra (Dài x Rộng x Cao)/6000 hoặc (60x50x40)/6000 = 20kg (mẫu số là 6000, tuyệt đối không viết dấu chấm 6.000).
   + TUYỆT ĐỐI KHÔNG xuất ra tên file nội bộ (.md), không nói "theo tài liệu tham chiếu đoạn 1 đoạn 2", không để lộ thuật ngữ kỹ thuật backend/AI (API, Gateway, BFF, Port, Vector, Chunk, RAG, Prompt). Diễn đạt tự nhiên: "Theo Chính sách Dịch vụ của Nexus Logistics...".
 
 4. QUY TRÌNH HỦY ĐƠN HÀNG, PHÂN GIẢI NGỮ CẢNH & NGUYÊN TẮC XÁC NHẬN HUMAN-IN-THE-LOOP:
@@ -2250,6 +2386,24 @@ HÃY ĐƯA RA CÂU TRẢ LỜI ĐẦY ĐỦ VÀ CHÍNH XÁC:`;
     if (!text) return '';
     let cleaned = text;
 
+    // 0. Xử lý và chuyển đổi triệt để các công thức toán / LaTeX thành chữ số thuần túy
+    cleaned = cleaned.replace(/\\frac\{([^}]+)\}\{([^}]+)\}/g, '($1) / $2');
+    cleaned = cleaned.replace(/\\(?:text|mathrm|mathbf|textit)\{([^}]*)\}/g, '$1');
+    cleaned = cleaned.replace(/\\times\b/g, 'x');
+    cleaned = cleaned.replace(/\\cdot\b/g, 'x');
+    cleaned = cleaned.replace(/\\div\b/g, '/');
+    cleaned = cleaned.replace(/\\le\b/g, '<=');
+    cleaned = cleaned.replace(/\\ge\b/g, '>=');
+    cleaned = cleaned.replace(/\$\$([\s\S]*?)\$\$/g, '$1');
+    cleaned = cleaned.replace(/\\\[([\s\S]*?)\\\]/g, '$1');
+    cleaned = cleaned.replace(/\\\(([\s\S]*?)\\\)/g, '$1');
+    cleaned = cleaned.replace(/\$([^\$\n]+)\$/g, '$1');
+    cleaned = cleaned.replace(/\/\s*6\.000\b/g, '/ 6000');
+    // Ghi hẳn ra (DxRxC)/6000 theo yêu cầu người dùng: (60x50x40)/6000
+    cleaned = cleaned.replace(/\((\d+(?:\.\d+)?)\s*x\s*(\d+(?:\.\d+)?)\s*x\s*(\d+(?:\.\d+)?)\)\s*\/\s*6000/g, '($1x$2x$3)/6000');
+    cleaned = cleaned.replace(/(?:^|[^\w(])(\d+(?:\.\d+)?)\s*x\s*(\d+(?:\.\d+)?)\s*x\s*(\d+(?:\.\d+)?)\s*\/\s*6000/g, ' ($1x$2x$3)/6000');
+    cleaned = cleaned.replace(/\\([a-zA-Z]+)/g, '$1');
+
     // 1. Loại bỏ hoàn toàn dấu backtick (`) bọc quanh các từ hoặc mã
     cleaned = cleaned.replace(/`([^`]+)`/g, '$1');
     cleaned = cleaned.replace(/`/g, '');
@@ -2532,6 +2686,79 @@ HÃY ĐƯA RA CÂU TRẢ LỜI ĐẦY ĐỦ VÀ CHÍNH XÁC:`;
             .join('\n') +
           `\n\n👉 *Quý khách có thể bấm trực tiếp vào từng Thẻ vận đơn bên dưới để theo dõi lộ trình di chuyển chi tiết qua các Hub trung chuyển.*`
         );
+      }
+
+      // Xử lý Trả lời câu hỏi tương tác tiếp theo về đơn hàng trong phiên (Multi-turn Contextual QA)
+      if (realtimeSection.includes('[HƯỚNG DẪN AI TRẢ LỜI CÂU HỎI TIẾP THEO VỀ ĐƠN HÀNG')) {
+        const codeMatch = realtimeSection.match(/Mã vận đơn: (.*?)\n/);
+        const code = codeMatch ? codeMatch[1].trim() : '';
+        const locMatch = realtimeSection.match(/Vị trí hiện tại: (.*?)\n/);
+        const loc = locMatch ? locMatch[1].trim() : '';
+        const statusMatch = realtimeSection.match(/Trạng thái: (.*?)\n/);
+        const status = statusMatch ? statusMatch[1].trim() : '';
+        const etaMatch = realtimeSection.match(/Thời gian dự kiến giao: (.*?)\n/);
+        const eta = etaMatch ? etaMatch[1].trim() : '';
+        const codMatch = realtimeSection.match(/Tiền thu hộ COD: (.*?)\n/);
+        const cod = codMatch ? codMatch[1].trim() : '';
+        const receiverMatch = realtimeSection.match(/Người nhận: (.*?)\n/);
+        const receiver = receiverMatch ? receiverMatch[1].trim() : '';
+        const phoneMatch = realtimeSection.match(/Số điện thoại người nhận: (.*?)\n/);
+        const phone = phoneMatch ? phoneMatch[1].trim() : '';
+        const itemMatch = realtimeSection.match(/Tên hàng hóa: (.*?)\n/);
+        const item = itemMatch ? itemMatch[1].trim() : '';
+
+        const cleanQ = question.toLowerCase();
+        if (cleanQ.includes('cod') || cleanQ.includes('thu ho') || cleanQ.includes('tien') || cleanQ.includes('gia')) {
+          return `Dạ tiền thu hộ COD của đơn hàng **${code}** là **${cod || '0 VNĐ'}** ạ.\n\n` +
+            `• 📌 **Trạng thái:** ${status}\n` +
+            `• 📍 **Vị trí hiện tại:** ${loc}\n` +
+            (eta ? `• ⏰ **Dự kiến phát hàng:** ${eta}\n` : '') +
+            `\nNếu anh/chị cần hỗ trợ thêm thông tin gì về đơn này, cứ nhắn em nhé ạ!`;
+        }
+
+        if (cleanQ.includes('den dau') || cleanQ.includes('o dau') || cleanQ.includes('toi dau') || cleanQ.includes('hanh trinh') || cleanQ.includes('tien do')) {
+          return `Dạ đơn hàng **${code}** của mình hiện đang ở: **${loc}** ạ.\n\n` +
+            `• 📌 **Trạng thái:** ${status}\n` +
+            (eta ? `• ⏰ **Thời gian dự kiến phát:** ${eta}\n` : '') +
+            (cod ? `• 💵 **Tiền thu hộ COD:** ${cod}\n` : '') +
+            `\nAnh/chị yên tâm nhé, bên em đang theo sát tiến độ vận chuyển cho mình ạ!`;
+        }
+
+        if (cleanQ.includes('bao gio') || cleanQ.includes('khi nao') || cleanQ.includes('may gio') || cleanQ.includes('bao lau') || cleanQ.includes('may ngay')) {
+          return `Dạ thời gian dự kiến giao của đơn hàng **${code}** là: **${eta || 'Trong ngày làm việc tiếp theo'}** ạ.\n\n` +
+            `• 📍 **Vị trí hiện tại:** ${loc}\n` +
+            `• 📌 **Trạng thái:** ${status}\n` +
+            `\nBưu tá tuyến sẽ gọi điện thoại trước cho người nhận khi giao hàng nhé ạ!`;
+        }
+
+        const addrMatch = realtimeSection.match(/Địa chỉ nhận hàng \(Nơi giao đến\): (.*?)\n/);
+        const receiverAddress = addrMatch ? addrMatch[1].trim() : '';
+        const adminMatch = realtimeSection.match(/Đơn vị hành chính nơi nhận: (.*?)\n/);
+        const receiverAdmin = adminMatch ? adminMatch[1].trim() : '';
+
+        if (cleanQ.includes('ai nhan') || cleanQ.includes('nguoi nhan') || cleanQ.includes('dia chi') || cleanQ.includes('sdt') || cleanQ.includes('giao den') || cleanQ.includes('quan nao') || cleanQ.includes('phuong nao') || cleanQ.includes('o dau')) {
+          if (phone && !phone.includes('ẩn')) {
+            return `Dạ thông tin người nhận đơn hàng **${code}** là:\n\n` +
+              `• 👤 **Người nhận:** ${receiver}\n` +
+              `• 📱 **Số điện thoại:** ${phone}\n` +
+              (receiverAddress ? `• 📍 **Địa chỉ nhận hàng:** ${receiverAddress}\n` : '') +
+              `• 📌 **Trạng thái:** ${status}\n` +
+              `• 🚚 **Vị trí hiện tại:** ${loc}\n` +
+              `\nAnh/chị cần em hỗ trợ thêm gì không ạ?`;
+          } else {
+            return `Dạ đơn hàng **${code}** được giao đến: **${receiverAddress || receiverAdmin || 'Thành phố Hồ Chí Minh'}** ạ.\n\n` +
+              `*(Vì lý do bảo mật dữ liệu cá nhân theo Luật Bưu chính, số nhà chi tiết và số điện thoại đang tạm thời được ẩn. Anh/chị có thể gửi SĐT người nhận hoặc [Đăng nhập tài khoản](/login) để xem trọn vẹn nhé ạ!)*`;
+          }
+        }
+
+        return `Dạ thông tin đơn hàng **${code}** của anh/chị như sau ạ:\n\n` +
+          `• 📌 **Trạng thái:** ${status}\n` +
+          (item ? `• 📦 **Hàng hóa:** ${item}\n` : '') +
+          `• 📍 **Vị trí hiện tại:** ${loc}\n` +
+          (eta ? `• ⏰ **Dự kiến phát hàng:** ${eta}\n` : '') +
+          (cod ? `• 💵 **Tiền thu hộ COD:** ${cod}\n` : '') +
+          (receiver ? `• 👤 **Người nhận:** ${receiver}\n` : '') +
+          `\nNếu anh/chị cần em kiểm tra thêm gì về đơn hàng này, cứ nhắn em ngay nhé ạ!`;
       }
 
       // Xử lý Tra cứu đơn hàng ở chế độ Khách vãng lai (PII Masked) - Bắt buộc tư vấn 2 lựa chọn mở khóa

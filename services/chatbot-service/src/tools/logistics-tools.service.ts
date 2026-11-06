@@ -8,10 +8,18 @@ export interface TrackingResult {
   senderName?: string;
   senderCity?: string;
   senderAddress?: string;
+  senderWard?: string;
+  senderDistrict?: string;
+  senderProvince?: string;
   receiverName?: string;
   receiverPhone?: string;
   receiverCity?: string;
   receiverAddress?: string;
+  receiverWard?: string;
+  receiverDistrict?: string;
+  receiverProvince?: string;
+  destinationHubName?: string;
+  originHubName?: string;
   itemName?: string;
   weightKg?: number;
   codAmount?: number;
@@ -79,11 +87,32 @@ function maskPhone(phone?: string): string {
   return phone.replace(/(\d{3,4})\d{3,4}(\d{3})/, '$1****$2');
 }
 
+export function formatPartyAddress(party: any): string {
+  if (!party) return '';
+  const detail = party.addressDetail || party.address || '';
+  const ward = party.ward || '';
+  const district = party.district || '';
+  const province = party.province || party.city || '';
+
+  if (ward && district && province) {
+    const street = party.addressDetail || detail.split(/,\s*/)[0] || '';
+    return [street, ward, district, province].filter(Boolean).join(', ');
+  }
+
+  const parts: string[] = [];
+  if (detail) parts.push(detail);
+  if (ward && !detail.toLowerCase().includes(ward.toLowerCase())) parts.push(ward);
+  if (district && !detail.toLowerCase().includes(district.toLowerCase())) parts.push(district);
+  if (province && !detail.toLowerCase().includes(province.toLowerCase())) parts.push(province);
+  return parts.filter(Boolean).join(', ');
+}
+
 function maskAddress(addr?: string): string {
   if (!addr) return '';
   const parts = addr.split(/,\s*/);
-  if (parts.length > 2) {
-    return '***, ' + parts.slice(-2).join(', ');
+  if (parts.length > 1) {
+    // Ẩn số nhà chi tiết (phần tử đầu tiên), giữ nguyên toàn bộ đơn vị hành chính Phường/Xã, Quận/Huyện, Tỉnh/Thành
+    return '***, ' + parts.slice(1).join(', ');
   }
   return '***, ' + addr;
 }
@@ -214,7 +243,7 @@ export class LogisticsToolsService {
 
     // Đồng bộ sang shipment-service nếu service đang chạy
     try {
-      await fetch(`http://localhost:3003/api/v1/shipments`, {
+      await fetch(`${this.shipmentServiceUrl}/shipments`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -433,12 +462,21 @@ export class LogisticsToolsService {
         const senderName = shouldMask ? maskVietnameseName(sender.name) : sender.name;
         const receiverName = shouldMask ? maskVietnameseName(receiver.name) : receiver.name;
         const receiverPhoneDisplay = shouldMask ? maskPhone(receiver.phone || storedPhone) : (receiver.phone || storedPhone);
-        const receiverAddress = shouldMask
-          ? maskAddress(receiver.address || receiver.addressDetail)
-          : (receiver.address || receiver.addressDetail);
-        const senderAddress = shouldMask
-          ? maskAddress(sender.address || sender.addressDetail)
-          : (sender.address || sender.addressDetail);
+
+        const rawReceiverFullAddr = formatPartyAddress(receiver);
+        const rawSenderFullAddr = formatPartyAddress(sender);
+
+        const receiverAddress = shouldMask ? maskAddress(rawReceiverFullAddr) : rawReceiverFullAddr;
+        const senderAddress = shouldMask ? maskAddress(rawSenderFullAddr) : rawSenderFullAddr;
+
+        const receiverWard = receiver.ward;
+        const receiverDistrict = receiver.district;
+        const receiverProvince = receiver.province || receiver.city;
+        const senderWard = sender.ward;
+        const senderDistrict = sender.district;
+        const senderProvince = sender.province || sender.city;
+        const destinationHubName = receiver.resolvedHubName || meta.destinationHubName || (receiverDistrict ? `Bưu cục ${receiverDistrict}` : undefined);
+        const originHubName = sender.resolvedHubName || meta.originHubName || (senderDistrict ? `Bưu cục ${senderDistrict}` : undefined);
 
         const realItemName = pkg.itemName || pkg.itemType || meta.package?.itemName || meta.package?.itemType || 'Kiện hàng bưu gửi';
 
@@ -448,12 +486,20 @@ export class LogisticsToolsService {
           status,
           statusText,
           senderName,
-          senderCity: sender.province || sender.city,
+          senderCity: senderProvince,
           senderAddress,
+          senderWard,
+          senderDistrict,
+          senderProvince,
           receiverName,
           receiverPhone: receiverPhoneDisplay,
-          receiverCity: receiver.province || receiver.city,
+          receiverCity: receiverProvince,
           receiverAddress,
+          receiverWard,
+          receiverDistrict,
+          receiverProvince,
+          destinationHubName,
+          originHubName,
           itemName: realItemName,
           weightKg: payload.weightKg || pkg.weightKg || meta.package?.weightKg || 0.5,
           codAmount: payload.codAmount ?? meta.codAmount ?? pkg.codAmount ?? shipData?.codAmount ?? 0,

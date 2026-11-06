@@ -141,15 +141,154 @@ export const trackingApi = {
               : publicData.current.currentStatus,
         } : null;
 
+        let order = publicData.order ?? null;
+        if (!order) {
+          try {
+            const directShipment = await apiClient<any>(`/public/shipment/shipments/${code}`, {
+              method: 'GET',
+            });
+            if (directShipment) {
+              const meta = directShipment.metadata || {};
+              const p = meta.package || {};
+              const s = meta.sender || {};
+              const r = meta.receiver || {};
+              const codAmount = Number(meta.codAmount ?? p.codAmount ?? directShipment.codAmount ?? 0);
+              order = {
+                code: directShipment.code,
+                statusCode: directShipment.currentStatus,
+                createdAt: directShipment.createdAt,
+                updatedAt: directShipment.updatedAt,
+                sender: {
+                  name: s.name ? `${s.name.slice(0, 1)}***` : null,
+                  phone: s.phone ? `${s.phone.slice(0, 3)}****${s.phone.slice(-3)}` : null,
+                  address: s.address || null,
+                  addressDetail: s.addressDetail || null,
+                  ward: s.ward || null,
+                  district: s.district || null,
+                  province: s.province || null,
+                  region: s.region || null,
+                  hubCode: s.hubCode || null,
+                },
+                receiver: {
+                  name: r.name ? `${r.name.slice(0, 1)}***` : null,
+                  phone: r.phone ? `${r.phone.slice(0, 3)}****${r.phone.slice(-3)}` : null,
+                  address: r.address || null,
+                  addressDetail: r.addressDetail || null,
+                  ward: r.ward || null,
+                  district: r.district || null,
+                  province: r.province || null,
+                  region: r.region || null,
+                  hubCode: r.hubCode || null,
+                },
+                package: {
+                  itemType: p.itemName || p.itemType || null,
+                  weightKg: Number(p.weightKg) || null,
+                  dimensionsCm: {
+                    length: Number(p.dimensionsCm?.length) || null,
+                    width: Number(p.dimensionsCm?.width) || null,
+                    height: Number(p.dimensionsCm?.height) || null,
+                  },
+                  declaredValue: Number(p.declaredValue) || null,
+                },
+                serviceType: meta.service?.type || meta.serviceType || 'TIÊU CHUẨN',
+                codAmount,
+                estimatedFee: Number(meta.estimatedFee || meta.shippingFee) || 0,
+                currency: 'VND',
+                deliveryNote: meta.deliveryNote || meta.notes || null,
+                source: 'PUBLIC_PORTAL',
+                routing: {
+                  originHubCode: s.hubCode || null,
+                  destinationHubCode: r.hubCode || null,
+                },
+              };
+            }
+          } catch {
+            // Silently continue
+          }
+        }
+
         return {
           shipmentCode,
           current,
           timeline: processedTimeline,
-          order: publicData.order ?? null,
+          order,
           gpsPosition,
-          requiresReceiverPhone: false,
+          requiresReceiverPhone: !receiverPhone?.trim(),
         };
       } catch (err: any) {
+        // Fallback: If public track fails, try fetching public shipment data directly
+        try {
+          const directShipment = await apiClient<any>(`/public/shipment/shipments/${code}`, {
+            method: 'GET',
+          });
+          if (directShipment) {
+            const meta = directShipment.metadata || {};
+            const p = meta.package || {};
+            const s = meta.sender || {};
+            const r = meta.receiver || {};
+            const codAmount = Number(meta.codAmount ?? p.codAmount ?? directShipment.codAmount ?? 0);
+            return {
+              shipmentCode,
+              current: {
+                shipmentCode,
+                currentStatusCode: directShipment.currentStatus,
+                currentStatus: directShipment.currentStatus === 'TASK_ASSIGNED' ? 'Chờ lấy hàng' : directShipment.currentStatus,
+              },
+              timeline: [],
+              order: {
+                code: directShipment.code,
+                statusCode: directShipment.currentStatus,
+                createdAt: directShipment.createdAt,
+                updatedAt: directShipment.updatedAt,
+                sender: {
+                  name: s.name ? `${s.name.slice(0, 1)}***` : null,
+                  phone: s.phone ? `${s.phone.slice(0, 3)}****${s.phone.slice(-3)}` : null,
+                  address: s.address || null,
+                  addressDetail: s.addressDetail || null,
+                  ward: s.ward || null,
+                  district: s.district || null,
+                  province: s.province || null,
+                  region: s.region || null,
+                  hubCode: s.hubCode || null,
+                },
+                receiver: {
+                  name: r.name ? `${r.name.slice(0, 1)}***` : null,
+                  phone: r.phone ? `${r.phone.slice(0, 3)}****${r.phone.slice(-3)}` : null,
+                  address: r.address || null,
+                  addressDetail: r.addressDetail || null,
+                  ward: r.ward || null,
+                  district: r.district || null,
+                  province: r.province || null,
+                  region: r.region || null,
+                  hubCode: r.hubCode || null,
+                },
+                package: {
+                  itemType: p.itemName || p.itemType || null,
+                  weightKg: Number(p.weightKg) || null,
+                  dimensionsCm: {
+                    length: Number(p.dimensionsCm?.length) || null,
+                    width: Number(p.dimensionsCm?.width) || null,
+                    height: Number(p.dimensionsCm?.height) || null,
+                  },
+                  declaredValue: Number(p.declaredValue) || null,
+                },
+                serviceType: meta.service?.type || meta.serviceType || 'TIÊU CHUẨN',
+                codAmount,
+                estimatedFee: Number(meta.estimatedFee || meta.shippingFee) || 0,
+                currency: 'VND',
+                deliveryNote: meta.deliveryNote || meta.notes || null,
+                source: 'PUBLIC_PORTAL',
+                routing: {
+                  originHubCode: s.hubCode || null,
+                  destinationHubCode: r.hubCode || null,
+                },
+              },
+              requiresReceiverPhone: !receiverPhone?.trim(),
+            };
+          }
+        } catch {
+          // Continue to error check
+        }
         if (
           err?.status === 400 ||
           err?.status === 403 ||

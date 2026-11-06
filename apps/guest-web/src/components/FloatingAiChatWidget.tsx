@@ -58,8 +58,23 @@ const FormattedChatMessage: React.FC<{ text: string; isUser: boolean }> = ({ tex
     return <div className="whitespace-pre-wrap">{text}</div>;
   }
 
-  // Pre-process: remove raw backticks, excessive asterisks, and generic emojis
+  // Pre-process: sanitize LaTeX math formulas to plain text, remove raw backticks, excessive asterisks, and generic emojis
   const cleanText = text
+    .replace(/\\frac\{([^}]+)\}\{([^}]+)\}/g, '($1) / $2')
+    .replace(/\\(?:text|mathrm|mathbf|textit)\{([^}]*)\}/g, '$1')
+    .replace(/\\times\b/g, 'x')
+    .replace(/\\cdot\b/g, 'x')
+    .replace(/\\div\b/g, '/')
+    .replace(/\\le\b/g, '<=')
+    .replace(/\\ge\b/g, '>=')
+    .replace(/\$\$([\s\S]*?)\$\$/g, '$1')
+    .replace(/\\\[([\s\S]*?)\\\]/g, '$1')
+    .replace(/\\\(([\s\S]*?)\\\)/g, '$1')
+    .replace(/\$([^\$\n]+)\$/g, '$1')
+    .replace(/\/\s*6\.000\b/g, '/ 6000')
+    .replace(/\((\d+(?:\.\d+)?)\s*x\s*(\d+(?:\.\d+)?)\s*x\s*(\d+(?:\.\d+)?)\)\s*\/\s*6000/g, '($1x$2x$3)/6000')
+    .replace(/(?:^|[^\w(])(\d+(?:\.\d+)?)\s*x\s*(\d+(?:\.\d+)?)\s*x\s*(\d+(?:\.\d+)?)\s*\/\s*6000/g, ' ($1x$2x$3)/6000')
+    .replace(/\\([a-zA-Z]+)/g, '$1')
     .replace(/`([^`]+)`/g, '$1')
     .replace(/`/g, '')
     .replace(/\*{3,}/g, '**')
@@ -310,13 +325,43 @@ export const FloatingAiChatWidget: React.FC = () => {
   };
 
   const getLastTrackedShipmentCode = (): string | undefined => {
+    // 1. Kiểm tra trên URL trình duyệt (?track=... hoặc ?code=... hoặc /track/:code)
+    try {
+      if (typeof window !== 'undefined') {
+        const searchParams = new URLSearchParams(window.location.search);
+        const urlCode = searchParams.get('track') || searchParams.get('code');
+        if (urlCode && /^(101\d{9}|111\d{9}|333\d{9}|222\d{9}|\d{10,15}|NX[-_]?[A-Z0-9]{4,16})$/i.test(urlCode.trim())) {
+          return urlCode.trim().toUpperCase();
+        }
+        const pathMatch = window.location.pathname.match(/\/track\/([A-Za-z0-9_-]+)/);
+        if (pathMatch && pathMatch[1]) {
+          return pathMatch[1].trim().toUpperCase();
+        }
+      }
+    } catch {}
+
+    // 2. Kiểm tra sessionStorage lưu đơn gần nhất
+    try {
+      const savedCode = sessionStorage.getItem('nexus_last_tracked_code');
+      if (savedCode && /^(101\d{9}|111\d{9}|333\d{9}|222\d{9}|\d{10,15}|NX[-_]?[A-Z0-9]{4,16})$/i.test(savedCode.trim())) {
+        return savedCode.trim().toUpperCase();
+      }
+    } catch {}
+
+    // 3. Quét lịch sử tin nhắn trong widget từ mới nhất về cũ nhất
     for (let i = messages.length - 1; i >= 0; i--) {
       const msg = messages[i];
       if (msg.shipmentCards && msg.shipmentCards.length > 0) {
         return msg.shipmentCards[0].code;
       }
-      const match = msg.text.match(/\b(101\d{9}|111\d{9}|333\d{9}|222\d{9}|\d{10,15}|NX[-_]?[A-Z0-9]{4,16})\b/);
-      if (match) return match[0];
+      const formalMatch = msg.text.match(/\b(101\d{9}|111\d{9}|333\d{9}|222\d{9}|NX[-_]?[A-Z0-9]{4,16}|SPX[A-Z0-9]+|VN\d+[A-Z0-9]*|DH\d+)\b/i);
+      if (formalMatch) return formalMatch[0].toUpperCase();
+
+      // Chỉ match chuỗi số 10-15 chữ số nếu KHÔNG PHẢI là số điện thoại người nhận (tránh nhận nhầm SĐT thành mã đơn)
+      const numMatch = msg.text.match(/\b\d{10,15}\b/);
+      if (numMatch && !/^0[35789]\d{8}$/.test(numMatch[0])) {
+        return numMatch[0];
+      }
     }
     return undefined;
   };
@@ -403,6 +448,12 @@ export const FloatingAiChatWidget: React.FC = () => {
         setConversationId(responseData.conversationId);
         try {
           sessionStorage.setItem(getConvKey(currentUserId), responseData.conversationId);
+        } catch {}
+      }
+
+      if (responseData.shipmentCards && responseData.shipmentCards.length > 0) {
+        try {
+          sessionStorage.setItem('nexus_last_tracked_code', responseData.shipmentCards[0].code);
         } catch {}
       }
 
