@@ -404,7 +404,7 @@ def build_rag_pipeline_svg():
           <rect width="{col_w - 60}" height="105" rx="3" fill="#FFFFFF" stroke="#4B5563" stroke-width="1"/>
           <text x="12" y="20" class="card-txt-bold">MA TRẬN ĐỒNG NGHĨA BƯU CHÍNH (LOGISTICS THESAURUS MAP):</text>
           <text x="12" y="42" class="card-code">• "vỡ", "bể", "hư"  ➔  ["hư hỏng", "bể vỡ", "thiệt hại", "bồi thường", "BBBT 24h"]</text>
-          <text x="12" y="64" class="card-code">• "đền", "bồi thường"  ➔  ["khiếu nại", "claim", "giá trị khai giá", "Điều 25 Luật BC"]</text>
+          <text x="12" y="64" class="card-code">• "đền", "bồi thường"  ➔  ["khiếu nại", "claim", "giá trị khai giá", "Điều 25 NĐ 47 &amp; Điều 40 Luật BC"]</text>
           <text x="12" y="86" class="card-code">• "nặng", "cồng kềnh"  ➔  ["trọng lượng thể tích", "IATA", "quy đổi kg", "nấc thang"]</text>
         </g>
 
@@ -747,7 +747,7 @@ def build_rag_pipeline_svg():
           <text x="12" y="20" class="card-txt-bold">TOP CHUNKS ĐƯỢC HỒI XUẤT (GROUNDING EVIDENCE):</text>
           <text x="12" y="40" class="card-code">1. SOP-06#chunk-3 (Điểm: 0.938): Quy chuẩn đóng gói gốm sứ bọc 3-5 lớp xốp hơi.</text>
           <text x="12" y="58" class="card-code">2. SOP-02#chunk-1 (Điểm: 0.892): Điều kiện bồi thường 100% khi có BBBT lập trong 24 giờ.</text>
-          <text x="12" y="76" class="card-code">Căn cứ pháp lý: Quy chiếu trực tiếp Điều 25 Luật Bưu chính 2010.</text>
+          <text x="12" y="76" class="card-code">Căn cứ pháp lý: Quy chiếu Điều 25 NĐ 47 &amp; Điều 40 Luật Bưu chính 2010.</text>
         </g>
 
         <text x="14" y="204" class="matrix-txt"><tspan class="card-txt-bold">• Lắp ráp Context Sandwich:</tspan> Nạp 2 Chunks vào Tầng 2 của Prompt kèm chỉ thị trung thực.</text>
@@ -763,7 +763,7 @@ def build_rag_pipeline_svg():
         <g transform="translate(14, 30)">
           <rect width="{col_w - 60}" height="200" rx="3" fill="#FFFFFF" stroke="#000000" stroke-width="1"/>
           <text x="12" y="20" class="card-code">DỮ LIỆU ĐÓNG GÓI CHAT RESPONSE DTO:</text>
-          <text x="12" y="40" class="card-code">answer: "Theo quy định tại SOP-02 và Điều 25 Luật Bưu chính, kiện hàng</text>
+          <text x="12" y="40" class="card-code">answer: "Theo quy định tại SOP-02 và Điều 25 NĐ 47 (Điều 40 Luật Bưu chính), kiện hàng</text>
           <text x="12" y="58" class="card-code">gốm sứ bể vỡ được bồi thường 100% giá trị khai giá với 2 điều kiện bắt buộc:</text>
           <text x="12" y="76" class="card-code">1. Lập Biên bản bất thường (BBBT) có chữ ký bưu tá trong vòng 24 giờ.</text>
           <text x="12" y="94" class="card-code">2. Hàng được đóng gói đúng chuẩn SOP-06 (bọc 3-5 lớp xốp hơi cách thùng 5cm)."</text>

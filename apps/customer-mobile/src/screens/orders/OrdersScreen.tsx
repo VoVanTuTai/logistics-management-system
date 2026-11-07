@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
+  Alert,
   FlatList,
   RefreshControl,
   StyleSheet,
@@ -164,6 +165,35 @@ export function OrdersScreen({ route, navigation }: Props): React.JSX.Element {
     fetchLiveShipments(false);
   };
 
+  const handlePromptCancel = (ord: OrderModel) => {
+    Alert.alert(
+      'Xác nhận hủy đơn hàng',
+      `Bạn có chắc chắn muốn hủy đơn hàng #${ord.code} không?\n\nKiện hàng chưa bàn giao cho bưu tá nên được hủy MIỄN PHÍ 100% (0 VNĐ).`,
+      [
+        { text: 'Giữ lại đơn', style: 'cancel' },
+        {
+          text: 'Xác nhận hủy đơn',
+          style: 'destructive',
+          onPress: async () => {
+            const accessToken = authStore.getAccessToken();
+            if (!accessToken) return;
+            try {
+              await shipmentApi.cancelShipment(
+                accessToken,
+                ord.code,
+                'Khách hàng hủy trên danh sách đơn',
+              );
+              fetchLiveShipments(false);
+              Alert.alert('Đã hủy đơn hàng', `Đơn hàng #${ord.code} đã được hủy thành công.`);
+            } catch (err: any) {
+              Alert.alert('Không thể hủy đơn', err?.message || 'Có lỗi xảy ra khi hủy đơn.');
+            }
+          },
+        },
+      ],
+    );
+  };
+
   const filteredOrders = useMemo(() => {
     return liveOrders.filter((ord) => {
       if (category === 'SENT' && ord.category !== 'SENT') return false;
@@ -255,6 +285,7 @@ export function OrdersScreen({ route, navigation }: Props): React.JSX.Element {
             <OrderCard
               order={item}
               onPressDetail={(ord) => navigation.navigate('OrderDetail', { order: ord })}
+              onPressCancel={handlePromptCancel}
             />
           )}
           contentContainerStyle={styles.listContent}

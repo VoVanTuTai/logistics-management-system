@@ -11,7 +11,7 @@
 ### 1.1. Thách thức đặc thù của Văn bản Nghiệp vụ Logistics
 Văn bản quy định trong ngành vận chuyển bưu chính sở hữu các đặc điểm cấu trúc rất phức tạp:
 1. **Cấu trúc bảng biểu & Ma trận phân cấp:** Bảng cước lũy tiến (nấc 0.5kg đầu, nấc vượt cân), bảng quy đổi thể tích IATA (D × R × C / 6000), bảng phân tầng chiết khấu khách hàng (Khách lẻ, Shop Tiêu chuẩn, VIP Doanh nghiệp).
-2. **Tính ràng buộc pháp lý chặt chẽ:** Các điều khoản bồi thường theo Điều 24, Điều 25 Luật Bưu chính 2010 (Mặc định đền 4 lần cước; Bảo hiểm khai giá đền 100% hóa đơn VAT).
+2. **Tính ràng buộc pháp lý chặt chẽ:** Các điều khoản bồi thường theo Điều 25 Nghị định 47/2011/NĐ-CP & Điều 40 Luật Bưu chính 2010 (Mặc định đền 4 lần cước; Bảo hiểm khai giá đền 100% hóa đơn VAT).
 3. **Mệnh đề điều kiện rẽ nhánh:** *"Chỉ được cắm điện thử máy nếu tem ghi `CHO_THU_HANG`, còn `CHO_XEM_KHONG_THU` chỉ được xem mắt, `KHONG_CHO_XEM` tuyệt đối không được bóc hộp"*.
 
 ### 1.2. Thất bại của các Phương pháp Chunking Thông thường

@@ -13,7 +13,7 @@ Nhiều hệ thống logistics gặp thất bại hoặc bị giảng viên hộ
 
 **MÔ HÌNH THIẾT GIÁP TINH GỌN (IRONCLAD LEAN MODEL)** giải quyết triệt để vấn đề này bằng cách:
 * **TINH GỌN:** Chỉ có **02 cờ kiểm soát tại quầy** và **02 gói lựa chọn bảo hiểm** (Khách mất chưa tới 30 giây để hoàn tất).
-* **DỄ PHẢN BIỆN:** Bám chặt 100% vào **Luật Bưu chính Việt Nam (Điều 24, Điều 25 Luật số 49/2010/QH12)**.
+* **DỄ PHẢN BIỆN:** Bám chặt 100% vào **Luật Bưu chính Việt Nam (Điều 40, Điều 41 Luật số 49/2010/QH12 & Điều 25 Nghị định 47/2011/NĐ-CP)**.
 * **BỊT KÍN MỌI LỖ HỔNG:** Không để lại bất kỳ "vùng xám" (Grey Zone) nào cho hành vi trục lợi bảo hiểm hoặc tranh chấp dân sự.
 
 ---
@@ -50,7 +50,7 @@ flowchart TD
 ### Lỗ hổng 1: Khách hàng khai khống giá trị để trục lợi (Moral Hazard & Valuation Fraud)
 * **Kịch bản gian lận:** Món đồ cũ trị giá 300.000 VNĐ nhưng người gửi khai giá 15.000.000 VNĐ. Khi xảy ra sự cố, người gửi đòi đền đủ 15.000.000 VNĐ.
 * **Chốt chặn phần mềm:** 
-  * Nguyên tắc bồi thường được cố định bằng hợp đồng: **"Bồi thường theo GIÁ TRỊ THIỆT HẠI THỰC TẾ, tối đa bằng Giá trị khai báo"** (Chuẩn Điều 25 Luật Bưu chính).
+  * Nguyên tắc bồi thường được cố định bằng hợp đồng: **"Bồi thường theo GIÁ TRỊ THIỆT HẠI THỰC TẾ, tối đa bằng Giá trị khai báo"** (Chuẩn Điều 40 Luật Bưu chính 2010 & Điều 25 Nghị định 47/2011/NĐ-CP).
   * Điều kiện nhận bồi thường 100%: Người gửi phải xuất trình được **Hóa đơn mua hàng hợp lệ (VAT / Hóa đơn điện tử sàn TMĐT / Lịch sử chuyển khoản ngân hàng giao dịch mua bán)**.
   * Nếu không chứng minh được hóa đơn: Hệ thống tự động chuyển sang mức đền bù tối đa theo định mức luật định (tối đa 4 lần cước).
 
@@ -120,9 +120,9 @@ Hội đồng chấm đồ án hoặc khách hàng có thể hỏi bất kỳ t�
 
 | TÌNH HUỐNG SỰ CỐ | CÓ MUA BẢO HIỂM 100%<br/>*(Đã đóng phí 0.5%)* | KHÔNG MUA BẢO HIỂM<br/>*(Phí bảo hiểm 0đ)* |
 | :--- | :--- | :--- |
-| **THẤT LẠC / MẤT NGUYÊN KIỆN**<br/>*(Lỗi mạng lưới Hub/Tài xế làm mất)* | **ĐỀN ĐÚNG 100% GIÁ TRỊ KHAI BÁO**<br/>*(Căn cứ theo hóa đơn/chứng từ hợp lệ)* | **ĐỀN 04 LẦN CƯỚC VẬN CHUYỂN**<br/>*(Trần tối đa 1.000.000 VNĐ theo Luật Bưu chính)* |
+| **THẤT LẠC / MẤT NGUYÊN KIỆN**<br/>*(Lỗi mạng lưới Hub/Tài xế làm mất)* | **ĐỀN ĐÚNG 100% GIÁ TRỊ KHAI BÁO**<br/>*(Theo Chính sách BH công ty & Hóa đơn)* | **ĐỀN 04 LẦN CƯỚC VẬN CHUYỂN**<br/>*(04 lần cước theo NĐ 47; Trần 1.000.000đ theo Chính sách công ty)* |
 | **BỂ VỠ / HƯ HỎNG BÊN TRONG**<br/>*(Đã đóng gói chuẩn 3 lớp xốp SOP)* | **ĐỀN 100% GIÁ TRỊ THỰC TẾ**<br/>*(Hoặc đền theo tỷ lệ % hư hại nếu vỡ một phần)* | **ĐỀN 04 LẦN CƯỚC GỬI**<br/>*(Theo tỷ lệ hư hại thực tế)* |
-| **BỂ VỠ KHI CÓ BIÊN BẢN MIỄN TRỪ**<br/>*(Khách tự đóng gói sơ sài, thùng ngoài nguyên)* | **TỪ CHỐI BỒI THƯỜNG BỂ VỠ**<br/>*(Do khách đã ký cam kết packagingWaiver)* | **TỪ CHỐI BỒI THƯỜNG BỂ VỠ**<br/>*(Miễn trừ trách nhiệm theo Điều 24 Luật Bưu chính)* |
+| **BỂ VỠ KHI CÓ BIÊN BẢN MIỄN TRỪ**<br/>*(Khách tự đóng gói sơ sài, thùng ngoài nguyên)* | **TỪ CHỐI BỒI THƯỜNG BỂ VỠ**<br/>*(Do khách đã ký cam kết packagingWaiver)* | **TỪ CHỐI BỒI THƯỜNG BỂ VỠ**<br/>*(Miễn trừ trách nhiệm theo Điều 41 Luật Bưu chính 2010 & Điều 24 NĐ 47/2011/NĐ-CP)* |
 
 ---
 
@@ -132,7 +132,7 @@ Dưới đây là 5 câu hỏi "bẫy" kinh điển mà Hội đồng Thầy Cô
 
 ### Câu 1: *"Hệ thống của em lấy cơ sở pháp lý nào để giới hạn mức đền bù chỉ có 4 lần cước khi khách không mua bảo hiểm?"*
 > **Câu trả lời chuẩn:**  
-> *"Dạ thưa Thầy/Cô, hệ thống áp dụng đúng theo **Điều 25 Khoản 2 Luật Bưu chính số 49/2010/QH12** và **Nghị định 47/2011/NĐ-CP**. Luật quy định đối với bưu gửi không sử dụng dịch vụ khai giá, doanh nghiệp bưu chính được quyền ấn định mức bồi thường theo giới hạn luật định (từ 4 đến 10 lần cước). Các doanh nghiệp chuyển phát thực tế tại Việt Nam như Viettel Post, VNPost, J&T Express đều áp dụng mức 4 lần cước này để đảm bảo cân đối quỹ hoạt động."*
+> *"Dạ thưa Thầy/Cô, hệ thống căn cứ chuẩn xác theo **Điều 40 Luật Bưu chính 2010** và **Khoản 1 Điều 25 Nghị định 47/2011/NĐ-CP**. Theo Nghị định 47, mức giới hạn trách nhiệm bồi thường thiệt hại tối thiểu đối với dịch vụ bưu chính trong nước là 04 lần cước dịch vụ đã sử dụng (đã bao gồm hoàn trả cước). Đồng thời, mức trần khống chế 1.000.000 VNĐ / đơn hàng đối với bưu gửi không khai giá là theo **Quy chế dịch vụ và Chính sách bồi thường của công ty Nexus Logistics** được công bố công khai để bảo toàn quỹ dự phòng rủi ro."*
 
 ### Câu 2: *"Nếu khách hàng gửi một chiếc iPhone cũ hỏng sẵn, bọc kỹ, khai giá 20 triệu và mua bảo hiểm 100%, sau đó cố tình đổ lỗi làm hỏng thì hệ thống giải quyết thế nào?"*
 > **Câu trả lời chuẩn:**  
@@ -146,7 +146,7 @@ Dưới đây là 5 câu hỏi "bẫy" kinh điển mà Hội đồng Thầy Cô
 
 ### Câu 4: *"Cờ packagingWaiver có giá trị pháp lý không nếu khách kiện ra tòa?"*
 > **Câu trả lời chuẩn:**  
-> *"Dạ thưa Thầy/Cô, hoàn toàn có giá trị pháp lý. Theo **Điều 24 Luật Bưu chính**, doanh nghiệp được miễn trừ trách nhiệm bồi thường nếu thiệt hại xảy ra do lỗi của người gửi không tuân thủ hướng dẫn đóng gói. Khi khách hàng đồng ý gửi với cờ `packagingWaiver: true`, hợp đồng vận chuyển điện tử đã ghi nhận sự thỏa thuận miễn trừ trách nhiệm bể vỡ giữa hai bên."*
+> *"Dạ thưa Thầy/Cô, hoàn toàn có giá trị pháp lý. Theo **Điều 41 Luật Bưu chính 2010 (và Điều 24 Nghị định 47/2011/NĐ-CP)**, doanh nghiệp được miễn trừ trách nhiệm bồi thường nếu thiệt hại xảy ra do lỗi của người gửi không tuân thủ hướng dẫn đóng gói. Khi khách hàng đồng ý gửi với cờ `packagingWaiver: true`, hợp đồng vận chuyển điện tử đã ghi nhận sự thỏa thuận miễn trừ trách nhiệm bể vỡ giữa hai bên."*
 
 ### Câu 5: *"Phí bảo hiểm 0.5% được tính toán dựa trên cơ sở kinh tế nào?"*
 > **Câu trả lời chuẩn:**  

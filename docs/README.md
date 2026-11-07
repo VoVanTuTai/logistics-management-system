@@ -23,7 +23,7 @@ docs/
 │
 ├── business-sop/                       # 📦 Quy chuẩn nghiệp vụ bưu chính & quy trình vận hành (SOP)
 │   ├── CHINH-SACH-PHAN-TANG-MERCHANT-VA-CUOC-CHUYEN-HOAN.md # Quy chuẩn 3 tầng khách hàng & cước hoàn tự động
-│   ├── NGHIEP-VU-TIEP-NHAN-HANG-DE-VO-VA-BAO-HIEM.md # Nghiệp vụ tiếp nhận hàng dễ vỡ & bảo hiểm khai giá (Điều 25)
+│   ├── NGHIEP-VU-TIEP-NHAN-HANG-DE-VO-VA-BAO-HIEM.md # Nghiệp vụ tiếp nhận hàng dễ vỡ & bảo hiểm khai giá (Điều 25 NĐ 47 & Điều 40 Luật BC)
 │   ├── order-intake-fragile-and-insurance-specification.md # Đặc tả kỹ thuật tạo đơn bưu cục
 │   ├── order-lifecycle-report.md       # Vòng đời bưu phẩm từ lấy -> trung chuyển qua Hub 4 cấp -> phát -> hoàn
 │   ├── payment-cod-settlement-implementation-plan.md # Quy chuẩn đối soát & giải ngân COD
@@ -31,7 +31,7 @@ docs/
 │
 ├── knowledge-base/                     # 🧠 Kho tri thức chuẩn hóa dành cho AI Assistant (RAG Engine)
 │   ├── 01-pricing-and-iata-weight.md   # Biểu phí, nấc vượt cân, công thức thể tích IATA V/6000
-│   ├── 02-insurance-and-claim-policy.md# Bảo hiểm khai giá & bồi hoàn Điều 25 Luật Bưu chính
+│   ├── 02-insurance-and-claim-policy.md# Bảo hiểm khai giá & bồi hoàn Điều 25 NĐ 47 & Điều 40 Luật Bưu chính
 │   ├── 03-prohibited-and-restricted-goods.md # Danh mục hàng cấm bay, pin lithium, SOP đóng gói
 │   ├── 04-delivery-process-and-faq.md  # Quy trình giao lại 3 lần, lưu kho 5 ngày, bảo mật COD
 │   ├── vector-index.json               # Cơ sở dữ liệu Vector lưu trữ 768-dim embeddings

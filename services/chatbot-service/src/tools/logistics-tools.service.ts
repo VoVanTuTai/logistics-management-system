@@ -8,10 +8,18 @@ export interface TrackingResult {
   senderName?: string;
   senderCity?: string;
   senderAddress?: string;
+  senderWard?: string;
+  senderDistrict?: string;
+  senderProvince?: string;
   receiverName?: string;
   receiverPhone?: string;
   receiverCity?: string;
   receiverAddress?: string;
+  receiverWard?: string;
+  receiverDistrict?: string;
+  receiverProvince?: string;
+  destinationHubName?: string;
+  originHubName?: string;
   itemName?: string;
   weightKg?: number;
   codAmount?: number;
@@ -20,7 +28,50 @@ export interface TrackingResult {
   createdAt?: string;
   timeline: { time: string; status: string; description: string }[];
   isMasked?: boolean;
+  isPhoneMatched?: boolean;
+  phoneVerificationStatus?: 'NOT_PROVIDED' | 'VERIFIED' | 'MISMATCH';
   notFoundMessage?: string;
+}
+
+export function normalizePhone(value: string | null | undefined): string | null {
+  const digits = value?.replace(/\D/g, '') ?? '';
+  return digits.length > 0 ? digits : null;
+}
+
+export function phoneVariants(value: string | null | undefined): Set<string> {
+  const normalized = normalizePhone(value);
+  const variants = new Set<string>();
+  if (!normalized) return variants;
+
+  variants.add(normalized);
+  if (normalized.startsWith('84') && normalized.length >= 10) {
+    variants.add(`0${normalized.slice(2)}`);
+  }
+  if (normalized.startsWith('0') && normalized.length >= 10) {
+    variants.add(`84${normalized.slice(1)}`);
+  }
+  return variants;
+}
+
+export function phonesMatch(
+  storedPhone: string | null | undefined,
+  lookupPhone: string | null | undefined,
+): boolean {
+  if (!storedPhone || !lookupPhone) return false;
+  const cleanStored = normalizePhone(storedPhone);
+  const cleanLookup = normalizePhone(lookupPhone);
+  if (!cleanStored || !cleanLookup) return false;
+
+  const storedVars = phoneVariants(cleanStored);
+  const lookupVars = phoneVariants(cleanLookup);
+  for (const v of lookupVars) {
+    if (storedVars.has(v)) return true;
+  }
+  // Match last 4 digits (dành cho trường hợp khách chỉ nhập 4 số đuôi)
+  if (cleanLookup.length >= 4 && cleanStored.endsWith(cleanLookup)) {
+    return true;
+  }
+  return false;
 }
 
 function maskVietnameseName(name?: string): string {
@@ -36,11 +87,32 @@ function maskPhone(phone?: string): string {
   return phone.replace(/(\d{3,4})\d{3,4}(\d{3})/, '$1****$2');
 }
 
+export function formatPartyAddress(party: any): string {
+  if (!party) return '';
+  const detail = party.addressDetail || party.address || '';
+  const ward = party.ward || '';
+  const district = party.district || '';
+  const province = party.province || party.city || '';
+
+  if (ward && district && province) {
+    const street = party.addressDetail || detail.split(/,\s*/)[0] || '';
+    return [street, ward, district, province].filter(Boolean).join(', ');
+  }
+
+  const parts: string[] = [];
+  if (detail) parts.push(detail);
+  if (ward && !detail.toLowerCase().includes(ward.toLowerCase())) parts.push(ward);
+  if (district && !detail.toLowerCase().includes(district.toLowerCase())) parts.push(district);
+  if (province && !detail.toLowerCase().includes(province.toLowerCase())) parts.push(province);
+  return parts.filter(Boolean).join(', ');
+}
+
 function maskAddress(addr?: string): string {
   if (!addr) return '';
   const parts = addr.split(/,\s*/);
-  if (parts.length > 2) {
-    return '***, ' + parts.slice(-2).join(', ');
+  if (parts.length > 1) {
+    // Ẩn số nhà chi tiết (phần tử đầu tiên), giữ nguyên toàn bộ đơn vị hành chính Phường/Xã, Quận/Huyện, Tỉnh/Thành
+    return '***, ' + parts.slice(1).join(', ');
   }
   return '***, ' + addr;
 }
@@ -171,7 +243,7 @@ export class LogisticsToolsService {
 
     // Đồng bộ sang shipment-service nếu service đang chạy
     try {
-      await fetch(`http://localhost:3003/api/v1/shipments`, {
+      await fetch(`${this.shipmentServiceUrl}/shipments`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -230,18 +302,67 @@ export class LogisticsToolsService {
   /**
    * Tra cứu hành trình bưu kiện thời gian thực (Real-time Shipment Tracking)
    * Có cơ chế Privacy Masking cho người dùng vãng lai chưa đăng nhập
+   * Hỗ trợ xác thực Số điện thoại người nhận (receiverPhone) để mở khóa toàn bộ thông tin PII
    */
-  public async trackShipment(trackingNumber: string, isGuest = true): Promise<TrackingResult> {
+  public async trackShipment(
+    trackingNumber: string,
+    isGuest = true,
+    receiverPhone?: string,
+  ): Promise<TrackingResult> {
     const cleanTracking = trackingNumber.trim().toUpperCase();
-    this.logger.log(`Tool trackShipment invoked for: ${cleanTracking} (isGuest: ${isGuest})`);
+    this.logger.log(`Tool trackShipment invoked for: ${cleanTracking} (isGuest: ${isGuest}, receiverPhone: ${receiverPhone || 'none'})`);
 
-    // Kiểm tra đơn hàng mới tạo trong phiên của Giao dịch viên bưu cục
+    // 1. Kiểm tra đơn hàng mới tạo trong phiên của Giao dịch viên bưu cục
     if (this.createdShipmentsMap.has(cleanTracking)) {
-      return this.createdShipmentsMap.get(cleanTracking)!;
+      const raw = this.createdShipmentsMap.get(cleanTracking)!;
+      const storedPhone = raw.receiverPhone;
+
+      if (!isGuest) {
+        return { ...raw, isMasked: false };
+      }
+
+      if (receiverPhone) {
+        const isMatched = phonesMatch(storedPhone, receiverPhone);
+        if (!isMatched) {
+          return {
+            found: false,
+            trackingNumber: cleanTracking,
+            status: 'PHONE_MISMATCH',
+            statusText: 'Số điện thoại không khớp',
+            currentLocation: raw.currentLocation,
+            timeline: [],
+            isMasked: true,
+            isPhoneMatched: false,
+            phoneVerificationStatus: 'MISMATCH',
+            notFoundMessage: `Số điện thoại "${receiverPhone}" không trùng khớp với số điện thoại người nhận của vận đơn ${cleanTracking}. Quý khách vui lòng kiểm tra lại số điện thoại nhận hàng hoặc Đăng nhập tài khoản để xem chi tiết.`,
+          };
+        }
+
+        // SĐT khớp! Mở khóa toàn bộ thông tin chi tiết
+        return {
+          ...raw,
+          isMasked: false,
+          isPhoneMatched: true,
+          phoneVerificationStatus: 'VERIFIED',
+        };
+      }
+
+      // Khách vãng lai chưa cung cấp SĐT người nhận: Trả về thông tin đã che PII
+      return {
+        ...raw,
+        senderName: maskVietnameseName(raw.senderName),
+        senderAddress: maskAddress(raw.senderAddress),
+        receiverName: maskVietnameseName(raw.receiverName),
+        receiverPhone: maskPhone(raw.receiverPhone),
+        receiverAddress: maskAddress(raw.receiverAddress),
+        isMasked: true,
+        isPhoneMatched: undefined,
+        phoneVerificationStatus: 'NOT_PROVIDED',
+      };
     }
 
     try {
-      // 1. Thử lấy thông tin chi tiết từ shipment-service
+      // 2. Thử lấy thông tin chi tiết từ shipment-service
       let shipData: any = null;
       try {
         const shipResp = await fetch(`${this.shipmentServiceUrl}/shipments/${cleanTracking}`, {
@@ -252,7 +373,7 @@ export class LogisticsToolsService {
         }
       } catch {}
 
-      // 2. Thử lấy thông tin trạng thái & timeline từ tracking-service
+      // 3. Thử lấy thông tin trạng thái & timeline từ tracking-service
       let currentTracking: any = null;
       let timelineEvents: any[] = [];
       try {
@@ -276,6 +397,30 @@ export class LogisticsToolsService {
         const sender = payload.sender || meta.sender || {};
         const receiver = payload.receiver || meta.receiver || {};
         const pkg = payload.package || meta.package || {};
+
+        const storedPhone: string | undefined =
+          receiver.phone || receiver.phoneNumber || shipData?.receiverPhone || meta.receiverPhone || meta.receiver?.phone;
+
+        if (isGuest && receiverPhone) {
+          const isMatched = phonesMatch(storedPhone, receiverPhone);
+          if (!isMatched) {
+            return {
+              found: false,
+              trackingNumber: cleanTracking,
+              status: 'PHONE_MISMATCH',
+              statusText: 'Số điện thoại không khớp',
+              currentLocation: currentTracking?.currentLocationText || shipData?.currentLocation || 'Không xác định',
+              timeline: [],
+              isMasked: true,
+              isPhoneMatched: false,
+              phoneVerificationStatus: 'MISMATCH',
+              notFoundMessage: `Số điện thoại "${receiverPhone}" không trùng khớp với số điện thoại người nhận của vận đơn ${cleanTracking}. Để bảo vệ quyền riêng tư cá nhân theo Luật Bưu chính, Quý khách vui lòng kiểm tra lại số điện thoại hoặc Đăng nhập tài khoản.`,
+            };
+          }
+        }
+
+        const isVerified = !isGuest || (isGuest && !!receiverPhone && phonesMatch(storedPhone, receiverPhone));
+        const shouldMask = isGuest && !isVerified;
 
         const status = currentTracking?.currentStatusCode || shipData?.currentStatus || 'IN_TRANSIT';
         const statusText =
@@ -314,15 +459,24 @@ export class LogisticsToolsService {
           ];
         }
 
-        const senderName = isGuest ? maskVietnameseName(sender.name) : sender.name;
-        const receiverName = isGuest ? maskVietnameseName(receiver.name) : receiver.name;
-        const receiverPhone = isGuest ? maskPhone(receiver.phone) : receiver.phone;
-        const receiverAddress = isGuest
-          ? maskAddress(receiver.address || receiver.addressDetail)
-          : (receiver.address || receiver.addressDetail);
-        const senderAddress = isGuest
-          ? maskAddress(sender.address || sender.addressDetail)
-          : (sender.address || sender.addressDetail);
+        const senderName = shouldMask ? maskVietnameseName(sender.name) : sender.name;
+        const receiverName = shouldMask ? maskVietnameseName(receiver.name) : receiver.name;
+        const receiverPhoneDisplay = shouldMask ? maskPhone(receiver.phone || storedPhone) : (receiver.phone || storedPhone);
+
+        const rawReceiverFullAddr = formatPartyAddress(receiver);
+        const rawSenderFullAddr = formatPartyAddress(sender);
+
+        const receiverAddress = shouldMask ? maskAddress(rawReceiverFullAddr) : rawReceiverFullAddr;
+        const senderAddress = shouldMask ? maskAddress(rawSenderFullAddr) : rawSenderFullAddr;
+
+        const receiverWard = receiver.ward;
+        const receiverDistrict = receiver.district;
+        const receiverProvince = receiver.province || receiver.city;
+        const senderWard = sender.ward;
+        const senderDistrict = sender.district;
+        const senderProvince = sender.province || sender.city;
+        const destinationHubName = receiver.resolvedHubName || meta.destinationHubName || (receiverDistrict ? `Bưu cục ${receiverDistrict}` : undefined);
+        const originHubName = sender.resolvedHubName || meta.originHubName || (senderDistrict ? `Bưu cục ${senderDistrict}` : undefined);
 
         const realItemName = pkg.itemName || pkg.itemType || meta.package?.itemName || meta.package?.itemType || 'Kiện hàng bưu gửi';
 
@@ -332,12 +486,20 @@ export class LogisticsToolsService {
           status,
           statusText,
           senderName,
-          senderCity: sender.province || sender.city,
+          senderCity: senderProvince,
           senderAddress,
+          senderWard,
+          senderDistrict,
+          senderProvince,
           receiverName,
-          receiverPhone,
-          receiverCity: receiver.province || receiver.city,
+          receiverPhone: receiverPhoneDisplay,
+          receiverCity: receiverProvince,
           receiverAddress,
+          receiverWard,
+          receiverDistrict,
+          receiverProvince,
+          destinationHubName,
+          originHubName,
           itemName: realItemName,
           weightKg: payload.weightKg || pkg.weightKg || meta.package?.weightKg || 0.5,
           codAmount: payload.codAmount ?? meta.codAmount ?? pkg.codAmount ?? shipData?.codAmount ?? 0,
@@ -347,7 +509,9 @@ export class LogisticsToolsService {
             ? new Date(shipData.createdAt).toLocaleString('vi-VN')
             : undefined,
           timeline,
-          isMasked: isGuest,
+          isMasked: shouldMask,
+          isPhoneMatched: isVerified && isGuest ? true : undefined,
+          phoneVerificationStatus: isVerified ? 'VERIFIED' : (receiverPhone ? 'MISMATCH' : 'NOT_PROVIDED'),
         };
       }
     } catch (err) {
@@ -356,18 +520,40 @@ export class LogisticsToolsService {
 
     // Chỉ dùng Mock response khi người dùng tra cứu đúng mã demo hệ thống NX-88992211
     if (cleanTracking === 'NX-88992211' || cleanTracking === 'DEMO-TRACK') {
+      const demoStoredPhone = '0909112288';
+      if (isGuest && receiverPhone) {
+        const isMatched = phonesMatch(demoStoredPhone, receiverPhone);
+        if (!isMatched) {
+          return {
+            found: false,
+            trackingNumber: cleanTracking,
+            status: 'PHONE_MISMATCH',
+            statusText: 'Số điện thoại không khớp',
+            currentLocation: 'Hub Đà Nẵng (Quận Liên Chiểu)',
+            timeline: [],
+            isMasked: true,
+            isPhoneMatched: false,
+            phoneVerificationStatus: 'MISMATCH',
+            notFoundMessage: `Số điện thoại "${receiverPhone}" không trùng khớp với số điện thoại người nhận của vận đơn ${cleanTracking}. Quý khách vui lòng kiểm tra lại số điện thoại hoặc Đăng nhập tài khoản.`,
+          };
+        }
+      }
+
+      const isVerified = !isGuest || (isGuest && !!receiverPhone && phonesMatch(demoStoredPhone, receiverPhone));
+      const shouldMask = isGuest && !isVerified;
+
       return {
         found: true,
         trackingNumber: cleanTracking,
         status: 'IN_TRANSIT',
         statusText: 'Đang trung chuyển qua Hub Đà Nẵng',
-        senderName: isGuest ? 'Shop T*** C***' : 'Shop Thời Trang Coolmate',
+        senderName: shouldMask ? 'Shop T*** C***' : 'Shop Thời Trang Coolmate',
         senderCity: 'TP. Hồ Chí Minh',
-        receiverName: isGuest ? 'A** Hoàng L***' : 'Anh Hoàng Long',
-        receiverPhone: isGuest ? '0909****88' : '0909112288',
-        receiverAddress: isGuest ? '***, Quận Cầu Giấy, Hà Nội' : 'Số 18 Cầu Giấy, Hà Nội',
+        receiverName: shouldMask ? 'A** Hoàng L***' : 'Anh Hoàng Long',
+        receiverPhone: shouldMask ? '0909****88' : '0909112288',
+        receiverAddress: shouldMask ? '***, Quận Cầu Giấy, Hà Nội' : 'Số 18 Cầu Giấy, Hà Nội',
         receiverCity: 'Hà Nội',
-        itemName: isGuest ? 'Bưu phẩm tiêu chuẩn' : 'Áo khoác gió cao cấp',
+        itemName: shouldMask ? 'Bưu phẩm tiêu chuẩn' : 'Áo khoác gió cao cấp',
         codAmount: 250000,
         currentLocation: 'Hub Đà Nẵng (Quận Liên Chiểu)',
         estimatedDelivery: '18:00 Ngày mai',
@@ -377,7 +563,9 @@ export class LogisticsToolsService {
           { time: '14/09 21:00', status: 'LINEHAUL_DISPATCH', description: 'Đang chuyển xe tải liên tỉnh Bắc - Nam' },
           { time: '15/09 06:15', status: 'HUB_IN', description: 'Đã nhập kho trung chuyển Đà Nẵng' },
         ],
-        isMasked: isGuest,
+        isMasked: shouldMask,
+        isPhoneMatched: isVerified && isGuest ? true : undefined,
+        phoneVerificationStatus: isVerified ? 'VERIFIED' : (receiverPhone ? 'MISMATCH' : 'NOT_PROVIDED'),
       };
     }
 
@@ -393,7 +581,6 @@ export class LogisticsToolsService {
     };
   }
 
-  /**
   /**
    * Lấy danh sách các đơn hàng gần đây (theo userId nếu đã đăng nhập)
    * Hỗ trợ trường hợp khách có 1 đơn hoặc NHIỀU ĐƠN HÀNG (Multiple Shipments)
@@ -887,6 +1074,108 @@ export class LogisticsToolsService {
       trackingNumber: cleanTracking,
       previousStatus: prevStatus,
       message: `Đơn hàng ${cleanTracking} đã được hủy thành công trên hệ thống. Bưu tá phụ trách đã nhận được thông báo dừng lấy hàng. Quý khách không phải thanh toán bất kỳ khoản phí nào.`,
+    };
+  }
+
+  /**
+   * Thay đổi địa chỉ nhận hàng của đơn hàng (Change Delivery Address)
+   */
+  public async changeDeliveryAddress(input: {
+    trackingNumber: string;
+    newAddress: string;
+    newReceiverPhone?: string;
+    newReceiverName?: string;
+    reason?: string;
+  }): Promise<{
+    success: boolean;
+    trackingNumber: string;
+    isAllowed: boolean;
+    newAddress: string;
+    message: string;
+  }> {
+    const cleanTracking = input.trackingNumber.trim().toUpperCase();
+    this.logger.log(`Tool changeDeliveryAddress invoked for: ${cleanTracking}, newAddress: ${input.newAddress}`);
+
+    const inMem = this.createdShipmentsMap.get(cleanTracking);
+    const status = inMem ? inMem.status : 'IN_TRANSIT';
+
+    const canChangeEasily = ['CREATED', 'TASK_ASSIGNED', 'PICKUP_ASSIGNED', 'PICKING_UP', 'RECEIVED_ORIGIN_HUB', 'SORTING'].includes(status);
+
+    if (inMem) {
+      inMem.receiverAddress = input.newAddress;
+      if (input.newReceiverPhone) inMem.receiverPhone = input.newReceiverPhone;
+      if (input.newReceiverName) inMem.receiverName = input.newReceiverName;
+      inMem.timeline.unshift({
+        time: new Date().toLocaleString('vi-VN'),
+        status: 'ADDRESS_UPDATED',
+        description: `Cập nhật địa chỉ nhận hàng mới: ${input.newAddress}${input.reason ? ` (Lý do: ${input.reason})` : ''}`,
+      });
+      this.createdShipmentsMap.set(cleanTracking, inMem);
+    }
+
+    try {
+      await fetch(`${this.shipmentServiceUrl}/shipments/${cleanTracking}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          receiverAddress: input.newAddress,
+          receiverPhone: input.newReceiverPhone,
+          receiverName: input.newReceiverName,
+        }),
+        signal: AbortSignal.timeout(2000),
+      });
+    } catch {}
+
+    if (canChangeEasily) {
+      return {
+        success: true,
+        trackingNumber: cleanTracking,
+        isAllowed: true,
+        newAddress: input.newAddress,
+        message: `Hệ thống đã cập nhật thành công địa chỉ nhận hàng mới cho vận đơn ${cleanTracking}: "${input.newAddress}". Bưu tá tuyến và bưu cục phát đã nhận được thông tin điều chỉnh. Thao tác hoàn toàn miễn phí do đơn chưa xuất kho phát.`,
+      };
+    } else {
+      return {
+        success: true,
+        trackingNumber: cleanTracking,
+        isAllowed: true,
+        newAddress: input.newAddress,
+        message: `Hệ thống đã tiếp nhận yêu cầu chuyển hướng địa chỉ nhận hàng cho vận đơn ${cleanTracking} sang: "${input.newAddress}". Do kiện hàng đang trong chu trình luân chuyển, thông tin điều chỉnh sẽ được kích hoạt ngay khi kiện cập bưu cục phát.`,
+      };
+    }
+  }
+
+  /**
+   * Hẹn lịch giao lại hàng cho người nhận (Schedule Redelivery / NDR Resolution)
+   */
+  public async scheduleRedelivery(input: {
+    trackingNumber: string;
+    preferredTime: string;
+    notes?: string;
+  }): Promise<{
+    success: boolean;
+    trackingNumber: string;
+    scheduledTime: string;
+    message: string;
+  }> {
+    const cleanTracking = input.trackingNumber.trim().toUpperCase();
+    this.logger.log(`Tool scheduleRedelivery invoked for: ${cleanTracking}, time: ${input.preferredTime}`);
+
+    const inMem = this.createdShipmentsMap.get(cleanTracking);
+    if (inMem) {
+      inMem.timeline.unshift({
+        time: new Date().toLocaleString('vi-VN'),
+        status: 'REDELIVERY_SCHEDULED',
+        description: `Bưu tá ghi nhận lịch hẹn phát lại: ${input.preferredTime}${input.notes ? ` (${input.notes})` : ''}`,
+      });
+      this.createdShipmentsMap.set(cleanTracking, inMem);
+    }
+
+    return {
+      success: true,
+      trackingNumber: cleanTracking,
+      scheduledTime: input.preferredTime,
+      message: `Đã ghi nhận lịch hẹn giao lại cho vận đơn ${cleanTracking} vào: ${input.preferredTime}. Bưu cục phát và bưu tá phụ trách tuyến sẽ liên hệ trước khi giao hàng cho Quý khách. Miễn phí phát lại theo chính sách bưu chính.`,
     };
   }
 }

@@ -81,7 +81,7 @@ Bảng dưới đây đối chiếu toàn bộ danh sách chức năng cũ do ng
 | 5 | **Tra cứu vận đơn bằng AI (`track_shipment`)** | **`✨ MỚI`** | Mục 15.9 (Tool 1) | Hỏi AI bằng câu tự nhiên (VD: "đơn 333577082054 tới đâu rồi"), AI tự động gọi dynamic tool lấy dữ liệu thời gian thực. |
 | 6 | **Tính cước tự động bằng AI (`calculate_shipping_rate`)** | **`✨ MỚI`** | Mục 15.9 (Tool 2) | Nhập yêu cầu gửi hàng tự do, AI tự trích xuất địa danh, cân nặng và gọi động cơ định giá báo cước chuẩn xác. |
 | 7 | **Tra cứu danh mục hàng cấm gửi/cấm bay bằng AI (`get_prohibited_goods_policy`)** | **`✨ MỚI`** | Mục 15.9 (Tool 3) | Hỏi về chất lỏng, pin lithium, hàng nguy hiểm; AI tự tra cứu quy định bưu chính hàng không để tư vấn. |
-| 8 | **Tra cứu chính sách bồi thường bằng AI (`get_compensation_claim_policy`)** | **`✨ MỚI`** | Mục 15.7, 15.9 (Tool 4) | Tư vấn quy trình bồi thường 100% giá trị khai báo và quy định Điều 25 Luật Bưu chính khi hàng bị vỡ nát/mất mát. |
+| 8 | **Tra cứu chính sách bồi thường bằng AI (`get_compensation_claim_policy`)** | **`✨ MỚI`** | Mục 15.7, 15.9 (Tool 4) | Tư vấn quy trình bồi thường 100% giá trị khai báo và quy định bồi thường theo Điều 25 Nghị định 47 &amp; Điều 40 Luật Bưu chính khi hàng bị vỡ nát/mất mát. |
 | 9 | **Tra cứu bưu cục gần nhất bằng AI (`find_nearest_post_office`)** | **`✨ MỚI`** | Mục 15.9 (Tool 5) | Hỏi bưu cục theo quận/huyện, AI tự tìm kiếm địa chỉ, hotline từ danh mục Master Data để phản hồi cho khách. |
 
 ---

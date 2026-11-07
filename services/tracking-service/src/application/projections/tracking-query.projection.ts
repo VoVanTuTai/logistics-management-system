@@ -107,12 +107,6 @@ export class TrackingQueryProjection {
     const normalizedShipmentCode = shipmentCode.trim().toUpperCase();
     const normalizedLookupPhone = normalizePhone(receiverPhone);
 
-    if (!normalizedLookupPhone) {
-      throw new BadRequestException(
-        'Vui lòng nhập số điện thoại người nhận để xem hành trình đơn.',
-      );
-    }
-
     const timelineRecords = await this.trackingProjectionStore.getTimeline(
       normalizedShipmentCode,
     );
@@ -126,14 +120,25 @@ export class TrackingQueryProjection {
       );
     }
 
-    const shipmentSnapshot = this.extractShipmentSnapshot(timelineRecords, currentRecord);
+    const shipmentSnapshot = await this.extractShipmentSnapshot(
+      timelineRecords,
+      currentRecord,
+      normalizedShipmentCode,
+    );
     const receiverPhoneFromOrder = this.extractReceiverPhone(shipmentSnapshot);
 
-    if (!phonesMatch(receiverPhoneFromOrder, normalizedLookupPhone)) {
+    const isPhoneProvided = Boolean(normalizedLookupPhone);
+    const isPhoneMatched =
+      isPhoneProvided &&
+      phonesMatch(receiverPhoneFromOrder, normalizedLookupPhone);
+
+    if (isPhoneProvided && !isPhoneMatched) {
       throw new NotFoundException(
         'Không tìm thấy đơn hàng khớp mã vận đơn và số điện thoại người nhận.',
       );
     }
+
+    const shouldMask = !isPhoneMatched;
 
     const timeline = this.mapTimeline(timelineRecords);
     const current = this.mapCurrent(currentRecord, timeline);
@@ -142,7 +147,11 @@ export class TrackingQueryProjection {
       shipmentCode: normalizedShipmentCode,
       current,
       timeline,
-      order: this.mapPublicOrder(normalizedShipmentCode, shipmentSnapshot),
+      order: this.mapPublicOrder(
+        normalizedShipmentCode,
+        shipmentSnapshot,
+        shouldMask,
+      ),
       sourceOfTruth: {
         currentStatus: 'shipment-service',
         currentLocation: 'scan-service',
@@ -324,32 +333,64 @@ export class TrackingQueryProjection {
     };
   }
 
-  private extractShipmentSnapshot(
+  private async extractShipmentSnapshot(
     timelineRecords: TimelineEvent[],
     current: TrackingCurrent | null,
-  ): Record<string, unknown> | null {
-    const fromCurrent = this.getNestedRecord(current?.viewPayload, [
-      'event_data',
-      'shipment',
-    ]);
+    shipmentCode?: string,
+  ): Promise<Record<string, unknown> | null> {
+    const fromCurrent =
+      this.getNestedRecord(current?.viewPayload, ['event_data', 'shipment']) ??
+      this.getNestedRecord(current?.viewPayload, ['shipment']) ??
+      this.getNestedRecord(current?.viewPayload, ['data', 'shipment']);
 
-    if (fromCurrent) {
+    if (fromCurrent && this.isShipmentRecord(fromCurrent)) {
       return fromCurrent;
     }
 
     const viewPayloadRecord = this.asRecord(current?.viewPayload);
-    if (viewPayloadRecord) {
+    if (viewPayloadRecord && this.isShipmentRecord(viewPayloadRecord)) {
       return viewPayloadRecord;
     }
 
     for (const record of [...timelineRecords].reverse()) {
-      const shipment = this.getNestedRecord(record.payload, ['data', 'shipment']);
-      if (shipment) {
+      const shipment =
+        this.getNestedRecord(record.payload, ['data', 'shipment']) ??
+        this.getNestedRecord(record.payload, ['shipment']) ??
+        this.getNestedRecord(record.payload, ['data']);
+      if (shipment && this.isShipmentRecord(shipment)) {
         return shipment;
       }
     }
 
+    // Authoritative Fallback: Fetch directly from shipment-service
+    if (shipmentCode) {
+      try {
+        const shipmentServiceUrl =
+          process.env.SHIPMENT_SERVICE_URL || 'http://localhost:3002';
+        const res = await fetch(
+          `${shipmentServiceUrl}/shipments/${encodeURIComponent(shipmentCode)}`,
+          { signal: AbortSignal.timeout(2500) },
+        );
+        if (res.ok) {
+          const directShipment = await res.json();
+          if (directShipment && typeof directShipment === 'object') {
+            return directShipment as Record<string, unknown>;
+          }
+        }
+      } catch {
+        // Fallback silently if unavailable
+      }
+    }
+
     return null;
+  }
+
+  private isShipmentRecord(record: Record<string, unknown> | null): boolean {
+    if (!record) return false;
+    if (record.metadata && typeof record.metadata === 'object') return true;
+    if (record.receiver || record.sender || record.package) return true;
+    if (record.codAmount !== undefined || record.shippingFee !== undefined) return true;
+    return false;
   }
 
   private extractReceiverPhone(
@@ -369,6 +410,7 @@ export class TrackingQueryProjection {
   private mapPublicOrder(
     shipmentCode: string,
     shipmentSnapshot: Record<string, unknown> | null,
+    shouldMask = false,
   ): PublicShipmentOrderView | null {
     if (!shipmentSnapshot) {
       return null;
@@ -386,6 +428,31 @@ export class TrackingQueryProjection {
     const routing = this.asRecord(metadata.routing);
     const pricing = this.asRecord(metadata.pricing);
 
+    const rawSenderName = this.asString(sender?.name) ?? this.asString(metadata.senderName);
+    const rawSenderPhone = this.asString(sender?.phone) ?? this.asString(metadata.senderPhone);
+    const rawSenderAddress = this.asString(sender?.address) ?? this.asString(metadata.senderAddress);
+    const rawSenderAddressDetail =
+      this.asString(sender?.addressDetail) ??
+      this.asString(metadata.senderAddressDetail);
+
+    const rawReceiverName = this.asString(receiver?.name) ?? this.asString(metadata.receiverName);
+    const rawReceiverPhone =
+      this.asString(receiver?.phone) ??
+      this.asString(metadata.receiverPhone) ??
+      this.asString(shipmentSnapshot.receiverPhone);
+    const rawReceiverAddress =
+      this.asString(receiver?.address) ??
+      this.asString(metadata.receiverAddress);
+    const rawReceiverAddressDetail =
+      this.asString(receiver?.addressDetail) ??
+      this.asString(metadata.receiverAddressDetail);
+
+    const resolvedCodAmount =
+      this.asNumber(metadata.codAmount) ??
+      this.asNumber(packageInfo?.codAmount) ??
+      this.asNumber(shipmentSnapshot.codAmount) ??
+      0;
+
     return {
       code:
         this.asString(shipmentSnapshot.code) ??
@@ -398,12 +465,10 @@ export class TrackingQueryProjection {
       createdAt: this.asString(shipmentSnapshot.createdAt),
       updatedAt: this.asString(shipmentSnapshot.updatedAt),
       sender: {
-        name: this.asString(sender?.name) ?? this.asString(metadata.senderName),
-        phone: this.asString(sender?.phone) ?? this.asString(metadata.senderPhone),
-        address: this.asString(sender?.address) ?? this.asString(metadata.senderAddress),
-        addressDetail:
-          this.asString(sender?.addressDetail) ??
-          this.asString(metadata.senderAddressDetail),
+        name: shouldMask ? maskVietnameseName(rawSenderName) : rawSenderName,
+        phone: shouldMask ? maskPhone(rawSenderPhone) : rawSenderPhone,
+        address: shouldMask ? maskAddress(rawSenderAddress) : rawSenderAddress,
+        addressDetail: shouldMask ? maskAddress(rawSenderAddressDetail) : rawSenderAddressDetail,
         ward: this.asString(sender?.ward) ?? this.asString(metadata.senderWard),
         district: this.asString(sender?.district) ?? this.asString(metadata.senderDistrict),
         province: this.asString(sender?.province) ?? this.asString(metadata.senderProvince),
@@ -414,14 +479,10 @@ export class TrackingQueryProjection {
           this.asString(routing?.originHubCode),
       },
       receiver: {
-        name: this.asString(receiver?.name) ?? this.asString(metadata.receiverName),
-        phone: this.asString(receiver?.phone) ?? this.asString(metadata.receiverPhone),
-        address:
-          this.asString(receiver?.address) ??
-          this.asString(metadata.receiverAddress),
-        addressDetail:
-          this.asString(receiver?.addressDetail) ??
-          this.asString(metadata.receiverAddressDetail),
+        name: shouldMask ? maskVietnameseName(rawReceiverName) : rawReceiverName,
+        phone: shouldMask ? maskPhone(rawReceiverPhone) : rawReceiverPhone,
+        address: shouldMask ? maskAddress(rawReceiverAddress) : rawReceiverAddress,
+        addressDetail: shouldMask ? maskAddress(rawReceiverAddressDetail) : rawReceiverAddressDetail,
         ward: this.asString(receiver?.ward) ?? this.asString(metadata.receiverWard),
         district:
           this.asString(receiver?.district) ??
@@ -440,6 +501,7 @@ export class TrackingQueryProjection {
       package: {
         itemType:
           this.asString(packageInfo?.itemType) ??
+          this.asString(packageInfo?.itemName) ??
           this.asString(packageInfo?.type) ??
           this.asString(metadata.itemType) ??
           this.asString(metadata.goodsType),
@@ -459,8 +521,8 @@ export class TrackingQueryProjection {
       serviceType:
         this.asString(service?.type) ??
         this.asString(metadata.serviceType) ??
-        null,
-      codAmount: this.asNumber(metadata.codAmount),
+        'STANDARD',
+      codAmount: resolvedCodAmount,
       estimatedFee:
         this.asNumber(metadata.estimatedFee) ??
         this.asNumber(metadata.shippingFee) ??
@@ -474,6 +536,7 @@ export class TrackingQueryProjection {
       deliveryNote:
         this.asString(metadata.deliveryNote) ??
         this.asString(metadata.note) ??
+        this.asString(metadata.notes) ??
         null,
       source:
         this.asString(metadata.source) ??
@@ -667,4 +730,26 @@ function phonesMatch(
   }
 
   return false;
+}
+
+function maskVietnameseName(name: string | null | undefined): string | null {
+  if (!name) return null;
+  const parts = name.trim().split(/\s+/);
+  return parts
+    .map((p) => (p.length > 2 ? p[0] + '*'.repeat(p.length - 2) + p[p.length - 1] : p[0] + '*'))
+    .join(' ');
+}
+
+function maskPhone(phone: string | null | undefined): string | null {
+  if (!phone) return null;
+  return phone.replace(/(\d{3,4})\d{3,4}(\d{3})/, '$1****$2');
+}
+
+function maskAddress(addr: string | null | undefined): string | null {
+  if (!addr) return null;
+  const parts = addr.split(/,\s*/);
+  if (parts.length > 2) {
+    return '***, ' + parts.slice(-2).join(', ');
+  }
+  return '***, ' + addr;
 }

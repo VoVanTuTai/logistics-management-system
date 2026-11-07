@@ -8,7 +8,7 @@
 ## 1. TỔNG QUAN & BỐI CẢNH NGHIÊN CỨU (RESEARCH CONTEXT)
 
 Trong các hệ thống Logistics và Bưu chính số, việc ứng dụng Mô hình Ngôn ngữ Lớn (LLM) đối mặt với 3 thách thức học thuật cốt lõi:
-1. **Ảo giác dữ liệu (Hallucination):** LLM đơn lẻ thường xuyên tự bịa đặt biểu phí cước, công thức quy đổi thể tích hoặc quy định đền bù, vi phạm trực tiếp các điều khoản pháp lý bưu chính (như Điều 25 Luật Bưu chính Việt Nam).
+1. **Ảo giác dữ liệu (Hallucination):** LLM đơn lẻ thường xuyên tự bịa đặt biểu phí cước, công thức quy đổi thể tích hoặc quy định đền bù, vi phạm trực tiếp các điều khoản pháp lý bưu chính (như trích dẫn nhầm Điều 25 Luật Bưu chính thay vì Điều 25 Nghị định 47/2011/NĐ-CP và Điều 40 Luật Bưu chính 2010).
 2. **Nguy cơ vi phạm an toàn & gian lận nghiệp vụ (Adversarial Risks & BOLA/IDOR):** Việc cấp quyền trực tiếp cho LLM thực hiện các tác vụ đột biến (hủy đơn đang luân chuyển, đổi địa chỉ, thay đổi tiền thu hộ COD) tạo ra nguy cơ thất thoát tài chính và rò rỉ dữ liệu cá nhân (PII).
 3. **Độ trễ và Tính độc lập hệ thống (Latency & Heterogeneous Resilience):** Sự phụ thuộc vào một nhà cung cấp duy nhất (Vendor Lock-in) dễ dẫn đến tê liệt hệ thống khi gặp sự cố mạng hoặc giới hạn tần suất (Rate Limit 429).
 
@@ -68,7 +68,7 @@ Bộ dữ liệu chuẩn gồm đúng **100 kịch bản kiểm thử (Test Case
 Thu thập và chuẩn hóa từ Trung tâm Hỗ trợ Khách hàng (Help Center / FAQ) của các hãng bưu chính chuyển phát hàng đầu Việt Nam:
 * **Giao Hàng Tiết Kiệm (GHTK - 15 ca):** Quy chuẩn đóng gói mỹ phẩm/chất lỏng 3-4 lớp bubble wrap, bảo hiểm khai giá 0.5%, bồi thường mất hàng 100%, quy định bưu tá gọi shop trước khi hoàn (chống bom hàng), giới hạn xe máy 20kg...
 * **Giao Hàng Nhanh (GHN - 15 ca):** Dịch vụ "Giao 1 phần - Trả 1 phần", chu kỳ đối soát COD thứ 2-4-6, ví cước trả trước, quy định không đổi địa chỉ khi đang đi phát, dán tem seal an ninh hàng trên 10 triệu...
-* **Viettel Post & VNPost (20 ca):** Căn cứ pháp lý Điều 25 Luật bưu chính (bồi thường tối đa 4 lần cước), bí mật thư tín không mở ruột (bảo vệ PII), danh mục hạn chế bay (pin lithium), hàng cấm bay/cấm gửi, miễn trừ do thiên tai bất khả kháng, hạn mức tiền mặt bưu tá 15 triệu...
+* **Viettel Post & VNPost (20 ca):** Căn cứ pháp lý Điều 25 Nghị định 47/2011/NĐ-CP & Điều 40 Luật bưu chính (bồi thường 4 lần cước), bí mật thư tín không mở ruột (bảo vệ PII), danh mục hạn chế bay (pin lithium), hàng cấm bay/cấm gửi, miễn trừ do thiên tai bất khả kháng, hạn mức tiền mặt bưu tá 15 triệu...
 
 ### 4.2. Nguồn 2: 50 Ca Tự Tạo Có Chủ Đích (Synthetic Stress & Adversarial OWASP - 50%)
 Được thiết kế chuyên sâu để kiểm tra giới hạn chịu tải, lỗ hổng logic nghiệp vụ và năng lực của tác tử Thẩm định (Safety Gatekeeper):

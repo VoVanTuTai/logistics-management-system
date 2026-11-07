@@ -19,6 +19,8 @@ import { StatusBadge } from '../../components/StatusBadge';
 import { TrackingTimeline } from '../../components/TrackingTimeline';
 import type { RootStackParamList } from '../../navigation/types';
 import { trackingApi } from '../../services/api/tracking.api';
+import { shipmentApi } from '../../services/api/shipment.api';
+import { authStore } from '../../store/authStore';
 import { colors, shadows, spacing } from '../../theme';
 import type { ShipmentStatus, TrackingEvent } from '../../types';
 import { copyToClipboard } from '../../utils/clipboard';
@@ -43,6 +45,44 @@ export function OrderDetailScreen({ route, navigation }: Props): React.JSX.Eleme
   const [showRatingModal, setShowRatingModal] = useState<boolean>(false);
   const [showComplaintsModal, setShowComplaintsModal] = useState<boolean>(false);
   const [hasRated, setHasRated] = useState<boolean>(false);
+  const [cancelling, setCancelling] = useState<boolean>(false);
+
+  const canCancel =
+    order.category === 'SENT' &&
+    !['DELIVERED', 'COMPLETED', 'RETURN_STARTED', 'RETURN_COMPLETED', 'RETURNED', 'RETURNING', 'CANCELLED', 'DELIVERING', 'OUT_FOR_DELIVERY'].includes(
+      String(liveStatus).toUpperCase(),
+    );
+
+  const handleCancelOrder = () => {
+    Alert.alert(
+      'Xác nhận hủy đơn hàng',
+      `Quý khách có chắc chắn muốn hủy đơn hàng #${order.code} không?\n\nKiện hàng chưa bàn giao cho bưu tá nên được hủy MIỄN PHÍ 100% (0 VNĐ).`,
+      [
+        { text: 'Giữ lại đơn', style: 'cancel' },
+        {
+          text: 'Xác nhận hủy đơn',
+          style: 'destructive',
+          onPress: async () => {
+            const token = authStore.getAccessToken();
+            if (!token) {
+              Alert.alert('Lỗi', 'Phiên đăng nhập đã hết hạn.');
+              return;
+            }
+            setCancelling(true);
+            try {
+              await shipmentApi.cancelShipment(token, order.code, 'Khách hàng hủy trên chi tiết đơn');
+              setLiveStatus('CANCELLED');
+              Alert.alert('Đã hủy đơn hàng thành công', `Đơn hàng #${order.code} đã được hủy trên hệ thống.`);
+            } catch (err: any) {
+              Alert.alert('Không thể hủy đơn', err?.message || 'Có lỗi xảy ra khi hủy đơn.');
+            } finally {
+              setCancelling(false);
+            }
+          },
+        },
+      ],
+    );
+  };
 
   const senderAddressText =
     order.sender.composedAddress || order.sender.addressDetail || 'Chưa có địa chỉ gửi';
@@ -516,6 +556,30 @@ export function OrderDetailScreen({ route, navigation }: Props): React.JSX.Eleme
             </TouchableOpacity>
           </View>
         </View>
+
+        {/* 6. CANCEL ORDER (BEFORE COURIER HANDOVER) */}
+        {canCancel ? (
+          <View style={[styles.card, { borderColor: '#FECDD3', backgroundColor: '#FFF1F2' }]}>
+            <View style={styles.cardHeader}>
+              <Ionicons name="alert-circle-outline" size={18} color="#E11D48" />
+              <Text style={[styles.cardTitle, { color: '#BE123C' }]}>Hủy đơn hàng</Text>
+            </View>
+            <Text style={{ fontSize: 12, color: '#9F1239', lineHeight: 18, marginBottom: 12 }}>
+              Đơn hàng chưa bàn giao cho bưu tá. Quý khách có thể hủy đơn miễn phí 100% (0 VNĐ) nếu có nhu cầu thay đổi thông tin hoặc hoãn gửi.
+            </Text>
+            <TouchableOpacity
+              style={[styles.receiptBtn, { backgroundColor: '#E11D48', justifyContent: 'center' }]}
+              activeOpacity={0.8}
+              onPress={handleCancelOrder}
+              disabled={cancelling}
+            >
+              <Ionicons name="close-circle-outline" size={18} color="#FFFFFF" />
+              <Text style={{ color: '#FFFFFF', fontWeight: '700', fontSize: 13 }}>
+                {cancelling ? 'Đang xử lý hủy đơn...' : 'Xác nhận hủy đơn hàng'}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        ) : null}
       </ScrollView>
 
       {/* Courier Rating Modal */}

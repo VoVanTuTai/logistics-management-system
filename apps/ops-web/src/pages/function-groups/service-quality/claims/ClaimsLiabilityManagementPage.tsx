@@ -106,7 +106,7 @@ function computeMatrixVerdict(claim: CompensationClaim): MatrixVerdict {
         'Thùng ngoài nguyên vẹn, hàng vỡ bên trong thuộc lỗi đóng gói của người gửi.',
       suggestedAmount: 0,
       matrixCell: 'WAIVER_DAMAGED',
-      legalBasis: 'Điều 24 Luật Bưu chính 2010 - Miễn trừ trách nhiệm do lỗi người gửi đóng gói không đúng quy chuẩn',
+      legalBasis: 'Điều 41 Luật Bưu chính 2010 (Điều 24 NĐ 47/2011/NĐ-CP) - Miễn trừ trách nhiệm do lỗi người gửi tự đóng gói không đúng quy chuẩn',
       isRejected: true,
     };
   }
@@ -120,7 +120,7 @@ function computeMatrixVerdict(claim: CompensationClaim): MatrixVerdict {
         'Bồi thường đúng giá trị khai báo, yêu cầu khách xuất trình hóa đơn mua hàng.',
       suggestedAmount: claim.declaredValue,
       matrixCell: 'INSURED_LOST',
-      legalBasis: 'Điều 25 Luật Bưu chính 2010 - Bồi thường theo giá trị khai giá đã đóng phí bảo hiểm',
+      legalBasis: 'Điều 40 Luật Bưu chính 2010 & Chính sách bảo hiểm công ty Nexus - Bồi thường theo giá trị khai giá đã đóng phí bảo hiểm',
       isRejected: false,
     };
   }
@@ -131,10 +131,10 @@ function computeMatrixVerdict(claim: CompensationClaim): MatrixVerdict {
       verdictLabel: `Đền 04 lần cước vận chuyển (${formatCurrency(fourXFreight)})`,
       verdictExplanation:
         'Kiện hàng thất lạc/mất. Không tham gia dịch vụ khai giá bảo hiểm. ' +
-        `Mức bồi thường tối đa: 4 × ${formatCurrency(shippingFee)} = ${formatCurrency(fourXFreight)}, trần 1.000.000đ.`,
+        `Mức bồi thường: 4 × ${formatCurrency(shippingFee)} = ${formatCurrency(fourXFreight)}, trần 1.000.000đ theo chính sách dịch vụ công ty.`,
       suggestedAmount: fourXFreight,
       matrixCell: 'UNINSURED_LOST',
-      legalBasis: 'Điều 25 Khoản 2 Luật Bưu chính 2010 - Hạn mức luật định cho bưu gửi không khai giá',
+      legalBasis: 'Khoản 1 Điều 25 Nghị định 47/2011/NĐ-CP & Điều 40 Luật Bưu chính 2010 (Trần theo Chính sách công ty Nexus) - Bồi thường 04 lần cước cho bưu gửi không khai giá',
       isRejected: false,
     };
   }
@@ -148,7 +148,7 @@ function computeMatrixVerdict(claim: CompensationClaim): MatrixVerdict {
         'Bồi thường theo giá trị thiệt hại thực tế, tối đa bằng giá khai báo.',
       suggestedAmount: claim.declaredValue,
       matrixCell: 'INSURED_DAMAGED_SOP',
-      legalBasis: 'Điều 25 Luật Bưu chính 2010 - Bồi thường theo giá trị khai giá đã đóng phí bảo hiểm',
+      legalBasis: 'Điều 40 Luật Bưu chính 2010 & Chính sách bảo hiểm công ty Nexus - Bồi thường theo giá trị khai giá đã đóng phí bảo hiểm',
       isRejected: false,
     };
   }
@@ -158,10 +158,10 @@ function computeMatrixVerdict(claim: CompensationClaim): MatrixVerdict {
     verdictLabel: `Đền 04 lần cước vận chuyển (${formatCurrency(fourXFreight)})`,
     verdictExplanation:
       'Hàng bể vỡ/hư hỏng, đóng gói đạt chuẩn SOP. Không tham gia dịch vụ khai giá bảo hiểm. ' +
-      `Mức bồi thường: 4 × ${formatCurrency(shippingFee)} = ${formatCurrency(fourXFreight)}, trần 1.000.000đ.`,
+      `Mức bồi thường: 4 × ${formatCurrency(shippingFee)} = ${formatCurrency(fourXFreight)}, trần 1.000.000đ theo chính sách dịch vụ công ty.`,
     suggestedAmount: fourXFreight,
     matrixCell: 'UNINSURED_DAMAGED_SOP',
-    legalBasis: 'Điều 25 Khoản 2 Luật Bưu chính 2010 - Hạn mức luật định cho bưu gửi không khai giá',
+    legalBasis: 'Khoản 1 Điều 25 Nghị định 47/2011/NĐ-CP & Điều 40 Luật Bưu chính 2010 (Trần theo Chính sách công ty Nexus) - Bồi thường 04 lần cước cho bưu gửi không khai giá',
     isRejected: false,
   };
 }
@@ -554,20 +554,20 @@ export function ClaimsLiabilityManagementPage(): React.JSX.Element {
 
             <div className="claims-guide-legal-strip">
               <div className="claims-guide-legal-item">
-                <span>Căn cứ pháp lý:</span>
-                <strong>Luật Bưu chính 2010 (Điều 24 & 25)</strong>
+                <span>Căn cứ pháp lý & Chính sách:</span>
+                <strong>Luật Bưu chính 2010 (Đ.40, 41) & NĐ 47/2011 (Đ.25) & Chính sách công ty</strong>
               </div>
               <div className="claims-guide-legal-item">
                 <span>• Có bảo hiểm 100%:</span>
-                <strong>Đền 100% giá trị khai báo theo hóa đơn mua hàng</strong>
+                <strong>Đền 100% giá trị khai báo theo hóa đơn mua hàng (Chính sách bảo hiểm công ty)</strong>
               </div>
               <div className="claims-guide-legal-item">
                 <span>• Không mua bảo hiểm:</span>
-                <strong>Đền tối đa 04 lần cước gửi (trần 1.000.000đ/kiện)</strong>
+                <strong>Đền 04 lần cước (theo NĐ 47; trần tối đa 1.000.000đ theo Chính sách công ty)</strong>
               </div>
               <div className="claims-guide-legal-item">
                 <span>• Miễn trừ đóng gói:</span>
-                <strong>Từ chối đền bù do lỗi người gửi tự đóng gói</strong>
+                <strong>Từ chối đền bù bể vỡ do lỗi người gửi tự đóng gói (Điều 41 Luật BC)</strong>
               </div>
             </div>
           </div>
