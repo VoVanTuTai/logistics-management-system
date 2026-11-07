@@ -122,3 +122,4 @@ $$\text{Likert Mean} = 3.83 / 5.0 \quad (\text{Tương đương } 82.17 / 100 \t
 2. **Kích thước Hiệu Ứng (Cohen's $d$ Effect Size):**
    $$d = \frac{\mu_{\text{Multi-Agent}} - \mu_{\text{Single-Agent}}}{\sigma_{\text{pooled}}} = 1.42$$
    * Giá trị $d = 1.42 > 0.8$ khẳng định mức độ vượt trội của kiến trúc Multi-Agent nằm ở cấp độ **Hiệu ứng Rất Lớn (Very Large Effect)** theo chuẩn phân loại của Cohen (1988).
+

@@ -1,0 +1,329 @@
+def generate_statistical_charts_svg():
+    svg_path = 'docs/research/paper/diagrams/statistical-evaluation-charts.svg'
+    
+    svg = '''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 950" width="1600" height="950">
+  <defs>
+    <style>
+      .main-title { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; font-size: 24px; font-weight: 900; fill: #0F172A; letter-spacing: 0.5px; }
+      .sub-title { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; font-size: 14px; font-weight: 600; fill: #64748B; }
+      .panel-hdr { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; font-size: 15px; font-weight: 800; fill: #1E293B; }
+      .panel-sub { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; font-size: 12px; font-weight: 600; fill: #64748B; }
+      .axis-label { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; font-size: 11.5px; font-weight: 700; fill: #64748B; }
+      .tick-label { font-family: "SF Mono", Monaco, Consolas, monospace; font-size: 11px; font-weight: 600; fill: #64748B; }
+      .bar-val { font-family: "SF Mono", Monaco, Consolas, monospace; font-size: 12px; font-weight: 800; fill: #0F172A; }
+      .bar-val-white { font-family: "SF Mono", Monaco, Consolas, monospace; font-size: 11.5px; font-weight: 800; fill: #FFFFFF; }
+      .legend-text { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; font-size: 12px; font-weight: 700; fill: #334155; }
+      .grid-line { stroke: #E2E8F0; stroke-width: 1; stroke-dasharray: 4,4; }
+      .shadow-panel { filter: drop-shadow(0 4px 12px rgba(15, 23, 42, 0.05)); }
+    </style>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1600" height="950" fill="#F8FAFC"/>
+
+  <!-- Outer Technical Container -->
+  <rect x="20" y="20" width="1560" height="910" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1.5" rx="16" class="shadow-panel"/>
+  <rect x="30" y="30" width="1540" height="890" fill="none" stroke="#E2E8F0" stroke-width="1" stroke-dasharray="6,4" rx="12"/>
+
+  <!-- Main Figure Header -->
+  <g transform="translate(60, 52)">
+    <rect x="0" y="0" width="44" height="44" rx="10" fill="#2563EB"/>
+    <path d="M12 32V20M22 32V12M32 32V24" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round"/>
+    <text x="58" y="20" class="main-title">FIG. 2. EMPIRICAL STATISTICAL BENCHMARK ANALYSIS</text>
+    <text x="58" y="38" class="sub-title">Phân Tích Thống Kê Dữ Liệu Thực Nghiệm: Đối Chứng 3 Cấu Hình, Phân Phối Likert 5 Bậc, Phân Rã Độ Trễ &amp; Đánh Đổi Hiệu Năng</text>
+  </g>
+
+  <!-- ========================================================================= -->
+  <!-- PANEL A: COMPARATIVE PERFORMANCE (3 ARCHITECTURES) -->
+  <!-- ========================================================================= -->
+  <g transform="translate(60, 120)">
+    <rect width="710" height="360" rx="12" fill="#F8FAFC" stroke="#E2E8F0" stroke-width="1.2"/>
+    <text x="24" y="30" class="panel-hdr">(a) Comparative Performance across 3 Architectures (%)</text>
+    <text x="24" y="48" class="panel-sub">Độ trung thực (Groundedness), Tỷ lệ thực thi Tool &amp; Điểm số đánh giá tổng hợp</text>
+
+    <!-- Legend -->
+    <g transform="translate(340, 16)">
+      <rect x="0" y="0" width="14" height="14" rx="3" fill="#94A3B8"/>
+      <text x="20" y="12" class="legend-text">Traditional RAG</text>
+      
+      <rect x="135" y="0" width="14" height="14" rx="3" fill="#F59E0B"/>
+      <text x="155" y="12" class="legend-text">Single-Agent</text>
+      
+      <rect x="250" y="0" width="14" height="14" rx="3" fill="#2563EB"/>
+      <text x="270" y="12" class="legend-text">Multi-Agent</text>
+    </g>
+
+    <!-- Chart Grid & Axes (Plot area: x=70..670, y=70..290, height=220) -->
+    <!-- Grid Lines (0%, 25%, 50%, 75%, 100%) -->
+    <line x1="70" y1="290" x2="680" y2="290" stroke="#94A3B8" stroke-width="1.5"/>
+    <text x="40" y="294" class="tick-label">0%</text>
+    
+    <line x1="70" y1="235" x2="680" y2="235" class="grid-line"/>
+    <text x="32" y="239" class="tick-label">25%</text>
+
+    <line x1="70" y1="180" x2="680" y2="180" class="grid-line"/>
+    <text x="32" y="184" class="tick-label">50%</text>
+
+    <line x1="70" y1="125" x2="680" y2="125" class="grid-line"/>
+    <text x="32" y="129" class="tick-label">75%</text>
+
+    <line x1="70" y1="70" x2="680" y2="70" class="grid-line"/>
+    <text x="24" y="74" class="tick-label">100%</text>
+
+    <!-- Group 1: Groundedness (81.2% / 88.5% / 94.8%) -->
+    <g transform="translate(110, 0)">
+      <!-- Trad RAG: 81.2% -> h = 0.812 * 220 = 178.6, y = 290 - 178.6 = 111.4 -->
+      <rect x="0" y="111.4" width="36" height="178.6" rx="4" fill="#94A3B8"/>
+      <text x="2" y="105" class="bar-val">81.2%</text>
+
+      <!-- Single-Agent: 88.5% -> h = 0.885 * 220 = 194.7, y = 290 - 194.7 = 95.3 -->
+      <rect x="44" y="95.3" width="36" height="194.7" rx="4" fill="#F59E0B"/>
+      <text x="46" y="89" class="bar-val">88.5%</text>
+
+      <!-- Multi-Agent: 94.8% -> h = 0.948 * 220 = 208.5, y = 290 - 208.5 = 81.5 -->
+      <rect x="88" y="81.5" width="36" height="208.5" rx="4" fill="#2563EB"/>
+      <text x="90" y="75" class="bar-val" fill="#1D4ED8">94.8%</text>
+
+      <text x="16" y="312" class="axis-label">Groundedness (F)</text>
+    </g>
+
+    <!-- Group 2: Tool Execution (0.0% / 84.2% / 100.0%) -->
+    <g transform="translate(300, 0)">
+      <!-- Trad RAG: 0% -> h = 0 -->
+      <rect x="0" y="286" width="36" height="4" rx="2" fill="#EF4444"/>
+      <text x="2" y="280" class="bar-val" fill="#DC2626">0.0%</text>
+
+      <!-- Single-Agent: 84.2% -> h = 0.842 * 220 = 185.2, y = 290 - 185.2 = 104.8 -->
+      <rect x="44" y="104.8" width="36" height="185.2" rx="4" fill="#F59E0B"/>
+      <text x="46" y="98" class="bar-val">84.2%</text>
+
+      <!-- Multi-Agent: 100.0% -> h = 220, y = 70 -->
+      <rect x="88" y="70" width="36" height="220" rx="4" fill="#10B981"/>
+      <text x="86" y="64" class="bar-val" fill="#047857">100.0%</text>
+
+      <text x="14" y="312" class="axis-label">Tool Execution (TE)</text>
+    </g>
+
+    <!-- Group 3: Overall Score (48.2 / 74.6 / 82.2) -->
+    <g transform="translate(490, 0)">
+      <!-- Trad RAG: 48.2% -> h = 0.482 * 220 = 106.0, y = 184 -->
+      <rect x="0" y="184" width="36" height="106" rx="4" fill="#94A3B8"/>
+      <text x="4" y="178" class="bar-val">48.2</text>
+
+      <!-- Single-Agent: 74.6% -> h = 0.746 * 220 = 164.1, y = 125.9 -->
+      <rect x="44" y="125.9" width="36" height="164.1" rx="4" fill="#F59E0B"/>
+      <text x="48" y="120" class="bar-val">74.6</text>
+
+      <!-- Multi-Agent: 82.2% -> h = 0.822 * 220 = 180.8, y = 109.2 -->
+      <rect x="88" y="109.2" width="36" height="180.8" rx="4" fill="#2563EB"/>
+      <text x="92" y="103" class="bar-val" fill="#1D4ED8">82.2</text>
+
+      <text x="20" y="312" class="axis-label">Overall Score (/100)</text>
+    </g>
+  </g>
+
+  <!-- ========================================================================= -->
+  <!-- PANEL B: 5-TIER ACADEMIC RUBRIC DISTRIBUTION -->
+  <!-- ========================================================================= -->
+  <g transform="translate(830, 120)">
+    <rect width="710" height="360" rx="12" fill="#F8FAFC" stroke="#E2E8F0" stroke-width="1.2"/>
+    <text x="24" y="30" class="panel-hdr">(b) 5-Tier Academic Evaluation Rubric Distribution</text>
+    <text x="24" y="48" class="panel-sub">Phân phối tỷ lệ 100% ca kiểm thử theo thang đo Likert 5 cấp bậc học thuật</text>
+
+    <!-- Horizontal Stacked Bar (y=75, height=36, width=640) -->
+    <g transform="translate(35, 75)">
+      <!-- Total width = 640. 
+           Level 5: 16.7% = 107px
+           Level 4: 50.0% = 320px
+           Level 3: 33.3% = 213px
+           Level 2 & 1: 0% = 0px
+      -->
+      <rect x="0" y="0" width="107" height="38" rx="6" fill="#2563EB"/>
+      <text x="22" y="24" class="bar-val-white">L5: 16.7%</text>
+
+      <rect x="109" y="0" width="318" height="38" rx="6" fill="#10B981"/>
+      <text x="220" y="24" class="bar-val-white">LEVEL 4: 50.0% (GOOD)</text>
+
+      <rect x="429" y="0" width="211" height="38" rx="6" fill="#F59E0B"/>
+      <text x="480" y="24" class="bar-val-white">LEVEL 3: 33.3%</text>
+
+      <text x="0" y="56" font-size="11" font-weight="700" fill="#1E40AF">◄ Level 5 (90-100 pts)</text>
+      <text x="220" y="56" font-size="11" font-weight="700" fill="#047857">Level 4 (75-89 pts)</text>
+      <text x="500" y="56" font-size="11" font-weight="700" fill="#B45309">Level 3 (60-74 pts) ►</text>
+    </g>
+
+    <!-- Individual Level Breakdown Cards -->
+    <g transform="translate(35, 155)">
+      <!-- L5 Card -->
+      <rect x="0" y="0" width="640" height="38" rx="6" fill="#EFF6FF" stroke="#BFDBFE"/>
+      <text x="14" y="24" font-size="12" font-weight="900" fill="#1D4ED8">LEVEL 5 (EXCELLENT): 16.7%</text>
+      <text x="240" y="24" font-size="11.5" font-weight="600" fill="#3B82F6">Trích dẫn Luật/SOP chính xác 100%, Tooling real-time, An toàn PII tuyệt đối</text>
+
+      <!-- L4 Card -->
+      <rect x="0" y="46" width="640" height="38" rx="6" fill="#ECFDF5" stroke="#A7F3D0"/>
+      <text x="14" y="70" font-size="12" font-weight="900" fill="#047857">LEVEL 4 (GOOD): 50.0%</text>
+      <text x="240" y="70" font-size="11.5" font-weight="600" fill="#059669">Đúng bản chất bưu chính ≥ 75%, có trích dẫn quy trình, an toàn không lỗi</text>
+
+      <!-- L3 Card -->
+      <rect x="0" y="92" width="640" height="38" rx="6" fill="#FEFCE8" stroke="#FDE047"/>
+      <text x="14" y="116" font-size="12" font-weight="900" fill="#B45309">LEVEL 3 (ACCEPTABLE): 33.3%</text>
+      <text x="240" y="116" font-size="11.5" font-weight="600" fill="#CA8A04">Hiểu và xử lý yêu cầu cốt lõi ≥ 60%, thiếu trích dẫn điều khoản phụ</text>
+
+      <!-- L2 & L1 Zero Failures -->
+      <rect x="0" y="138" width="640" height="38" rx="6" fill="#FFFFFF" stroke="#E2E8F0"/>
+      <text x="14" y="162" font-size="12" font-weight="900" fill="#64748B">LEVEL 2 &amp; LEVEL 1: 0.0% (ZERO CRITICAL FAILURES)</text>
+      <text x="360" y="162" font-size="11.5" font-weight="700" fill="#16A34A">✓ 100% Pass Rate (Triệt tiêu hoàn toàn ảo giác sai luật &amp; lộ PII)</text>
+    </g>
+  </g>
+
+  <!-- ========================================================================= -->
+  <!-- PANEL C: LATENCY BREAKDOWN & TTFT -->
+  <!-- ========================================================================= -->
+  <g transform="translate(60, 510)">
+    <rect width="710" height="380" rx="12" fill="#F8FAFC" stroke="#E2E8F0" stroke-width="1.2"/>
+    <text x="24" y="30" class="panel-hdr">(c) End-to-End Latency Decomposition &amp; Perceived TTFT</text>
+    <text x="24" y="48" class="panel-sub">Phân rã thành phần độ trễ thực thi (ms) &amp; Tốc độ phản hồi dòng đầu tiên (TTFT)</text>
+
+    <!-- Horizontal Breakdown Bar (Total 3,365 ms -> width 620) -->
+    <!-- 
+      185 ms RAG (5.5%) = 34px
+      210 ms Tool (6.2%) = 38px
+      120 ms Supervisor (3.6%) = 22px
+      2,850 ms LLM Generation (84.7%) = 526px
+    -->
+    <g transform="translate(45, 80)">
+      <rect x="0" y="0" width="38" height="42" rx="4" fill="#6366F1"/>
+      <rect x="40" y="0" width="42" height="42" rx="4" fill="#0EA5E9"/>
+      <rect x="84" y="0" width="26" height="42" rx="4" fill="#EC4899"/>
+      <rect x="112" y="0" width="508" height="42" rx="4" fill="#3B82F6"/>
+
+      <!-- Labels on bar -->
+      <text x="240" y="26" class="bar-val-white">LLM Token Generation: 2,850 ms (84.7%)</text>
+
+      <text x="0" y="60" font-size="11" font-weight="800" fill="#4338CA">RAG: 185ms</text>
+      <text x="75" y="60" font-size="11" font-weight="800" fill="#0369A1">Tools: 210ms</text>
+      <text x="500" y="60" font-size="11.5" font-weight="900" fill="#1D4ED8">Total Latency: 3,365.8 ms</text>
+    </g>
+
+    <!-- SSE Streaming Benefit Card (Perceived Latency) -->
+    <g transform="translate(45, 170)">
+      <rect width="620" height="90" rx="10" fill="#ECFDF5" stroke="#6EE7B7" stroke-width="1.2"/>
+      <rect x="16" y="16" width="34" height="34" rx="8" fill="#10B981"/>
+      <text x="24" y="38" font-size="18" fill="#FFFFFF" font-weight="900">⚡</text>
+      
+      <text x="62" y="32" font-size="14" font-weight="900" fill="#065F46">SERVER-SENT EVENTS (SSE) STREAMING ADVANTAGE</text>
+      <text x="62" y="52" font-size="12" font-weight="600" fill="#047857">Người dùng nhận được Token đầu tiên (Time-to-First-Token - TTFT) chỉ sau:</text>
+      
+      <rect x="62" y="60" width="130" height="24" rx="4" fill="#059669"/>
+      <text x="74" y="77" font-size="12.5" font-weight="900" fill="#FFFFFF">TTFT: 420 ms</text>
+      <text x="205" y="77" font-size="11.5" font-weight="700" fill="#047857">(Giảm 87.5% so với chờ toàn bộ câu trả lời, cảm giác tức thì)</text>
+    </g>
+
+    <!-- Component Legend / Specs -->
+    <g transform="translate(45, 280)">
+      <rect width="145" height="70" rx="6" fill="#FFFFFF" stroke="#E2E8F0"/>
+      <text x="12" y="22" font-size="11" font-weight="800" fill="#475569">MRL + BM25 RAG</text>
+      <text x="12" y="44" font-size="18" font-weight="900" fill="#6366F1">185 ms</text>
+      <text x="12" y="60" font-size="10.5" fill="#64748B">5.5% Total Time</text>
+
+      <g transform="translate(158, 0)">
+        <rect width="145" height="70" rx="6" fill="#FFFFFF" stroke="#E2E8F0"/>
+        <text x="12" y="22" font-size="11" font-weight="800" fill="#475569">Microservice Tool</text>
+        <text x="12" y="44" font-size="18" font-weight="900" fill="#0EA5E9">210 ms</text>
+        <text x="12" y="60" font-size="10.5" fill="#64748B">6.2% REST / gRPC</text>
+      </g>
+
+      <g transform="translate(316, 0)">
+        <rect width="145" height="70" rx="6" fill="#FFFFFF" stroke="#E2E8F0"/>
+        <text x="12" y="22" font-size="11" font-weight="800" fill="#475569">Supervisor Routing</text>
+        <text x="12" y="44" font-size="18" font-weight="900" fill="#EC4899">120 ms</text>
+        <text x="12" y="60" font-size="10.5" fill="#64748B">3.6% Intent Classify</text>
+      </g>
+
+      <g transform="translate(474, 0)">
+        <rect width="145" height="70" rx="6" fill="#FFFFFF" stroke="#E2E8F0"/>
+        <text x="12" y="22" font-size="11" font-weight="800" fill="#475569">Streaming TTFT</text>
+        <text x="12" y="44" font-size="18" font-weight="900" fill="#10B981">420 ms</text>
+        <text x="12" y="60" font-size="10.5" fill="#047857">Perceived Speed</text>
+      </g>
+    </g>
+  </g>
+
+  <!-- ========================================================================= -->
+  <!-- PANEL D: TRADE-OFF ANALYSIS (RQ3) -->
+  <!-- ========================================================================= -->
+  <g transform="translate(830, 510)">
+    <rect width="710" height="380" rx="12" fill="#F8FAFC" stroke="#E2E8F0" stroke-width="1.2"/>
+    <text x="24" y="30" class="panel-hdr">(d) Accuracy vs. Latency / Cost Trade-off Analysis (RQ3)</text>
+    <text x="24" y="48" class="panel-sub">Đánh đổi giữa Độ chính xác nghiệp vụ &amp; Chi phí vận hành (Trả lời trực tiếp RQ3)</text>
+
+    <!-- Radar / Trade-off Comparison Table -->
+    <g transform="translate(35, 75)">
+      <!-- Header Row -->
+      <rect x="0" y="0" width="640" height="34" rx="6" fill="#1E293B"/>
+      <text x="20" y="22" font-size="11.5" font-weight="800" fill="#FFFFFF">TIÊU CHÍ ĐÁNH ĐỔI (TRADE-OFF)</text>
+      <text x="230" y="22" font-size="11.5" font-weight="800" fill="#94A3B8">TRADITIONAL RAG</text>
+      <text x="380" y="22" font-size="11.5" font-weight="800" fill="#FBBF24">SINGLE-AGENT</text>
+      <text x="500" y="22" font-size="11.5" font-weight="800" fill="#60A5FA">PROPOSED MULTI-AGENT</text>
+
+      <!-- Row 1: Groundedness -->
+      <g transform="translate(0, 38)">
+        <rect width="640" height="36" rx="4" fill="#FFFFFF" stroke="#E2E8F0"/>
+        <text x="16" y="22" font-size="12" font-weight="700" fill="#1E293B">Factual Grounding (Độ trung thực)</text>
+        <text x="240" y="22" class="tick-label">81.2%</text>
+        <text x="390" y="22" class="tick-label">88.5%</text>
+        <text x="520" y="22" class="bar-val" fill="#16A34A">94.8% (Cao nhất)</text>
+      </g>
+
+      <!-- Row 2: Tool Execution -->
+      <g transform="translate(0, 78)">
+        <rect width="640" height="36" rx="4" fill="#F8FAFC" stroke="#E2E8F0"/>
+        <text x="16" y="22" font-size="12" font-weight="700" fill="#1E293B">Tool Selection Accuracy</text>
+        <text x="240" y="22" class="tick-label" fill="#DC2626">0.0% (N/A)</text>
+        <text x="390" y="22" class="tick-label" fill="#D97706">84.2% (Nhầm lẫn)</text>
+        <text x="520" y="22" class="bar-val" fill="#16A34A">100.0% (Chuẩn 100%)</text>
+      </g>
+
+      <!-- Row 3: PII Security -->
+      <g transform="translate(0, 118)">
+        <rect width="640" height="36" rx="4" fill="#FFFFFF" stroke="#E2E8F0"/>
+        <text x="16" y="22" font-size="12" font-weight="700" fill="#1E293B">PII Leakage Containment</text>
+        <text x="240" y="22" class="tick-label" fill="#D97706">Thấp</text>
+        <text x="390" y="22" class="tick-label" fill="#D97706">Trung bình</text>
+        <text x="520" y="22" class="bar-val" fill="#16A34A">100.0% (Tuyệt đối)</text>
+      </g>
+
+      <!-- Row 4: Latency -->
+      <g transform="translate(0, 158)">
+        <rect width="640" height="36" rx="4" fill="#F8FAFC" stroke="#E2E8F0"/>
+        <text x="16" y="22" font-size="12" font-weight="700" fill="#1E293B">End-to-End Latency</text>
+        <text x="240" y="22" class="bar-val" fill="#16A34A">1,840 ms (Nhanh)</text>
+        <text x="390" y="22" class="bar-val" fill="#0284C7">2,150 ms (Vừa)</text>
+        <text x="520" y="22" class="tick-label" fill="#EA580C">3,365 ms (+1,215ms)</text>
+      </g>
+
+      <!-- Row 5: Token Overhead -->
+      <g transform="translate(0, 198)">
+        <rect width="640" height="36" rx="4" fill="#FFFFFF" stroke="#E2E8F0"/>
+        <text x="16" y="22" font-size="12" font-weight="700" fill="#1E293B">Token Inference Cost</text>
+        <text x="240" y="22" class="bar-val" fill="#16A34A">Baseline 1.0x</text>
+        <text x="390" y="22" class="tick-label">1.15x</text>
+        <text x="520" y="22" class="tick-label" fill="#EA580C">1.28x (+28%)</text>
+      </g>
+    </g>
+
+    <!-- Concluding Verdict on RQ3 -->
+    <g transform="translate(35, 320)">
+      <rect width="640" height="42" rx="6" fill="#EFF6FF" stroke="#BFDBFE"/>
+      <text x="14" y="26" font-size="11.5" font-weight="800" fill="#1D4ED8">KẾT LUẬN RQ3:</text>
+      <text x="110" y="26" font-size="11.5" font-weight="600" fill="#1E40AF">Độ trễ tăng +1.2s và chi phí +28% là sự ĐÁNH ĐỔI XỨNG ĐÁNG để đạt 100% an toàn bưu chính và triệt tiêu đền bù sai.</text>
+    </g>
+  </g>
+</svg>
+'''
+    with open(svg_path, 'w', encoding='utf-8') as f:
+        f.write(svg)
+    print(f"Generated Statistical Charts SVG at: {svg_path}")
+
+if __name__ == '__main__':
+    generate_statistical_charts_svg()

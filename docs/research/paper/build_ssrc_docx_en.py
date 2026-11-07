@@ -9,6 +9,7 @@ def fix_and_build_ssrc_docx():
     template_path = 'docs/research/SSRC_Word_Template.docx'
     output_path = 'docs/research/paper/SSRC_Multi_Agent_RAG_Tool_Calling_Logistics.docx'
     image_path = 'docs/research/paper/diagrams/data-provenance-and-benchmark-framework.png'
+    image_stats_path = 'docs/research/paper/diagrams/statistical-evaluation-charts.png'
     
     doc = docx.Document(template_path)
     
@@ -337,6 +338,22 @@ def fix_and_build_ssrc_docx():
     add_p("As evidenced in Table II, Traditional RAG completely fails on operational tool tasks (0.0%). The Single-Agent configuration achieves faster latency (2,150 ms) but suffers from tool confusion under hybrid queries (84.2% accuracy). The proposed Multi-Agent architecture achieves superior factual groundedness (94.8%) and 100.0% tool execution reliability.", style='Text', space_before=4)
 
     add_p("Statistical Significance Testing: A non-parametric Wilcoxon Signed-Rank Test conducted between Proposed Multi-Agent and Baseline Single-Agent confirmed statistical significance (p < 0.001). Cohen's d effect size was measured at d = 1.42, establishing that the multi-agent architectural advantage is classified as a 'Very Large Effect' under standard statistical heuristics.", style='Text', space_before=3)
+
+    # Embed Figure 2: Statistical Benchmark Analysis
+    p_img2 = doc.add_paragraph(style='Normal')
+    p_img2.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    p_img2.paragraph_format.space_before = Pt(8)
+    p_img2.paragraph_format.space_after = Pt(2)
+    r_img2 = p_img2.add_run()
+    r_img2.add_picture(image_stats_path, width=Inches(3.47))
+
+    p_cap2 = doc.add_paragraph(style='Normal')
+    p_cap2.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    p_cap2.paragraph_format.space_before = Pt(2)
+    p_cap2.paragraph_format.space_after = Pt(8)
+    r_cap2 = p_cap2.add_run("Fig. 2. Empirical statistical benchmark analysis: (a) Comparative performance across 3 architectures; (b) 5-Tier Likert evaluation rubric distribution; (c) End-to-end latency decomposition; and (d) Trade-off analysis addressing RQ3.")
+    r_cap2.font.size = Pt(8.0)
+    r_cap2.italic = True
 
     add_p("Latency and Execution Decomposition", style='Heading 2', space_before=6, space_after=3)
     add_p("The mean end-to-end latency of the system is 3,365.8 ms. Profiling the execution reveals: Hybrid Retrieval (185 ms / 5.5%), Backend Microservice Tool Invocation (210 ms / 6.2%), Supervisor Routing (120 ms / 3.6%), and LLM Token Generation (2,850 ms / 84.7%). By employing Server-Sent Events (SSE) token streaming, the perceived time-to-first-token (TTFT) from the user's perspective is reduced to 420 ms, delivering an instantaneous conversational experience.", style='Text')
