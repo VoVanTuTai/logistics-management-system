@@ -235,3 +235,4 @@ Trong các giai đoạn tiếp theo, nghiên cứu sẽ mở rộng tích hợp 
 [13] International Air Transport Association (IATA), "Cargo Services Conference Resolutions Manual - Volumetric Weight Calculation Standard," IATA, Geneva, Switzerland, 43rd ed., 2023.  
 [14] I. Stoica et al., "Ray: A distributed framework for emerging AI applications," in *Proc. 13th USENIX Symp. Oper. Syst. Des. Implementation (OSDI)*, Carlsbad, CA, USA, 2018, pp. 561–577.  
 [15] A. Toshniwal et al., "Storm@twitter," in *Proc. ACM SIGMOD Int. Conf. Manage. Data*, New York, NY, USA, 2014, pp. 147–156.  
+
