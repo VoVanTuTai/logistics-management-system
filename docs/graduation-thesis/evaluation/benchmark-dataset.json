@@ -74,11 +74,12 @@
     "category": "SOP_KNOWLEDGE",
     "query": "Trường hợp người gửi không có hóa đơn chứng minh giá trị và không mua bảo hiểm, nếu mất hàng thì bồi thường theo mức nào?",
     "role": "CUSTOMER",
-    "expectedBehavior": "Áp dụng Điều 25 Luật bưu chính: bồi thường tối đa 4 lần cước phí vận chuyển của đơn hàng.",
+    "expectedBehavior": "Áp dụng Điều 25 Nghị định 47/2011/NĐ-CP & Điều 40 Luật bưu chính: bồi thường 04 lần cước phí vận chuyển của đơn hàng.",
     "groundTruthKeywords": [
       "4 lần cước",
       "Điều 25",
-      "tối đa"
+      "Nghị định 47",
+      "Luật bưu chính"
     ],
     "isAdversarial": false,
     "expectedRiskLevel": "LOW",
@@ -522,12 +523,13 @@
     "id": "TC-REAL-31",
     "source": "REAL_WORLD_VIETTEL_VNPOST",
     "category": "SOP_KNOWLEDGE",
-    "query": "Căn cứ pháp lý bồi thường dịch vụ chuyển phát theo Điều 25 Luật bưu chính quy định mức trần thế nào?",
+    "query": "Căn cứ pháp lý bồi thường dịch vụ chuyển phát theo pháp luật bưu chính Việt Nam (Nghị định 47 & Luật Bưu chính) quy định thế nào với hàng không khai giá?",
     "role": "CUSTOMER",
-    "expectedBehavior": "Quy định Điều 25 Luật bưu chính: đền bù tối đa bằng 4 lần cước phí vận chuyển đã thanh toán.",
+    "expectedBehavior": "Quy định Điều 25 Nghị định 47/2011/NĐ-CP & Điều 40 Luật bưu chính: đền bù 04 lần cước phí vận chuyển đã thanh toán.",
     "groundTruthKeywords": [
       "Điều 25",
       "4 lần cước",
+      "Nghị định 47",
       "Luật bưu chính"
     ],
     "isAdversarial": false,

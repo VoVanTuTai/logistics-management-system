@@ -40,16 +40,16 @@ def load_cabinet() -> List[Dict[str, Any]]:
             with open(f, "r", encoding="utf-8") as fp:
                 cabinet.append(json.load(fp))
         except Exception as e:
-            print(f"⚠️ Lỗi đọc {f}: {e}")
+            print(f"[WARN] Loi doc {f}: {e}")
     return cabinet
 
 def cmd_status():
     cabinet = load_cabinet()
     print("=" * 85)
-    print("🗄️  NEXUS LOGISTICS DATA CABINET — TỔNG QUAN TÌNH TRẠNG KHO DỮ LIỆU ĐA TẦNG")
-    print(f"📁 Thư mục lưu trữ: {CABINET_DIR}")
+    print("NEXUS LOGISTICS DATA CABINET - TONG QUAN TINH TRANG KHO DU LIEU DA TANG")
+    print(f"Thu muc luu tru: {CABINET_DIR}")
     print("=" * 85)
-    print(f"{'Mã Ngăn':<9} | {'Tên Ngăn Tủ':<35} | {'Số Ca':<6} | {'Nguồn Xuất Xứ (Provenance)':<26}")
+    print(f"{'Ma Ngan':<9} | {'Ten Ngan Tu':<35} | {'So Ca':<6} | {'Nguon Xuat Xu (Provenance)':<26}")
     print("-" * 85)
     
     total_cases = 0
@@ -62,11 +62,11 @@ def cmd_status():
         print(f"{cid:<9} | {name:<35} | {count:<6} | {src:<26}")
 
     print("-" * 85)
-    print(f"📊 TỔNG CỘNG: {len(cabinet)} ngăn tủ với {total_cases} kịch bản kiểm thử đa nguồn có nhãn xuất xứ rõ ràng.")
+    print(f"TONG CONG: {len(cabinet)} ngan tu voi {total_cases} kich ban kiem thu da nguon co nhan xuat xu ro rang.")
     print("=" * 85)
 
 def cmd_sync_live_db():
-    print(f"🔄 Đang kết nối tới PostgreSQL qua shipment-service ({SHIPMENT_SERVICE_URL}/shipments)...")
+    print(f"[INFO] Dang ket noi toi PostgreSQL qua shipment-service ({SHIPMENT_SERVICE_URL}/shipments)...")
     url = f"{SHIPMENT_SERVICE_URL}/shipments?limit=10"
     try:
         req = urllib.request.Request(url)
@@ -74,7 +74,7 @@ def cmd_sync_live_db():
             data = json.loads(response.read().decode("utf-8"))
             items = data.get("items", [])
             if not items:
-                print("⚠️ Không tìm thấy đơn hàng nào trong DB.")
+                print("[WARN] Khong tim thay don hang nao trong DB.")
                 return
 
             live_cases = []
@@ -89,7 +89,7 @@ def cmd_sync_live_db():
                     "provenance": f"PostgreSQL Record: Table shipments, code={code}, status={status}",
                     "category": "OPERATIONAL_TOOLS",
                     "role": "CUSTOMER",
-                    "query": f"Tra cứu hành trình đơn hàng {code}",
+                    "query": f"Tra cuu hanh trinh don hang {code}",
                     "ground_truth_keywords": [code, status],
                     "expected_tool": "trackShipment",
                     "expected_risk_blocked": False,
@@ -99,17 +99,17 @@ def cmd_sync_live_db():
             comp3_path = os.path.join(CABINET_DIR, "compartment-03-live-db.json")
             comp3_data = {
                 "compartment_id": "COMP-03",
-                "compartment_name": "Dữ liệu Sống từ Production (Live Production Database)",
-                "source_description": f"Trích xuất tự động từ PostgreSQL shipment-service (:3002) lúc {time.strftime('%Y-%m-%d %H:%M:%S')}",
+                "compartment_name": "Du lieu Song tu Production (Live Production Database)",
+                "source_description": f"Trich xuat tu dong tu PostgreSQL shipment-service (:3002) luc {time.strftime('%Y-%m-%d %H:%M:%S')}",
                 "last_updated": time.strftime("%Y-%m-%dT%H:%M:%SZ"),
                 "items": live_cases
             }
             with open(comp3_path, "w", encoding="utf-8") as fp:
                 json.dump(comp3_data, fp, ensure_ascii=False, indent=2)
 
-            print(f"✅ Đã đồng bộ thành công {len(live_cases)} vận đơn thật vào Ngăn 3: {comp3_path}")
+            print(f"[SUCCESS] Da dong bo thanh cong {len(live_cases)} van don that vao Ngan 3: {comp3_path}")
     except Exception as e:
-        print(f"❌ Lỗi đồng bộ live DB: {e}")
+        print(f"[ERROR] Loi dong bo live DB: {e}")
 
 def clean_html(raw_html: str) -> str:
     clean = re.sub(r'<[^<]+?>', '', raw_html or '')
@@ -164,7 +164,7 @@ EXCLUDE_KEYWORDS = ["giá vàng", "bất động sản", "chứng khoán", "ung 
 
 def cmd_crawl_feed(limit: int = 5, source: str = "all", dry_run: bool = False, verbose: bool = False):
     print("=" * 85)
-    print("🌐  NEXUS LOGISTICS CRAWLER — TỰ ĐỘNG THU THẬP TIN TỨC THỜI SỰ & CẬP NHẬT NGĂN 6")
+    print("NEXUS LOGISTICS CRAWLER - TU DONG THU THAP TIN TUC THOI SU VA CAP NHAT NGAN 6")
     print("=" * 85)
 
     feeds_to_crawl = {}
@@ -173,16 +173,16 @@ def cmd_crawl_feed(limit: int = 5, source: str = "all", dry_run: bool = False, v
     elif source in DEFAULT_RSS_FEEDS:
         feeds_to_crawl = {source: DEFAULT_RSS_FEEDS[source]}
     elif source.startswith("http://") or source.startswith("https://"):
-        feeds_to_crawl = {"custom": {"name": "Nguồn RSS Tùy biến", "url": source}}
+        feeds_to_crawl = {"custom": {"name": "Nguon RSS Tuy bien", "url": source}}
     else:
-        print(f"❌ Nguồn tin không hợp lệ: {source}. Chọn 'all', 'vnexpress_thoisu', 'vnexpress_kinhdoanh', 'tuoitre_thoisu' hoặc URL RSS.")
+        print(f"[ERROR] Nguon tin khong hop le: {source}. Chon 'all', 'vnexpress_thoisu', 'vnexpress_kinhdoanh', 'tuoitre_thoisu' hoac URL RSS.")
         return
 
     comp6_path = os.path.join(CABINET_DIR, "compartment-06-crawled-updates.json")
     comp6_data = {
         "compartment_id": "COMP-06",
-        "compartment_name": "Dữ liệu Crawl Bổ sung Định kỳ (Crawled Dynamic Feeds & Real-World Events)",
-        "source_description": "Dữ liệu thu thập định kỳ từ thông cáo Cục Đường bộ Việt Nam, biến động giá xăng dầu, tin tức giao thông hạ tầng",
+        "compartment_name": "Du lieu Crawl Bo sung Dinh ky (Crawled Dynamic Feeds & Real-World Events)",
+        "source_description": "Du lieu thu thap dinh ky tu thong cao Cuc Duong bo Viet Nam, bien dong gia xang dau, tin tuc giao thong ha tang",
         "last_updated": time.strftime("%Y-%m-%dT%H:%M:%SZ"),
         "items": []
     }
@@ -192,7 +192,7 @@ def cmd_crawl_feed(limit: int = 5, source: str = "all", dry_run: bool = False, v
             with open(comp6_path, "r", encoding="utf-8") as fp:
                 comp6_data = json.load(fp)
         except Exception as e:
-            print(f"⚠️ Không đọc được {comp6_path}: {e}")
+            print(f"[WARN] Khong doc duoc {comp6_path}: {e}")
 
     existing_items = comp6_data.get("items", [])
     existing_fingerprints = set()
@@ -201,16 +201,16 @@ def cmd_crawl_feed(limit: int = 5, source: str = "all", dry_run: bool = False, v
         existing_fingerprints.add(it.get("provenance", ""))
         existing_fingerprints.add(it.get("query", ""))
 
-    print(f"📦 Hiện trạng Ngăn 6: {len(existing_items)} ca kiểm thử đã lưu.")
-    print(f"📡 Đang kết nối mạng thật tới {len(feeds_to_crawl)} máy chủ tin tức...")
+    print(f"[STATUS] Hien trang Ngan 6: {len(existing_items)} ca kiem thu da luu.")
+    print(f"[NETWORK] Dang ket noi mang that toi {len(feeds_to_crawl)} may chu tin tuc...")
 
     crawled_candidates = []
 
     for fkey, fmeta in feeds_to_crawl.items():
         fname = fmeta["name"]
         furl = fmeta["url"]
-        print(f"\n🌍 [HTTP GET] Kết nối tới máy chủ tin tức: {fname}")
-        print(f"   ↳ URL: {furl}")
+        print(f"\n[HTTP GET] Ket noi toi may chu tin tuc: {fname}")
+        print(f"   -> URL: {furl}")
         try:
             req = urllib.request.Request(furl, headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) NexusCrawler/2.0"})
             t0 = time.time()
@@ -223,13 +223,13 @@ def cmd_crawl_feed(limit: int = 5, source: str = "all", dry_run: bool = False, v
                 remote_date = resp.headers.get("date", "N/A")
                 payload_kb = len(xml_data) / 1024.0
 
-                print(f"   ✅ [PHẢN HỒI HTTP {status} OK] Nhận gói tin từ server: {server}")
-                print(f"   ↳ Độ trễ mạng (Latency): {latency_ms:.1f} ms | Dung lượng: {payload_kb:.1f} KB")
-                print(f"   ↳ Timestamp máy chủ: {remote_date} | MIME: {content_type}")
+                print(f"   [HTTP {status} OK] Nhan goi tin tu server: {server}")
+                print(f"   -> Do tre mang (Latency): {latency_ms:.1f} ms | Dung luong: {payload_kb:.1f} KB")
+                print(f"   -> Timestamp may chu: {remote_date} | MIME: {content_type}")
 
                 root = ET.fromstring(xml_data)
                 items = root.findall(".//item")
-                print(f"   ↳ Đã phân tích cú pháp (XML Parsed): {len(items)} bản tin thời sự mới nhất.")
+                print(f"   -> Da phan tich cu phap (XML Parsed): {len(items)} ban tin thoi su moi nhat.")
 
                 scanned_count = 0
                 for it in items:
@@ -241,11 +241,11 @@ def cmd_crawl_feed(limit: int = 5, source: str = "all", dry_run: bool = False, v
 
                     full_text = f"{title} {desc}".lower()
 
-                    # Loại trừ các tin ngoài phạm vi (chứng khoán, giá vàng, y tế, bạo lực)
+                    # Loai tru cac tin ngoai pham vi
                     if any(ex in full_text for ex in EXCLUDE_KEYWORDS):
                         continue
 
-                    # Đối soát từ khóa logistics
+                    # Doi soat tu khoa logistics
                     matched_rule = None
                     matched_kw = None
                     for rule in LOGISTICS_RULES:
@@ -260,29 +260,29 @@ def cmd_crawl_feed(limit: int = 5, source: str = "all", dry_run: bool = False, v
                     if not matched_rule:
                         continue
 
-                    # Kiểm tra trùng lặp
+                    # Kiem tra trung lap
                     clean_title = re.sub(r'["\']', '', title)
                     if any(clean_title[:30] in fp for fp in existing_fingerprints):
                         if verbose:
-                            print(f"      ⏭️ [BỎ QUA - ĐÃ TỒN TẠI] {title[:50]}...")
+                            print(f"      [SKIP - DA TON TAI] {title[:50]}...")
                         continue
 
                     h = hashlib.md5(title.encode("utf-8")).hexdigest()[:6].upper()
                     case_id = f"CRAWL-AUTO-{h}"
                     
-                    # Tránh trùng lặp trong đợt quét hiện tại
+                    # Tranh trung lap trong dot quet hien tai
                     if any(c["id"] == case_id for c in crawled_candidates):
                         continue
 
                     if verbose:
-                        print(f"      🎯 [KHỚP TỪ KHÓA: '{matched_kw}'] {title}")
-                        print(f"         Link bài báo: {link}")
-                        print(f"         Thời gian: {pub_date}")
+                        print(f"      [MATCH - TU KHOA: '{matched_kw}'] {title}")
+                        print(f"         Link bai bao: {link}")
+                        print(f"         Thoi gian: {pub_date}")
 
                     new_case = {
                         "id": case_id,
                         "compartment": "COMP-06",
-                        "provenance": f"Bản tin RSS ({fname}): '{title}' ({pub_date[:16] if pub_date else 'Hôm nay'})",
+                        "provenance": f"Ban tin RSS ({fname}): '{title}' ({pub_date[:16] if pub_date else 'Hom nay'})",
                         "category": matched_rule["category"],
                         "role": matched_rule["role"],
                         "query": matched_rule["query_template"].format(title=title),
@@ -300,34 +300,34 @@ def cmd_crawl_feed(limit: int = 5, source: str = "all", dry_run: bool = False, v
                     if len(crawled_candidates) >= limit:
                         break
         except Exception as e:
-            print(f"   ⚠️ Lỗi cào nguồn {fname}: {e}")
+            print(f"   [WARN] Loi cao nguon {fname}: {e}")
 
         if len(crawled_candidates) >= limit:
             break
 
     print("\n" + "=" * 85)
-    print(f"🎯 KẾT QUẢ QUÉT THỰC TẾ: ĐÃ BẮT ĐƯỢC {len(crawled_candidates)} BẢN TIN THỜI SỰ MỚI TỪ INTERNET")
+    print(f"KET QUA QUET THUC TE: DA BAT DUOC {len(crawled_candidates)} BAN TIN THOI SU MOI TU INTERNET")
     print("=" * 85)
 
     if not crawled_candidates:
-        print("ℹ️ Toàn bộ các bản tin trên web hiện tại đã được đồng bộ vào kho từ trước (Không có tin mới).")
+        print("[INFO] Toan bo cac ban tin tren web hien tai da duoc dong bo vao kho tu truoc (Khong co tin moi).")
         return
 
     for idx, c in enumerate(crawled_candidates, 1):
-        print(f"[{idx}] Mã ca sinh: {c['id']} | Từ khóa logistics: '{c['_matched_keyword']}'")
-        print(f"    📰 Tiêu đề: {c['provenance']}")
-        print(f"    🔗 Link bài báo thật: {c['_source_link']}")
-        print(f"    🕒 Ngày xuất bản: {c['_pub_date']}")
-        print(f"    ❓ Câu hỏi nghiệp vụ AI sinh ra:")
+        print(f"[{idx}] Ma ca sinh: {c['id']} | Tu khoa logistics: '{c['_matched_keyword']}'")
+        print(f"    Tieu de: {c['provenance']}")
+        print(f"    Link bai bao that: {c['_source_link']}")
+        print(f"    Ngay xuat ban: {c['_pub_date']}")
+        print(f"    Cau hoi nghiep vu AI sinh ra:")
         print(f"       \"{c['query']}\"")
-        print(f"    🔑 Từ khóa đối soát (Ground Truth): {c['ground_truth_keywords']}")
+        print(f"    Tu khoa doi soat (Ground Truth): {c['ground_truth_keywords']}")
         print()
 
     if dry_run:
-        print("⚡ [DRY-RUN] Chế độ xem trước: Dữ liệu chưa ghi đè vào file disk.")
+        print("[DRY-RUN] Che do xem truoc: Du lieu chua ghi de vao file disk.")
         return
 
-    # Lưu vào compartment-06
+    # Luu vao compartment-06
     cleaned_items = []
     for c in crawled_candidates:
         item_copy = {k: v for k, v in c.items() if not k.startswith("_")}
@@ -335,15 +335,15 @@ def cmd_crawl_feed(limit: int = 5, source: str = "all", dry_run: bool = False, v
 
     comp6_data["items"].extend(cleaned_items)
     comp6_data["last_updated"] = time.strftime("%Y-%m-%dT%H:%M:%SZ")
-    comp6_data["source_description"] = f"Dữ liệu thu thập tự động từ RSS (VnExpress, Tuổi Trẻ) lúc {time.strftime('%Y-%m-%d %H:%M:%S')} (Tổng: {len(comp6_data['items'])} ca)"
+    comp6_data["source_description"] = f"Du lieu thu thap tu dong tu RSS (VnExpress, Tuoi Tre) luc {time.strftime('%Y-%m-%d %H:%M:%S')} (Tong: {len(comp6_data['items'])} ca)"
 
     with open(comp6_path, "w", encoding="utf-8") as fp:
         json.dump(comp6_data, fp, ensure_ascii=False, indent=2)
 
     print("-" * 85)
-    print(f"💾 ĐÃ GHI FILE THỰC TẾ LÊN ĐĨA: {comp6_path}")
-    print(f"   ↳ Kích thước file hiện tại: {os.path.getsize(comp6_path):,} bytes")
-    print(f"   ↳ Tổng số ca hiện có trong Ngăn 6: {len(comp6_data['items'])} ca.")
+    print(f"[SUCCESS] DA GHI FILE THUC TE LEN DIA: {comp6_path}")
+    print(f"   -> Kich thuoc file hien tai: {os.path.getsize(comp6_path):,} bytes")
+    print(f"   -> Tong so ca hien co trong Ngan 6: {len(comp6_data['items'])} ca.")
     print("=" * 85)
 
 def cmd_sample(per_compartment: int = 2, seed: int = None):
@@ -352,7 +352,7 @@ def cmd_sample(per_compartment: int = 2, seed: int = None):
         random.seed(seed)
     
     print("=" * 85)
-    print(f"🎲 BỐC MẪU PHÂN TẦNG: Bốc ngẫu nhiên {per_compartment} ca từ mỗi ngăn tủ (Tổng: {len(cabinet) * per_compartment} ca)")
+    print(f"BOC MAU PHAN TANG: Boc ngau nhien {per_compartment} ca tu moi ngan tu (Tong: {len(cabinet) * per_compartment} ca)")
     print("=" * 85)
     
     sample_cases = []
@@ -361,10 +361,10 @@ def cmd_sample(per_compartment: int = 2, seed: int = None):
         items = comp.get("items", [])
         picked = random.sample(items, min(per_compartment, len(items)))
         sample_cases.extend(picked)
-        print(f"[{cid}] Đã bốc {len(picked)}/{len(items)} ca: {', '.join(it['id'] for it in picked)}")
+        print(f"[{cid}] Da boc {len(picked)}/{len(items)} ca: {', '.join(it['id'] for it in picked)}")
 
     print("-" * 85)
-    print(f"✔ Đã tuyển chọn thành công {len(sample_cases)} kịch bản cân bằng hoàn hảo từ 6 ngăn tủ!")
+    print(f"[SUCCESS] Da tuyen chon thanh cong {len(sample_cases)} kich ban can bang hoan hao tu 6 ngan tu!")
 
 def main():
     parser = argparse.ArgumentParser(description="Bộ Quản trị Kho Dữ liệu Đa tầng (Nexus Data Cabinet)")

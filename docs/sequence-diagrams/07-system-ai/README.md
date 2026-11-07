@@ -122,7 +122,7 @@ sequenceDiagram
     Chatbot->>LLM: Gọi API Stream Generate Content
     loop Trả lời dạng dòng (Server-Sent Events)
         LLM-->>Chatbot: Token chunk
-        Chatbot-->>UI: event: message data: {"delta": "Theo điều 25 Luật bưu chính..."}
+        Chatbot-->>UI: event: message data: {"delta": "Theo Điều 25 Nghị định 47 & Điều 40 Luật Bưu chính..."}
     end
     Chatbot-->>UI: event: done
 ```

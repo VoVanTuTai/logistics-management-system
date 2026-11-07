@@ -7,14 +7,14 @@
     {
       "id": "LAW-01",
       "compartment": "COMP-01",
-      "provenance": "Khoản 3 Điều 25 Luật Bưu chính 49/2010/QH12 & Điều 24 Nghị định 47/2011/NĐ-CP",
+      "provenance": "Khoản 1 Điều 25 Nghị định 47/2011/NĐ-CP & Điều 40 Luật Bưu chính 49/2010/QH12",
       "category": "SOP_KNOWLEDGE",
       "role": "CUSTOMER",
-      "query": "Theo Luật Bưu chính Việt Nam, nếu bưu phẩm gửi thông thường không mua bảo hiểm khai giá mà bị mất hoàn toàn trong quá trình vận chuyển thì bưu cục phải bồi thường tối đa bao nhiêu?",
-      "ground_truth_keywords": ["4 lần cước", "bốn lần", "1.000.000", "Luật Bưu chính"],
+      "query": "Theo quy định pháp luật bưu chính Việt Nam, nếu bưu phẩm gửi thông thường không mua bảo hiểm khai giá mà bị mất hoàn toàn trong quá trình vận chuyển thì bưu cục phải bồi thường thế nào?",
+      "ground_truth_keywords": ["4 lần cước", "bốn lần", "Nghị định 47", "Luật Bưu chính"],
       "expected_tool": "getDamageAndClaimPolicy",
       "expected_risk_blocked": false,
-      "expected_citations": ["Luật Bưu chính 49/2010/QH12 - Điều 25"]
+      "expected_citations": ["Nghị định 47/2011/NĐ-CP - Điều 25", "Luật Bưu chính 49/2010/QH12 - Điều 40"]
     },
     {
       "id": "LAW-02",

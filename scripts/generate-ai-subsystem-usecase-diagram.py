@@ -385,7 +385,7 @@ def generate_svg():
     lines.append(direct_dep_arrow(1250, 1205, 175, 36, 1850, 1205, 175, 36, "«include»", 14))
 
     # Tier 4: National Postal Legal & Safety Compliance Anchor (cy = 1355)
-    lines.append(uc(1250, 1355, 205, 38, "UC-AI-LEGAL-01", "Tuân thủ Điều 25 Luật Bưu Chính &amp; ICAO", "uc-core"))
+    lines.append(uc(1250, 1355, 205, 38, "UC-AI-LEGAL-01", "Tuân thủ Luật Bưu Chính, NĐ 47 &amp; ICAO", "uc-core"))
     lines.append(direct_dep_arrow(1250, 1205, 175, 36, 1250, 1355, 205, 38, "«include»", 14))
     lines.append('  </g>')
     lines.append('')

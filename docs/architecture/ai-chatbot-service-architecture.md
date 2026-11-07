@@ -22,7 +22,7 @@
 ### 1.1. Bối cảnh thực tiễn ngành Logistics & E-Commerce
 Trong hệ thống logistics bưu chính hiện đại, bộ phận Chăm sóc khách hàng (CSKH) và Vận hành (Operations) luôn đối mặt với các nút thắt cổ chai nghiêm trọng:
 1. **Khối lượng câu hỏi lặp lại khổng lồ:** Chiếm >70% lưu lượng truy vấn (hỏi biểu phí vận chuyển, công thức cân nặng quy đổi thể tích hàng cồng kềnh IATA, thời hạn lưu kho, quy trình bồi thường bể vỡ).
-2. **Nguy cơ sai lệch thông tin bưu chính:** Nhân viên tư vấn mới thường nhầm lẫn giữa chính sách bồi thường mặc định (theo Điều 25 Luật Bưu chính - tối đa 4 lần cước) và bảo hiểm khai giá toàn diện 100%.
+2. **Nguy cơ sai lệch thông tin bưu chính:** Nhân viên tư vấn mới thường nhầm lẫn giữa chính sách bồi thường mặc định (theo Điều 25 Nghị định 47/2011/NĐ-CP & Điều 40 Luật Bưu chính - 04 lần cước) và bảo hiểm khai giá toàn diện 100%.
 3. **Thao tác đơn hàng rủi ro cao:** Cấp quyền trực tiếp cho AI tự động hủy đơn, đổi địa chỉ nhận hoặc sửa số tiền thu hộ COD dễ dẫn đến gian lận tài chính hoặc vi phạm kiểm soát chuỗi vết quét (Chain of Custody).
 4. **Hiện tượng ảo giác & thiên kiến đồng nhất (Homogeneous Bias):** Khi một mô hình LLM đơn lẻ vừa tiếp nhận yêu cầu, vừa tự gọi công cụ sửa đổi DB, vừa tự thẩm định rủi ro, nó có xu hướng bỏ qua chính các sai lầm của mình.
 
@@ -52,8 +52,8 @@ Hệ thống được thiết kế dựa trên sự am hiểu sâu sắc về ng
 * **Tầng 2 - Cồng kềnh trong hạn mức (Bulky / Truck Dispatch):** Khối lượng $21\text{ kg} - 70\text{ kg}$ HOẶC cạnh lớn nhất $61\text{ cm} - 150\text{ cm} \rightarrow$ Tính cước thể tích IATA, điều xe tải trung chuyển.
 * **Tầng 3 - VƯỢT TRẦN MẠNG LƯỚI (Over-limit Block):** Khối lượng $> 70\text{ kg}$ HOẶC cạnh lớn nhất $> 150\text{ cm}$ HOẶC tổng 3 chiều $D + R + C > 300\text{ cm} \rightarrow$ **Chặn tạo đơn (Validation Error)**, hướng dẫn khách tách kiện hoặc chuyển sang dịch vụ Vận tải nguyên chuyến (FTL).
 
-### 2.3. Khung pháp lý Bồi thường & Bảo hiểm (Postal Law Art. 25 & Indemnity Liability)
-* **Bồi thường mặc định theo luật (Không mua bảo hiểm):** Căn cứ **Khoản 3 Điều 25 Luật Bưu chính Việt Nam**, mức bồi thường thiệt hại tối đa được ấn định bằng **04 lần cước dịch vụ đã sử dụng**, trần khống chế không vượt quá **1.000.000 VNĐ / đơn hàng**.
+### 2.3. Khung pháp lý Bồi thường & Bảo hiểm (Postal Law Art. 40, Decree 47 Art. 25 & Indemnity Liability)
+* **Bồi thường mặc định theo luật (Không mua bảo hiểm):** Căn cứ **Khoản 1 Điều 25 Nghị định 47/2011/NĐ-CP và Điều 40 Luật Bưu chính 2010**, mức bồi thường thiệt hại được ấn định bằng **04 lần cước dịch vụ đã sử dụng**, trần khống chế không vượt quá **1.000.000 VNĐ / đơn hàng** theo Quy chế dịch vụ Nexus Logistics.
 * **Bảo hiểm khai giá toàn diện (Comprehensive Insurance):** Khách hàng khai báo giá trị kiện hàng và trả phí bảo hiểm 0.5% (tối thiểu 5.000đ). Khi xảy ra thất lạc hoặc bể vỡ toàn phần, bồi thường **100% giá trị hóa đơn** hợp pháp trong vòng 24 - 48 giờ.
 * **Chính sách cước chuyển hoàn (Return Fee):** Khách hàng Standard chịu 50% cước chiều đi; Khách hàng thân thiết VIP được miễn phí cước hoàn (0đ).
 * **Ngưỡng rủi ro tài chính COD:** Đơn hàng COD $\ge 15.000.000\text{ VNĐ}$ bắt buộc kích hoạt chốt chặn KYC người nhận và cảnh báo rủi ro bùng hàng.
@@ -82,7 +82,7 @@ Nhằm triệt tiêu **Thiên kiến đồng nhất (Homogeneous Bias)**, 4 tác
 | Tác tử & Nhãn Vai trò | Model & Nhà phát triển | Lý do Kỹ thuật & Đóng góp Học thuật |
 | :--- | :--- | :--- |
 | **👑 1. Supervisor Agent**<br>`[CHỈ HUY & ĐIỀU PHỐI]` | **Gemini Flash**<br>*(Google AI Studio)* | • **TTFT siêu tốc & Structured Output:** Phân tích ý định người dùng (Intent Recognition), bóc tách thực thể (Tracking Code, PII) và lập kế hoạch DAG.<br>• **Điều phối song song:** Kích hoạt đồng thời Knowledge Agent và Operation Agent nhằm giảm 50% tổng độ trễ.<br>• **Streaming Aggregator:** Nhận dữ liệu tổng hợp và stream token về client qua chuẩn SSE. |
-| **📖 2. Knowledge Worker**<br>`[TRÍCH XUẤT RAG]` | **Qwen 3.8 27B**<br>*(Alibaba Cloud)* | • **Tokenizer Tiếng Việt Tối Ưu:** Giảm hơn 25% token context so với các model phương Tây khi xử lý văn bản quy phạm pháp luật.<br>• **Độ chính xác RAG cao:** Trích xuất chính xác 100% các điều khoản từ 9 tài liệu SOP bưu chính (SOP bọc 3 lớp bubble wrap, Điều 25 Luật bưu chính, biểu phí hoàn 50%). |
+| **📖 2. Knowledge Worker**<br>`[TRÍCH XUẤT RAG]` | **Qwen 3.8 27B**<br>*(Alibaba Cloud)* | • **Tokenizer Tiếng Việt Tối Ưu:** Giảm hơn 25% token context so với các model phương Tây khi xử lý văn bản quy phạm pháp luật.<br>• **Độ chính xác RAG cao:** Trích xuất chính xác 100% các điều khoản từ 9 tài liệu SOP bưu chính (SOP bọc 3 lớp bubble wrap, Điều 25 NĐ 47 & Điều 40 Luật bưu chính, biểu phí hoàn 50%). |
 | **⚡ 3. Operation Worker**<br>`[THỰC THI NGHIỆP VỤ]` | **GPT-OSS 120B**<br>*(OpenAI)* | • **Deterministic Tool Calling:** Tự động gọi các công cụ nội bộ (`trackShipment`, `calculateIataShippingFee`, `intakeShipmentOrder`).<br>• **Chuẩn hóa Action Draft DTO:** Soạn thảo payload JSON tuân thủ 100% schema DTO của Backend NestJS, **tuyệt đối không tự ý ghi vào DB**. |
 | **🛡️ 4. Validation Gatekeeper**<br>`[THẨM ĐỊNH AN TOÀN]` | **Nemotron 3.5 Lightning**<br>*(NVIDIA Corporation)* | • **Phản biện độc lập (Independent Adversarial Critic):** Thẩm định chéo kết quả của các tác tử khác để phát hiện vi phạm hàng cấm, vượt trần kích thước hoặc gian lận đơn.<br>• **Kích hoạt ngắt HITL:** Khi phát hiện hành động thay đổi dữ liệu hoặc rủi ro cao, lập tức ra lệnh ngắt luồng và kích hoạt giao diện Drawer xin chữ ký xác nhận của người dùng. |
 
@@ -312,7 +312,7 @@ Kết quả đo lường tự động qua script `run-empirical-evaluation.py`:
 Hệ thống Trợ lý Đa Tác tử Logistics Nexus (`@NEXUS/chatbot-service`) đã giải quyết thành công bài toán tự động hóa vận hành bưu chính ở cấp độ doanh nghiệp:
 
 1. **Về mặt Khoa học & Kiến trúc:** Chứng minh tính ưu việt của **Kiến trúc Đa Tác tử Không Đồng Nhất (HMAS)** so với mô hình Single-Agent RAG truyền thống; triệt tiêu hoàn toàn thiên kiến đồng nhất bằng việc kết hợp 4 tập đoàn AI lớn nhất thế giới (**Google, Alibaba, OpenAI, NVIDIA**).
-2. **Về mặt Nghiệp vụ Bưu chính:** Số hóa toàn diện và kiểm soát chặt chẽ các giới hạn nghiệp vụ: Điều 25 Luật Bưu chính, trần vật lý 70kg/150cm/300cm, cước thể tích chuẩn IATA $V/6000$ và SOP đóng gói dễ vỡ 3 lớp.
+2. **Về mặt Nghiệp vụ Bưu chính:** Số hóa toàn diện và kiểm soát chặt chẽ các giới hạn nghiệp vụ: Điều 25 Nghị định 47/2011/NĐ-CP & Điều 40 Luật Bưu chính, trần vật lý 70kg/150cm/300cm, cước thể tích chuẩn IATA $V/6000$ và SOP đóng gói dễ vỡ 3 lớp.
 3. **Về mặt An toàn Hệ thống:** Hiện thực hóa quy trình **Human-in-the-Loop 2 pha**, đảm bảo AI đóng vai trò người hỗ trợ và lập dự thảo, quyền quyết định tài chính và thay đổi dữ liệu luôn thuộc về con người với lịch sử kiểm toán bất biến.
 
 ---

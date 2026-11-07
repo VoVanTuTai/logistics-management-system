@@ -17,6 +17,7 @@ import {
   Copy,
   Check,
   X,
+  XCircle,
   Lock,
   ShieldCheck,
   Building2,
@@ -44,6 +45,12 @@ function formatDate(val?: string): string {
   if (!val) return 'Vừa xong';
   const d = new Date(val);
   return `${d.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' })} ${d.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}`;
+}
+
+function isShipmentCancellable(status?: string): boolean {
+  if (!status) return false;
+  const s = status.toUpperCase();
+  return !['DELIVERED', 'COMPLETED', 'RETURN_STARTED', 'RETURN_COMPLETED', 'RETURNED', 'RETURNING', 'CANCELLED', 'DELIVERING', 'OUT_FOR_DELIVERY'].includes(s);
 }
 
 interface StatusBadgeInfo {
@@ -157,6 +164,8 @@ export function OrdersPage(): React.JSX.Element {
   const [searchQuery, setSearchQuery] = useState('');
 
   const [selectedOrderForModal, setSelectedOrderForModal] = useState<ShipmentResponse | null>(null);
+  const [orderToCancel, setOrderToCancel] = useState<ShipmentResponse | null>(null);
+  const [actionBanner, setActionBanner] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
 
   // Load orders from backend (synchronized with Customer Mobile)
@@ -433,6 +442,32 @@ export function OrdersPage(): React.JSX.Element {
           </button>
         </div>
       </div>
+
+      {actionBanner && (
+        <div
+          className={`p-3.5 rounded-xl border flex items-center justify-between text-xs font-semibold ${
+            actionBanner.type === 'success'
+              ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
+              : 'bg-rose-50 border-rose-200 text-rose-800'
+          }`}
+        >
+          <div className="flex items-center gap-2">
+            {actionBanner.type === 'success' ? (
+              <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
+            ) : (
+              <AlertTriangle className="h-4 w-4 text-rose-600 shrink-0" />
+            )}
+            <span>{actionBanner.message}</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setActionBanner(null)}
+            className="p-1 hover:bg-black/5 rounded-lg transition"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+      )}
 
       {/* 2. KPI QUICK STATS CARDS */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -801,6 +836,19 @@ export function OrdersPage(): React.JSX.Element {
                   </span>
 
                   <div className="flex items-center gap-1.5">
+                    {/* HỦY ĐƠN */}
+                    {activeCategory === 'SENT' && isShipmentCancellable(s.currentStatus) && (
+                      <button
+                        type="button"
+                        onClick={() => setOrderToCancel(s)}
+                        className="px-2.5 py-1.5 border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-xs rounded-lg flex items-center gap-1 transition shadow-xs"
+                        title="Hủy đơn hàng này"
+                      >
+                        <XCircle className="h-3.5 w-3.5 text-rose-600" />
+                        <span>Hủy đơn</span>
+                      </button>
+                    )}
+
                     {/* IN VẬN ĐƠN CHUẨN */}
                     <button
                       type="button"
@@ -843,12 +891,33 @@ export function OrdersPage(): React.JSX.Element {
         <OrderDetailModal
           shipment={selectedOrderForModal}
           isReceiver={activeCategory === 'RECEIVED'}
+          canCancel={activeCategory === 'SENT' && isShipmentCancellable(selectedOrderForModal.currentStatus)}
           onClose={() => setSelectedOrderForModal(null)}
+          onCancel={(order) => setOrderToCancel(order)}
           onTrack={(code) => {
             setSelectedOrderForModal(null);
             navigate(`/?track=${encodeURIComponent(code)}`);
           }}
           onPrint={(order) => printShippingLabel(order)}
+        />
+      )}
+
+      {/* 7. CANCEL ORDER CONFIRMATION MODAL */}
+      {orderToCancel && (
+        <CancelOrderModal
+          shipment={orderToCancel}
+          onClose={() => setOrderToCancel(null)}
+          onSuccess={(updated) => {
+            setOrderToCancel(null);
+            if (selectedOrderForModal?.code === updated.code) {
+              setSelectedOrderForModal(null);
+            }
+            setActionBanner({
+              type: 'success',
+              message: `Đơn hàng #${updated.code} đã được hủy thành công. Bưu tá phụ trách đã dừng lấy hàng.`,
+            });
+            loadShipments(false);
+          }}
         />
       )}
     </div>
@@ -861,13 +930,17 @@ export function OrdersPage(): React.JSX.Element {
 function OrderDetailModal({
   shipment,
   isReceiver = false,
+  canCancel = false,
   onClose,
+  onCancel,
   onTrack,
   onPrint,
 }: {
   shipment: ShipmentResponse;
   isReceiver?: boolean;
+  canCancel?: boolean;
   onClose: () => void;
+  onCancel?: (shipment: ShipmentResponse) => void;
   onTrack: (code: string) => void;
   onPrint: (shipment: ShipmentResponse) => void;
 }) {
@@ -1221,15 +1294,28 @@ function OrderDetailModal({
         </div>
 
         {/* Modal Footer */}
-        <div className="bg-slate-50 p-4 border-t border-slate-200 rounded-b-2xl flex items-center justify-between gap-3">
-          <button
-            type="button"
-            onClick={() => onPrint(shipment)}
-            className="inline-flex items-center gap-1.5 px-4 py-2.5 border border-slate-300 bg-white text-slate-700 hover:bg-slate-100 font-bold text-xs rounded-lg transition shadow-sm"
-          >
-            <Printer className="h-4 w-4 text-slate-600" />
-            <span>In Phiếu Gửi Hàng</span>
-          </button>
+        <div className="bg-slate-50 p-4 border-t border-slate-200 rounded-b-2xl flex items-center justify-between gap-3 flex-wrap">
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => onPrint(shipment)}
+              className="inline-flex items-center gap-1.5 px-3.5 py-2.5 border border-slate-300 bg-white text-slate-700 hover:bg-slate-100 font-bold text-xs rounded-lg transition shadow-xs"
+            >
+              <Printer className="h-4 w-4 text-slate-600" />
+              <span>In Phiếu Gửi Hàng</span>
+            </button>
+
+            {canCancel && onCancel && (
+              <button
+                type="button"
+                onClick={() => onCancel(shipment)}
+                className="inline-flex items-center gap-1.5 px-3.5 py-2.5 border border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100 font-bold text-xs rounded-lg transition shadow-xs"
+              >
+                <XCircle className="h-4 w-4 text-rose-600" />
+                <span>Hủy Đơn Hàng</span>
+              </button>
+            )}
+          </div>
 
           <div className="flex items-center gap-2">
             <button
@@ -1248,6 +1334,178 @@ function OrderDetailModal({
               <ChevronRight className="h-4 w-4" />
             </button>
           </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ==========================================
+// CANCEL ORDER CONFIRMATION MODAL
+// ==========================================
+function CancelOrderModal({
+  shipment,
+  onClose,
+  onSuccess,
+}: {
+  shipment: ShipmentResponse;
+  onClose: () => void;
+  onSuccess: (updated: ShipmentResponse) => void;
+}) {
+  const { token } = useAuthStore();
+  const [reasonOption, setReasonOption] = useState('Đổi ý, không muốn gửi hàng nữa');
+  const [customReason, setCustomReason] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  const reasons = [
+    'Đổi ý, không muốn gửi hàng nữa',
+    'Sai thông tin người nhận hoặc địa chỉ giao hàng',
+    'Cần thay đổi khối lượng / kích thước kiện hàng',
+    'Thời gian bưu tá đến lấy không phù hợp',
+    'Khác (nhập chi tiết bên dưới)',
+  ];
+
+  const handleConfirm = async () => {
+    if (!token) {
+      setErrorMsg('Vui lòng đăng nhập lại để thực hiện thao tác này.');
+      return;
+    }
+    const finalReason =
+      reasonOption === 'Khác (nhập chi tiết bên dưới)'
+        ? customReason.trim() || 'Khách hàng yêu cầu hủy đơn'
+        : customReason.trim()
+          ? `${reasonOption} (${customReason.trim()})`
+          : reasonOption;
+
+    setIsSubmitting(true);
+    setErrorMsg(null);
+    try {
+      const res = await shipmentApi.cancelShipment(token, shipment.code, finalReason);
+      onSuccess(res);
+    } catch (err: any) {
+      setErrorMsg(err?.message || 'Không thể hủy đơn hàng lúc này. Vui lòng thử lại sau.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-200">
+      <div className="bg-white rounded-2xl max-w-lg w-full shadow-2xl border border-slate-200 overflow-hidden">
+        {/* Header */}
+        <div className="bg-gradient-to-r from-rose-600 to-rose-700 p-5 text-white flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <div className="p-2 bg-white/20 rounded-xl">
+              <XCircle className="h-5 w-5 text-white" />
+            </div>
+            <div>
+              <h3 className="font-extrabold text-base leading-tight">Xác Nhận Hủy Đơn Hàng</h3>
+              <p className="text-xs text-rose-100 font-mono mt-0.5">#{shipment.code}</p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={isSubmitting}
+            className="p-1.5 hover:bg-white/20 rounded-lg transition text-white/80 hover:text-white"
+          >
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+
+        {/* Body */}
+        <div className="p-5 space-y-4 text-xs">
+          {/* Policy Box */}
+          <div className="p-3.5 bg-amber-50 border border-amber-200 rounded-xl space-y-1">
+            <div className="flex items-center gap-1.5 font-bold text-amber-900">
+              <ShieldCheck className="h-4 w-4 text-amber-700 shrink-0" />
+              <span>Chính sách Hủy Vận đơn Nexus:</span>
+            </div>
+            <p className="text-[11px] text-amber-800 leading-relaxed pl-5">
+              Kiện hàng chưa bàn giao cho Shipper, quý khách được <strong className="font-extrabold text-emerald-700">HỦY MIỄN PHÍ 100% (0 VNĐ)</strong>. Bưu tá phụ trách sẽ nhận lệnh dừng lấy hàng tức thì.
+            </p>
+          </div>
+
+          {errorMsg && (
+            <div className="p-3 bg-red-50 border border-red-200 text-red-700 font-semibold rounded-xl flex items-center gap-2">
+              <AlertTriangle className="h-4 w-4 shrink-0 text-red-600" />
+              <span>{errorMsg}</span>
+            </div>
+          )}
+
+          {/* Reason Select */}
+          <div className="space-y-2">
+            <label className="font-extrabold text-slate-800 uppercase tracking-wide text-[11px]">
+              Vui lòng chọn lý do hủy đơn:
+            </label>
+            <div className="space-y-1.5">
+              {reasons.map((r) => (
+                <label
+                  key={r}
+                  className={`flex items-center gap-2.5 p-2.5 border rounded-xl cursor-pointer transition text-xs ${
+                    reasonOption === r
+                      ? 'border-rose-500 bg-rose-50/60 font-bold text-rose-900 shadow-xs'
+                      : 'border-slate-200 hover:bg-slate-50 text-slate-700'
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name="cancelReason"
+                    value={r}
+                    checked={reasonOption === r}
+                    onChange={() => setReasonOption(r)}
+                    className="h-4 w-4 text-rose-600 focus:ring-rose-500"
+                  />
+                  <span>{r}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+
+          {/* Optional notes */}
+          <div className="space-y-1">
+            <label className="font-bold text-slate-700 text-[11px]">
+              Ghi chú bổ sung (tùy chọn):
+            </label>
+            <textarea
+              rows={2}
+              value={customReason}
+              onChange={(e) => setCustomReason(e.target.value)}
+              placeholder="Nhập thêm chi tiết nếu cần..."
+              className="w-full p-2.5 border border-slate-300 rounded-xl focus:border-rose-500 focus:ring-1 focus:ring-rose-500 text-xs text-slate-800 placeholder-slate-400"
+            />
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="bg-slate-50 p-4 border-t border-slate-200 flex items-center justify-end gap-2.5">
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={isSubmitting}
+            className="px-4 py-2 border border-slate-300 text-slate-700 hover:bg-slate-100 font-bold text-xs rounded-xl transition"
+          >
+            Giữ lại đơn
+          </button>
+          <button
+            type="button"
+            onClick={handleConfirm}
+            disabled={isSubmitting}
+            className="inline-flex items-center gap-1.5 px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs rounded-xl shadow-md transition disabled:opacity-50"
+          >
+            {isSubmitting ? (
+              <>
+                <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+                <span>Đang xử lý hủy...</span>
+              </>
+            ) : (
+              <>
+                <XCircle className="h-4 w-4" />
+                <span>Xác nhận Hủy Đơn</span>
+              </>
+            )}
+          </button>
         </div>
       </div>
     </div>
