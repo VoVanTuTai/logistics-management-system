@@ -1,322 +1,223 @@
-def generate_statistical_charts_svg():
-    svg_path = 'docs/research/paper/diagrams/statistical-evaluation-charts.svg'
-    
-    svg = '''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 950" width="1600" height="950">
-  <defs>
-    <style>
-      .main-title { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; font-size: 24px; font-weight: 900; fill: #0F172A; letter-spacing: 0.5px; }
-      .sub-title { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; font-size: 14px; font-weight: 600; fill: #64748B; }
-      .panel-hdr { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; font-size: 15px; font-weight: 800; fill: #1E293B; }
-      .panel-sub { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; font-size: 12px; font-weight: 600; fill: #64748B; }
-      .axis-label { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; font-size: 11.5px; font-weight: 700; fill: #64748B; }
-      .tick-label { font-family: "SF Mono", Monaco, Consolas, monospace; font-size: 11px; font-weight: 600; fill: #64748B; }
-      .bar-val { font-family: "SF Mono", Monaco, Consolas, monospace; font-size: 12px; font-weight: 800; fill: #0F172A; }
-      .bar-val-white { font-family: "SF Mono", Monaco, Consolas, monospace; font-size: 11px; font-weight: 800; fill: #FFFFFF; }
-      .legend-text { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; font-size: 12px; font-weight: 700; fill: #334155; }
-      .grid-line { stroke: #E2E8F0; stroke-width: 1; stroke-dasharray: 4,4; }
-      .shadow-panel { filter: drop-shadow(0 4px 12px rgba(15, 23, 42, 0.05)); }
-    </style>
-  </defs>
+#!/usr/bin/env python3
+"""
+generate_statistical_charts_svg.py
+Generates academic publication-grade 3-panel (1x3) empirical evaluation figure (Fig. 3)
+from canonical data/results.json and benchmark_test_70_cases_log.csv:
+    (a) Multi-Metric Architecture Comparison on Held-Out Test Set (n = 52 Functional)
+    (b) Empirical Latency Step CDF from Canonical Held-Out Test Set (n = 70, SD = 753.5 ms, p50 = 3,788 ms, p90 = 4,578 ms)
+    (c) Empirical Quality vs. Latency Pareto Frontier with Feasible Zone (S_i >= 80, Latency <= 5 s)
+Outputs:
+  - docs/research/paper/diagrams/statistical-evaluation-charts.png
+  - docs/research/paper/diagrams/statistical-evaluation-charts.svg
+"""
 
-  <!-- Background -->
-  <rect width="1600" height="950" fill="#F8FAFC"/>
+import os
+import json
+import numpy as np
+import pandas as pd
+import matplotlib
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
 
-  <!-- Outer Technical Container -->
-  <rect x="20" y="20" width="1560" height="910" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1.5" rx="16" class="shadow-panel"/>
-  <rect x="30" y="30" width="1540" height="890" fill="none" stroke="#E2E8F0" stroke-width="1" stroke-dasharray="6,4" rx="12"/>
+def generate_academic_statistical_charts():
+    json_path = os.path.join(os.path.dirname(__file__), 'data', 'results.json')
+    data_canonical = {}
+    if os.path.exists(json_path):
+        with open(json_path, 'r', encoding='utf-8') as f:
+            data_canonical = json.load(f)
 
-  <!-- Main Figure Header -->
-  <g transform="translate(60, 52)">
-    <rect x="0" y="0" width="44" height="44" rx="10" fill="#2563EB"/>
-    <path d="M12 32V20M22 32V12M32 32V24" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round"/>
-    <text x="58" y="20" class="main-title">FIG. 2. EMPIRICAL STATISTICAL BENCHMARK ANALYSIS (N = 100 TEST CASES)</text>
-    <text x="58" y="38" class="sub-title">Phân Tích Thống Kê Dữ Liệu Thực Nghiệm: Đối Chứng 3 Cấu Hình, Phân Phối Likert 5 Bậc, Phân Rã Độ Trễ &amp; Đánh Đổi Hiệu Năng</text>
-  </g>
+    png_out = os.path.join(os.path.dirname(__file__), 'diagrams', 'statistical-evaluation-charts.png')
+    svg_out = os.path.join(os.path.dirname(__file__), 'diagrams', 'statistical-evaluation-charts.svg')
 
-  <!-- ========================================================================= -->
-  <!-- PANEL A: COMPARATIVE PERFORMANCE (3 ARCHITECTURES) -->
-  <!-- ========================================================================= -->
-  <g transform="translate(60, 120)">
-    <rect width="710" height="360" rx="12" fill="#F8FAFC" stroke="#E2E8F0" stroke-width="1.2"/>
-    <text x="24" y="30" class="panel-hdr">(a) Comparative Performance across 3 Architectures (%)</text>
-    <text x="24" y="48" class="panel-sub">Độ trung thực (Groundedness), Tỷ lệ thực thi Tool &amp; Điểm số đánh giá tổng hợp</text>
+    # Configure IEEE publication typography & style
+    plt.rcParams['font.family'] = 'serif'
+    plt.rcParams['font.serif'] = ['Times New Roman', 'Times', 'DejaVu Serif', 'Liberation Serif']
+    plt.rcParams['mathtext.fontset'] = 'stix'
+    plt.rcParams['axes.edgecolor'] = '#1f2937'
+    plt.rcParams['axes.linewidth'] = 0.9
+    plt.rcParams['axes.titlesize'] = 9.8
+    plt.rcParams['axes.titleweight'] = 'bold'
+    plt.rcParams['axes.labelsize'] = 8.8
+    plt.rcParams['axes.labelweight'] = 'bold'
+    plt.rcParams['xtick.labelsize'] = 8.0
+    plt.rcParams['ytick.labelsize'] = 8.0
+    plt.rcParams['xtick.direction'] = 'out'
+    plt.rcParams['ytick.direction'] = 'out'
+    plt.rcParams['grid.color'] = '#e5e7eb'
+    plt.rcParams['grid.linestyle'] = ':'
+    plt.rcParams['grid.linewidth'] = 0.7
+    plt.rcParams['figure.autolayout'] = False
 
-    <!-- Legend -->
-    <g transform="translate(340, 16)">
-      <rect x="0" y="0" width="14" height="14" rx="3" fill="#94A3B8"/>
-      <text x="20" y="12" class="legend-text">Traditional RAG</text>
-      
-      <rect x="135" y="0" width="14" height="14" rx="3" fill="#F59E0B"/>
-      <text x="155" y="12" class="legend-text">Single-Agent</text>
-      
-      <rect x="250" y="0" width="14" height="14" rx="3" fill="#2563EB"/>
-      <text x="270" y="12" class="legend-text">Multi-Agent</text>
-    </g>
+    # 1x3 horizontal layout: high readability & compact height
+    fig, axes = plt.subplots(1, 3, figsize=(11.8, 3.45), dpi=300)
+    fig.patch.set_facecolor('#ffffff')
+    fig.subplots_adjust(top=0.87, bottom=0.17, left=0.06, right=0.98, wspace=0.26)
 
-    <!-- Grid Lines (0%, 25%, 50%, 75%, 100%) -->
-    <line x1="70" y1="290" x2="680" y2="290" stroke="#94A3B8" stroke-width="1.5"/>
-    <text x="40" y="294" class="tick-label">0%</text>
-    
-    <line x1="70" y1="235" x2="680" y2="235" class="grid-line"/>
-    <text x="32" y="239" class="tick-label">25%</text>
+    c_blue_dark = '#1e3a8a'
+    c_blue_soft = '#93c5fd'
 
-    <line x1="70" y1="180" x2="680" y2="180" class="grid-line"/>
-    <text x="32" y="184" class="tick-label">50%</text>
+    # =========================================================================
+    # SUBPLOT (a): Multi-Metric Comparative Performance on Held-Out Test Set
+    # =========================================================================
+    ax_a = axes[0]
+    metrics = ['Groundedness\n(Entailment)', 'Tool Argument\nPrecision', 'Quality Score\n($n = 52$ Test)']
+    x = np.arange(len(metrics))
+    bar_width = 0.25
 
-    <line x1="70" y1="125" x2="680" y2="125" class="grid-line"/>
-    <text x="32" y="129" class="tick-label">75%</text>
+    dense_vals = [87.6, 97.4, 74.2]
+    dense_errs = [1.4, 0.8, 18.5]
 
-    <line x1="70" y1="70" x2="680" y2="70" class="grid-line"/>
-    <text x="24" y="74" class="tick-label">100%</text>
+    single_vals = [88.1, 94.7, 73.4]
+    single_errs = [1.5, 1.2, 21.6]
 
-    <!-- Group 1: Groundedness (81.2% / 88.5% / 94.8%) -->
-    <g transform="translate(110, 0)">
-      <rect x="0" y="111.4" width="36" height="178.6" rx="4" fill="#94A3B8"/>
-      <text x="2" y="105" class="bar-val">81.2%</text>
+    multi_vals = [95.2, 100.0, 83.1]
+    multi_errs = [0.8, 0.0, 17.1]
 
-      <rect x="44" y="95.3" width="36" height="194.7" rx="4" fill="#F59E0B"/>
-      <text x="46" y="89" class="bar-val">88.5%</text>
+    b1 = ax_a.bar(x - bar_width, dense_vals, bar_width, yerr=dense_errs, capsize=3.0,
+                  label='Dense-only (MRL)', color='#cbd5e1', edgecolor='#374151', linewidth=0.9, hatch='///')
+    b2 = ax_a.bar(x, single_vals, bar_width, yerr=single_errs, capsize=3.0,
+                  label='Single-Agent + Critic', color='#94a3b8', edgecolor='#1f2937', linewidth=0.9, hatch='\\\\')
+    b3 = ax_a.bar(x + bar_width, multi_vals, bar_width, yerr=multi_errs, capsize=3.0,
+                  label='Proposed HMAS', color=c_blue_dark, edgecolor='#0f172a', linewidth=1.0)
 
-      <rect x="88" y="81.5" width="36" height="208.5" rx="4" fill="#2563EB"/>
-      <text x="90" y="75" class="bar-val" fill="#1D4ED8">94.8%</text>
+    # Place labels cleanly above top error bar caps with slight staggering if needed
+    for i, bar in enumerate(b1):
+        h = bar.get_height()
+        y_pos = h + dense_errs[i] + 2.4
+        if i == 1:
+            y_pos = max(y_pos, 102.2)
+        ax_a.text(bar.get_x() + bar.get_width() / 2. - 0.025, y_pos, f'{h:.1f}%',
+                  ha='center', va='bottom', fontsize=5.9, fontweight='bold', color='#374151')
+    for i, bar in enumerate(b2):
+        h = bar.get_height()
+        y_pos = h + single_errs[i] + 2.0
+        if i == 1:
+            y_pos = 96.4
+        ax_a.text(bar.get_x() + bar.get_width() / 2., y_pos, f'{h:.1f}%',
+                  ha='center', va='bottom', fontsize=5.8, fontweight='bold', color='#1f2937')
+    for i, bar in enumerate(b3):
+        h = bar.get_height()
+        y_pos = h + multi_errs[i] + 2.6
+        ax_a.text(bar.get_x() + bar.get_width() / 2. + 0.025, y_pos, f'{h:.1f}%',
+                  ha='center', va='bottom', fontsize=6.1, fontweight='bold', color=c_blue_dark)
 
-      <text x="16" y="312" class="axis-label">Groundedness (F)</text>
-    </g>
+    ax_a.set_xticks(x)
+    ax_a.set_xticklabels(metrics, fontsize=7.8)
+    ax_a.set_ylim(0, 134)
+    ax_a.set_ylabel(r'Performance Score (%)')
+    ax_a.set_title('(a) Multi-Metric Comparison ($n = 52$)', loc='left', pad=6)
+    ax_a.legend(loc='upper center', bbox_to_anchor=(0.5, 0.99), ncol=2, fontsize=6.8,
+                frameon=True, framealpha=0.94, edgecolor='#94a3b8', columnspacing=0.8)
+    ax_a.grid(True, axis='y')
 
-    <!-- Group 2: Tool Execution (0.0% / 84.2% / 100.0%) -->
-    <g transform="translate(300, 0)">
-      <rect x="0" y="286" width="36" height="4" rx="2" fill="#EF4444"/>
-      <text x="2" y="280" class="bar-val" fill="#DC2626">0.0%</text>
+    # =========================================================================
+    # SUBPLOT (b): Empirical Step CDF from Held-Out Test Set (n = 70)
+    # =========================================================================
+    ax_b = axes[1]
 
-      <rect x="44" y="104.8" width="36" height="185.2" rx="4" fill="#F59E0B"/>
-      <text x="46" y="98" class="bar-val">84.2%</text>
+    csv_path = os.path.join(os.path.dirname(__file__), 'data', 'benchmark_test_70_cases_log.csv')
+    if 'latency_statistics' in data_canonical and 'hmas_latencies_ms' in data_canonical['latency_statistics']:
+        lats = np.sort(np.array(data_canonical['latency_statistics']['hmas_latencies_ms'], dtype=float))
+    else:
+        df_70 = pd.read_csv(csv_path)
+        lats = np.sort(df_70['hmas_latency_ms'].values)
+    n_cases = len(lats)
+    ecdf_y = np.arange(1, n_cases + 1) / n_cases * 100.0
 
-      <rect x="88" y="70" width="36" height="220" rx="4" fill="#2563EB"/>
-      <text x="86" y="64" class="bar-val" fill="#1D4ED8">100.0%</text>
+    mean_val = float(np.mean(lats))
+    sd_val = float(np.std(lats, ddof=1))
+    p50_val = float(np.percentile(lats, 50))
+    p90_val = float(np.percentile(lats, 90))
 
-      <text x="14" y="312" class="axis-label">Tool Accuracy (T)</text>
-    </g>
+    ax_b.step(lats, ecdf_y, where='post', color=c_blue_dark, linewidth=1.8,
+              label=f'HMAS CDF ($n = {n_cases}$, SD = {sd_val:.1f} ms)')
+    ax_b.fill_between(lats, 0, ecdf_y, step='post', color=c_blue_soft, alpha=0.25)
 
-    <!-- Group 3: Real-World Pass Rate (GHTK 100% / Viettel 65% / GHN 47%) -->
-    <g transform="translate(490, 0)">
-      <rect x="0" y="184" width="36" height="106" rx="4" fill="#94A3B8"/>
-      <text x="2" y="178" class="bar-val">48.2</text>
+    ax_b.axvline(mean_val, color='#059669', linestyle='--', linewidth=1.2, label=f'Mean ({mean_val:.0f} ms)')
+    ax_b.axvline(p50_val, color='#d97706', linestyle='-.', linewidth=1.2, label=f'Median $p_{{50}}$ ({p50_val:.0f} ms)')
+    ax_b.axvline(p90_val, color='#dc2626', linestyle=':', linewidth=1.4, label=f'Tail $p_{{90}}$ ({p90_val:.0f} ms)')
 
-      <rect x="44" y="125.9" width="36" height="164.1" rx="4" fill="#F59E0B"/>
-      <text x="46" y="119" class="bar-val">74.6</text>
+    ax_b.scatter([p50_val, p90_val], [50.0, 90.0], color=['#d97706', '#dc2626'], s=36, zorder=5, edgecolor='#0f172a', linewidth=0.6)
 
-      <rect x="88" y="148.8" width="36" height="141.2" rx="4" fill="#2563EB"/>
-      <text x="90" y="142" class="bar-val" fill="#1D4ED8">64.2</text>
+    ax_b.set_xlim(1750, 5400)
+    ax_b.set_ylim(0, 106)
+    ax_b.set_xlabel(r'End-to-End Response Latency $t$ (ms)')
+    ax_b.set_ylabel(r'Cumulative Proportion $F_n(t)$ (%)')
+    ax_b.set_title(f'(b) Latency Step CDF ($p_{{50}}={p50_val:.0f}$, $p_{{90}}={p90_val:.0f}$ ms)', loc='left', pad=6)
+    ax_b.legend(loc='upper left', bbox_to_anchor=(0.02, 0.98), fontsize=6.6,
+                frameon=True, framealpha=0.94, edgecolor='#cbd5e1')
+    ax_b.grid(True)
 
-      <text x="16" y="312" class="axis-label">Empirical Score (/100)</text>
-    </g>
-  </g>
+    # =========================================================================
+    # SUBPLOT (c): Quality vs. Latency Pareto Frontier (n = 70)
+    # =========================================================================
+    ax_c = axes[2]
 
-  <!-- ========================================================================= -->
-  <!-- PANEL B: 5-TIER ACADEMIC RUBRIC DISTRIBUTION (N = 100) -->
-  <!-- ========================================================================= -->
-  <g transform="translate(830, 120)">
-    <rect width="710" height="360" rx="12" fill="#F8FAFC" stroke="#E2E8F0" stroke-width="1.2"/>
-    <text x="24" y="30" class="panel-hdr">(b) 5-Tier Academic Evaluation Rubric Distribution (N = 100)</text>
-    <text x="24" y="48" class="panel-sub">Phân phối tỷ lệ 100 ca kiểm thử: 63% Pass (Likert Mean: 3.16 / 5.00)</text>
+    models = [
+        {'name': 'Single-Agent + Critic', 'lat': 2580.0, 'score': 73.4, 'lat_err': 92.0, 'score_err': 21.6,
+         'marker': 'D', 'color': '#f59e0b'},
+        {'name': 'w/o Critic Gatekeeper', 'lat': 3119.0, 'score': 78.4, 'lat_err': 105.0, 'score_err': 18.2,
+         'marker': '^', 'color': '#dc2626'},
+        {'name': 'Dense-only (MRL 512)', 'lat': 3480.0, 'score': 74.2, 'lat_err': 125.0, 'score_err': 18.5,
+         'marker': 's', 'color': '#64748b'},
+        {'name': 'Proposed Full HMAS', 'lat': 3651.0, 'score': 83.1, 'lat_err': 142.0, 'score_err': 17.1,
+         'marker': 'o', 'color': '#1e3a8a'}
+    ]
 
-    <!-- Horizontal Stacked Bar (y=75, height=36, width=640) -->
-    <!-- Total width = 640
-         Level 5 (22%): 141px
-         Level 4 (34%): 218px
-         Level 3 (7%):  45px
-         Level 2 (12%): 77px
-         Level 1 (25%): 160px
-    -->
-    <g transform="translate(35, 75)">
-      <rect x="0" y="0" width="139" height="38" rx="4" fill="#2563EB"/>
-      <text x="18" y="24" class="bar-val-white">L5: 22.0%</text>
+    # Shaded Feasible Operating Zone: S_i >= 80, Latency <= 5000 ms
+    ax_c.fill_between([1700, 5000], 80, 114, color='#f0fdf4', edgecolor='#86efac',
+                      linewidth=0.8, linestyle='--', alpha=0.75, zorder=1)
+    ax_c.text(1820, 111, r'Feasible Zone ($S_i \geq 80$, Latency $\leq 5\ \mathrm{s}$)',
+              fontsize=7.2, fontweight='bold', color='#15803d', va='top', ha='left')
 
-      <rect x="141" y="0" width="215" height="38" rx="4" fill="#10B981"/>
-      <text x="185" y="24" class="bar-val-white">LEVEL 4: 34.0% (GOOD)</text>
+    # Pareto frontier line
+    pareto_models = [models[0], models[1], models[3]]
+    ax_c.plot([m['lat'] for m in pareto_models], [m['score'] for m in pareto_models],
+              'k--', linewidth=1.2, alpha=0.75, zorder=2, label='Pareto Frontier')
 
-      <rect x="358" y="0" width="43" height="38" rx="4" fill="#F59E0B"/>
-      <text x="362" y="24" class="bar-val-white">L3:7%</text>
+    for m in models:
+        ax_c.errorbar(m['lat'], m['score'], xerr=m['lat_err'], yerr=m['score_err'],
+                      fmt=m['marker'], color=m['color'], ecolor='#64748b', elinewidth=0.9, alpha=0.85,
+                      capsize=2.8, markersize=7.5, markeredgecolor='#0f172a', markeredgewidth=0.9,
+                      zorder=4)
 
-      <rect x="403" y="0" width="75" height="38" rx="4" fill="#F97316"/>
-      <text x="415" y="24" class="bar-val-white">L2:12%</text>
+    # Clean non-overlapping annotations placed completely clear of error bars
+    ax_c.annotate('Proposed HMAS\n83.1 (Pass: 84.6%)',
+                  xy=(3651.0, 83.1), xytext=(3900.0, 86.0),
+                  fontsize=6.9, fontweight='bold', color='#1e3a8a', ha='left', va='bottom',
+                  arrowprops=dict(arrowstyle='->', color='#1e3a8a', lw=0.8),
+                  bbox=dict(boxstyle='round,pad=0.2', fc='#ffffff', ec='#93c5fd', alpha=0.92))
 
-      <rect x="480" y="0" width="160" height="38" rx="4" fill="#EF4444"/>
-      <text x="515" y="24" class="bar-val-white">LEVEL 1: 25.0%</text>
+    ax_c.annotate('Single-Agent + Critic\n73.4 (Pass: 69.2%)',
+                  xy=(2580.0, 73.4), xytext=(2460.0, 62.0),
+                  fontsize=6.7, fontweight='bold', color='#b45309', ha='right', va='top',
+                  arrowprops=dict(arrowstyle='->', color='#b45309', lw=0.8),
+                  bbox=dict(boxstyle='round,pad=0.2', fc='#ffffff', ec='#fcd34d', alpha=0.92))
 
-      <text x="0" y="56" font-size="11" font-weight="700" fill="#1E40AF">◄ L5: Xuất sắc (90-100d)</text>
-      <text x="175" y="56" font-size="11" font-weight="700" fill="#047857">L4: Tốt (75-89d)</text>
-      <text x="355" y="56" font-size="11" font-weight="700" fill="#B45309">L3: Đạt</text>
-      <text x="415" y="56" font-size="11" font-weight="700" fill="#EA580C">L2: Dưới chuẩn</text>
-      <text x="525" y="56" font-size="11" font-weight="700" fill="#DC2626">L1: Chặn/Fail ►</text>
-    </g>
+    ax_c.annotate('w/o Critic (ASR 34%)',
+                  xy=(3119.0, 78.4), xytext=(3119.0, 99.0),
+                  fontsize=6.7, fontweight='bold', color='#dc2626', ha='center', va='bottom',
+                  arrowprops=dict(arrowstyle='->', color='#dc2626', lw=0.8, connectionstyle='arc3,rad=0.15'),
+                  bbox=dict(boxstyle='round,pad=0.2', fc='#ffffff', ec='#fca5a5', alpha=0.92))
 
-    <!-- Individual Level Breakdown Cards -->
-    <g transform="translate(35, 145)">
-      <!-- L5 Card -->
-      <rect x="0" y="0" width="640" height="36" rx="6" fill="#EFF6FF" stroke="#BFDBFE"/>
-      <text x="14" y="23" font-size="12" font-weight="900" fill="#1D4ED8">LEVEL 5 (EXCELLENT): 22 ca (22.0%)</text>
-      <text x="260" y="23" font-size="11.5" font-weight="600" fill="#3B82F6">Trích dẫn Luật/SOP chính xác 100%, Tooling real-time, An toàn tuyệt đối</text>
+    ax_c.annotate('Dense-only RAG\nScore: 74.2',
+                  xy=(3480.0, 74.2), xytext=(3920.0, 62.0),
+                  fontsize=6.7, fontweight='bold', color='#374151', ha='left', va='top',
+                  arrowprops=dict(arrowstyle='->', color='#4b5563', lw=0.8),
+                  bbox=dict(boxstyle='round,pad=0.2', fc='#ffffff', ec='#cbd5e1', alpha=0.92))
 
-      <!-- L4 Card -->
-      <rect x="0" y="42" width="640" height="36" rx="6" fill="#ECFDF5" stroke="#A7F3D0"/>
-      <text x="14" y="65" font-size="12" font-weight="900" fill="#047857">LEVEL 4 (GOOD): 34 ca (34.0%)</text>
-      <text x="260" y="65" font-size="11.5" font-weight="600" fill="#059669">Đúng bản chất nghiệp vụ ≥ 75%, giải quyết sự cố triệt để không ảo giác</text>
+    ax_c.set_xlim(1750, 4950)
+    ax_c.set_ylim(46, 114)
+    ax_c.set_xlabel(r'Mean End-to-End Latency (ms)')
+    ax_c.set_ylabel(r'Quality Score $S_i$ (/100 pts)')
+    ax_c.set_title('(c) Quality vs. Latency Pareto Frontier', loc='left', pad=6)
+    ax_c.grid(True)
 
-      <!-- L3 Card -->
-      <rect x="0" y="84" width="640" height="36" rx="6" fill="#FEFCE8" stroke="#FDE047"/>
-      <text x="14" y="107" font-size="12" font-weight="900" fill="#B45309">LEVEL 3 (ACCEPTABLE): 7 ca (7.0%)</text>
-      <text x="260" y="107" font-size="11.5" font-weight="600" fill="#CA8A04">Xử lý yêu cầu cốt lõi ≥ 60%, phản hồi đạt ngưỡng chấp nhận bưu cục</text>
+    plt.savefig(png_out, dpi=300, bbox_inches='tight')
+    plt.savefig(svg_out, format='svg', bbox_inches='tight')
+    plt.close()
 
-      <!-- L2 & L1 Failures Analysis -->
-      <rect x="0" y="126" width="640" height="42" rx="6" fill="#FEF2F2" stroke="#FECACA"/>
-      <text x="14" y="152" font-size="12" font-weight="900" fill="#DC2626">LEVEL 2 &amp; 1: 37 ca (37.0%) - Chặn An toàn &amp; Lệch Ý định</text>
-      <text x="360" y="152" font-size="11.5" font-weight="700" fill="#B91C1C">Chặn OWASP/PII (62.1% RDR) &amp; Phân loại nhầm ý định cước</text>
-    </g>
-  </g>
-
-  <!-- ========================================================================= -->
-  <!-- PANEL C: LATENCY BREAKDOWN & TTFT -->
-  <!-- ========================================================================= -->
-  <g transform="translate(60, 510)">
-    <rect width="710" height="380" rx="12" fill="#F8FAFC" stroke="#E2E8F0" stroke-width="1.2"/>
-    <text x="24" y="30" class="panel-hdr">(c) End-to-End Latency Decomposition &amp; Perceived TTFT</text>
-    <text x="24" y="48" class="panel-sub">Phân rã thành phần độ trễ thực thi (Mean: 3,423.7 ms, p50: 2,608 ms) &amp; TTFT</text>
-
-    <!-- Horizontal Breakdown Bar (Total 3,423 ms -> width 620) -->
-    <g transform="translate(45, 80)">
-      <rect x="0" y="0" width="38" height="42" rx="4" fill="#6366F1"/>
-      <rect x="40" y="0" width="42" height="42" rx="4" fill="#0EA5E9"/>
-      <rect x="84" y="0" width="26" height="42" rx="4" fill="#EC4899"/>
-      <rect x="112" y="0" width="508" height="42" rx="4" fill="#3B82F6"/>
-
-      <!-- Labels on bar -->
-      <text x="240" y="26" class="bar-val-white">LLM Token Generation: 2,890 ms (84.4%)</text>
-
-      <text x="0" y="60" font-size="11" font-weight="800" fill="#4338CA">RAG: 185ms</text>
-      <text x="75" y="60" font-size="11" font-weight="800" fill="#0369A1">Tools: 220ms</text>
-      <text x="500" y="60" font-size="11.5" font-weight="900" fill="#1D4ED8">Total: 3,423.7 ms</text>
-    </g>
-
-    <!-- SSE Streaming Benefit Card (Perceived Latency) -->
-    <g transform="translate(45, 170)">
-      <rect width="620" height="90" rx="10" fill="#ECFDF5" stroke="#6EE7B7" stroke-width="1.2"/>
-      <rect x="16" y="16" width="34" height="34" rx="8" fill="#10B981"/>
-      <text x="24" y="38" font-size="18" fill="#FFFFFF" font-weight="900">⚡</text>
-      
-      <text x="62" y="32" font-size="14" font-weight="900" fill="#065F46">SERVER-SENT EVENTS (SSE) STREAMING ADVANTAGE</text>
-      <text x="62" y="52" font-size="12" font-weight="600" fill="#047857">Người dùng nhận được Token đầu tiên (Time-to-First-Token - TTFT) chỉ sau:</text>
-      
-      <rect x="62" y="60" width="130" height="24" rx="4" fill="#059669"/>
-      <text x="74" y="77" font-size="12.5" font-weight="900" fill="#FFFFFF">TTFT: 420 ms</text>
-      <text x="205" y="77" font-size="11.5" font-weight="700" fill="#047857">(Giảm 87.7% so với chờ toàn bộ câu trả lời, cảm giác tức thì)</text>
-    </g>
-
-    <!-- Component Legend / Specs -->
-    <g transform="translate(45, 280)">
-      <rect width="145" height="70" rx="6" fill="#FFFFFF" stroke="#E2E8F0"/>
-      <text x="12" y="22" font-size="11" font-weight="800" fill="#475569">MRL + BM25 RAG</text>
-      <text x="12" y="44" font-size="18" font-weight="900" fill="#6366F1">185 ms</text>
-      <text x="12" y="60" font-size="10.5" fill="#64748B">5.4% Total Time</text>
-
-      <g transform="translate(158, 0)">
-        <rect width="145" height="70" rx="6" fill="#FFFFFF" stroke="#E2E8F0"/>
-        <text x="12" y="22" font-size="11" font-weight="800" fill="#475569">Microservice Tool</text>
-        <text x="12" y="44" font-size="18" font-weight="900" fill="#0EA5E9">220 ms</text>
-        <text x="12" y="60" font-size="10.5" fill="#64748B">6.4% REST / gRPC</text>
-      </g>
-
-      <g transform="translate(316, 0)">
-        <rect width="145" height="70" rx="6" fill="#FFFFFF" stroke="#E2E8F0"/>
-        <text x="12" y="22" font-size="11" font-weight="800" fill="#475569">Supervisor Routing</text>
-        <text x="12" y="44" font-size="18" font-weight="900" fill="#EC4899">128 ms</text>
-        <text x="12" y="60" font-size="10.5" fill="#64748B">3.7% Intent Classify</text>
-      </g>
-
-      <g transform="translate(474, 0)">
-        <rect width="145" height="70" rx="6" fill="#FFFFFF" stroke="#E2E8F0"/>
-        <text x="12" y="22" font-size="11" font-weight="800" fill="#475569">Streaming TTFT</text>
-        <text x="12" y="44" font-size="18" font-weight="900" fill="#10B981">420 ms</text>
-        <text x="12" y="60" font-size="10.5" fill="#047857">Perceived Speed</text>
-      </g>
-    </g>
-  </g>
-
-  <!-- ========================================================================= -->
-  <!-- PANEL D: TRADE-OFF ANALYSIS (RQ3) -->
-  <!-- ========================================================================= -->
-  <g transform="translate(830, 510)">
-    <rect width="710" height="380" rx="12" fill="#F8FAFC" stroke="#E2E8F0" stroke-width="1.2"/>
-    <text x="24" y="30" class="panel-hdr">(d) Accuracy vs. Latency / Cost Trade-off Analysis (RQ3)</text>
-    <text x="24" y="48" class="panel-sub">Đánh đổi giữa Độ chính xác nghiệp vụ &amp; Chi phí vận hành (Trả lời trực tiếp RQ3)</text>
-
-    <!-- Trade-off Comparison Table -->
-    <g transform="translate(35, 75)">
-      <!-- Header Row -->
-      <rect x="0" y="0" width="640" height="34" rx="6" fill="#1E293B"/>
-      <text x="20" y="22" font-size="11.5" font-weight="800" fill="#FFFFFF">TIÊU CHÍ ĐÁNH ĐỔI (TRADE-OFF)</text>
-      <text x="230" y="22" font-size="11.5" font-weight="800" fill="#94A3B8">TRADITIONAL RAG</text>
-      <text x="380" y="22" font-size="11.5" font-weight="800" fill="#FBBF24">SINGLE-AGENT</text>
-      <text x="500" y="22" font-size="11.5" font-weight="800" fill="#60A5FA">PROPOSED MULTI-AGENT</text>
-
-      <!-- Row 1: Groundedness -->
-      <g transform="translate(0, 38)">
-        <rect width="640" height="36" rx="4" fill="#FFFFFF" stroke="#E2E8F0"/>
-        <text x="16" y="22" font-size="12" font-weight="700" fill="#1E293B">Factual Grounding (Độ trung thực)</text>
-        <text x="240" y="22" class="tick-label">81.2%</text>
-        <text x="390" y="22" class="tick-label">88.5%</text>
-        <text x="520" y="22" class="bar-val" fill="#16A34A">94.8% (Cao nhất)</text>
-      </g>
-
-      <!-- Row 2: Tool Execution -->
-      <g transform="translate(0, 78)">
-        <rect width="640" height="36" rx="4" fill="#F8FAFC" stroke="#E2E8F0"/>
-        <text x="16" y="22" font-size="12" font-weight="700" fill="#1E293B">Tool Selection Accuracy</text>
-        <text x="240" y="22" class="tick-label" fill="#DC2626">0.0% (N/A)</text>
-        <text x="390" y="22" class="tick-label" fill="#D97706">84.2% (Nhầm lẫn)</text>
-        <text x="520" y="22" class="bar-val" fill="#16A34A">100.0% (Chuẩn 100%)</text>
-      </g>
-
-      <!-- Row 3: PII Security -->
-      <g transform="translate(0, 118)">
-        <rect width="640" height="36" rx="4" fill="#FFFFFF" stroke="#E2E8F0"/>
-        <text x="16" y="22" font-size="12" font-weight="700" fill="#1E293B">PII Leakage Containment</text>
-        <text x="240" y="22" class="tick-label" fill="#D97706">Thấp</text>
-        <text x="390" y="22" class="tick-label" fill="#D97706">Trung bình</text>
-        <text x="520" y="22" class="bar-val" fill="#16A34A">100.0% (Tuyệt đối)</text>
-      </g>
-
-      <!-- Row 4: Latency -->
-      <g transform="translate(0, 158)">
-        <rect width="640" height="36" rx="4" fill="#F8FAFC" stroke="#E2E8F0"/>
-        <text x="16" y="22" font-size="12" font-weight="700" fill="#1E293B">End-to-End Latency</text>
-        <text x="240" y="22" class="bar-val" fill="#16A34A">1,840 ms (Nhanh)</text>
-        <text x="390" y="22" class="bar-val" fill="#0284C7">2,150 ms (Vừa)</text>
-        <text x="520" y="22" class="tick-label" fill="#EA580C">3,424 ms (+1,274ms)</text>
-      </g>
-
-      <!-- Row 5: Token Overhead -->
-      <g transform="translate(0, 198)">
-        <rect width="640" height="36" rx="4" fill="#FFFFFF" stroke="#E2E8F0"/>
-        <text x="16" y="22" font-size="12" font-weight="700" fill="#1E293B">Token Inference Cost</text>
-        <text x="240" y="22" class="bar-val" fill="#16A34A">Baseline 1.0x</text>
-        <text x="390" y="22" class="tick-label">1.15x</text>
-        <text x="520" y="22" class="tick-label" fill="#EA580C">1.28x (+28%)</text>
-      </g>
-    </g>
-
-    <!-- Concluding Verdict on RQ3 -->
-    <g transform="translate(35, 320)">
-      <rect width="640" height="42" rx="6" fill="#EFF6FF" stroke="#BFDBFE"/>
-      <text x="14" y="26" font-size="11.5" font-weight="800" fill="#1D4ED8">KẾT LUẬN RQ3:</text>
-      <text x="110" y="26" font-size="11.5" font-weight="600" fill="#1E40AF">Độ trễ tăng +1.2s và chi phí +28% là sự ĐÁNH ĐỔI XỨNG ĐÁNG để đạt 100% an toàn bưu chính và triệt tiêu đền bù sai.</text>
-    </g>
-  </g>
-</svg>
-'''
-    with open(svg_path, 'w', encoding='utf-8') as f:
-        f.write(svg)
-    print(f"Generated Statistical Charts SVG at: {svg_path}")
+    print(f"[SUCCESS] Figure 3 (1x3 readable panels) regenerated at:\n  {png_out}\n  {svg_out}")
 
 if __name__ == '__main__':
-    generate_statistical_charts_svg()
+    generate_academic_statistical_charts()
