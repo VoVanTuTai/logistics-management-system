@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -16,6 +16,52 @@ type Props = NativeStackScreenProps<RootStackParamList, 'CreateOrderSuccess'>;
 export function CreateOrderSuccessScreen({ route, navigation }: Props): React.JSX.Element {
   const { orderCode } = route.params;
   const [loadingDetail, setLoadingDetail] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
+
+  const handlePromptCancel = () => {
+    Alert.alert(
+      'Xác nhận hủy đơn hàng',
+      `Bạn có chắc chắn muốn hủy đơn hàng #${orderCode} vừa tạo không?\n\nKiện hàng chưa bàn giao cho bưu tá nên được hủy MIỄN PHÍ 100% (0đ).`,
+      [
+        { text: 'Giữ lại đơn', style: 'cancel' },
+        {
+          text: 'Xác nhận hủy đơn',
+          style: 'destructive',
+          onPress: async () => {
+            const accessToken = authStore.getAccessToken();
+            if (!accessToken) {
+              navigation.replace('MainTabs', { screen: 'OrdersTab' });
+              return;
+            }
+            setCancelling(true);
+            try {
+              await shipmentApi.cancelShipment(
+                accessToken,
+                orderCode,
+                'Khách hàng hủy ngay sau khi tạo đơn',
+              );
+              Alert.alert(
+                'Đã hủy đơn hàng thành công',
+                `Đơn hàng #${orderCode} đã được hủy trên hệ thống.`,
+                [
+                  {
+                    text: 'Về danh sách đơn',
+                    onPress: () => {
+                      navigation.replace('MainTabs', { screen: 'OrdersTab' });
+                    },
+                  },
+                ],
+              );
+            } catch (err: any) {
+              Alert.alert('Không thể hủy đơn', err?.message || 'Có lỗi xảy ra khi hủy đơn.');
+            } finally {
+              setCancelling(false);
+            }
+          },
+        },
+      ],
+    );
+  };
 
   const handleViewOrder = async () => {
     const accessToken = authStore.getAccessToken();
@@ -125,6 +171,18 @@ export function CreateOrderSuccessScreen({ route, navigation }: Props): React.JS
             variant="outline"
             size="lg"
           />
+
+          <TouchableOpacity
+            style={styles.cancelLinkBtn}
+            activeOpacity={0.7}
+            onPress={handlePromptCancel}
+            disabled={cancelling || loadingDetail}
+          >
+            <Ionicons name="close-circle-outline" size={17} color={colors.danger} />
+            <Text style={styles.cancelLinkText}>
+              {cancelling ? 'Đang xử lý hủy đơn...' : 'Hủy đơn hàng này'}
+            </Text>
+          </TouchableOpacity>
         </View>
       </View>
     </View>
@@ -200,5 +258,18 @@ const styles = StyleSheet.create({
   btnStack: {
     width: '100%',
     gap: spacing.md,
+  },
+  cancelLinkBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: spacing.sm,
+    marginTop: 4,
+  },
+  cancelLinkText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: colors.danger,
   },
 });

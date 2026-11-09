@@ -322,7 +322,7 @@ def build_svg():
           <text x="0" y="14" font-size="13" font-weight="900" fill="#000000">Nhiệm Vụ Trích Xuất Quy Chuẩn Bưu Chính:</text>
           
           <rect x="0" y="24" width="396" height="54" rx="6" fill="#FFFFFF" stroke="#000000" stroke-width="1.2"/>
-          <text x="12" y="20" font-size="11.5" font-weight="900" fill="#000000">• Điều 25 Luật Bưu Chính Việt Nam</text>
+          <text x="12" y="20" font-size="11.5" font-weight="900" fill="#000000">• Điều 25 NĐ 47 &amp; Luật Bưu Chính</text>
           <text x="12" y="38" font-size="10.5" font-weight="700" fill="#334155">Hạn mức bồi thường mặc định tối đa 4x cước (trần 1.000.000đ)</text>
 
           <rect x="0" y="86" width="396" height="54" rx="6" fill="#FFFFFF" stroke="#000000" stroke-width="1.2"/>
@@ -472,7 +472,7 @@ def build_svg():
         <!-- Risk 4 -->
         <rect x="0" y="198" width="386" height="52" rx="5" fill="#F8FAFC" stroke="#000000" stroke-width="1"/>
         <text x="12" y="20" font-size="11.5" font-weight="900" fill="#000000">4. CLAIM_PAYOUT (Duyệt chi trả bồi thường)</text>
-        <text x="12" y="38" font-size="10.5" font-weight="600" fill="#334155">Xuất toán tài chính: Áp dụng nghiêm ngặt Điều 25 Luật Bưu chính</text>
+        <text x="12" y="38" font-size="10.5" font-weight="600" fill="#334155">Xuất toán tài chính: Áp dụng Điều 25 NĐ 47 &amp; Điều 40 Luật Bưu chính</text>
 
         <!-- Risk 5 -->
         <rect x="0" y="256" width="386" height="52" rx="5" fill="#F8FAFC" stroke="#000000" stroke-width="1"/>

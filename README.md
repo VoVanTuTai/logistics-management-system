@@ -18,7 +18,7 @@
 </div>
 
 > 🎓 **TÀI LIỆU BÁO CÁO TỔNG QUAN ĐỒ ÁN (DÀNH CHO GIẢNG VIÊN HƯỚNG DẪN & HỘI ĐỒNG BẢO VỆ):**  
-> Hệ thống mô phỏng và số hóa toàn diện chuỗi cung ứng logistics bưu chính hiện đại với **15 Microservices độc lập**, **6 Ứng dụng Client đa nền tảng** (4 Web React + 2 Mobile Expo/React Native), Động cơ định giá chuẩn hóa quốc tế **IATA $V/6000$**, Quy trình xử lý ngoại lệ chuẩn hóa tuân thủ **Điều 24 & Điều 25 Luật Bưu chính số 49/2010/QH12**, và Phân hệ **Trợ lý Trí tuệ Nhân tạo AI Logistics RAG** vận hành thời gian thực.
+> Hệ thống mô phỏng và số hóa toàn diện chuỗi cung ứng logistics bưu chính hiện đại với **15 Microservices độc lập**, **6 Ứng dụng Client đa nền tảng** (4 Web React + 2 Mobile Expo/React Native), Động cơ định giá chuẩn hóa quốc tế **IATA $V/6000$**, Quy trình xử lý ngoại lệ chuẩn hóa tuân thủ **Điều 40, Điều 41 Luật Bưu chính 2010 & Điều 25 Nghị định 47/2011/NĐ-CP**, và Phân hệ **Trợ lý Trí tuệ Nhân tạo AI Logistics RAG** vận hành thời gian thực.
 
 ---
 
@@ -42,7 +42,7 @@
 5. [MÔ HÌNH THIẾT GIÁP BỊT KÍN 8 NHÓM LỖ HỔNG VẬN HÀNH & SỰ CỐ BƯU CHÍNH](#5-mô-hình-thiết-giáp-bịt-kín-8-nhóm-lỗ-hổng-vận-hành--sự-cố-bưu-chính)
    - [5.1. Khách từ chối nhận hàng (NDR) & Tự động Tái điều phối](#51-khách-từ-chối-nhận-hàng-ndr--tự-động-tái-điều-phối)
    - [5.2. Chuyển hoàn 3 tầng, Quản lý Tồn kho Tồn đọng (SLA Aging), Cảnh báo Đa kênh & Xử lý Bưu gửi Vô chủ (Điều 18 & 28 Luật Bưu chính)](#52-chuyển-hoàn-3-tầng-quản-lý-tồn-kho-tồn-đọng-sla-aging-cảnh-báo-đa-kênh--xử-lý-bưu-gửi-vô-chủ-điều-18--28-luật-bưu-chính)
-   - [5.3. Hàng hỏng / Bể vỡ / Mất mát & Thẩm định bồi thường (Điều 24 & Điều 25 Luật Bưu chính)](#53-hàng-hỏng--bể-vỡ--mất-mát--thẩm-định-bồi-thường-điều-24--điều-25-luật-bưu-chính)
+   - [5.3. Hàng hỏng / Bể vỡ / Mất mát & Thẩm định bồi thường (Điều 40, 41 Luật Bưu chính & Điều 25 Nghị định 47)](#53-hàng-hỏng--bể-vỡ--mất-mát--thẩm-định-bồi-thường-điều-40-41-luật-bưu-chính--điều-25-nghị-định-47)
    - [5.4. Quyền đồng kiểm (3 cờ kiểm tra) & Hạn mức trần tiền mặt Shipper](#54-quyền-đồng-kiểm-3-cờ-kiểm-tra--hạn-mức-trần-tiền-mặt-shipper)
    - [5.5. Đổi địa chỉ liên tỉnh (Re-routing Fee) & Khóa in lại tem nhiệt](#55-đổi-địa-chỉ-liên-tỉnh-re-routing-fee--khóa-in-lại-tem-nhiệt)
    - [5.6. Chênh lệch kiểm đếm mở bao (Manifest Discrepancy) & Cảnh báo sai luồng Hub](#56-chênh-lệch-kiểm-đếm-mở-bao-manifest-discrepancy--cảnh-báo-sai-luồng-hub)
@@ -63,7 +63,7 @@
 Thị trường logistics bưu chính và giao hàng chặng cuối (Last-mile Delivery) tại Việt Nam đang bùng nổ mạnh mẽ cùng làn sóng Thương mại Điện tử. Tuy nhiên, các doanh nghiệp logistics truyền thống luôn phải đối mặt với các bài toán vận hành hóc búa:
 1. **Nghẽn cổ chai kiến trúc nguyên khối (Monolithic Bottleneck):** Trong các đợt cao điểm khuyến mãi (Mega Sale 11/11, 12/12), lưu lượng quét mã vạch kho và tra cứu vận đơn tăng đột biến từ hàng chục đến hàng trăm lần, làm sập toàn bộ hệ thống dùng chung một CSDL duy nhất.
 2. **Sai lệch biểu phí cước giữa các nền tảng:** Cùng một kiện hàng nhưng Web của người bán tính một giá, App di động của tài xế tính một giá và Bot chăm sóc khách hàng lại tư vấn một giá khác do logic nghiệp vụ bị phân tán, thiếu chuẩn hóa.
-3. **Tranh chấp bồi thường hàng dễ vỡ & Thất thoát cước chuyển hoàn:** Tình trạng "bom hàng" (giao thất bại phải hoàn về) gây lãng phí chi phí xe tải chiều về. Việc thiếu quy chuẩn phân loại hàng dễ vỡ và không bám sát **Điều 24 & Điều 25 Luật Bưu chính** dẫn đến xung đột pháp lý kéo dài khi xảy ra sự cố vỡ nát hàng hóa.
+3. **Tranh chấp bồi thường hàng dễ vỡ & Thất thoát cước chuyển hoàn:** Tình trạng "bom hàng" (giao thất bại phải hoàn về) gây lãng phí chi phí xe tải chiều về. Việc thiếu quy chuẩn phân loại hàng dễ vỡ và không bám sát **Điều 40, Điều 41 Luật Bưu chính & Điều 25 Nghị định 47/2011/NĐ-CP** dẫn đến xung đột pháp lý kéo dài khi xảy ra sự cố vỡ nát hàng hóa.
 4. **Áp lực tổng đài hỗ trợ khách hàng:** Hơn 70% các cuộc gọi lên tổng đài chỉ để hỏi các câu hỏi mang tính thủ tục lặp lại (*"Đơn hàng đang ở đâu?"*, *"Cước kiện 3kg vào Sài Gòn bao nhiêu?"*, *"Pin sạc dự phòng có được gửi máy bay không?"*).
 
 ### 1.2. Mục tiêu nghiên cứu và giải pháp của Đồ án
@@ -520,7 +520,7 @@ flowchart TD
     WAIVER_TRUE --> PRINT_LABEL
     
     MET_TRUE -.-> RULE_1["Khi xảy ra bể vỡ: Bồi hoàn theo quy chế bảo hiểm"]
-    WAIVER_TRUE -.-> RULE_2["Khi xảy ra bể vỡ mà thùng ngoài nguyên vẹn:<br/>MIỄN TRỪ BỒI THƯỜNG 100% (Điều 24 Luật Bưu chính)"]
+    WAIVER_TRUE -.-> RULE_2["Khi xảy ra bể vỡ mà thùng ngoài nguyên vẹn:<br/>MIỄN TRỪ BỒI THƯỜNG 100% (Điều 41 Luật Bưu chính 2010 &amp; Điều 24 NĐ 47/2011/NĐ-CP)"]
 ```
 
 ---
@@ -687,9 +687,9 @@ flowchart TD
 
 ---
 
-### 5.3. Hàng hỏng / Bể vỡ / Mất mát & Thẩm định bồi thường (Điều 24 & Điều 25 Luật Bưu chính)
+### 5.3. Hàng hỏng / Bể vỡ / Mất mát & Thẩm định bồi thường (Điều 40, 41 Luật Bưu chính & Điều 25 Nghị định 47)
 
-Quy trình giải quyết sự cố hư hại, phân định trách nhiệm khách quan và tự động trích lập bồi hoàn dựa trên căn cứ pháp lý của **Luật Bưu chính Việt Nam số 49/2010/QH12**:
+Quy trình giải quyết sự cố hư hại, phân định trách nhiệm khách quan và tự động trích lập bồi hoàn dựa trên căn cứ pháp lý của **Điều 40, 41 Luật Bưu chính Việt Nam số 49/2010/QH12 & Điều 25 Nghị định 47/2011/NĐ-CP**:
 
 ```mermaid
 flowchart TD
@@ -699,7 +699,7 @@ flowchart TD
 
     AUDIT_WAIVER -- "CÓ (Khách tự gói sơ sài, ký miễn trừ)" --> CHECK_OUTER{"Vỏ thùng carton bên ngoài có bị rách nát,<br/>đè bẹp do tai nạn của phương tiện?"}
     
-    CHECK_OUTER -- "Vỏ ngoài nguyên vẹn, chỉ vỡ bên trong" --> REJECT_CLAIM["TỪ CHỐI BỒI THƯỜNG BỂ VỠ 100%<br/>Căn cứ Điều 24 Luật Bưu chính (Lỗi do người gửi đóng gói)<br/>Hệ thống xuất thông báo giải trình pháp lý cho khách"]
+    CHECK_OUTER -- "Vỏ ngoài nguyên vẹn, chỉ vỡ bên trong" --> REJECT_CLAIM["TỪ CHỐI BỒI THƯỜNG BỂ VỠ 100%<br/>Căn cứ Điều 41 Luật Bưu chính (Lỗi do người gửi đóng gói)<br/>Hệ thống xuất thông báo giải trình pháp lý cho khách"]
     CHECK_OUTER -- "Vỏ ngoài bị đè bẹp móp méo do xe tải" --> LIABILITY_CARRIER["Xác định Lỗi thuộc đơn vị vận chuyển Nexus"]
 
     AUDIT_WAIVER -- "KHÔNG (Đóng gói đạt chuẩn SOP)" --> LIABILITY_CARRIER
@@ -708,7 +708,7 @@ flowchart TD
 
     CHECK_INSURANCE -- "CÓ MUA BẢO HIỂM (Phí 0.5%)" --> CLAIM_100["BỒI THƯỜNG 100% GIÁ TRỊ THIỆT HẠI THỰC TẾ<br/>- Khách cung cấp Hóa đơn VAT / Sao kê chuyển khoản hợp lệ<br/>- Mức đền &le; Giá trị khai báo trên vận đơn<br/>- Giải ngân chuyển khoản từ Quỹ rủi ro trong 03 ngày"]
 
-    CHECK_INSURANCE -- "KHÔNG MUA BẢO HIỂM (Gói 0đ)" --> CLAIM_LAW["ÁP DỤNG ĐIỀU 25 KHOẢN 2 LUẬT BƯU CHÍNH<br/>- Mức bồi thường: Tối đa 04 lần cước dịch vụ bưu chính đã thu<br/>- Hạn mức trần tối đa không quá 1.000.000 VNĐ"]
+    CHECK_INSURANCE -- "KHÔNG MUA BẢO HIỂM (Gói 0đ)" --> CLAIM_LAW["ÁP DỤNG ĐIỀU 25 NGHỊ ĐỊNH 47 &amp; ĐIỀU 40 LUẬT BƯU CHÍNH<br/>- Mức bồi thường: 04 lần cước dịch vụ bưu chính đã thu<br/>- Hạn mức trần tối đa không quá 1.000.000 VNĐ theo Quy chế dịch vụ"]
 
     CLAIM_100 --> INTERNAL_AUDIT["2. TRUY CỨU TRÁCH NHIỆM NỘI BỘ (INTERNAL LIABILITY AUDIT)<br/>- Quét chuỗi Transactional Scan Log + Tem kẹp chì Seal giữa các Hub<br/>- Xác định chính xác bộ phận gây lỗi (Lái xe Linehaul, Bốc xếp, Shipper)<br/>- Tự động trừ điểm KPI an toàn và khấu trừ tiền phạt trách nhiệm vật chất"]
     CLAIM_LAW --> INTERNAL_AUDIT
@@ -719,7 +719,7 @@ flowchart TD
 | :--- | :--- | :--- |
 | **Thất lạc / Mất nguyên kiện** *(Lỗi do Hub hoặc Tài xế)* | **Đền đúng 100% giá trị thực tế** *(Căn cứ Hóa đơn hợp lệ)* | **Đền 04 lần cước gửi** *(Trần tối đa 1.000.000đ)* |
 | **Bể vỡ khi đóng gói đạt chuẩn SOP** *(Xốp 3 lớp)* | **Đền 100% giá trị thực tế** *(Hoặc theo tỷ lệ nứt vỡ)* | **Đền 04 lần cước gửi** *(Theo tỷ lệ hư hại)* |
-| **Bể vỡ khi có biên bản miễn trừ `packagingWaiver`** | **Từ chối bồi thường bể vỡ** *(Thùng ngoài nguyên)* | **Từ chối bồi thường bể vỡ** *(Điều 24 Luật Bưu chính)* |
+| **Bể vỡ khi có biên bản miễn trừ `packagingWaiver`** | **Từ chối bồi thường bể vỡ** *(Thùng ngoài nguyên)* | **Từ chối bồi thường bể vỡ** *(Điều 41 Luật Bưu chính)* |
 
 ---
 
@@ -923,7 +923,7 @@ sequenceDiagram
 3. `calculate_return_fee(forward_fee, merchant_tier)`: Tính cước chuyển hoàn tự động theo 3 phân tầng khách hàng.
 4. `get_storage_aging_policy()`: Tra cứu thời hạn lưu kho tối đa các cấp Hub, cơ chế cảnh báo tồn đọng hai chiều và quy trình xử lý bưu gửi vô chủ (Điều 18 & 28 Luật Bưu chính 2010).
 5. `get_waybill_format_policy()`: Tra cứu quy hoạch dải mã vận đơn tiền tố 12 chữ số (`101...`, `111...`, `333...`, `222...`) và tiêu chuẩn mã định tuyến 3 đoạn kiểu J&T Express.
-6. `get_compensation_claim_policy()`: Tra cứu chính sách bồi thường Điều 24 & 25 Luật Bưu chính (Ma trận 2x2 + 1).
+6. `get_compensation_claim_policy()`: Tra cứu chính sách bồi thường theo Pháp luật (Điều 40, 41 Luật Bưu chính 2010, Điều 25 NĐ 47) và Chính sách công ty Nexus (Ma trận 2x2 + 1).
 7. `escalate_to_human_agent(user_id, tracking_number, reason)`: Khởi tạo phiếu hỗ trợ Ticket ID và điều hướng khẩn cấp sang Chuyên viên CSKH con người qua tổng đài 1900-1234.
 
 ### 7.2. Kiến trúc Phân đoạn Tri thức (RAG Data Chunking Mechanism)
@@ -1009,7 +1009,7 @@ sequenceDiagram
 | **Giao tiếp giữa các dịch vụ**| Gọi HTTP trực tiếp phụ thuộc lẫn nhau | **Event-Driven qua RabbitMQ + Outbox Pattern** | Phi đồng bộ, chịu lỗi cao, loại bỏ rủi ro mất mát sự kiện (Zero Event Loss). |
 | **Ứng dụng Client** | 1 hoặc 2 Web đơn giản | **6 Ứng dụng (4 Web React + 2 Mobile Expo)** | Bao phủ 100% các bên trong chuỗi cung ứng thực tế (từ Admin, Ops đến Khách lẻ). |
 | **Tính nhất quán giá cước** | Tính toán sơ sài trên frontend | **Unified Pricing Engine chuẩn IATA V/6000** | Đồng nhất 100% kết quả tính cước giữa Web, Mobile và AI Chatbot. |
-| **Quy trình xử lý ngoại lệ** | Chỉ có 2 trạng thái Giao/Hủy | **4 Chu trình ngoại lệ: NDR, Hoàn cấn trừ COD, Bồi thường Điều 25 Luật Bưu chính** | Đóng kín bài toán thất thoát tài chính và pháp lý tranh chấp bưu gửi thực tế. |
+| **Quy trình xử lý ngoại lệ** | Chỉ có 2 trạng thái Giao/Hủy | **4 Chu trình ngoại lệ: NDR, Hoàn cấn trừ COD, Bồi thường Điều 25 NĐ 47 &amp; Điều 40 Luật Bưu chính** | Đóng kín bài toán thất thoát tài chính và pháp lý tranh chấp bưu gửi thực tế. |
 | **Trí tuệ nhân tạo (AI)** | Gọi API OpenAI đơn giản không ngữ cảnh | **Microservice AI riêng biệt + Hybrid RAG + 5 Tools** | Trả lời chính xác 100% nghiệp vụ bưu chính, không bị ảo giác (hallucination). |
 | **Khả năng hoạt động ngoại tuyến** | Mất mạng là app báo lỗi, dừng thao tác | **Offline Queue trên Mobile + Idempotency Record** | Shipper vẫn quét hàng bình thường trong tầng hầm, mạng có lại tự động đồng bộ. |
 

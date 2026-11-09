@@ -9,20 +9,27 @@ import { StatusBadge } from './StatusBadge';
 
 import { printOrShareShippingLabel } from '../services/shippingLabelPrinter';
 
-interface OrderCardProps {
+export interface OrderCardProps {
   order: OrderModel;
   onPressDetail: (order: OrderModel) => void;
+  onPressCancel?: (order: OrderModel) => void;
 }
 
 function formatVnd(val: number): string {
   return new Intl.NumberFormat('vi-VN').format(val) + 'đ';
 }
 
-export function OrderCard({ order, onPressDetail }: OrderCardProps): React.JSX.Element {
+export function OrderCard({ order, onPressDetail, onPressCancel }: OrderCardProps): React.JSX.Element {
   const senderAddressText =
     order.sender.composedAddress || order.sender.addressDetail || 'Chưa có địa chỉ gửi';
   const receiverAddressText =
     order.receiver.composedAddress || order.receiver.addressDetail || 'Chưa có địa chỉ nhận';
+
+  const canCancel =
+    order.category === 'SENT' &&
+    !['DELIVERED', 'COMPLETED', 'RETURN_STARTED', 'RETURN_COMPLETED', 'RETURNED', 'RETURNING', 'CANCELLED', 'DELIVERING', 'OUT_FOR_DELIVERY'].includes(
+      String(order.status).toUpperCase(),
+    );
 
   const handlePrint = async () => {
     try {
@@ -118,6 +125,17 @@ export function OrderCard({ order, onPressDetail }: OrderCardProps): React.JSX.E
         </Text>
 
         <View style={styles.footerActions}>
+          {canCancel && onPressCancel ? (
+            <TouchableOpacity
+              activeOpacity={0.7}
+              onPress={() => onPressCancel(order)}
+              style={styles.cancelChipBtn}
+            >
+              <Ionicons name="close-circle-outline" size={14} color="#DC2626" />
+              <Text style={styles.cancelChipText}>Hủy đơn</Text>
+            </TouchableOpacity>
+          ) : null}
+
           <TouchableOpacity
             activeOpacity={0.7}
             onPress={handlePrint}
@@ -260,6 +278,22 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
+  },
+  cancelChipBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FEF2F2',
+    borderWidth: 1,
+    borderColor: '#FECDD3',
+    paddingHorizontal: 8,
+    paddingVertical: 5,
+    borderRadius: 8,
+    gap: 4,
+  },
+  cancelChipText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#DC2626',
   },
   printChipBtn: {
     flexDirection: 'row',

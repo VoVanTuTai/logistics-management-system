@@ -323,21 +323,13 @@ function TrackingPage() {
     if (initialCode) {
       const codeTrimmed = initialCode.trim().toUpperCase();
       setTrackingCode(codeTrimmed);
-      if (token || initialPhone) {
-        doSearch(codeTrimmed, initialPhone || (token ? (phone || undefined) : undefined));
-      }
+      doSearch(codeTrimmed, initialPhone || (token ? (phone || undefined) : undefined));
     }
   }, [routeCode, searchParams, token, phone]);
 
   const doSearch = async (code: string, phoneInput?: string) => {
     if (!code) return;
     const phoneToUse = (phoneInput !== undefined ? phoneInput : receiverPhone).trim();
-
-    // Security check: Guest users must supply receiver phone
-    if (!token && !phoneToUse) {
-      setSearchError('Theo chính sách bảo mật bưu gửi, quý khách chưa đăng nhập vui lòng nhập cả mã vận đơn và số điện thoại người nhận.');
-      return;
-    }
 
     setIsSearching(true);
     setSearchError(null);
@@ -348,7 +340,7 @@ function TrackingPage() {
         token,
         phoneToUse || (token ? (phone || undefined) : undefined),
       );
-      if (data.requiresReceiverPhone) {
+      if (data.requiresReceiverPhone && !data.order && !data.current) {
         setSearchResult(data);
         setSearchError('Đơn hàng yêu cầu xác thực số điện thoại người nhận để mở khóa chi tiết.');
       } else if (!data.current && data.timeline.length === 0 && !data.order) {
@@ -356,6 +348,12 @@ function TrackingPage() {
         setSearchResult(null);
       } else {
         setSearchResult(data);
+        try {
+          sessionStorage.setItem('nexus_last_tracked_code', code);
+        } catch {}
+        if (!token && !phoneToUse && data.requiresReceiverPhone) {
+          setSearchError('Thông tin cá nhân đang được ẩn theo chuẩn bảo mật PII. Nhập SĐT người nhận để mở khóa chi tiết.');
+        }
         const nextParams: Record<string, string> = { track: code };
         if (!token && phoneToUse) {
           nextParams.phone = phoneToUse;

@@ -99,8 +99,23 @@ const RenderFormattedMessage: React.FC<FormattedMessageProps> = ({ text, isUser 
     return <Text style={[styles.messageText, styles.messageTextUser]}>{text}</Text>;
   }
 
-  // 1. Tiền xử lý: dọn sạch hoàn toàn các dấu backticks thừa và dấu sao thô
+  // 1. Tiền xử lý: chuẩn hóa công thức toán LaTeX sang văn bản thuần túy, dọn sạch backticks và dấu sao thô
   const cleanText = text
+    .replace(/\\frac\{([^}]+)\}\{([^}]+)\}/g, '($1) / $2')
+    .replace(/\\(?:text|mathrm|mathbf|textit)\{([^}]*)\}/g, '$1')
+    .replace(/\\times\b/g, 'x')
+    .replace(/\\cdot\b/g, 'x')
+    .replace(/\\div\b/g, '/')
+    .replace(/\\le\b/g, '<=')
+    .replace(/\\ge\b/g, '>=')
+    .replace(/\$\$([\s\S]*?)\$\$/g, '$1')
+    .replace(/\\\[([\s\S]*?)\\\]/g, '$1')
+    .replace(/\\\(([\s\S]*?)\\\)/g, '$1')
+    .replace(/\$([^\$\n]+)\$/g, '$1')
+    .replace(/\/\s*6\.000\b/g, '/ 6000')
+    .replace(/\((\d+(?:\.\d+)?)\s*x\s*(\d+(?:\.\d+)?)\s*x\s*(\d+(?:\.\d+)?)\)\s*\/\s*6000/g, '($1x$2x$3)/6000')
+    .replace(/(?:^|[^\w(])(\d+(?:\.\d+)?)\s*x\s*(\d+(?:\.\d+)?)\s*x\s*(\d+(?:\.\d+)?)\s*\/\s*6000/g, ' ($1x$2x$3)/6000')
+    .replace(/\\([a-zA-Z]+)/g, '$1')
     .replace(/`([^`]+)`/g, '$1')
     .replace(/`/g, '')
     .replace(/\*{3,}/g, '**')
@@ -219,6 +234,23 @@ export function FloatingAiChatModal({ visible, onClose }: FloatingAiChatModalPro
   }, [currentUserId]);
 
   const scrollViewRef = useRef<ScrollView>(null);
+  const [conversationId, setConversationId] = useState<string | null>(null);
+
+  const getLastTrackedShipmentCode = (): string | undefined => {
+    for (let i = messages.length - 1; i >= 0; i--) {
+      const msg = messages[i];
+      if (msg.shipmentCards && msg.shipmentCards.length > 0) {
+        return msg.shipmentCards[0].code;
+      }
+      const formalMatch = msg.text.match(/\b(101\d{9}|111\d{9}|333\d{9}|222\d{9}|NX[-_]?[A-Z0-9]{4,16}|SPX[A-Z0-9]+|VN\d+[A-Z0-9]*|DH\d+)\b/i);
+      if (formalMatch) return formalMatch[0].toUpperCase();
+      const numMatch = msg.text.match(/\b\d{10,15}\b/);
+      if (numMatch && !/^0[35789]\d{8}$/.test(numMatch[0])) {
+        return numMatch[0];
+      }
+    }
+    return undefined;
+  };
 
   const scrollToBottom = () => {
     setTimeout(() => {
@@ -252,10 +284,13 @@ export function FloatingAiChatModal({ visible, onClose }: FloatingAiChatModalPro
     try {
       // 1. Thử gọi trực tiếp Gateway BFF qua customerApiClient, nếu lỗi tự động gọi thẳng Chatbot Service (:3013)
       const currentUser = authStore.getUser();
+      const lastShipmentCode = getLastTrackedShipmentCode();
       const requestPayload = {
+        conversationId: conversationId || undefined,
+        selectedShipmentCode: lastShipmentCode,
         message: query,
         userId: currentUser?.id || currentUser?.phone,
-        senderRole: 'CUSTOMER',
+        senderRole: currentUser ? 'CUSTOMER' : 'GUEST',
       };
 
       let answerData: any = null;
@@ -295,6 +330,9 @@ export function FloatingAiChatModal({ visible, onClose }: FloatingAiChatModalPro
       }
 
       if (answerData && answerData.answer) {
+        if (answerData.conversationId) {
+          setConversationId(answerData.conversationId);
+        }
         const botMsg: ChatMessage = {
           id: 'bot_' + Date.now(),
           sender: 'bot',
@@ -334,9 +372,9 @@ export function FloatingAiChatModal({ visible, onClose }: FloatingAiChatModalPro
           `Quy trình xử lý sự cố hàng hư hỏng / bể vỡ theo Quy chuẩn Vận hành Nexus Logistics:\n\n` +
           `1. Khi nhận hàng: Quý khách đồng kiểm với bưu tá, yêu cầu lập Biên bản bất thường tại chỗ (chụp ảnh 4 góc và quay video bưu phẩm nứt vỡ) và từ chối nhận hàng (không thanh toán bất kỳ chi phí nào).\n` +
           `2. Hạn mức bồi thường:\n` +
-          `• Gói Tiêu chuẩn: Bồi thường tối đa 04 lần cước vận chuyển (không quá 1.000.000 VNĐ/đơn theo Luật Bưu chính).\n` +
-          `• Gói Bảo hiểm khai giá: Đền bù 100% giá trị tổn thất thực tế theo hóa đơn, trần tối đa 30.000.000 VNĐ/đơn.\n` +
-          `3. Thời hạn giải quyết: Thẩm định trong 24h - 48h, hoàn tất chi trả bồi thường trong 03 - 05 ngày làm việc.\n\n` +
+          `• Gói Tiêu chuẩn: Bồi thường 04 lần cước vận chuyển (theo Điều 25 Nghị định 47 & Điều 40 Luật Bưu chính; trần tối đa 1.000.000 VNĐ/đơn theo Chính sách công ty).\n` +
+          `• Gói Bảo hiểm khai giá: Đền bù 100% giá trị tổn thất thực tế theo hóa đơn (trần tối đa 30.000.000 VNĐ/đơn theo Chính sách bảo hiểm công ty).\n` +
+          `3. Thời hạn giải quyết (theo cam kết dịch vụ công ty): Thẩm định trong 24h - 48h, hoàn tất chi trả bồi thường trong 03 - 05 ngày làm việc.\n\n` +
           `Quý khách có thể xem chi tiết tại Chính sách & Quy định dịch vụ của chúng tôi.`;
       } else if (isClaimQuery) {
         toolsUsed = ['trackClaimStatus(CLM-Policy)'];
