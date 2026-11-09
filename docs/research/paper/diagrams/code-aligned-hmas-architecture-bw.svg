@@ -1,0 +1,375 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2400 1600" width="2400" height="1600">
+  <defs>
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800;900&amp;family=JetBrains+Mono:wght@700;800&amp;display=swap');
+      * { box-sizing: border-box; }
+      text { font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif; }
+      .title { font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 900; }
+      .mono { font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace; font-weight: 800; }
+    </style>
+
+    <!-- Black Marker Arrowhead -->
+    <marker id="arr-black" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8.5 5 L 0 8.5 z" fill="#000000" />
+    </marker>
+  </defs>
+
+  <!-- PURE CLEAN WHITE BACKGROUND -->
+  <rect width="2400" height="1600" fill="#FFFFFF"/>
+
+  <!-- TOP TITLE -->
+  <g transform="translate(1200, 55)">
+    <text x="0" y="0" class="title" font-size="34" font-weight="900" fill="#000000" text-anchor="middle" letter-spacing="-0.01em">
+      Heterogeneous Multi-Agent Logistics System
+    </text>
+    <text x="0" y="28" font-size="14" font-weight="800" fill="#475569" text-anchor="middle" letter-spacing="0.05em">
+      DUAL-ANCHOR GROUNDING (HYBRID RAG + PARAMETERIZED TOOLS) • INDEPENDENT CRITIC GATEKEEPER
+    </text>
+  </g>
+
+  <!-- =========================================================================
+       CENTER OVAL: LANGGRAPH HMAS ORCHESTRATOR (SUPERVISOR AGENT)
+       ========================================================================= -->
+  <g transform="translate(1200, 830)">
+    <!-- Outer hand-drawn double ring -->
+    <ellipse cx="0" cy="0" rx="310" ry="110" fill="#F1F5F9" stroke="#000000" stroke-width="3.5"/>
+    <ellipse cx="0" cy="0" rx="298" ry="98" fill="#FFFFFF" stroke="#000000" stroke-width="1.8" stroke-dasharray="6,4"/>
+
+    <!-- Text content inside center oval (NO commercial vendor name!) -->
+    <text x="0" y="-22" class="title" font-size="25" font-weight="900" fill="#000000" text-anchor="middle">
+      LangGraph HMAS Orchestrator
+    </text>
+    <text x="0" y="12" font-size="16" font-weight="800" fill="#1E293B" text-anchor="middle">
+      (Supervisor Agent - Finite State Machine)
+    </text>
+    <text x="0" y="38" class="mono" font-size="13" font-weight="800" fill="#475569" text-anchor="middle">
+      sessions: Map&lt;conversationId, ChatSessionContext&gt;
+    </text>
+    <text x="0" y="62" font-size="12.5" font-weight="700" fill="#64748B" text-anchor="middle">
+      handleMessage() • streamMessage() via SSE
+    </text>
+  </g>
+
+  <!-- =========================================================================
+       TOP CLUSTER: KNOWLEDGE RETRIEVAL & HYBRID RAG
+       ========================================================================= -->
+  <g transform="translate(1200, 140)">
+    <!-- Hand-Drawn Icon: Postal SOP Manual Book + Magnifying Glass -->
+    <g transform="translate(-55, 0)">
+      <!-- Book -->
+      <rect x="-35" y="0" width="70" height="90" rx="6" fill="#F8FAFC" stroke="#000000" stroke-width="3.2"/>
+      <line x1="-35" y1="18" x2="35" y2="18" stroke="#000000" stroke-width="2.2"/>
+      <line x1="-25" y1="36" x2="25" y2="36" stroke="#000000" stroke-width="2.0"/>
+      <line x1="-25" y1="52" x2="25" y2="52" stroke="#000000" stroke-width="2.0"/>
+      <line x1="-25" y1="68" x2="15" y2="68" stroke="#000000" stroke-width="2.0"/>
+      <text x="0" y="42" font-size="9" font-weight="900" fill="#000000" text-anchor="middle">SOP</text>
+    </g>
+    <g transform="translate(45, 35)">
+      <!-- Magnifying Glass -->
+      <circle cx="0" cy="0" r="28" fill="#FFFFFF" stroke="#000000" stroke-width="3.2"/>
+      <circle cx="0" cy="0" r="22" fill="#F1F5F9" stroke="#000000" stroke-width="1.5" stroke-dasharray="3,3"/>
+      <line x1="20" y1="20" x2="42" y2="42" stroke="#000000" stroke-width="4.0" stroke-linecap="round"/>
+    </g>
+
+    <!-- Cluster Title -->
+    <text x="0" y="125" class="title" font-size="19" font-weight="900" fill="#000000" text-anchor="middle">
+      Knowledge Retrieval &amp; Hybrid RAG
+    </text>
+    <text x="0" y="145" class="mono" font-size="12" font-weight="700" fill="#64748B" text-anchor="middle">
+      VectorStoreService • hybridSearch()
+    </text>
+
+    <!-- Sub-Labels on Right with curving arrows -->
+    <!-- Label 1: 9 Carrier SOPs -->
+    <g transform="translate(130, -10)">
+      <rect x="25" y="-14" width="160" height="30" rx="8" fill="#FFFFFF" stroke="#000000" stroke-width="2.0"/>
+      <text x="105" y="6" font-size="12" font-weight="800" fill="#000000" text-anchor="middle">9 Carrier SOPs</text>
+      <!-- Small curved branching arrow stopping 6px before box border -->
+      <path d="M -15 35 C 0 10, 10 2, 19 2" fill="none" stroke="#000000" stroke-width="2.2" marker-end="url(#arr-black)"/>
+    </g>
+
+    <!-- Label 2: Decree 47 & Postal Law -->
+    <g transform="translate(130, 35)">
+      <rect x="25" y="-14" width="200" height="30" rx="8" fill="#FFFFFF" stroke="#000000" stroke-width="2.0"/>
+      <text x="125" y="6" font-size="12" font-weight="800" fill="#000000" text-anchor="middle">Decree 47 &amp; Postal Law</text>
+      <path d="M -15 0 C 0 0, 10 2, 19 2" fill="none" stroke="#000000" stroke-width="2.2" marker-end="url(#arr-black)"/>
+    </g>
+
+    <!-- Label 3: Dual MRL & BM25 -->
+    <g transform="translate(130, 80)">
+      <rect x="25" y="-14" width="180" height="30" rx="8" fill="#FFFFFF" stroke="#000000" stroke-width="2.0"/>
+      <text x="115" y="6" font-size="12" font-weight="800" fill="#000000" text-anchor="middle">Dual MRL &amp; BM25</text>
+      <path d="M -15 -15 C 0 5, 10 2, 19 2" fill="none" stroke="#000000" stroke-width="2.2" marker-end="url(#arr-black)"/>
+    </g>
+
+    <!-- Label 4: Stacked Candidates -->
+    <g transform="translate(130, 125)">
+      <rect x="25" y="-14" width="170" height="30" rx="8" fill="#FFFFFF" stroke="#000000" stroke-width="2.0"/>
+      <text x="110" y="6" font-size="12" font-weight="800" fill="#000000" text-anchor="middle">Stacked Candidates</text>
+      <path d="M -15 -35 C 0 10, 10 2, 19 2" fill="none" stroke="#000000" stroke-width="2.2" marker-end="url(#arr-black)"/>
+    </g>
+  </g>
+
+  <!-- =========================================================================
+       TOP-RIGHT CLUSTER: OPERATIONAL TOOL EXECUTION
+       ========================================================================= -->
+  <g transform="translate(1860, 420)">
+    <!-- Hand-Drawn Icon: Parcel Box with Packaging Tape + Gears -->
+    <g transform="translate(-40, 0)">
+      <!-- 3D-ish isometric carton box -->
+      <polygon points="0,0 55,-25 110,0 55,25" fill="#F8FAFC" stroke="#000000" stroke-width="3.2"/>
+      <polygon points="0,0 55,25 55,85 0,60" fill="#E2E8F0" stroke="#000000" stroke-width="3.2"/>
+      <polygon points="110,0 55,25 55,85 110,60" fill="#CBD5E1" stroke="#000000" stroke-width="3.2"/>
+      <!-- Tape -->
+      <line x1="27" y1="-12" x2="82" y2="12" stroke="#000000" stroke-width="3.0"/>
+    </g>
+    <!-- Gear icon -->
+    <g transform="translate(90, 45)">
+      <circle cx="0" cy="0" r="22" fill="#FFFFFF" stroke="#000000" stroke-width="3.0"/>
+      <circle cx="0" cy="0" r="8" fill="#000000"/>
+      <path d="M -4,-28 L 4,-28 L 3,-22 L -3,-22 z M -4,28 L 4,28 L 3,22 L -3,22 z M -28,-4 L -28,4 L -22,3 L -22,-3 z M 28,-4 L 28,4 L 22,3 L 22,-3 z" fill="#000000"/>
+    </g>
+
+    <!-- Cluster Title -->
+    <text x="10" y="115" class="title" font-size="19" font-weight="900" fill="#000000" text-anchor="middle">
+      Operational Tool Execution
+    </text>
+    <text x="10" y="135" class="mono" font-size="12" font-weight="700" fill="#64748B" text-anchor="middle">
+      LogisticsToolsService
+    </text>
+
+    <!-- Sub-Labels on Right with curving arrows -->
+    <!-- Label 1: Live Tracking API -->
+    <g transform="translate(140, -40)">
+      <rect x="25" y="-14" width="160" height="30" rx="8" fill="#FFFFFF" stroke="#000000" stroke-width="2.0"/>
+      <text x="105" y="6" font-size="12" font-weight="800" fill="#000000" text-anchor="middle">Live Tracking API</text>
+      <path d="M -15 30 C 0 5, 10 2, 19 2" fill="none" stroke="#000000" stroke-width="2.2" marker-end="url(#arr-black)"/>
+    </g>
+
+    <!-- Label 2: IATA Volumetric Pricing -->
+    <g transform="translate(140, 8)">
+      <rect x="25" y="-14" width="200" height="30" rx="8" fill="#FFFFFF" stroke="#000000" stroke-width="2.0"/>
+      <text x="125" y="6" font-size="12" font-weight="800" fill="#000000" text-anchor="middle">IATA Volumetric Pricing</text>
+      <path d="M -15 0 C 0 0, 10 2, 19 2" fill="none" stroke="#000000" stroke-width="2.2" marker-end="url(#arr-black)"/>
+    </g>
+
+    <!-- Label 3: Action Draft DTO -->
+    <g transform="translate(140, 56)">
+      <rect x="25" y="-14" width="160" height="30" rx="8" fill="#FFFFFF" stroke="#000000" stroke-width="2.0"/>
+      <text x="105" y="6" font-size="12" font-weight="800" fill="#000000" text-anchor="middle">Action Draft DTO</text>
+      <path d="M -15 -10 C 0 5, 10 2, 19 2" fill="none" stroke="#000000" stroke-width="2.2" marker-end="url(#arr-black)"/>
+    </g>
+
+    <!-- Label 4: 24h Dispute Claims -->
+    <g transform="translate(140, 104)">
+      <rect x="25" y="-14" width="180" height="30" rx="8" fill="#FFFFFF" stroke="#000000" stroke-width="2.0"/>
+      <text x="115" y="6" font-size="12" font-weight="800" fill="#000000" text-anchor="middle">24h Dispute Claims</text>
+      <path d="M -15 -30 C 0 10, 10 2, 19 2" fill="none" stroke="#000000" stroke-width="2.2" marker-end="url(#arr-black)"/>
+    </g>
+  </g>
+
+  <!-- =========================================================================
+       BOTTOM-RIGHT CLUSTER: VALIDATION CRITIC & HITL GATE
+       ========================================================================= -->
+  <g transform="translate(1860, 1140)">
+    <!-- Hand-Drawn Icon: Shield with Checkmark + Official Stamp -->
+    <g transform="translate(-40, -10)">
+      <!-- Shield -->
+      <path d="M 0,-25 Q 35,-30 45,0 Q 45,45 0,65 Q -45,45 -45,0 Q -35,-30 0,-25 Z" fill="#F8FAFC" stroke="#000000" stroke-width="3.2"/>
+      <!-- Checkmark -->
+      <path d="M -15,10 L -4,22 L 20,-6" fill="none" stroke="#000000" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+    </g>
+    <!-- Stamp Icon -->
+    <g transform="translate(55, 10)">
+      <ellipse cx="0" cy="22" rx="25" ry="10" fill="#FFFFFF" stroke="#000000" stroke-width="2.8"/>
+      <path d="M -16,22 L -12,-5 L 12,-5 L 16,22 Z" fill="#E2E8F0" stroke="#000000" stroke-width="2.8"/>
+      <circle cx="0" cy="-14" r="12" fill="#FFFFFF" stroke="#000000" stroke-width="2.8"/>
+    </g>
+
+    <!-- Cluster Title -->
+    <text x="10" y="95" class="title" font-size="19" font-weight="900" fill="#000000" text-anchor="middle">
+      Validation Critic &amp; HITL Gate
+    </text>
+    <text x="10" y="115" class="mono" font-size="12" font-weight="700" fill="#64748B" text-anchor="middle">
+      callValidationAgent • requiresHITL
+    </text>
+
+    <!-- Sub-Labels on Right with curving arrows -->
+    <!-- Label 1: Physical Limits (<=70kg) -->
+    <g transform="translate(140, -50)">
+      <rect x="25" y="-14" width="200" height="30" rx="8" fill="#FFFFFF" stroke="#000000" stroke-width="2.0"/>
+      <text x="125" y="6" font-size="12" font-weight="800" fill="#000000" text-anchor="middle">Physical Limits (&lt;=70kg)</text>
+      <path d="M -15 35 C 0 10, 10 2, 19 2" fill="none" stroke="#000000" stroke-width="2.2" marker-end="url(#arr-black)"/>
+    </g>
+
+    <!-- Label 2: Dangerous Goods Block -->
+    <g transform="translate(140, -2)">
+      <rect x="25" y="-14" width="200" height="30" rx="8" fill="#FFFFFF" stroke="#000000" stroke-width="2.0"/>
+      <text x="125" y="6" font-size="12" font-weight="800" fill="#000000" text-anchor="middle">Dangerous Goods Block</text>
+      <path d="M -15 0 C 0 0, 10 2, 19 2" fill="none" stroke="#000000" stroke-width="2.2" marker-end="url(#arr-black)"/>
+    </g>
+
+    <!-- Label 3: COD Fraud Check (>=15M) -->
+    <g transform="translate(140, 46)">
+      <rect x="25" y="-14" width="200" height="30" rx="8" fill="#FFFFFF" stroke="#000000" stroke-width="2.0"/>
+      <text x="125" y="6" font-size="12" font-weight="800" fill="#000000" text-anchor="middle">COD Fraud Check (&gt;=15M)</text>
+      <path d="M -15 -10 C 0 5, 10 2, 19 2" fill="none" stroke="#000000" stroke-width="2.2" marker-end="url(#arr-black)"/>
+    </g>
+
+    <!-- Label 4: Human-in-the-Loop Interrupt -->
+    <g transform="translate(140, 94)">
+      <rect x="25" y="-14" width="220" height="30" rx="8" fill="#FFFFFF" stroke="#000000" stroke-width="2.0"/>
+      <text x="135" y="6" font-size="12" font-weight="800" fill="#000000" text-anchor="middle">Human-in-the-Loop Interrupt</text>
+      <path d="M -15 -35 C 0 10, 10 2, 19 2" fill="none" stroke="#000000" stroke-width="2.2" marker-end="url(#arr-black)"/>
+    </g>
+  </g>
+
+  <!-- =========================================================================
+       BOTTOM-LEFT CLUSTER: CORE BACKEND MESH & STORAGE
+       ========================================================================= -->
+  <g transform="translate(540, 1140)">
+    <!-- Hand-Drawn Icon: Microservices Fork + Database Cylinders -->
+    <g transform="translate(35, -5)">
+      <!-- Database Cylinders -->
+      <!-- Top disk -->
+      <ellipse cx="0" cy="-20" rx="42" ry="14" fill="#FFFFFF" stroke="#000000" stroke-width="3.0"/>
+      <!-- Body 1 -->
+      <path d="M -42,-20 L -42,5 A 42,14 0 0,0 42,5 L 42,-20" fill="#F8FAFC" stroke="#000000" stroke-width="3.0"/>
+      <!-- Body 2 -->
+      <path d="M -42,5 L -42,30 A 42,14 0 0,0 42,30 L 42,5" fill="#E2E8F0" stroke="#000000" stroke-width="3.0"/>
+      <!-- Stripe lines -->
+      <line x1="-30" y1="18" x2="30" y2="18" stroke="#000000" stroke-width="2.0"/>
+    </g>
+    <!-- Fork node icon -->
+    <g transform="translate(-45, 0)">
+      <circle cx="-15" cy="-25" r="12" fill="#FFFFFF" stroke="#000000" stroke-width="2.8"/>
+      <circle cx="15" cy="-25" r="12" fill="#FFFFFF" stroke="#000000" stroke-width="2.8"/>
+      <circle cx="0" cy="25" r="12" fill="#F1F5F9" stroke="#000000" stroke-width="2.8"/>
+      <path d="M -15,-13 C -15,5 0,5 0,13" fill="none" stroke="#000000" stroke-width="2.8"/>
+      <path d="M 15,-13 C 15,5 0,5 0,13" fill="none" stroke="#000000" stroke-width="2.8"/>
+    </g>
+
+    <!-- Cluster Title -->
+    <text x="0" y="95" class="title" font-size="19" font-weight="900" fill="#000000" text-anchor="middle">
+      Core Backend Mesh &amp; Storage
+    </text>
+    <text x="0" y="115" class="mono" font-size="12" font-weight="700" fill="#64748B" text-anchor="middle">
+      PostgreSQL • pgvector • MinIO
+    </text>
+
+    <!-- Sub-Labels on Left with curving arrows -->
+    <!-- Label 1: API Gateway BFF -->
+    <g transform="translate(-140, -50)">
+      <rect x="-185" y="-14" width="160" height="30" rx="8" fill="#FFFFFF" stroke="#000000" stroke-width="2.0"/>
+      <text x="-105" y="6" font-size="12" font-weight="800" fill="#000000" text-anchor="middle">API Gateway BFF</text>
+      <!-- Small curved branching arrow stopping 6px before right border (-25) -->
+      <path d="M 15 35 C 0 10, -10 2, -19 2" fill="none" stroke="#000000" stroke-width="2.2" marker-end="url(#arr-black)"/>
+    </g>
+
+    <!-- Label 2: PostgreSQL + pgvector -->
+    <g transform="translate(-140, -2)">
+      <rect x="-215" y="-14" width="190" height="30" rx="8" fill="#FFFFFF" stroke="#000000" stroke-width="2.0"/>
+      <text x="-120" y="6" font-size="12" font-weight="800" fill="#000000" text-anchor="middle">PostgreSQL + pgvector</text>
+      <path d="M 15 0 C 0 0, -10 2, -19 2" fill="none" stroke="#000000" stroke-width="2.2" marker-end="url(#arr-black)"/>
+    </g>
+
+    <!-- Label 3: ai_agent_audit_logs -->
+    <g transform="translate(-140, 46)">
+      <rect x="-215" y="-14" width="190" height="30" rx="8" fill="#FFFFFF" stroke="#000000" stroke-width="2.0"/>
+      <text x="-120" y="6" font-size="12" font-weight="800" fill="#000000" text-anchor="middle">ai_agent_audit_logs</text>
+      <path d="M 15 -10 C 0 5, -10 2, -19 2" fill="none" stroke="#000000" stroke-width="2.2" marker-end="url(#arr-black)"/>
+    </g>
+
+    <!-- Label 4: MinIO S3 Evidence -->
+    <g transform="translate(-140, 94)">
+      <rect x="-195" y="-14" width="170" height="30" rx="8" fill="#FFFFFF" stroke="#000000" stroke-width="2.0"/>
+      <text x="-110" y="6" font-size="12" font-weight="800" fill="#000000" text-anchor="middle">MinIO S3 Evidence</text>
+      <path d="M 15 -35 C 0 10, -10 2, -19 2" fill="none" stroke="#000000" stroke-width="2.2" marker-end="url(#arr-black)"/>
+    </g>
+  </g>
+
+  <!-- =========================================================================
+       TOP-LEFT CLUSTER: CLIENT TOUCHPOINTS & PII MASKING
+       ========================================================================= -->
+  <g transform="translate(540, 420)">
+    <!-- Hand-Drawn Icon: Desktop Computer Monitor + Smartphone with Lock -->
+    <g transform="translate(-30, 0)">
+      <!-- Monitor -->
+      <rect x="-55" y="-35" width="110" height="70" rx="8" fill="#FFFFFF" stroke="#000000" stroke-width="3.2"/>
+      <line x1="-55" y1="20" x2="55" y2="20" stroke="#000000" stroke-width="2.0"/>
+      <rect x="-10" y="35" width="20" height="20" fill="#E2E8F0" stroke="#000000" stroke-width="2.5"/>
+      <line x1="-25" y1="55" x2="25" y2="55" stroke="#000000" stroke-width="3.2" stroke-linecap="round"/>
+    </g>
+    <!-- Smartphone with Lock -->
+    <g transform="translate(50, 5)">
+      <rect x="-18" y="-30" width="36" height="65" rx="6" fill="#F8FAFC" stroke="#000000" stroke-width="2.8"/>
+      <circle cx="0" cy="27" r="3" fill="#000000"/>
+      <!-- Small Lock on screen -->
+      <rect x="-7" y="-5" width="14" height="12" rx="2" fill="#000000"/>
+      <path d="M -4,-5 L -4,-10 A 4,4 0 0,1 4,-10 L 4,-5" fill="none" stroke="#000000" stroke-width="2.0"/>
+    </g>
+
+    <!-- Cluster Title -->
+    <text x="0" y="115" class="title" font-size="19" font-weight="900" fill="#000000" text-anchor="middle">
+      Client Touchpoints &amp; PII Masking
+    </text>
+    <text x="0" y="135" class="mono" font-size="12" font-weight="700" fill="#64748B" text-anchor="middle">
+      normalizePhone() • Cryptographic Redaction
+    </text>
+
+    <!-- Sub-Labels on Left with curving arrows -->
+    <!-- Label 1: CSKH Support Console -->
+    <g transform="translate(-140, -40)">
+      <rect x="-215" y="-14" width="190" height="30" rx="8" fill="#FFFFFF" stroke="#000000" stroke-width="2.0"/>
+      <text x="-120" y="6" font-size="12" font-weight="800" fill="#000000" text-anchor="middle">CSKH Support Console</text>
+      <path d="M 15 30 C 0 5, -10 2, -19 2" fill="none" stroke="#000000" stroke-width="2.2" marker-end="url(#arr-black)"/>
+    </g>
+
+    <!-- Label 2: Customer Mobile (iOS/Android) -->
+    <g transform="translate(-140, 8)">
+      <rect x="-245" y="-14" width="220" height="30" rx="8" fill="#FFFFFF" stroke="#000000" stroke-width="2.0"/>
+      <text x="-135" y="6" font-size="12" font-weight="800" fill="#000000" text-anchor="middle">Customer Mobile (iOS/Android)</text>
+      <path d="M 15 0 C 0 0, -10 2, -19 2" fill="none" stroke="#000000" stroke-width="2.2" marker-end="url(#arr-black)"/>
+    </g>
+
+    <!-- Label 3: Guest Tracking Portal -->
+    <g transform="translate(-140, 56)">
+      <rect x="-215" y="-14" width="190" height="30" rx="8" fill="#FFFFFF" stroke="#000000" stroke-width="2.0"/>
+      <text x="-120" y="6" font-size="12" font-weight="800" fill="#000000" text-anchor="middle">Guest Tracking Portal</text>
+      <path d="M 15 -10 C 0 5, -10 2, -19 2" fill="none" stroke="#000000" stroke-width="2.2" marker-end="url(#arr-black)"/>
+    </g>
+
+    <!-- Label 4: PII Masking (0912***) -->
+    <g transform="translate(-140, 104)">
+      <rect x="-225" y="-14" width="200" height="30" rx="8" fill="#FFFFFF" stroke="#000000" stroke-width="2.0"/>
+      <text x="-125" y="6" font-size="12" font-weight="800" fill="#000000" text-anchor="middle">PII Masking (0912***)</text>
+      <path d="M 15 -30 C 0 10, -10 2, -19 2" fill="none" stroke="#000000" stroke-width="2.2" marker-end="url(#arr-black)"/>
+    </g>
+  </g>
+
+  <!-- =========================================================================
+       CLEAN CURVED DASHED ARROWS FROM CENTER OVAL (ZERO OVERLAPPING GUARANTEED)
+       Every arrow has dedicated open-air coordinates with at least 50px clearance!
+       ========================================================================= -->
+  <g fill="none" stroke="#000000" stroke-width="2.8" stroke-dasharray="7,5" stroke-linecap="round">
+    <!-- Center to Top (Knowledge RAG) -->
+    <!-- Start: (1200, 715), End: (1200, 325) - 40px clearance below subtitle -->
+    <path d="M 1200,715 L 1200,325" marker-end="url(#arr-black)"/>
+
+    <!-- Center to Top-Right (Operational Tools) -->
+    <!-- Curves gracefully to (1680, 460) aimed at carton/gears icon, well above text at y=535 -->
+    <path d="M 1440,765 Q 1580,680 1680,460" marker-end="url(#arr-black)"/>
+
+    <!-- Center to Bottom-Right (Validation Critic) -->
+    <!-- Curves to (1700, 1130), 115px away from shield and well above text at y=1235 -->
+    <path d="M 1440,895 Q 1580,960 1700,1130" marker-end="url(#arr-black)"/>
+
+    <!-- Center to Bottom-Left (Core Backend Mesh) -->
+    <!-- Curves to (700, 1130), 83px away from DB cylinders and well above text at y=1235 -->
+    <path d="M 960,895 Q 820,960 700,1130" marker-end="url(#arr-black)"/>
+
+    <!-- Center to Top-Left (Client Touchpoints) -->
+    <!-- Curves gracefully to (720, 450) aimed at monitor/smartphone icon, 112px away and well above text at y=535 -->
+    <path d="M 960,765 Q 820,680 720,450" marker-end="url(#arr-black)"/>
+  </g>
+</svg>

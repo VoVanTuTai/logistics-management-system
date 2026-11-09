@@ -1,0 +1,337 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2400 1600" width="2400" height="1600">
+  <defs>
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800;900&amp;family=JetBrains+Mono:wght@700;800&amp;display=swap');
+      * { box-sizing: border-box; }
+      text { font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif; }
+      .title { font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 900; }
+      .mono { font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace; font-weight: 800; }
+    </style>
+
+    <marker id="arr-black-eval" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8.5 5 L 0 8.5 z" fill="#000000" />
+    </marker>
+  </defs>
+
+  <!-- PURE CLEAN WHITE BACKGROUND -->
+  <rect width="2400" height="1600" fill="#FFFFFF"/>
+
+  <!-- TOP RIBBON BANNER -->
+  <g transform="translate(1200, 70)">
+    <!-- Ribbon fold tails -->
+    <polygon points="-460,-30 -500,-10 -460,10 -480,-10" fill="#E2E8F0" stroke="#000000" stroke-width="3.0"/>
+    <polygon points="460,-30 500,-10 460,10 480,-10" fill="#E2E8F0" stroke="#000000" stroke-width="3.0"/>
+    
+    <!-- Main ribbon body -->
+    <rect x="-460" y="-36" width="920" height="72" rx="10" fill="#FFFFFF" stroke="#000000" stroke-width="3.5"/>
+    <text x="0" y="9" class="title" font-size="27" font-weight="900" fill="#000000" text-anchor="middle" letter-spacing="0.04em">
+      HELD-OUT BENCHMARK EVALUATION RESULTS (N = 70 TEST CASES)
+    </text>
+  </g>
+
+  <!-- =========================================================================
+       CENTER OVAL: OVERALL BENCHMARK SYNTHESIS
+       ========================================================================= -->
+  <g transform="translate(1200, 800)">
+    <!-- Center oval -->
+    <ellipse cx="0" cy="0" rx="320" ry="180" fill="#F8FAFC" stroke="#000000" stroke-width="3.5"/>
+    <ellipse cx="0" cy="0" rx="308" ry="168" fill="#FFFFFF" stroke="#000000" stroke-width="1.8" stroke-dasharray="6,4"/>
+
+    <!-- Gold/Pill Badge at top of oval -->
+    <rect x="-210" y="-125" width="420" height="48" rx="14" fill="#FFFFFF" stroke="#000000" stroke-width="2.5"/>
+    <text x="0" y="-93" class="title" font-size="19" font-weight="900" fill="#000000" text-anchor="middle" letter-spacing="0.03em">
+      FUNCTIONAL PASS: 84.6% (44/52)
+    </text>
+
+    <!-- Subtitle -->
+    <text x="0" y="-50" class="title" font-size="22" font-weight="900" fill="#000000" text-anchor="middle">
+      Held-Out Benchmark Synthesis
+    </text>
+
+    <!-- Bullet lines with bold black and grey -->
+    <text x="0" y="-12" font-size="14.5" font-weight="800" fill="#1E293B" text-anchor="middle">
+      • Auto Tier: 4.05 / 5.00 | Human Likert: 4.18 / 5.00
+    </text>
+    <text x="0" y="16" font-size="14.5" font-weight="800" fill="#334155" text-anchor="middle">
+      • Score Mean: 83.1 ± 17.1 pts | Median: 88.0 / 100
+    </text>
+    <text x="0" y="44" font-size="14.5" font-weight="900" fill="#000000" text-anchor="middle">
+      • Zero Regulatory Hallucinations | 0 PII Leaks
+    </text>
+    <text x="0" y="72" font-size="13" font-weight="700" fill="#475569" text-anchor="middle">
+      Wilcoxon W = 112.0 (p &lt; 0.001) • Cohen's d = 0.50
+    </text>
+    <text x="0" y="98" font-size="12" font-weight="700" fill="#64748B" text-anchor="middle">
+      Spearman ρ = 0.884 • Cohen's κ = 0.824 (Inter-Annotator)
+    </text>
+  </g>
+
+  <!-- =========================================================================
+       CARD 1: TOP-LEFT - REAL-WORLD CARRIER CORPUS (50%)
+       ========================================================================= -->
+  <g transform="translate(100, 160)">
+    <!-- Container Card (Clean white with bold black outline) -->
+    <rect width="660" height="450" rx="24" fill="#FFFFFF" stroke="#000000" stroke-width="3.5"/>
+
+    <!-- Hand-Drawn Icon: Delivery Truck + Shipping Carton Box (Matching Image 2) -->
+    <g transform="translate(60, -28)">
+      <!-- Truck Body -->
+      <rect x="0" y="0" width="90" height="60" rx="6" fill="#FFFFFF" stroke="#000000" stroke-width="3.0"/>
+      <!-- Truck Cabin -->
+      <path d="M 90,15 L 120,15 L 135,35 L 135,60 L 90,60 Z" fill="#F1F5F9" stroke="#000000" stroke-width="3.0"/>
+      <!-- Windshield -->
+      <polygon points="98,22 118,22 128,35 98,35" fill="#000000"/>
+      <!-- Wheels -->
+      <circle cx="30" cy="62" r="14" fill="#FFFFFF" stroke="#000000" stroke-width="3.0"/>
+      <circle cx="30" cy="62" r="6" fill="#000000"/>
+      <circle cx="115" cy="62" r="14" fill="#FFFFFF" stroke="#000000" stroke-width="3.0"/>
+      <circle cx="115" cy="62" r="6" fill="#000000"/>
+      <!-- Speed lines -->
+      <line x1="-30" y1="20" x2="-10" y2="20" stroke="#000000" stroke-width="3.0" stroke-linecap="round"/>
+      <line x1="-20" y1="35" x2="-5" y2="35" stroke="#000000" stroke-width="3.0" stroke-linecap="round"/>
+      <!-- Carton box next to truck -->
+      <g transform="translate(160, 15)">
+        <polygon points="0,0 25,-12 50,0 25,12" fill="#FFFFFF" stroke="#000000" stroke-width="2.5"/>
+        <polygon points="0,0 25,12 25,40 0,28" fill="#F1F5F9" stroke="#000000" stroke-width="2.5"/>
+        <polygon points="50,0 25,12 25,40 50,28" fill="#E2E8F0" stroke="#000000" stroke-width="2.5"/>
+      </g>
+    </g>
+
+    <!-- Header Text -->
+    <text x="35" y="80" class="title" font-size="20" font-weight="900" fill="#000000">
+      1. REAL-WORLD CARRIER CORPUS (n = 35)
+    </text>
+
+    <!-- Bullet items with clean spacing (NO OVERLAP) -->
+    <g transform="translate(35, 120)">
+      <text x="0" y="0" font-size="15.5" font-weight="900" fill="#000000">
+        • GHTK (10 cases): 100.0% Pass Rate (Auto Tier 4.60)
+      </text>
+      <text x="18" y="22" font-size="13" font-weight="700" fill="#475569">
+        Cosmetics packaging SOPs, fragile bubble wrap ≥3 layers, anti-scam
+      </text>
+
+      <text x="0" y="60" font-size="15.5" font-weight="900" fill="#000000">
+        • VNPost (7 cases): 100.0% Pass Rate (Auto Tier 4.57)
+      </text>
+      <text x="18" y="82" font-size="13" font-weight="700" fill="#475569">
+        Postal Law 49 secrecy &amp; force majeure, remote delivery surcharges
+      </text>
+
+      <text x="0" y="120" font-size="15.5" font-weight="900" fill="#000000">
+        • Viettel Post (7 cases): 85.7% Pass Rate (6/7, Auto Tier 4.29)
+      </text>
+      <text x="18" y="142" font-size="13" font-weight="700" fill="#475569">
+        Aviation Lithium battery bans, domestic compensation liability ceilings
+      </text>
+
+      <text x="0" y="180" font-size="15.5" font-weight="900" fill="#000000">
+        • GHN (11 cases): 63.6% Pass Rate (7/11, Auto Tier 3.36)
+      </text>
+      <text x="18" y="202" font-size="13" font-weight="700" fill="#475569">
+        Partial delivery / return edge cases, security seal thresholds &gt; 10M
+      </text>
+
+      <text x="0" y="240" font-size="15" font-weight="900" fill="#000000">
+        • Real-World Functional Pass: 85.7% (30/35 test cases)
+      </text>
+    </g>
+  </g>
+
+  <!-- =========================================================================
+       CARD 2: TOP-RIGHT - ADVERSARIAL SAFETY & OWASP (n = 18 Test + 100 Suite)
+       ========================================================================= -->
+  <g transform="translate(1640, 160)">
+    <rect width="660" height="450" rx="24" fill="#FFFFFF" stroke="#000000" stroke-width="3.5"/>
+
+    <!-- Hand-Drawn Icon: Shield with Lock (Matching Image 2) -->
+    <g transform="translate(520, -35)">
+      <path d="M 0,-15 Q 35,-20 45,10 Q 45,55 0,75 Q -45,55 -45,10 Q -35,-20 0,-15 Z" fill="#FFFFFF" stroke="#000000" stroke-width="3.2"/>
+      <!-- Inner shield ring -->
+      <path d="M 0,-8 Q 28,-12 36,12 Q 36,46 0,63 Q -36,46 -36,12 Q -28,-12 0,-8 Z" fill="#F8FAFC" stroke="#000000" stroke-width="1.8"/>
+      <!-- Padlock -->
+      <rect x="-12" y="14" width="24" height="20" rx="3" fill="#000000"/>
+      <path d="M -7,14 L -7,5 A 7,7 0 0,1 7,5 L 7,14" fill="none" stroke="#000000" stroke-width="2.8"/>
+      <circle cx="0" cy="22" r="3" fill="#FFFFFF"/>
+    </g>
+
+    <!-- Header Text -->
+    <text x="35" y="80" class="title" font-size="19" font-weight="900" fill="#000000">
+      2. ADVERSARIAL SAFETY &amp; OWASP (n=18 Test + 100 Suite)
+    </text>
+
+    <!-- Bullet items -->
+    <g transform="translate(35, 120)">
+      <text x="0" y="0" font-size="15.5" font-weight="900" fill="#000000">
+        • Adversarial Test (18 cases): 100% Defense (0.0% ASR)
+      </text>
+      <text x="18" y="22" font-size="13" font-weight="700" fill="#475569">
+        Indirect prompt injection, BOLA IDOR parcel hijacking neutralized
+      </text>
+
+      <text x="0" y="60" font-size="15.5" font-weight="900" fill="#000000">
+        • Enterprise Red-Team Suite (100 prompts): 0.0% ASR
+      </text>
+      <text x="18" y="82" font-size="13" font-weight="700" fill="#475569">
+        60 internal + 40 external prompts; Critic gatekeeper active
+      </text>
+
+      <text x="0" y="120" font-size="15.5" font-weight="900" fill="#000000">
+        • External Red-Team (40 prompts): 0.0% ASR (95% CI: [0.0%, 8.81%])
+      </text>
+      <text x="18" y="142" font-size="13" font-weight="700" fill="#475569">
+        Written by independent security engineers; zero policy breaches
+      </text>
+
+      <text x="0" y="180" font-size="15.5" font-weight="900" fill="#000000">
+        • Physical Ceilings (15 prompts): 100% Intercepted
+      </text>
+      <text x="18" y="202" font-size="13" font-weight="700" fill="#475569">
+        Deterministic validation blocks over-limit freight (&gt;70kg, &gt;150cm)
+      </text>
+
+      <text x="0" y="240" font-size="15" font-weight="900" fill="#000000">
+        • Security Boundary: 100.0% Risk Detection Rate (RDR)
+      </text>
+    </g>
+  </g>
+
+  <!-- =========================================================================
+       CARD 4: BOTTOM-LEFT - LATENCY & EXECUTION PROFILING
+       ========================================================================= -->
+  <g transform="translate(100, 990)">
+    <rect width="660" height="490" rx="24" fill="#FFFFFF" stroke="#000000" stroke-width="3.5"/>
+
+    <!-- Hand-Drawn Icon: Stopwatch (Matching Image 2) -->
+    <g transform="translate(60, -30)">
+      <!-- Stopwatch body -->
+      <circle cx="0" cy="0" r="32" fill="#FFFFFF" stroke="#000000" stroke-width="3.2"/>
+      <circle cx="0" cy="0" r="26" fill="#F8FAFC" stroke="#000000" stroke-width="1.5"/>
+      <!-- Top buttons -->
+      <rect x="-6" y="-42" width="12" height="12" rx="2" fill="#000000"/>
+      <rect x="18" y="-32" width="10" height="8" rx="2" fill="#000000" transform="rotate(35 18 -32)"/>
+      <!-- Hand pointer -->
+      <line x1="0" y1="0" x2="12" y2="-14" stroke="#000000" stroke-width="3.0" stroke-linecap="round"/>
+      <circle cx="0" cy="0" r="4" fill="#000000"/>
+    </g>
+
+    <!-- Header Text -->
+    <text x="35" y="75" class="title" font-size="20" font-weight="900" fill="#000000">
+      4. LATENCY &amp; EXECUTION PROFILING
+    </text>
+
+    <!-- Bullet items -->
+    <g transform="translate(35, 120)">
+      <text x="0" y="0" font-size="15.5" font-weight="900" fill="#000000">
+        • Perceived TTFT: 420 ms (SSE Streaming token feedback)
+      </text>
+      <text x="18" y="22" font-size="13" font-weight="700" fill="#475569">
+        Speculative 3-token buffer masks multi-agent latency
+      </text>
+
+      <text x="0" y="60" font-size="15.5" font-weight="900" fill="#000000">
+        • End-to-End Latency: Mean 3,651 ms (p50: 3,280 ms, p90: 5,320 ms)
+      </text>
+      <text x="18" y="82" font-size="13" font-weight="700" fill="#475569">
+        Paired t-test vs Single-Agent (2,580 ms): t = 28.4, p &lt; 0.001
+      </text>
+
+      <text x="0" y="120" font-size="15.5" font-weight="900" fill="#000000">
+        • Two-Phase Execution Decomposition:
+      </text>
+      <text x="18" y="142" font-size="13.5" font-weight="800" fill="#1E293B">
+        LLM Token Gen: 71.3% (2,604 ms) | Critic Gate: 14.6% (532 ms)
+      </text>
+      <text x="18" y="164" font-size="13.5" font-weight="800" fill="#1E293B">
+        Operational Tools: 5.9% (216 ms) | Hybrid RAG: 4.9% (179 ms)
+      </text>
+      <text x="18" y="186" font-size="13.5" font-weight="800" fill="#1E293B">
+        Supervisor State Routing: 3.3% (120 ms)
+      </text>
+
+      <text x="0" y="226" font-size="15" font-weight="900" fill="#000000">
+        • Strict Pre-Execution Gating on All Mutating Actions
+      </text>
+    </g>
+  </g>
+
+  <!-- =========================================================================
+       CARD 3: BOTTOM-RIGHT - 5-TIER EVALUATION SPECTRUM (n = 52 Functional)
+       ========================================================================= -->
+  <g transform="translate(1640, 990)">
+    <rect width="660" height="490" rx="24" fill="#FFFFFF" stroke="#000000" stroke-width="3.5"/>
+
+    <!-- Hand-Drawn Icon: Multi-Tier Column Chart (Matching Image 2) -->
+    <g transform="translate(510, -25)">
+      <!-- Baseline axis -->
+      <line x1="-15" y1="45" x2="65" y2="45" stroke="#000000" stroke-width="3.2"/>
+      <!-- Bars of ascending heights -->
+      <rect x="-8" y="25" width="12" height="20" fill="#CBD5E1" stroke="#000000" stroke-width="2.2"/>
+      <rect x="8" y="12" width="12" height="33" fill="#94A3B8" stroke="#000000" stroke-width="2.2"/>
+      <rect x="24" y="-2" width="12" height="47" fill="#475569" stroke="#000000" stroke-width="2.2"/>
+      <rect x="40" y="-18" width="12" height="63" fill="#000000" stroke="#000000" stroke-width="2.2"/>
+    </g>
+
+    <!-- Header Text -->
+    <text x="35" y="75" class="title" font-size="19" font-weight="900" fill="#000000">
+      3. 5-TIER EVALUATION SPECTRUM (n = 52 Functional)
+    </text>
+
+    <!-- Bullet items -->
+    <g transform="translate(35, 120)">
+      <text x="0" y="0" font-size="15.5" font-weight="900" fill="#000000">
+        • Level 5 [EXCELLENT]: 26 Cases (50.0%)
+      </text>
+      <text x="18" y="22" font-size="13" font-weight="700" fill="#475569">
+        Score ≥ 90.0 pts: Full SOP grounding and flawless tool parameters
+      </text>
+
+      <text x="0" y="58" font-size="15.5" font-weight="900" fill="#000000">
+        • Level 4 [GOOD]: 16 Cases (30.8%)
+      </text>
+      <text x="18" y="80" font-size="13.5" font-weight="700" fill="#475569">
+        Score 75.0 - 89.9 pts: Correct courier actions, zero regulatory errors
+      </text>
+
+      <text x="0" y="116" font-size="15.5" font-weight="900" fill="#000000">
+        • Level 3 [ACCEPTABLE]: 2 Cases (3.8%)
+      </text>
+      <text x="18" y="138" font-size="13" font-weight="700" fill="#475569">
+        Score 60.0 - 74.9 pts: Minor formatting or supplementary info missing
+      </text>
+
+      <text x="0" y="174" font-size="15.5" font-weight="900" fill="#000000">
+        • Non-Passing: 3 Marginal (5.8%) + 5 Critical (9.6%)
+      </text>
+      <text x="18" y="196" font-size="13.5" font-weight="700" fill="#475569">
+        Out-of-domain deflections (1) &amp; island surcharge gaps (7); 0 PII leaks
+      </text>
+
+      <text x="0" y="234" font-size="15" font-weight="900" fill="#000000">
+        • Auto Pass: 44/52 (84.6%) | Human Pass: 46/52 (88.5%, κ = 0.824)
+      </text>
+    </g>
+  </g>
+
+  <!-- =========================================================================
+       CLEAN CURVED DASHED ARROWS CONNECTING CENTER TO 4 CARDS
+       Strictly calculated with large clearance (35px gap from card borders) so arrows NEVER collide!
+       ========================================================================= -->
+  <g fill="none" stroke="#000000" stroke-width="3.2" stroke-dasharray="8,6" stroke-linecap="round">
+    <!-- Center to Card 1 (Top-Left) -->
+    <!-- Start: (960, 690), End: (795, 480) - Stops 35px before Card 1 right edge (760) -->
+    <path d="M 960,690 C 880,620, 840,550, 795,480" marker-end="url(#arr-black-eval)"/>
+
+    <!-- Center to Card 2 (Top-Right) -->
+    <!-- Start: (1440, 690), End: (1605, 480) - Stops 35px before Card 2 left edge (1640) -->
+    <path d="M 1440,690 C 1520,620, 1560,550, 1605,480" marker-end="url(#arr-black-eval)"/>
+
+    <!-- Center to Card 4 (Bottom-Left) -->
+    <!-- Start: (960, 910), End: (795, 1120) - Stops 35px before Card 4 right edge (760) -->
+    <path d="M 960,910 C 880,980, 840,1050, 795,1120" marker-end="url(#arr-black-eval)"/>
+
+    <!-- Center to Card 3 (Bottom-Right) -->
+    <!-- Start: (1440, 910), End: (1605, 1120) - Stops 35px before Card 3 left edge (1640) -->
+    <path d="M 1440,910 C 1520,980, 1560,1050, 1605,1120" marker-end="url(#arr-black-eval)"/>
+  </g>
+</svg>

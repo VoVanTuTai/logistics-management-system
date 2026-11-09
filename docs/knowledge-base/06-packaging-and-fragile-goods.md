@@ -36,3 +36,14 @@ Trong hệ thống vận hành bưu chính Nexus Logistics, hai nhóm hàng này
   2. Bưu gửi không dán tem cảnh báo hàng dễ vỡ dẫn đến việc xếp dỡ thông thường.
   3. Bưu gửi bị hư hỏng do bản chất tự nhiên của sản phẩm (hàng dễ biến chất, hóa lỏng do nhiệt độ thời tiết).
   4. Người nhận đã ký nhận hoàn tất mà không lập biên bản đồng kiểm bất thường tại thời điểm giao hàng.
+
+## 5. Quy Chuẩn Đóng Gói Đồ Điện Tử, Laptop, Tivi & Thiết Bị Gia Dụng (Quạt máy, lò vi sóng)
+- **Thiết bị điện tử (Laptop, màn hình, tivi, quạt máy, linh kiện vi tính):**
+  1. **Lớp 1 (Chống sốc & chống trầy xước):** Quấn bọc ít nhất **03 đến 04 lớp mút xốp bọt khí (bubble wrap)** hoặc xốp PE Foam xung quanh toàn bộ bề mặt thiết bị. Cố định dây nguồn và phụ kiện bằng băng dính.
+  2. **Lớp 2 (Chèn đệm 6 mặt):** Đặt sản phẩm vào thùng carton cứng (3-5 lớp sóng). Chèn kín 6 mặt xung quanh bằng xốp đệm định hình hoặc hạt xốp nổ, đảm bảo sản phẩm cách thành thùng tối thiểu 3 - 5 cm và không xê dịch khi lắc.
+  3. **Lớp 3 (Niêm phong & dán nhãn):** Dán kín miệng và đáy thùng bằng băng keo chữ H, dán tem nhiệt cảnh báo: **"HÀNG DỄ VỠ - XIN NHẸ TAY"** và tem **"MŨI TÊN HƯỚNG LÊN"**.
+
+## 6. Quy Chuẩn Đóng Gói Chai Rượu Vang & Chai Lọ Thủy Tinh Chứa Chất Lỏng
+- **Dán kín nắp:** Bắt buộc dán kín nắp chai bằng băng keo chống rò rỉ dung dịch hoặc màng bọc nilon chuyên dụng.
+- **Bọc xốp bóng khí:** Quấn bọc tối thiểu **3 lớp** màng bóng khí chống sốc (bubble wrap) dày dặn quanh toàn bộ thân và cổ chai.
+- **Đóng thùng & chèn xốp:** Đặt chai thẳng đứng trong thùng carton có vách ngăn chia ô, chèn mút xốp định hình hoặc hạt xốp các góc, dán tem cảnh báo "HÀNG DỄ VỠ - XIN NHẸ TAY" trên ít nhất 02 mặt thùng.
