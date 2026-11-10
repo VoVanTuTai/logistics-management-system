@@ -11,8 +11,8 @@ export class VectorStoreService implements OnModuleInit {
   private indexData: VectorIndexData = {
     version: '1.0.0',
     updatedAt: new Date().toISOString(),
-    model: 'text-embedding-3-small',
-    dimensions: 1536,
+    model: 'models/gemini-embedding-001',
+    dimensions: 3072,
     totalChunks: 0,
     chunks: [],
   };
@@ -62,7 +62,8 @@ export class VectorStoreService implements OnModuleInit {
     this.logger.warn(`Index file not found at ${this.indexPath}. Operating with empty store.`);
   }
 
-  public saveIndex(chunks: KnowledgeChunk[], model = 'text-embedding-3-small', dimensions = 1536): void {
+  public saveIndex(chunks: KnowledgeChunk[], model = 'models/gemini-embedding-001', dimensions?: number): void {
+    const inferredDimensions = dimensions ?? chunks[0]?.embedding?.length ?? 3072;
     const dir = path.dirname(this.indexPath);
     if (!fs.existsSync(dir)) {
       fs.mkdirSync(dir, { recursive: true });
@@ -72,7 +73,7 @@ export class VectorStoreService implements OnModuleInit {
       version: '1.0.0',
       updatedAt: new Date().toISOString(),
       model,
-      dimensions,
+      dimensions: inferredDimensions,
       totalChunks: chunks.length,
       chunks,
     };

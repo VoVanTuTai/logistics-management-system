@@ -550,7 +550,7 @@ export class LogisticsToolsService {
         senderName: shouldMask ? 'Shop T*** C***' : 'Shop Thời Trang Coolmate',
         senderCity: 'TP. Hồ Chí Minh',
         receiverName: shouldMask ? 'A** Hoàng L***' : 'Anh Hoàng Long',
-        receiverPhone: shouldMask ? '0909****88' : '0909112288',
+        receiverPhone: shouldMask ? maskPhone(demoStoredPhone) : demoStoredPhone,
         receiverAddress: shouldMask ? '***, Quận Cầu Giấy, Hà Nội' : 'Số 18 Cầu Giấy, Hà Nội',
         receiverCity: 'Hà Nội',
         itemName: shouldMask ? 'Bưu phẩm tiêu chuẩn' : 'Áo khoác gió cao cấp',
@@ -933,19 +933,37 @@ export class LogisticsToolsService {
     this.logger.log(`Tool trackClaimStatus invoked for: ${cleanCode}`);
 
     try {
-      const resp = await fetch(`http://localhost:3002/api/v1/claims/${cleanCode}`, {
+      const resp = await fetch(`${this.shipmentServiceUrl}/claims/${encodeURIComponent(cleanCode)}`, {
         signal: AbortSignal.timeout(2000),
       });
       if (resp.ok) {
         const data = (await resp.json()) as any;
+        const claimStatusTextMap: Record<string, string> = {
+          SETTLED: 'Đã hoàn tất chi trả bồi thường',
+          APPROVED_COMPENSATION: 'Đã phê duyệt chi trả bồi thường',
+          LIABILITY_DETERMINED: 'Đã xác định đơn vị chịu trách nhiệm',
+          REJECTED: 'Từ chối bồi thường',
+          PENDING_INSPECTION: 'Đang giám định hồ sơ',
+          DRAFT: 'Đang khởi tạo hồ sơ khiếu nại',
+        };
         return {
           found: true,
-          claimCode: cleanCode,
+          claimCode: data.claimCode || cleanCode,
           shipmentCode: data.shipmentCode,
           status: data.status,
-          statusText: data.status === 'APPROVED_COMPENSATION' ? 'Đã phê duyệt bồi thường' : 'Đang giám định',
-          approvedAmount: data.approvedCompensationAmount,
-          responsibleParty: data.responsibleEntityName || data.responsibleParty,
+          statusText: claimStatusTextMap[data.status] || 'Đang giám định hồ sơ',
+          approvedAmount: data.approvedCompensationAmount ?? 0,
+          responsibleParty: data.responsibleEntityName || data.responsibleParty || 'Đang xác minh đơn vị trách nhiệm',
+          settlementMethod:
+            data.settlementMethod ||
+            (data.merchantPaidAt
+              ? 'Đã chuyển khoản vào tài khoản ngân hàng của Merchant'
+              : 'Chuyển khoản vào tài khoản ngân hàng đã đăng ký của người gửi sau khi Ban QA phê duyệt'),
+          adjudicatedAt: data.adjudicatedAt
+            ? new Date(data.adjudicatedAt).toLocaleDateString('vi-VN')
+            : ['APPROVED_COMPENSATION', 'SETTLED'].includes(data.status)
+            ? 'Đã phê duyệt'
+            : 'Đang chờ Ban giám định QA phán quyết',
           notes: data.adjudicationNotes,
         };
       }
