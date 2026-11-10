@@ -1,0 +1,28 @@
+{
+  "verifiedAtIso": "2026-11-09T14:54:33Z",
+  "exp3_posthoc_sql_audit_initial_run": {
+    "exp3_outbox_events": 150,
+    "exp3_distinct_aggregation_jobs": 150,
+    "exp3_initial_run_first_job_ts": "2026-11-09T07:51:02.975Z",
+    "exp3_initial_run_100th_job_ts": "2026-11-09T07:51:07.224Z",
+    "exp3_initial_run_last_150th_job_ts": "2026-11-09T07:51:10.085Z",
+    "explanation": "ReportingRabbitmqConsumerService polls HTTP Management API at batchSize=20 every 1000ms with ack_requeue_false, leaving the final 50 legitimate events in in-flight JS execution during the initial probe (yielding repPost - repPre = 50 in KpiDaily despite exact 150/150 distinct AggregationJob deduplication)."
+  },
+  "exp3c_clean_verification": {
+    "fresh_events_drained_before_dup": 50,
+    "broker_duplicates_injected": 50,
+    "pre_kpi_scansInbound": 1750,
+    "post_kpi_scansInbound": 1750,
+    "kpi_delta_after_50_broker_dups": 0,
+    "timeline_delta_after_50_broker_dups": 0,
+    "verify_outbox_events_incl_bypass": 60,
+    "verify_distinct_aggregation_jobs": 60
+  },
+  "exp4a_phased_lock_verification": {
+    "normal_scan_while_locked_400_count": 10,
+    "normal_scan_statuses": [400, 400, 400, 400, 400, 400, 400, 400, 400, 400],
+    "inventory_check_bypass_201_count": 10,
+    "inventory_check_statuses": [201, 201, 201, 201, 201, 201, 201, 201, 201, 201],
+    "post_async_inventory_check_locked_count": 0
+  }
+}
