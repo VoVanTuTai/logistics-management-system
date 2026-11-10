@@ -314,6 +314,7 @@ def main():
     parser.add_argument("--dataset", type=str, default="", help="Path to benchmark JSON file")
     parser.add_argument("-c", "--concurrency", type=int, default=4, help="Concurrency worker threads (default: 4)")
     parser.add_argument("--limit", type=int, default=0, help="Limit number of test cases (0 = all)")
+    parser.add_argument("--delay", type=float, default=0.0, help="Minimum start-to-start interval (seconds) when concurrency=1 to respect LLM RPM limits")
     parser.add_argument("--category", type=str, default="", help="Filter by category")
     parser.add_argument("--case", type=str, default="", help="Run single case by ID")
     args = parser.parse_args()
@@ -372,10 +373,15 @@ def main():
                 print(f"[{completed_count:03d}/{total_n:03d}] {tc['id']:<14} ({tc['category']:<18}) -> {status_icon} ({eval_res['score']:>5.1f} pts, {eval_res['latency_ms']:>4d}ms)")
     else:
         for i, tc in enumerate(test_cases, 1):
+            t_req_start = time.time()
             idx, _, eval_res = run_worker((i, tc))
             results_indexed.append((idx, eval_res))
             status_icon = "PASS" if eval_res["status"] == "PASS" else "FAIL"
-            print(f"[{i:03d}/{total_n:03d}] {tc['id']:<14} ({tc['category']:<18}) -> {status_icon} ({eval_res['score']:>5.1f} pts, {eval_res['latency_ms']:>4d}ms)")
+            print(f"[{i:03d}/{total_n:03d}] {tc['id']:<14} ({tc['category']:<18}) -> {status_icon} ({eval_res['score']:>5.1f} pts, {eval_res['latency_ms']:>4d}ms)", flush=True)
+            if args.delay > 0 and i < total_n:
+                rem = args.delay - (time.time() - t_req_start)
+                if rem > 0:
+                    time.sleep(rem)
 
     results_indexed.sort(key=lambda x: x[0])
     results = [r[1] for r in results_indexed]

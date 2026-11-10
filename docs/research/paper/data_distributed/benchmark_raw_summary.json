@@ -1,0 +1,132 @@
+{
+  "startedAtIso": "2026-11-09T14:48:54.222Z",
+  "hardware": {},
+  "notes": [],
+  "finishedAtIso": "2026-11-09T14:52:41.827Z",
+  "idemIntegrity": {
+    "expected_unique_events": 150,
+    "total_http_requests": 500,
+    "http_success_2xx": 500,
+    "db_scan_events_created": 150,
+    "db_outbox_events_created": 150,
+    "broker_dup_injected": 50,
+    "tracking_timeline_delta_after_dup": 0,
+    "reporting_kpi_delta_after_dup": 50
+  },
+  "lockProbes": [
+    {
+      "type": "Normal_Scan_Locked",
+      "status": 400,
+      "passed_policy": 1
+    },
+    {
+      "type": "Inventory_Check_Locked",
+      "status": 201,
+      "passed_policy": 1
+    },
+    {
+      "type": "Normal_Scan_Locked",
+      "status": 400,
+      "passed_policy": 1
+    },
+    {
+      "type": "Inventory_Check_Locked",
+      "status": 201,
+      "passed_policy": 1
+    },
+    {
+      "type": "Normal_Scan_Locked",
+      "status": 400,
+      "passed_policy": 1
+    },
+    {
+      "type": "Inventory_Check_Locked",
+      "status": 201,
+      "passed_policy": 1
+    },
+    {
+      "type": "Normal_Scan_Locked",
+      "status": 400,
+      "passed_policy": 1
+    },
+    {
+      "type": "Inventory_Check_Locked",
+      "status": 201,
+      "passed_policy": 1
+    },
+    {
+      "type": "Normal_Scan_Locked",
+      "status": 400,
+      "passed_policy": 1
+    },
+    {
+      "type": "Inventory_Check_Locked",
+      "status": 201,
+      "passed_policy": 1
+    },
+    {
+      "type": "Normal_Scan_Locked",
+      "status": 201,
+      "passed_policy": 0
+    },
+    {
+      "type": "Inventory_Check_Locked",
+      "status": 201,
+      "passed_policy": 1
+    },
+    {
+      "type": "Normal_Scan_Locked",
+      "status": 201,
+      "passed_policy": 0
+    },
+    {
+      "type": "Inventory_Check_Locked",
+      "status": 201,
+      "passed_policy": 1
+    },
+    {
+      "type": "Normal_Scan_Locked",
+      "status": 400,
+      "passed_policy": 1
+    },
+    {
+      "type": "Inventory_Check_Locked",
+      "status": 201,
+      "passed_policy": 1
+    },
+    {
+      "type": "Normal_Scan_Locked",
+      "status": 400,
+      "passed_policy": 1
+    },
+    {
+      "type": "Inventory_Check_Locked",
+      "status": 201,
+      "passed_policy": 1
+    },
+    {
+      "type": "Normal_Scan_Locked",
+      "status": 400,
+      "passed_policy": 1
+    },
+    {
+      "type": "Inventory_Check_Locked",
+      "status": 201,
+      "passed_policy": 1
+    }
+  ],
+  "transportTotalsMs": {
+    "HTTP_Mgmt_Sequential_200msgs": 333.38,
+    "AMQP_Confirm_Sequential_200msgs": 117.38,
+    "AMQP_Confirm_Batch50_200msgs": 11.8
+  },
+  "dlqFinal": {
+    "step": 141,
+    "elapsed_s": "72.48",
+    "main_q": 0,
+    "retry_10s": 0,
+    "retry_1m": 0,
+    "dlq": 5,
+    "healed_count": 5
+  }
+}

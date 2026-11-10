@@ -1,0 +1,115 @@
+[
+  {
+    "id": "HO-01",
+    "topic": "IATA Volumetric Conversion",
+    "query": "Thú nhồi bông nhẹ nhưng thùng carton kích thước rất lớn thì cách quy đổi trọng lượng tính tiền như thế nào?",
+    "gold_chunks": [
+      "01-pricing-and-iata-weight.md#chunk-2"
+    ],
+    "uses_thesaurus_root": false
+  },
+  {
+    "id": "HO-02",
+    "topic": "Intra-Province Zone Surcharge",
+    "query": "Đơn gửi nội thành cùng thành phố có bị cộng thêm phụ phí vùng miền không?",
+    "gold_chunks": [
+      "01-pricing-and-iata-weight.md#chunk-3"
+    ],
+    "uses_thesaurus_root": false
+  },
+  {
+    "id": "HO-03",
+    "topic": "Physical Ceiling Tier-3 Block",
+    "query": "Gói hàng nặng 72 kg hoặc một cạnh dài 165 cm có được phép tạo vận đơn chuyển phát thông thường không?",
+    "gold_chunks": [
+      "01-pricing-and-iata-weight.md#chunk-7",
+      "01-pricing-and-iata-weight.md#chunk-8"
+    ],
+    "uses_thesaurus_root": false
+  },
+  {
+    "id": "HO-04",
+    "topic": "Declared-Value Insurance Tier 2",
+    "query": "Khách mua gói bảo vệ khai giá cho đồng hồ trị giá 18 triệu đồng thì mức phí bảo hiểm áp dụng bao nhiêu phần trăm?",
+    "gold_chunks": [
+      "02-insurance-and-claim-policy.md#chunk-3",
+      "02-insurance-and-claim-policy.md#chunk-1"
+    ],
+    "uses_thesaurus_root": true
+  },
+  {
+    "id": "HO-05",
+    "topic": "Address Change Policy",
+    "query": "Nhờ tổng đài đổi địa điểm giao nhận sang quận khác trên cùng tỉnh trước khi bưu tá đi phát có mất thêm phí không?",
+    "gold_chunks": [
+      "04-delivery-process-and-faq.md#chunk-3"
+    ],
+    "uses_thesaurus_root": false
+  },
+  {
+    "id": "HO-06",
+    "topic": "Recipient Financial Privacy",
+    "query": "Người nhận tra cứu vận đơn online có thấy được biểu phí gốc và mức chiết khấu của chủ shop không?",
+    "gold_chunks": [
+      "04-delivery-process-and-faq.md#chunk-4"
+    ],
+    "uses_thesaurus_root": false
+  },
+  {
+    "id": "HO-07",
+    "topic": "Merchant Wallet Debt Ceiling",
+    "query": "Tiền công nợ ví cước của cửa hàng bị âm quá 500 nghìn đồng thì hệ thống xử lý ra sao?",
+    "gold_chunks": [
+      "05-cod-policy-and-finance.md#chunk-4"
+    ],
+    "uses_thesaurus_root": false
+  },
+  {
+    "id": "HO-08",
+    "topic": "Courier Cash-Holding Cap",
+    "query": "Shipper thu hộ tiền mặt vượt ngưỡng cho phép trong một ca đi phát phải làm thủ tục gì trước khi giao đơn kế tiếp?",
+    "gold_chunks": [
+      "05-cod-policy-and-finance.md#chunk-2",
+      "09-negative-exceptions-and-incident-handling.md#chunk-11"
+    ],
+    "uses_thesaurus_root": true
+  },
+  {
+    "id": "HO-09",
+    "topic": "Glass Liquid Packaging",
+    "query": "Khi vận chuyển chai thủy tinh đựng mật ong hoặc chất lỏng thì nắp chai và khoảng trống bên trong thùng đóng gói ra sao?",
+    "gold_chunks": [
+      "06-packaging-and-fragile-goods.md#chunk-7",
+      "06-packaging-and-fragile-goods.md#chunk-3"
+    ],
+    "uses_thesaurus_root": false
+  },
+  {
+    "id": "HO-10",
+    "topic": "Reverse Exchange 1-for-1",
+    "query": "Dịch vụ giao hàng mới đồng thời thu hồi sản phẩm lỗi 1-đổi-1 tận nơi yêu cầu bưu tá kiểm tra những gì?",
+    "gold_chunks": [
+      "07-special-delivery-services.md#chunk-4"
+    ],
+    "uses_thesaurus_root": false
+  },
+  {
+    "id": "HO-11",
+    "topic": "North-South Linehaul Schedule",
+    "query": "Xe tải chạy tuyến trục Bắc - Nam từ Hà Nội vào TP.HCM xuất bến mấy giờ mỗi ngày và hành trình mất bao lâu?",
+    "gold_chunks": [
+      "08-transit-time-and-network-sla.md#chunk-3"
+    ],
+    "uses_thesaurus_root": false
+  },
+  {
+    "id": "HO-12",
+    "topic": "DWS Weight Discrepancy Penalty",
+    "query": "Máy quét kích thước DWS tại Hub phát hiện cân nặng thực tế chênh lệch trên 15% so với khai báo của người gửi thì xử lý thế nào?",
+    "gold_chunks": [
+      "09-negative-exceptions-and-incident-handling.md#chunk-6"
+    ],
+    "uses_thesaurus_root": false
+  }
+]
+

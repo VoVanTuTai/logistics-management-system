@@ -2,7 +2,7 @@
   "version": "1.0.0",
   "updatedAt": "2026-11-07T08:53:56.946Z",
   "model": "models/gemini-embedding-001",
-  "dimensions": 1536,
+  "dimensions": 3072,
   "totalChunks": 59,
   "chunks": [
     {

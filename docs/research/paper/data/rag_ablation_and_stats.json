@@ -1,0 +1,1544 @@
+{
+  "timestamp_utc": "2026-11-10T09:16:12Z",
+  "embedding_model": "models/gemini-embedding-001",
+  "dimensions": 3072,
+  "benchmark_39": {
+    "summary": {
+      "keyword": {
+        "n_queries": 39,
+        "hit_at_1_count": "26/39",
+        "hit_at_1": 66.7,
+        "hit_at_1_ci95_low": 49.8,
+        "hit_at_1_ci95_high": 80.9,
+        "hit_at_3": 92.3,
+        "hit_at_5": 97.4,
+        "recall_at_5": 88.0,
+        "mrr_at_5": 0.7893
+      },
+      "dense": {
+        "n_queries": 39,
+        "hit_at_1_count": "36/39",
+        "hit_at_1": 92.3,
+        "hit_at_1_ci95_low": 79.1,
+        "hit_at_1_ci95_high": 98.4,
+        "hit_at_3": 100.0,
+        "hit_at_5": 100.0,
+        "recall_at_5": 98.5,
+        "mrr_at_5": 0.9573
+      },
+      "hybrid": {
+        "n_queries": 39,
+        "hit_at_1_count": "39/39",
+        "hit_at_1": 100.0,
+        "hit_at_1_ci95_low": 91.0,
+        "hit_at_1_ci95_high": 100.0,
+        "hit_at_3": 100.0,
+        "hit_at_5": 100.0,
+        "recall_at_5": 98.5,
+        "mrr_at_5": 1.0
+      }
+    },
+    "stats": {
+      "mcnemar_hybrid_vs_dense": {
+        "b": 3,
+        "c": 0,
+        "discordant": 3,
+        "p_value": 0.25
+      },
+      "mcnemar_hybrid_vs_keyword": {
+        "b": 13,
+        "c": 0,
+        "discordant": 13,
+        "p_value": 0.000244
+      }
+    },
+    "per_query": [
+      {
+        "id": "TC-REAL-01",
+        "query": "Hàng mỹ phẩm dạng chai lọ dung dịch, serum khi gửi qua bưu cục GHTK bắt buộc phải đóng gói như thế nào để được bảo hiểm khi bể vỡ?",
+        "gold": [
+          "03-prohibited-and-restricted-goods.md#chunk-2",
+          "06-packaging-and-fragile-goods.md#chunk-3",
+          "06-packaging-and-fragile-goods.md#chunk-5",
+          "06-packaging-and-fragile-goods.md#chunk-7"
+        ],
+        "dense_top1": "06-packaging-and-fragile-goods.md#chunk-3",
+        "keyword_top1": "06-packaging-and-fragile-goods.md#chunk-5",
+        "hybrid_top1": "06-packaging-and-fragile-goods.md#chunk-5",
+        "dense_hit1": true,
+        "keyword_hit1": true,
+        "hybrid_hit1": true
+      },
+      {
+        "id": "TC-REAL-02",
+        "query": "Hàng thủy tinh, gốm sứ dễ vỡ nếu đóng gói sơ sài không đủ xốp mà bị vỡ trên đường đi thì bưu cục có đền bù không?",
+        "gold": [
+          "06-packaging-and-fragile-goods.md#chunk-5",
+          "02-insurance-and-claim-policy.md#chunk-2",
+          "03-prohibited-and-restricted-goods.md#chunk-4"
+        ],
+        "dense_top1": "03-prohibited-and-restricted-goods.md#chunk-4",
+        "keyword_top1": "06-packaging-and-fragile-goods.md#chunk-5",
+        "hybrid_top1": "06-packaging-and-fragile-goods.md#chunk-5",
+        "dense_hit1": true,
+        "keyword_hit1": true,
+        "hybrid_hit1": true
+      },
+      {
+        "id": "TC-REAL-03",
+        "query": "Phí dịch vụ khai giá (bảo hiểm hàng hóa) của bưu cục được tính bao nhiêu % giá trị kiện hàng?",
+        "gold": [
+          "02-insurance-and-claim-policy.md#chunk-3"
+        ],
+        "dense_top1": "02-insurance-and-claim-policy.md#chunk-1",
+        "keyword_top1": "06-packaging-and-fragile-goods.md#chunk-5",
+        "hybrid_top1": "02-insurance-and-claim-policy.md#chunk-3",
+        "dense_hit1": false,
+        "keyword_hit1": false,
+        "hybrid_hit1": true
+      },
+      {
+        "id": "TC-REAL-04",
+        "query": "Đơn hàng có mua bảo hiểm nếu bị thất lạc mất nguyên kiện thì mức bồi thường thực tế là bao nhiêu?",
+        "gold": [
+          "02-insurance-and-claim-policy.md#chunk-4",
+          "02-insurance-and-claim-policy.md#chunk-3"
+        ],
+        "dense_top1": "02-insurance-and-claim-policy.md#chunk-4",
+        "keyword_top1": "06-packaging-and-fragile-goods.md#chunk-5",
+        "hybrid_top1": "02-insurance-and-claim-policy.md#chunk-4",
+        "dense_hit1": true,
+        "keyword_hit1": false,
+        "hybrid_hit1": true
+      },
+      {
+        "id": "TC-REAL-05",
+        "query": "Trường hợp người gửi không có hóa đơn chứng minh giá trị và không mua bảo hiểm, nếu mất hàng thì bồi thường theo mức nào?",
+        "gold": [
+          "02-insurance-and-claim-policy.md#chunk-2"
+        ],
+        "dense_top1": "02-insurance-and-claim-policy.md#chunk-2",
+        "keyword_top1": "06-packaging-and-fragile-goods.md#chunk-5",
+        "hybrid_top1": "02-insurance-and-claim-policy.md#chunk-2",
+        "dense_hit1": true,
+        "keyword_hit1": false,
+        "hybrid_hit1": true
+      },
+      {
+        "id": "TC-REAL-06",
+        "query": "Thời gian tiếp nhận và xử lý khiếu nại bưu phẩm bị sự cố tối đa là bao lâu?",
+        "gold": [
+          "02-insurance-and-claim-policy.md#chunk-5"
+        ],
+        "dense_top1": "02-insurance-and-claim-policy.md#chunk-5",
+        "keyword_top1": "02-insurance-and-claim-policy.md#chunk-5",
+        "hybrid_top1": "02-insurance-and-claim-policy.md#chunk-5",
+        "dense_hit1": true,
+        "keyword_hit1": true,
+        "hybrid_hit1": true
+      },
+      {
+        "id": "TC-REAL-07",
+        "query": "Bưu kiện phát không thành công lần 1 được lưu kho bưu cục phát tối đa mấy ngày?",
+        "gold": [
+          "04-delivery-process-and-faq.md#chunk-2"
+        ],
+        "dense_top1": "04-delivery-process-and-faq.md#chunk-2",
+        "keyword_top1": "04-delivery-process-and-faq.md#chunk-2",
+        "hybrid_top1": "04-delivery-process-and-faq.md#chunk-2",
+        "dense_hit1": true,
+        "keyword_hit1": true,
+        "hybrid_hit1": true
+      },
+      {
+        "id": "TC-REAL-08",
+        "query": "Khách từ chối nhận hàng (bom hàng), bưu tá có được tự ý bấm chuyển hoàn về ngay không?",
+        "gold": [
+          "09-negative-exceptions-and-incident-handling.md#chunk-3",
+          "04-delivery-process-and-faq.md#chunk-5"
+        ],
+        "dense_top1": "09-negative-exceptions-and-incident-handling.md#chunk-3",
+        "keyword_top1": "04-delivery-process-and-faq.md#chunk-5",
+        "hybrid_top1": "09-negative-exceptions-and-incident-handling.md#chunk-3",
+        "dense_hit1": true,
+        "keyword_hit1": true,
+        "hybrid_hit1": true
+      },
+      {
+        "id": "TC-REAL-09",
+        "query": "Phí chuyển hoàn bưu kiện về cho người gửi đối với tài khoản shop tiêu chuẩn được tính thế nào?",
+        "gold": [
+          "04-delivery-process-and-faq.md#chunk-5",
+          "01-pricing-and-iata-weight.md#chunk-5"
+        ],
+        "dense_top1": "04-delivery-process-and-faq.md#chunk-5",
+        "keyword_top1": "04-delivery-process-and-faq.md#chunk-5",
+        "hybrid_top1": "04-delivery-process-and-faq.md#chunk-5",
+        "dense_hit1": true,
+        "keyword_hit1": true,
+        "hybrid_hit1": true
+      },
+      {
+        "id": "TC-REAL-10",
+        "query": "Khách hàng VIP Enterprise sản lượng lớn có được miễn phí cước chuyển hoàn không?",
+        "gold": [
+          "01-pricing-and-iata-weight.md#chunk-6",
+          "04-delivery-process-and-faq.md#chunk-5"
+        ],
+        "dense_top1": "01-pricing-and-iata-weight.md#chunk-6",
+        "keyword_top1": "01-pricing-and-iata-weight.md#chunk-5",
+        "hybrid_top1": "01-pricing-and-iata-weight.md#chunk-6",
+        "dense_hit1": true,
+        "keyword_hit1": false,
+        "hybrid_hit1": true
+      },
+      {
+        "id": "TC-REAL-11",
+        "query": "Hàng bột hoặc chất lỏng không nhãn mác, không nguồn gốc có được gửi qua bưu cục không?",
+        "gold": [
+          "03-prohibited-and-restricted-goods.md#chunk-1"
+        ],
+        "dense_top1": "03-prohibited-and-restricted-goods.md#chunk-2",
+        "keyword_top1": "03-prohibited-and-restricted-goods.md#chunk-1",
+        "hybrid_top1": "03-prohibited-and-restricted-goods.md#chunk-1",
+        "dense_hit1": false,
+        "keyword_hit1": true,
+        "hybrid_hit1": true
+      },
+      {
+        "id": "TC-REAL-12",
+        "query": "Chính sách đồng kiểm cho người nhận xem hàng tại chỗ có được phép thử đồ hoặc xé tem niêm phong không?",
+        "gold": [
+          "07-special-delivery-services.md#chunk-1",
+          "07-special-delivery-services.md#chunk-2",
+          "03-prohibited-and-restricted-goods.md#chunk-3"
+        ],
+        "dense_top1": "07-special-delivery-services.md#chunk-2",
+        "keyword_top1": "03-prohibited-and-restricted-goods.md#chunk-3",
+        "hybrid_top1": "03-prohibited-and-restricted-goods.md#chunk-3",
+        "dense_hit1": true,
+        "keyword_hit1": true,
+        "hybrid_hit1": true
+      },
+      {
+        "id": "TC-REAL-14",
+        "query": "Hàng đồ điện tử điện lạnh như quạt máy, tivi cần bọc thế nào trước khi giao bưu tá?",
+        "gold": [
+          "06-packaging-and-fragile-goods.md#chunk-6",
+          "03-prohibited-and-restricted-goods.md#chunk-4"
+        ],
+        "dense_top1": "06-packaging-and-fragile-goods.md#chunk-6",
+        "keyword_top1": "06-packaging-and-fragile-goods.md#chunk-6",
+        "hybrid_top1": "06-packaging-and-fragile-goods.md#chunk-6",
+        "dense_hit1": true,
+        "keyword_hit1": true,
+        "hybrid_hit1": true
+      },
+      {
+        "id": "TC-REAL-15",
+        "query": "Kiện hàng trên 20kg bưu tá xe máy có chở được không hay phải điều xe tải?",
+        "gold": [
+          "01-pricing-and-iata-weight.md#chunk-7"
+        ],
+        "dense_top1": "01-pricing-and-iata-weight.md#chunk-7",
+        "keyword_top1": "01-pricing-and-iata-weight.md#chunk-7",
+        "hybrid_top1": "01-pricing-and-iata-weight.md#chunk-7",
+        "dense_hit1": true,
+        "keyword_hit1": true,
+        "hybrid_hit1": true
+      },
+      {
+        "id": "TC-REAL-16",
+        "query": "Tính năng Giao 1 phần - Trả 1 phần của GHN hoạt động như thế nào đối với đơn hàng thời trang?",
+        "gold": [
+          "07-special-delivery-services.md#chunk-3"
+        ],
+        "dense_top1": "07-special-delivery-services.md#chunk-3",
+        "keyword_top1": "04-delivery-process-and-faq.md#chunk-5",
+        "hybrid_top1": "07-special-delivery-services.md#chunk-3",
+        "dense_hit1": true,
+        "keyword_hit1": false,
+        "hybrid_hit1": true
+      },
+      {
+        "id": "TC-REAL-17",
+        "query": "Tiền thu hộ COD của Shop được bưu cục chuyển khoản đối soát vào những ngày nào trong tuần?",
+        "gold": [
+          "05-cod-policy-and-finance.md#chunk-3"
+        ],
+        "dense_top1": "05-cod-policy-and-finance.md#chunk-3",
+        "keyword_top1": "01-pricing-and-iata-weight.md#chunk-5",
+        "hybrid_top1": "05-cod-policy-and-finance.md#chunk-3",
+        "dense_hit1": true,
+        "keyword_hit1": false,
+        "hybrid_hit1": true
+      },
+      {
+        "id": "TC-REAL-18",
+        "query": "Ví trả trước GHN Xu được sử dụng để thanh toán những khoản cước nào?",
+        "gold": [
+          "05-cod-policy-and-finance.md#chunk-6"
+        ],
+        "dense_top1": "05-cod-policy-and-finance.md#chunk-6",
+        "keyword_top1": "05-cod-policy-and-finance.md#chunk-6",
+        "hybrid_top1": "05-cod-policy-and-finance.md#chunk-6",
+        "dense_hit1": true,
+        "keyword_hit1": true,
+        "hybrid_hit1": true
+      },
+      {
+        "id": "TC-REAL-21",
+        "query": "Đơn hàng có số tiền COD dưới 1.000.000 VNĐ có mất phí dịch vụ thu hộ không?",
+        "gold": [
+          "01-pricing-and-iata-weight.md#chunk-4",
+          "05-cod-policy-and-finance.md#chunk-5"
+        ],
+        "dense_top1": "01-pricing-and-iata-weight.md#chunk-4",
+        "keyword_top1": "01-pricing-and-iata-weight.md#chunk-5",
+        "hybrid_top1": "01-pricing-and-iata-weight.md#chunk-4",
+        "dense_hit1": true,
+        "keyword_hit1": false,
+        "hybrid_hit1": true
+      },
+      {
+        "id": "TC-REAL-22",
+        "query": "Số tiền thu hộ COD từ 1 triệu đồng trở lên tính phí như thế nào và tối đa bao nhiêu?",
+        "gold": [
+          "01-pricing-and-iata-weight.md#chunk-4",
+          "05-cod-policy-and-finance.md#chunk-5"
+        ],
+        "dense_top1": "01-pricing-and-iata-weight.md#chunk-4",
+        "keyword_top1": "06-packaging-and-fragile-goods.md#chunk-5",
+        "hybrid_top1": "05-cod-policy-and-finance.md#chunk-5",
+        "dense_hit1": true,
+        "keyword_hit1": false,
+        "hybrid_hit1": true
+      },
+      {
+        "id": "TC-REAL-23",
+        "query": "Dịch vụ shipper đến tận nhà lấy hàng của bưu cục có thu phí không?",
+        "gold": [
+          "04-delivery-process-and-faq.md#chunk-7"
+        ],
+        "dense_top1": "04-delivery-process-and-faq.md#chunk-7",
+        "keyword_top1": "04-delivery-process-and-faq.md#chunk-7",
+        "hybrid_top1": "04-delivery-process-and-faq.md#chunk-7",
+        "dense_hit1": true,
+        "keyword_hit1": true,
+        "hybrid_hit1": true
+      },
+      {
+        "id": "TC-REAL-24",
+        "query": "Bưu tá sẽ giao tối đa bao nhiêu lần trước khi đơn hàng bị chuyển hoàn về cho người gửi?",
+        "gold": [
+          "04-delivery-process-and-faq.md#chunk-1",
+          "09-negative-exceptions-and-incident-handling.md#chunk-2"
+        ],
+        "dense_top1": "04-delivery-process-and-faq.md#chunk-1",
+        "keyword_top1": "06-packaging-and-fragile-goods.md#chunk-5",
+        "hybrid_top1": "04-delivery-process-and-faq.md#chunk-1",
+        "dense_hit1": true,
+        "keyword_hit1": false,
+        "hybrid_hit1": true
+      },
+      {
+        "id": "TC-REAL-25",
+        "query": "Kiện hàng điện thoại iPhone trị giá 25 triệu đồng có bắt buộc dán tem seal an ninh chống tráo ruột không?",
+        "gold": [
+          "06-packaging-and-fragile-goods.md#chunk-1",
+          "06-packaging-and-fragile-goods.md#chunk-2",
+          "06-packaging-and-fragile-goods.md#chunk-4"
+        ],
+        "dense_top1": "06-packaging-and-fragile-goods.md#chunk-2",
+        "keyword_top1": "06-packaging-and-fragile-goods.md#chunk-1",
+        "hybrid_top1": "06-packaging-and-fragile-goods.md#chunk-1",
+        "dense_hit1": true,
+        "keyword_hit1": true,
+        "hybrid_hit1": true
+      },
+      {
+        "id": "TC-REAL-26",
+        "query": "Đóng gói máy tính xách tay laptop gửi qua bưu cục cần lót đệm dày tối thiểu bao nhiêu cm?",
+        "gold": [
+          "06-packaging-and-fragile-goods.md#chunk-3",
+          "06-packaging-and-fragile-goods.md#chunk-6"
+        ],
+        "dense_top1": "06-packaging-and-fragile-goods.md#chunk-6",
+        "keyword_top1": "02-insurance-and-claim-policy.md#chunk-3",
+        "hybrid_top1": "06-packaging-and-fragile-goods.md#chunk-6",
+        "dense_hit1": true,
+        "keyword_hit1": false,
+        "hybrid_hit1": true
+      },
+      {
+        "id": "TC-REAL-27",
+        "query": "Giới hạn trọng lượng của bưu gửi chuyển phát tiêu chuẩn thông thường bằng xe máy là bao nhiêu kg?",
+        "gold": [
+          "01-pricing-and-iata-weight.md#chunk-7"
+        ],
+        "dense_top1": "01-pricing-and-iata-weight.md#chunk-7",
+        "keyword_top1": "01-pricing-and-iata-weight.md#chunk-7",
+        "hybrid_top1": "01-pricing-and-iata-weight.md#chunk-7",
+        "dense_hit1": true,
+        "keyword_hit1": true,
+        "hybrid_hit1": true
+      },
+      {
+        "id": "TC-REAL-28",
+        "query": "Một kiện hàng bị mất 1 sản phẩm trong tổng số 3 sản phẩm thì tỷ lệ bồi thường tính thế nào?",
+        "gold": [
+          "02-insurance-and-claim-policy.md#chunk-4"
+        ],
+        "dense_top1": "02-insurance-and-claim-policy.md#chunk-4",
+        "keyword_top1": "02-insurance-and-claim-policy.md#chunk-4",
+        "hybrid_top1": "02-insurance-and-claim-policy.md#chunk-4",
+        "dense_hit1": true,
+        "keyword_hit1": true,
+        "hybrid_hit1": true
+      },
+      {
+        "id": "TC-REAL-30",
+        "query": "Shop muốn mở khiếu nại bồi thường cho đơn hàng bị vỡ thì thời hạn gửi hồ sơ là mấy ngày?",
+        "gold": [
+          "02-insurance-and-claim-policy.md#chunk-5"
+        ],
+        "dense_top1": "02-insurance-and-claim-policy.md#chunk-5",
+        "keyword_top1": "06-packaging-and-fragile-goods.md#chunk-5",
+        "hybrid_top1": "02-insurance-and-claim-policy.md#chunk-5",
+        "dense_hit1": true,
+        "keyword_hit1": false,
+        "hybrid_hit1": true
+      },
+      {
+        "id": "TC-REAL-31",
+        "query": "Căn cứ pháp lý bồi thường dịch vụ chuyển phát theo pháp luật bưu chính Việt Nam (Nghị định 47 & Luật Bưu chính) quy định thế nào với hàng không khai giá?",
+        "gold": [
+          "02-insurance-and-claim-policy.md#chunk-2"
+        ],
+        "dense_top1": "02-insurance-and-claim-policy.md#chunk-2",
+        "keyword_top1": "02-insurance-and-claim-policy.md#chunk-2",
+        "hybrid_top1": "02-insurance-and-claim-policy.md#chunk-2",
+        "dense_hit1": true,
+        "keyword_hit1": true,
+        "hybrid_hit1": true
+      },
+      {
+        "id": "TC-REAL-32",
+        "query": "Bưu gửi chứa phong bì thư từ, hợp đồng công chứng bưu tá có quyền mở ruột ra xem không?",
+        "gold": [
+          "03-prohibited-and-restricted-goods.md#chunk-3",
+          "07-special-delivery-services.md#chunk-1"
+        ],
+        "dense_top1": "03-prohibited-and-restricted-goods.md#chunk-3",
+        "keyword_top1": "07-special-delivery-services.md#chunk-1",
+        "hybrid_top1": "03-prohibited-and-restricted-goods.md#chunk-3",
+        "dense_hit1": true,
+        "keyword_hit1": true,
+        "hybrid_hit1": true
+      },
+      {
+        "id": "TC-REAL-33",
+        "query": "Pin sạc dự phòng lithium có được gửi bằng đường bay hỏa tốc hàng không không?",
+        "gold": [
+          "03-prohibited-and-restricted-goods.md#chunk-2"
+        ],
+        "dense_top1": "03-prohibited-and-restricted-goods.md#chunk-2",
+        "keyword_top1": "03-prohibited-and-restricted-goods.md#chunk-2",
+        "hybrid_top1": "03-prohibited-and-restricted-goods.md#chunk-2",
+        "dense_hit1": true,
+        "keyword_hit1": true,
+        "hybrid_hit1": true
+      },
+      {
+        "id": "TC-REAL-35",
+        "query": "Giao dịch viên bưu cục có trách nhiệm kiểm tra ngoại quan bưu phẩm trước khi nhận gửi không?",
+        "gold": [
+          "03-prohibited-and-restricted-goods.md#chunk-3"
+        ],
+        "dense_top1": "03-prohibited-and-restricted-goods.md#chunk-3",
+        "keyword_top1": "03-prohibited-and-restricted-goods.md#chunk-3",
+        "hybrid_top1": "03-prohibited-and-restricted-goods.md#chunk-3",
+        "dense_hit1": true,
+        "keyword_hit1": true,
+        "hybrid_hit1": true
+      },
+      {
+        "id": "TC-REAL-37",
+        "query": "Hoa quả tươi sống, nông sản mau hỏng có được gửi qua đường chuyển phát chậm không?",
+        "gold": [
+          "03-prohibited-and-restricted-goods.md#chunk-2",
+          "08-transit-time-and-network-sla.md#chunk-2"
+        ],
+        "dense_top1": "03-prohibited-and-restricted-goods.md#chunk-2",
+        "keyword_top1": "03-prohibited-and-restricted-goods.md#chunk-2",
+        "hybrid_top1": "03-prohibited-and-restricted-goods.md#chunk-2",
+        "dense_hit1": true,
+        "keyword_hit1": true,
+        "hybrid_hit1": true
+      },
+      {
+        "id": "TC-REAL-38",
+        "query": "Trường hợp bưu gửi bị chậm do bão lụt sạt lở đèo Hải Vân (sự kiện bất khả kháng) thì bưu cục có phải đền bù không?",
+        "gold": [
+          "08-transit-time-and-network-sla.md#chunk-4"
+        ],
+        "dense_top1": "08-transit-time-and-network-sla.md#chunk-4",
+        "keyword_top1": "08-transit-time-and-network-sla.md#chunk-4",
+        "hybrid_top1": "08-transit-time-and-network-sla.md#chunk-4",
+        "dense_hit1": true,
+        "keyword_hit1": true,
+        "hybrid_hit1": true
+      },
+      {
+        "id": "TC-REAL-39",
+        "query": "Hạn mức thu hộ tiền mặt tối đa cho một bưu tá đi giao hàng là bao nhiêu triệu đồng?",
+        "gold": [
+          "05-cod-policy-and-finance.md#chunk-2",
+          "09-negative-exceptions-and-incident-handling.md#chunk-11"
+        ],
+        "dense_top1": "05-cod-policy-and-finance.md#chunk-7",
+        "keyword_top1": "06-packaging-and-fragile-goods.md#chunk-5",
+        "hybrid_top1": "09-negative-exceptions-and-incident-handling.md#chunk-11",
+        "dense_hit1": false,
+        "keyword_hit1": false,
+        "hybrid_hit1": true
+      },
+      {
+        "id": "TC-REAL-41",
+        "query": "Gửi hàng ra huyện đảo Phú Quốc có bị tính phụ phí tuyến hải đảo không?",
+        "gold": [
+          "01-pricing-and-iata-weight.md#chunk-9"
+        ],
+        "dense_top1": "01-pricing-and-iata-weight.md#chunk-9",
+        "keyword_top1": "01-pricing-and-iata-weight.md#chunk-9",
+        "hybrid_top1": "01-pricing-and-iata-weight.md#chunk-9",
+        "dense_hit1": true,
+        "keyword_hit1": true,
+        "hybrid_hit1": true
+      },
+      {
+        "id": "TC-REAL-44",
+        "query": "Gửi bưu phẩm chứa Căn cước công dân hoặc Hộ chiếu gốc cần lưu ý những quy định gì?",
+        "gold": [
+          "03-prohibited-and-restricted-goods.md#chunk-2"
+        ],
+        "dense_top1": "03-prohibited-and-restricted-goods.md#chunk-2",
+        "keyword_top1": "03-prohibited-and-restricted-goods.md#chunk-2",
+        "hybrid_top1": "03-prohibited-and-restricted-goods.md#chunk-2",
+        "dense_hit1": true,
+        "keyword_hit1": true,
+        "hybrid_hit1": true
+      },
+      {
+        "id": "TC-REAL-45",
+        "query": "Hàng đông lạnh bảo quản bằng đá khô CO2 có được phép vận chuyển không?",
+        "gold": [
+          "03-prohibited-and-restricted-goods.md#chunk-2"
+        ],
+        "dense_top1": "03-prohibited-and-restricted-goods.md#chunk-2",
+        "keyword_top1": "03-prohibited-and-restricted-goods.md#chunk-2",
+        "hybrid_top1": "03-prohibited-and-restricted-goods.md#chunk-2",
+        "dense_hit1": true,
+        "keyword_hit1": true,
+        "hybrid_hit1": true
+      },
+      {
+        "id": "TC-REAL-46",
+        "query": "Hình thức đồng kiểm không cho bóc tem niêm phong có áp dụng cho sản phẩm điện tử nguyên seal không?",
+        "gold": [
+          "03-prohibited-and-restricted-goods.md#chunk-3",
+          "07-special-delivery-services.md#chunk-1"
+        ],
+        "dense_top1": "03-prohibited-and-restricted-goods.md#chunk-3",
+        "keyword_top1": "07-special-delivery-services.md#chunk-1",
+        "hybrid_top1": "03-prohibited-and-restricted-goods.md#chunk-3",
+        "dense_hit1": true,
+        "keyword_hit1": true,
+        "hybrid_hit1": true
+      },
+      {
+        "id": "TC-REAL-48",
+        "query": "Nếu người gửi cố tình khai man hàng dễ vỡ thành quần áo thì khi vỡ ai chịu trách nhiệm?",
+        "gold": [
+          "09-negative-exceptions-and-incident-handling.md#chunk-9",
+          "03-prohibited-and-restricted-goods.md#chunk-4"
+        ],
+        "dense_top1": "09-negative-exceptions-and-incident-handling.md#chunk-9",
+        "keyword_top1": "06-packaging-and-fragile-goods.md#chunk-5",
+        "hybrid_top1": "09-negative-exceptions-and-incident-handling.md#chunk-9",
+        "dense_hit1": true,
+        "keyword_hit1": false,
+        "hybrid_hit1": true
+      },
+      {
+        "id": "TC-REAL-50",
+        "query": "Quy trình kiểm tra vết quét thao tác (Scan Audit Trail) của bưu phẩm gồm các mốc chính nào?",
+        "gold": [
+          "09-negative-exceptions-and-incident-handling.md#chunk-10"
+        ],
+        "dense_top1": "09-negative-exceptions-and-incident-handling.md#chunk-10",
+        "keyword_top1": "09-negative-exceptions-and-incident-handling.md#chunk-10",
+        "hybrid_top1": "09-negative-exceptions-and-incident-handling.md#chunk-10",
+        "dense_hit1": true,
+        "keyword_hit1": true,
+        "hybrid_hit1": true
+      }
+    ]
+  },
+  "holdout_12": {
+    "summary": {
+      "keyword": {
+        "n_queries": 12,
+        "hit_at_1_count": "11/12",
+        "hit_at_1": 91.7,
+        "hit_at_1_ci95_low": 61.5,
+        "hit_at_1_ci95_high": 99.8,
+        "hit_at_3": 100.0,
+        "hit_at_5": 100.0,
+        "recall_at_5": 95.8,
+        "mrr_at_5": 0.9444
+      },
+      "dense": {
+        "n_queries": 12,
+        "hit_at_1_count": "12/12",
+        "hit_at_1": 100.0,
+        "hit_at_1_ci95_low": 73.5,
+        "hit_at_1_ci95_high": 100.0,
+        "hit_at_3": 100.0,
+        "hit_at_5": 100.0,
+        "recall_at_5": 100.0,
+        "mrr_at_5": 1.0
+      },
+      "hybrid": {
+        "n_queries": 12,
+        "hit_at_1_count": "12/12",
+        "hit_at_1": 100.0,
+        "hit_at_1_ci95_low": 73.5,
+        "hit_at_1_ci95_high": 100.0,
+        "hit_at_3": 100.0,
+        "hit_at_5": 100.0,
+        "recall_at_5": 100.0,
+        "mrr_at_5": 1.0
+      }
+    },
+    "stats": {
+      "mcnemar_hybrid_vs_dense": {
+        "b": 0,
+        "c": 0,
+        "discordant": 0,
+        "p_value": 1.0
+      },
+      "mcnemar_hybrid_vs_keyword": {
+        "b": 1,
+        "c": 0,
+        "discordant": 1,
+        "p_value": 1.0
+      }
+    },
+    "per_query": [
+      {
+        "id": "HO-01",
+        "query": "Thú nhồi bông nhẹ nhưng thùng carton kích thước rất lớn thì cách quy đổi trọng lượng tính tiền như thế nào?",
+        "gold": [
+          "01-pricing-and-iata-weight.md#chunk-2"
+        ],
+        "dense_top1": "01-pricing-and-iata-weight.md#chunk-2",
+        "keyword_top1": "01-pricing-and-iata-weight.md#chunk-2",
+        "hybrid_top1": "01-pricing-and-iata-weight.md#chunk-2",
+        "dense_hit1": true,
+        "keyword_hit1": true,
+        "hybrid_hit1": true
+      },
+      {
+        "id": "HO-02",
+        "query": "Đơn gửi nội thành cùng thành phố có bị cộng thêm phụ phí vùng miền không?",
+        "gold": [
+          "01-pricing-and-iata-weight.md#chunk-3"
+        ],
+        "dense_top1": "01-pricing-and-iata-weight.md#chunk-3",
+        "keyword_top1": "01-pricing-and-iata-weight.md#chunk-9",
+        "hybrid_top1": "01-pricing-and-iata-weight.md#chunk-3",
+        "dense_hit1": true,
+        "keyword_hit1": false,
+        "hybrid_hit1": true
+      },
+      {
+        "id": "HO-03",
+        "query": "Gói hàng nặng 72 kg hoặc một cạnh dài 165 cm có được phép tạo vận đơn chuyển phát thông thường không?",
+        "gold": [
+          "01-pricing-and-iata-weight.md#chunk-7",
+          "01-pricing-and-iata-weight.md#chunk-8"
+        ],
+        "dense_top1": "01-pricing-and-iata-weight.md#chunk-7",
+        "keyword_top1": "01-pricing-and-iata-weight.md#chunk-7",
+        "hybrid_top1": "01-pricing-and-iata-weight.md#chunk-7",
+        "dense_hit1": true,
+        "keyword_hit1": true,
+        "hybrid_hit1": true
+      },
+      {
+        "id": "HO-04",
+        "query": "Khách mua gói bảo vệ khai giá cho đồng hồ trị giá 18 triệu đồng thì mức phí bảo hiểm áp dụng bao nhiêu phần trăm?",
+        "gold": [
+          "02-insurance-and-claim-policy.md#chunk-3",
+          "02-insurance-and-claim-policy.md#chunk-1"
+        ],
+        "dense_top1": "02-insurance-and-claim-policy.md#chunk-3",
+        "keyword_top1": "02-insurance-and-claim-policy.md#chunk-3",
+        "hybrid_top1": "02-insurance-and-claim-policy.md#chunk-3",
+        "dense_hit1": true,
+        "keyword_hit1": true,
+        "hybrid_hit1": true
+      },
+      {
+        "id": "HO-05",
+        "query": "Nhờ tổng đài đổi địa điểm giao nhận sang quận khác trên cùng tỉnh trước khi bưu tá đi phát có mất thêm phí không?",
+        "gold": [
+          "04-delivery-process-and-faq.md#chunk-3"
+        ],
+        "dense_top1": "04-delivery-process-and-faq.md#chunk-3",
+        "keyword_top1": "04-delivery-process-and-faq.md#chunk-3",
+        "hybrid_top1": "04-delivery-process-and-faq.md#chunk-3",
+        "dense_hit1": true,
+        "keyword_hit1": true,
+        "hybrid_hit1": true
+      },
+      {
+        "id": "HO-06",
+        "query": "Người nhận tra cứu vận đơn online có thấy được biểu phí gốc và mức chiết khấu của chủ shop không?",
+        "gold": [
+          "04-delivery-process-and-faq.md#chunk-4"
+        ],
+        "dense_top1": "04-delivery-process-and-faq.md#chunk-4",
+        "keyword_top1": "04-delivery-process-and-faq.md#chunk-4",
+        "hybrid_top1": "04-delivery-process-and-faq.md#chunk-4",
+        "dense_hit1": true,
+        "keyword_hit1": true,
+        "hybrid_hit1": true
+      },
+      {
+        "id": "HO-07",
+        "query": "Tiền công nợ ví cước của cửa hàng bị âm quá 500 nghìn đồng thì hệ thống xử lý ra sao?",
+        "gold": [
+          "05-cod-policy-and-finance.md#chunk-4"
+        ],
+        "dense_top1": "05-cod-policy-and-finance.md#chunk-4",
+        "keyword_top1": "05-cod-policy-and-finance.md#chunk-4",
+        "hybrid_top1": "05-cod-policy-and-finance.md#chunk-4",
+        "dense_hit1": true,
+        "keyword_hit1": true,
+        "hybrid_hit1": true
+      },
+      {
+        "id": "HO-08",
+        "query": "Shipper thu hộ tiền mặt vượt ngưỡng cho phép trong một ca đi phát phải làm thủ tục gì trước khi giao đơn kế tiếp?",
+        "gold": [
+          "05-cod-policy-and-finance.md#chunk-2",
+          "09-negative-exceptions-and-incident-handling.md#chunk-11"
+        ],
+        "dense_top1": "05-cod-policy-and-finance.md#chunk-2",
+        "keyword_top1": "05-cod-policy-and-finance.md#chunk-2",
+        "hybrid_top1": "05-cod-policy-and-finance.md#chunk-2",
+        "dense_hit1": true,
+        "keyword_hit1": true,
+        "hybrid_hit1": true
+      },
+      {
+        "id": "HO-09",
+        "query": "Khi vận chuyển chai thủy tinh đựng mật ong hoặc chất lỏng thì nắp chai và khoảng trống bên trong thùng đóng gói ra sao?",
+        "gold": [
+          "06-packaging-and-fragile-goods.md#chunk-7",
+          "06-packaging-and-fragile-goods.md#chunk-3"
+        ],
+        "dense_top1": "06-packaging-and-fragile-goods.md#chunk-7",
+        "keyword_top1": "06-packaging-and-fragile-goods.md#chunk-7",
+        "hybrid_top1": "06-packaging-and-fragile-goods.md#chunk-7",
+        "dense_hit1": true,
+        "keyword_hit1": true,
+        "hybrid_hit1": true
+      },
+      {
+        "id": "HO-10",
+        "query": "Dịch vụ giao hàng mới đồng thời thu hồi sản phẩm lỗi 1-đổi-1 tận nơi yêu cầu bưu tá kiểm tra những gì?",
+        "gold": [
+          "07-special-delivery-services.md#chunk-4"
+        ],
+        "dense_top1": "07-special-delivery-services.md#chunk-4",
+        "keyword_top1": "07-special-delivery-services.md#chunk-4",
+        "hybrid_top1": "07-special-delivery-services.md#chunk-4",
+        "dense_hit1": true,
+        "keyword_hit1": true,
+        "hybrid_hit1": true
+      },
+      {
+        "id": "HO-11",
+        "query": "Xe tải chạy tuyến trục Bắc - Nam từ Hà Nội vào TP.HCM xuất bến mấy giờ mỗi ngày và hành trình mất bao lâu?",
+        "gold": [
+          "08-transit-time-and-network-sla.md#chunk-3"
+        ],
+        "dense_top1": "08-transit-time-and-network-sla.md#chunk-3",
+        "keyword_top1": "08-transit-time-and-network-sla.md#chunk-3",
+        "hybrid_top1": "08-transit-time-and-network-sla.md#chunk-3",
+        "dense_hit1": true,
+        "keyword_hit1": true,
+        "hybrid_hit1": true
+      },
+      {
+        "id": "HO-12",
+        "query": "Máy quét kích thước DWS tại Hub phát hiện cân nặng thực tế chênh lệch trên 15% so với khai báo của người gửi thì xử lý thế nào?",
+        "gold": [
+          "09-negative-exceptions-and-incident-handling.md#chunk-6"
+        ],
+        "dense_top1": "09-negative-exceptions-and-incident-handling.md#chunk-6",
+        "keyword_top1": "09-negative-exceptions-and-incident-handling.md#chunk-6",
+        "hybrid_top1": "09-negative-exceptions-and-incident-handling.md#chunk-6",
+        "dense_hit1": true,
+        "keyword_hit1": true,
+        "hybrid_hit1": true
+      }
+    ]
+  },
+  "combined_51": {
+    "summary": {
+      "keyword": {
+        "n_queries": 51,
+        "hit_at_1_count": "37/51",
+        "hit_at_1": 72.5,
+        "hit_at_1_ci95_low": 58.3,
+        "hit_at_1_ci95_high": 84.1,
+        "hit_at_3": 94.1,
+        "hit_at_5": 98.0,
+        "recall_at_5": 89.9,
+        "mrr_at_5": 0.8258
+      },
+      "dense": {
+        "n_queries": 51,
+        "hit_at_1_count": "48/51",
+        "hit_at_1": 94.1,
+        "hit_at_1_ci95_low": 83.8,
+        "hit_at_1_ci95_high": 98.8,
+        "hit_at_3": 100.0,
+        "hit_at_5": 100.0,
+        "recall_at_5": 98.9,
+        "mrr_at_5": 0.9673
+      },
+      "hybrid": {
+        "n_queries": 51,
+        "hit_at_1_count": "51/51",
+        "hit_at_1": 100.0,
+        "hit_at_1_ci95_low": 93.0,
+        "hit_at_1_ci95_high": 100.0,
+        "hit_at_3": 100.0,
+        "hit_at_5": 100.0,
+        "recall_at_5": 98.9,
+        "mrr_at_5": 1.0
+      }
+    },
+    "stats": {
+      "mcnemar_hybrid_vs_dense": {
+        "b": 3,
+        "c": 0,
+        "discordant": 3,
+        "p_value": 0.25
+      },
+      "mcnemar_hybrid_vs_keyword": {
+        "b": 14,
+        "c": 0,
+        "discordant": 14,
+        "p_value": 0.000122
+      }
+    },
+    "per_query": [
+      {
+        "id": "TC-REAL-01",
+        "query": "Hàng mỹ phẩm dạng chai lọ dung dịch, serum khi gửi qua bưu cục GHTK bắt buộc phải đóng gói như thế nào để được bảo hiểm khi bể vỡ?",
+        "gold": [
+          "03-prohibited-and-restricted-goods.md#chunk-2",
+          "06-packaging-and-fragile-goods.md#chunk-3",
+          "06-packaging-and-fragile-goods.md#chunk-5",
+          "06-packaging-and-fragile-goods.md#chunk-7"
+        ],
+        "dense_top1": "06-packaging-and-fragile-goods.md#chunk-3",
+        "keyword_top1": "06-packaging-and-fragile-goods.md#chunk-5",
+        "hybrid_top1": "06-packaging-and-fragile-goods.md#chunk-5",
+        "dense_hit1": true,
+        "keyword_hit1": true,
+        "hybrid_hit1": true
+      },
+      {
+        "id": "TC-REAL-02",
+        "query": "Hàng thủy tinh, gốm sứ dễ vỡ nếu đóng gói sơ sài không đủ xốp mà bị vỡ trên đường đi thì bưu cục có đền bù không?",
+        "gold": [
+          "06-packaging-and-fragile-goods.md#chunk-5",
+          "02-insurance-and-claim-policy.md#chunk-2",
+          "03-prohibited-and-restricted-goods.md#chunk-4"
+        ],
+        "dense_top1": "03-prohibited-and-restricted-goods.md#chunk-4",
+        "keyword_top1": "06-packaging-and-fragile-goods.md#chunk-5",
+        "hybrid_top1": "06-packaging-and-fragile-goods.md#chunk-5",
+        "dense_hit1": true,
+        "keyword_hit1": true,
+        "hybrid_hit1": true
+      },
+      {
+        "id": "TC-REAL-03",
+        "query": "Phí dịch vụ khai giá (bảo hiểm hàng hóa) của bưu cục được tính bao nhiêu % giá trị kiện hàng?",
+        "gold": [
+          "02-insurance-and-claim-policy.md#chunk-3"
+        ],
+        "dense_top1": "02-insurance-and-claim-policy.md#chunk-1",
+        "keyword_top1": "06-packaging-and-fragile-goods.md#chunk-5",
+        "hybrid_top1": "02-insurance-and-claim-policy.md#chunk-3",
+        "dense_hit1": false,
+        "keyword_hit1": false,
+        "hybrid_hit1": true
+      },
+      {
+        "id": "TC-REAL-04",
+        "query": "Đơn hàng có mua bảo hiểm nếu bị thất lạc mất nguyên kiện thì mức bồi thường thực tế là bao nhiêu?",
+        "gold": [
+          "02-insurance-and-claim-policy.md#chunk-4",
+          "02-insurance-and-claim-policy.md#chunk-3"
+        ],
+        "dense_top1": "02-insurance-and-claim-policy.md#chunk-4",
+        "keyword_top1": "06-packaging-and-fragile-goods.md#chunk-5",
+        "hybrid_top1": "02-insurance-and-claim-policy.md#chunk-4",
+        "dense_hit1": true,
+        "keyword_hit1": false,
+        "hybrid_hit1": true
+      },
+      {
+        "id": "TC-REAL-05",
+        "query": "Trường hợp người gửi không có hóa đơn chứng minh giá trị và không mua bảo hiểm, nếu mất hàng thì bồi thường theo mức nào?",
+        "gold": [
+          "02-insurance-and-claim-policy.md#chunk-2"
+        ],
+        "dense_top1": "02-insurance-and-claim-policy.md#chunk-2",
+        "keyword_top1": "06-packaging-and-fragile-goods.md#chunk-5",
+        "hybrid_top1": "02-insurance-and-claim-policy.md#chunk-2",
+        "dense_hit1": true,
+        "keyword_hit1": false,
+        "hybrid_hit1": true
+      },
+      {
+        "id": "TC-REAL-06",
+        "query": "Thời gian tiếp nhận và xử lý khiếu nại bưu phẩm bị sự cố tối đa là bao lâu?",
+        "gold": [
+          "02-insurance-and-claim-policy.md#chunk-5"
+        ],
+        "dense_top1": "02-insurance-and-claim-policy.md#chunk-5",
+        "keyword_top1": "02-insurance-and-claim-policy.md#chunk-5",
+        "hybrid_top1": "02-insurance-and-claim-policy.md#chunk-5",
+        "dense_hit1": true,
+        "keyword_hit1": true,
+        "hybrid_hit1": true
+      },
+      {
+        "id": "TC-REAL-07",
+        "query": "Bưu kiện phát không thành công lần 1 được lưu kho bưu cục phát tối đa mấy ngày?",
+        "gold": [
+          "04-delivery-process-and-faq.md#chunk-2"
+        ],
+        "dense_top1": "04-delivery-process-and-faq.md#chunk-2",
+        "keyword_top1": "04-delivery-process-and-faq.md#chunk-2",
+        "hybrid_top1": "04-delivery-process-and-faq.md#chunk-2",
+        "dense_hit1": true,
+        "keyword_hit1": true,
+        "hybrid_hit1": true
+      },
+      {
+        "id": "TC-REAL-08",
+        "query": "Khách từ chối nhận hàng (bom hàng), bưu tá có được tự ý bấm chuyển hoàn về ngay không?",
+        "gold": [
+          "09-negative-exceptions-and-incident-handling.md#chunk-3",
+          "04-delivery-process-and-faq.md#chunk-5"
+        ],
+        "dense_top1": "09-negative-exceptions-and-incident-handling.md#chunk-3",
+        "keyword_top1": "04-delivery-process-and-faq.md#chunk-5",
+        "hybrid_top1": "09-negative-exceptions-and-incident-handling.md#chunk-3",
+        "dense_hit1": true,
+        "keyword_hit1": true,
+        "hybrid_hit1": true
+      },
+      {
+        "id": "TC-REAL-09",
+        "query": "Phí chuyển hoàn bưu kiện về cho người gửi đối với tài khoản shop tiêu chuẩn được tính thế nào?",
+        "gold": [
+          "04-delivery-process-and-faq.md#chunk-5",
+          "01-pricing-and-iata-weight.md#chunk-5"
+        ],
+        "dense_top1": "04-delivery-process-and-faq.md#chunk-5",
+        "keyword_top1": "04-delivery-process-and-faq.md#chunk-5",
+        "hybrid_top1": "04-delivery-process-and-faq.md#chunk-5",
+        "dense_hit1": true,
+        "keyword_hit1": true,
+        "hybrid_hit1": true
+      },
+      {
+        "id": "TC-REAL-10",
+        "query": "Khách hàng VIP Enterprise sản lượng lớn có được miễn phí cước chuyển hoàn không?",
+        "gold": [
+          "01-pricing-and-iata-weight.md#chunk-6",
+          "04-delivery-process-and-faq.md#chunk-5"
+        ],
+        "dense_top1": "01-pricing-and-iata-weight.md#chunk-6",
+        "keyword_top1": "01-pricing-and-iata-weight.md#chunk-5",
+        "hybrid_top1": "01-pricing-and-iata-weight.md#chunk-6",
+        "dense_hit1": true,
+        "keyword_hit1": false,
+        "hybrid_hit1": true
+      },
+      {
+        "id": "TC-REAL-11",
+        "query": "Hàng bột hoặc chất lỏng không nhãn mác, không nguồn gốc có được gửi qua bưu cục không?",
+        "gold": [
+          "03-prohibited-and-restricted-goods.md#chunk-1"
+        ],
+        "dense_top1": "03-prohibited-and-restricted-goods.md#chunk-2",
+        "keyword_top1": "03-prohibited-and-restricted-goods.md#chunk-1",
+        "hybrid_top1": "03-prohibited-and-restricted-goods.md#chunk-1",
+        "dense_hit1": false,
+        "keyword_hit1": true,
+        "hybrid_hit1": true
+      },
+      {
+        "id": "TC-REAL-12",
+        "query": "Chính sách đồng kiểm cho người nhận xem hàng tại chỗ có được phép thử đồ hoặc xé tem niêm phong không?",
+        "gold": [
+          "07-special-delivery-services.md#chunk-1",
+          "07-special-delivery-services.md#chunk-2",
+          "03-prohibited-and-restricted-goods.md#chunk-3"
+        ],
+        "dense_top1": "07-special-delivery-services.md#chunk-2",
+        "keyword_top1": "03-prohibited-and-restricted-goods.md#chunk-3",
+        "hybrid_top1": "03-prohibited-and-restricted-goods.md#chunk-3",
+        "dense_hit1": true,
+        "keyword_hit1": true,
+        "hybrid_hit1": true
+      },
+      {
+        "id": "TC-REAL-14",
+        "query": "Hàng đồ điện tử điện lạnh như quạt máy, tivi cần bọc thế nào trước khi giao bưu tá?",
+        "gold": [
+          "06-packaging-and-fragile-goods.md#chunk-6",
+          "03-prohibited-and-restricted-goods.md#chunk-4"
+        ],
+        "dense_top1": "06-packaging-and-fragile-goods.md#chunk-6",
+        "keyword_top1": "06-packaging-and-fragile-goods.md#chunk-6",
+        "hybrid_top1": "06-packaging-and-fragile-goods.md#chunk-6",
+        "dense_hit1": true,
+        "keyword_hit1": true,
+        "hybrid_hit1": true
+      },
+      {
+        "id": "TC-REAL-15",
+        "query": "Kiện hàng trên 20kg bưu tá xe máy có chở được không hay phải điều xe tải?",
+        "gold": [
+          "01-pricing-and-iata-weight.md#chunk-7"
+        ],
+        "dense_top1": "01-pricing-and-iata-weight.md#chunk-7",
+        "keyword_top1": "01-pricing-and-iata-weight.md#chunk-7",
+        "hybrid_top1": "01-pricing-and-iata-weight.md#chunk-7",
+        "dense_hit1": true,
+        "keyword_hit1": true,
+        "hybrid_hit1": true
+      },
+      {
+        "id": "TC-REAL-16",
+        "query": "Tính năng Giao 1 phần - Trả 1 phần của GHN hoạt động như thế nào đối với đơn hàng thời trang?",
+        "gold": [
+          "07-special-delivery-services.md#chunk-3"
+        ],
+        "dense_top1": "07-special-delivery-services.md#chunk-3",
+        "keyword_top1": "04-delivery-process-and-faq.md#chunk-5",
+        "hybrid_top1": "07-special-delivery-services.md#chunk-3",
+        "dense_hit1": true,
+        "keyword_hit1": false,
+        "hybrid_hit1": true
+      },
+      {
+        "id": "TC-REAL-17",
+        "query": "Tiền thu hộ COD của Shop được bưu cục chuyển khoản đối soát vào những ngày nào trong tuần?",
+        "gold": [
+          "05-cod-policy-and-finance.md#chunk-3"
+        ],
+        "dense_top1": "05-cod-policy-and-finance.md#chunk-3",
+        "keyword_top1": "01-pricing-and-iata-weight.md#chunk-5",
+        "hybrid_top1": "05-cod-policy-and-finance.md#chunk-3",
+        "dense_hit1": true,
+        "keyword_hit1": false,
+        "hybrid_hit1": true
+      },
+      {
+        "id": "TC-REAL-18",
+        "query": "Ví trả trước GHN Xu được sử dụng để thanh toán những khoản cước nào?",
+        "gold": [
+          "05-cod-policy-and-finance.md#chunk-6"
+        ],
+        "dense_top1": "05-cod-policy-and-finance.md#chunk-6",
+        "keyword_top1": "05-cod-policy-and-finance.md#chunk-6",
+        "hybrid_top1": "05-cod-policy-and-finance.md#chunk-6",
+        "dense_hit1": true,
+        "keyword_hit1": true,
+        "hybrid_hit1": true
+      },
+      {
+        "id": "TC-REAL-21",
+        "query": "Đơn hàng có số tiền COD dưới 1.000.000 VNĐ có mất phí dịch vụ thu hộ không?",
+        "gold": [
+          "01-pricing-and-iata-weight.md#chunk-4",
+          "05-cod-policy-and-finance.md#chunk-5"
+        ],
+        "dense_top1": "01-pricing-and-iata-weight.md#chunk-4",
+        "keyword_top1": "01-pricing-and-iata-weight.md#chunk-5",
+        "hybrid_top1": "01-pricing-and-iata-weight.md#chunk-4",
+        "dense_hit1": true,
+        "keyword_hit1": false,
+        "hybrid_hit1": true
+      },
+      {
+        "id": "TC-REAL-22",
+        "query": "Số tiền thu hộ COD từ 1 triệu đồng trở lên tính phí như thế nào và tối đa bao nhiêu?",
+        "gold": [
+          "01-pricing-and-iata-weight.md#chunk-4",
+          "05-cod-policy-and-finance.md#chunk-5"
+        ],
+        "dense_top1": "01-pricing-and-iata-weight.md#chunk-4",
+        "keyword_top1": "06-packaging-and-fragile-goods.md#chunk-5",
+        "hybrid_top1": "05-cod-policy-and-finance.md#chunk-5",
+        "dense_hit1": true,
+        "keyword_hit1": false,
+        "hybrid_hit1": true
+      },
+      {
+        "id": "TC-REAL-23",
+        "query": "Dịch vụ shipper đến tận nhà lấy hàng của bưu cục có thu phí không?",
+        "gold": [
+          "04-delivery-process-and-faq.md#chunk-7"
+        ],
+        "dense_top1": "04-delivery-process-and-faq.md#chunk-7",
+        "keyword_top1": "04-delivery-process-and-faq.md#chunk-7",
+        "hybrid_top1": "04-delivery-process-and-faq.md#chunk-7",
+        "dense_hit1": true,
+        "keyword_hit1": true,
+        "hybrid_hit1": true
+      },
+      {
+        "id": "TC-REAL-24",
+        "query": "Bưu tá sẽ giao tối đa bao nhiêu lần trước khi đơn hàng bị chuyển hoàn về cho người gửi?",
+        "gold": [
+          "04-delivery-process-and-faq.md#chunk-1",
+          "09-negative-exceptions-and-incident-handling.md#chunk-2"
+        ],
+        "dense_top1": "04-delivery-process-and-faq.md#chunk-1",
+        "keyword_top1": "06-packaging-and-fragile-goods.md#chunk-5",
+        "hybrid_top1": "04-delivery-process-and-faq.md#chunk-1",
+        "dense_hit1": true,
+        "keyword_hit1": false,
+        "hybrid_hit1": true
+      },
+      {
+        "id": "TC-REAL-25",
+        "query": "Kiện hàng điện thoại iPhone trị giá 25 triệu đồng có bắt buộc dán tem seal an ninh chống tráo ruột không?",
+        "gold": [
+          "06-packaging-and-fragile-goods.md#chunk-1",
+          "06-packaging-and-fragile-goods.md#chunk-2",
+          "06-packaging-and-fragile-goods.md#chunk-4"
+        ],
+        "dense_top1": "06-packaging-and-fragile-goods.md#chunk-2",
+        "keyword_top1": "06-packaging-and-fragile-goods.md#chunk-1",
+        "hybrid_top1": "06-packaging-and-fragile-goods.md#chunk-1",
+        "dense_hit1": true,
+        "keyword_hit1": true,
+        "hybrid_hit1": true
+      },
+      {
+        "id": "TC-REAL-26",
+        "query": "Đóng gói máy tính xách tay laptop gửi qua bưu cục cần lót đệm dày tối thiểu bao nhiêu cm?",
+        "gold": [
+          "06-packaging-and-fragile-goods.md#chunk-3",
+          "06-packaging-and-fragile-goods.md#chunk-6"
+        ],
+        "dense_top1": "06-packaging-and-fragile-goods.md#chunk-6",
+        "keyword_top1": "02-insurance-and-claim-policy.md#chunk-3",
+        "hybrid_top1": "06-packaging-and-fragile-goods.md#chunk-6",
+        "dense_hit1": true,
+        "keyword_hit1": false,
+        "hybrid_hit1": true
+      },
+      {
+        "id": "TC-REAL-27",
+        "query": "Giới hạn trọng lượng của bưu gửi chuyển phát tiêu chuẩn thông thường bằng xe máy là bao nhiêu kg?",
+        "gold": [
+          "01-pricing-and-iata-weight.md#chunk-7"
+        ],
+        "dense_top1": "01-pricing-and-iata-weight.md#chunk-7",
+        "keyword_top1": "01-pricing-and-iata-weight.md#chunk-7",
+        "hybrid_top1": "01-pricing-and-iata-weight.md#chunk-7",
+        "dense_hit1": true,
+        "keyword_hit1": true,
+        "hybrid_hit1": true
+      },
+      {
+        "id": "TC-REAL-28",
+        "query": "Một kiện hàng bị mất 1 sản phẩm trong tổng số 3 sản phẩm thì tỷ lệ bồi thường tính thế nào?",
+        "gold": [
+          "02-insurance-and-claim-policy.md#chunk-4"
+        ],
+        "dense_top1": "02-insurance-and-claim-policy.md#chunk-4",
+        "keyword_top1": "02-insurance-and-claim-policy.md#chunk-4",
+        "hybrid_top1": "02-insurance-and-claim-policy.md#chunk-4",
+        "dense_hit1": true,
+        "keyword_hit1": true,
+        "hybrid_hit1": true
+      },
+      {
+        "id": "TC-REAL-30",
+        "query": "Shop muốn mở khiếu nại bồi thường cho đơn hàng bị vỡ thì thời hạn gửi hồ sơ là mấy ngày?",
+        "gold": [
+          "02-insurance-and-claim-policy.md#chunk-5"
+        ],
+        "dense_top1": "02-insurance-and-claim-policy.md#chunk-5",
+        "keyword_top1": "06-packaging-and-fragile-goods.md#chunk-5",
+        "hybrid_top1": "02-insurance-and-claim-policy.md#chunk-5",
+        "dense_hit1": true,
+        "keyword_hit1": false,
+        "hybrid_hit1": true
+      },
+      {
+        "id": "TC-REAL-31",
+        "query": "Căn cứ pháp lý bồi thường dịch vụ chuyển phát theo pháp luật bưu chính Việt Nam (Nghị định 47 & Luật Bưu chính) quy định thế nào với hàng không khai giá?",
+        "gold": [
+          "02-insurance-and-claim-policy.md#chunk-2"
+        ],
+        "dense_top1": "02-insurance-and-claim-policy.md#chunk-2",
+        "keyword_top1": "02-insurance-and-claim-policy.md#chunk-2",
+        "hybrid_top1": "02-insurance-and-claim-policy.md#chunk-2",
+        "dense_hit1": true,
+        "keyword_hit1": true,
+        "hybrid_hit1": true
+      },
+      {
+        "id": "TC-REAL-32",
+        "query": "Bưu gửi chứa phong bì thư từ, hợp đồng công chứng bưu tá có quyền mở ruột ra xem không?",
+        "gold": [
+          "03-prohibited-and-restricted-goods.md#chunk-3",
+          "07-special-delivery-services.md#chunk-1"
+        ],
+        "dense_top1": "03-prohibited-and-restricted-goods.md#chunk-3",
+        "keyword_top1": "07-special-delivery-services.md#chunk-1",
+        "hybrid_top1": "03-prohibited-and-restricted-goods.md#chunk-3",
+        "dense_hit1": true,
+        "keyword_hit1": true,
+        "hybrid_hit1": true
+      },
+      {
+        "id": "TC-REAL-33",
+        "query": "Pin sạc dự phòng lithium có được gửi bằng đường bay hỏa tốc hàng không không?",
+        "gold": [
+          "03-prohibited-and-restricted-goods.md#chunk-2"
+        ],
+        "dense_top1": "03-prohibited-and-restricted-goods.md#chunk-2",
+        "keyword_top1": "03-prohibited-and-restricted-goods.md#chunk-2",
+        "hybrid_top1": "03-prohibited-and-restricted-goods.md#chunk-2",
+        "dense_hit1": true,
+        "keyword_hit1": true,
+        "hybrid_hit1": true
+      },
+      {
+        "id": "TC-REAL-35",
+        "query": "Giao dịch viên bưu cục có trách nhiệm kiểm tra ngoại quan bưu phẩm trước khi nhận gửi không?",
+        "gold": [
+          "03-prohibited-and-restricted-goods.md#chunk-3"
+        ],
+        "dense_top1": "03-prohibited-and-restricted-goods.md#chunk-3",
+        "keyword_top1": "03-prohibited-and-restricted-goods.md#chunk-3",
+        "hybrid_top1": "03-prohibited-and-restricted-goods.md#chunk-3",
+        "dense_hit1": true,
+        "keyword_hit1": true,
+        "hybrid_hit1": true
+      },
+      {
+        "id": "TC-REAL-37",
+        "query": "Hoa quả tươi sống, nông sản mau hỏng có được gửi qua đường chuyển phát chậm không?",
+        "gold": [
+          "03-prohibited-and-restricted-goods.md#chunk-2",
+          "08-transit-time-and-network-sla.md#chunk-2"
+        ],
+        "dense_top1": "03-prohibited-and-restricted-goods.md#chunk-2",
+        "keyword_top1": "03-prohibited-and-restricted-goods.md#chunk-2",
+        "hybrid_top1": "03-prohibited-and-restricted-goods.md#chunk-2",
+        "dense_hit1": true,
+        "keyword_hit1": true,
+        "hybrid_hit1": true
+      },
+      {
+        "id": "TC-REAL-38",
+        "query": "Trường hợp bưu gửi bị chậm do bão lụt sạt lở đèo Hải Vân (sự kiện bất khả kháng) thì bưu cục có phải đền bù không?",
+        "gold": [
+          "08-transit-time-and-network-sla.md#chunk-4"
+        ],
+        "dense_top1": "08-transit-time-and-network-sla.md#chunk-4",
+        "keyword_top1": "08-transit-time-and-network-sla.md#chunk-4",
+        "hybrid_top1": "08-transit-time-and-network-sla.md#chunk-4",
+        "dense_hit1": true,
+        "keyword_hit1": true,
+        "hybrid_hit1": true
+      },
+      {
+        "id": "TC-REAL-39",
+        "query": "Hạn mức thu hộ tiền mặt tối đa cho một bưu tá đi giao hàng là bao nhiêu triệu đồng?",
+        "gold": [
+          "05-cod-policy-and-finance.md#chunk-2",
+          "09-negative-exceptions-and-incident-handling.md#chunk-11"
+        ],
+        "dense_top1": "05-cod-policy-and-finance.md#chunk-7",
+        "keyword_top1": "06-packaging-and-fragile-goods.md#chunk-5",
+        "hybrid_top1": "09-negative-exceptions-and-incident-handling.md#chunk-11",
+        "dense_hit1": false,
+        "keyword_hit1": false,
+        "hybrid_hit1": true
+      },
+      {
+        "id": "TC-REAL-41",
+        "query": "Gửi hàng ra huyện đảo Phú Quốc có bị tính phụ phí tuyến hải đảo không?",
+        "gold": [
+          "01-pricing-and-iata-weight.md#chunk-9"
+        ],
+        "dense_top1": "01-pricing-and-iata-weight.md#chunk-9",
+        "keyword_top1": "01-pricing-and-iata-weight.md#chunk-9",
+        "hybrid_top1": "01-pricing-and-iata-weight.md#chunk-9",
+        "dense_hit1": true,
+        "keyword_hit1": true,
+        "hybrid_hit1": true
+      },
+      {
+        "id": "TC-REAL-44",
+        "query": "Gửi bưu phẩm chứa Căn cước công dân hoặc Hộ chiếu gốc cần lưu ý những quy định gì?",
+        "gold": [
+          "03-prohibited-and-restricted-goods.md#chunk-2"
+        ],
+        "dense_top1": "03-prohibited-and-restricted-goods.md#chunk-2",
+        "keyword_top1": "03-prohibited-and-restricted-goods.md#chunk-2",
+        "hybrid_top1": "03-prohibited-and-restricted-goods.md#chunk-2",
+        "dense_hit1": true,
+        "keyword_hit1": true,
+        "hybrid_hit1": true
+      },
+      {
+        "id": "TC-REAL-45",
+        "query": "Hàng đông lạnh bảo quản bằng đá khô CO2 có được phép vận chuyển không?",
+        "gold": [
+          "03-prohibited-and-restricted-goods.md#chunk-2"
+        ],
+        "dense_top1": "03-prohibited-and-restricted-goods.md#chunk-2",
+        "keyword_top1": "03-prohibited-and-restricted-goods.md#chunk-2",
+        "hybrid_top1": "03-prohibited-and-restricted-goods.md#chunk-2",
+        "dense_hit1": true,
+        "keyword_hit1": true,
+        "hybrid_hit1": true
+      },
+      {
+        "id": "TC-REAL-46",
+        "query": "Hình thức đồng kiểm không cho bóc tem niêm phong có áp dụng cho sản phẩm điện tử nguyên seal không?",
+        "gold": [
+          "03-prohibited-and-restricted-goods.md#chunk-3",
+          "07-special-delivery-services.md#chunk-1"
+        ],
+        "dense_top1": "03-prohibited-and-restricted-goods.md#chunk-3",
+        "keyword_top1": "07-special-delivery-services.md#chunk-1",
+        "hybrid_top1": "03-prohibited-and-restricted-goods.md#chunk-3",
+        "dense_hit1": true,
+        "keyword_hit1": true,
+        "hybrid_hit1": true
+      },
+      {
+        "id": "TC-REAL-48",
+        "query": "Nếu người gửi cố tình khai man hàng dễ vỡ thành quần áo thì khi vỡ ai chịu trách nhiệm?",
+        "gold": [
+          "09-negative-exceptions-and-incident-handling.md#chunk-9",
+          "03-prohibited-and-restricted-goods.md#chunk-4"
+        ],
+        "dense_top1": "09-negative-exceptions-and-incident-handling.md#chunk-9",
+        "keyword_top1": "06-packaging-and-fragile-goods.md#chunk-5",
+        "hybrid_top1": "09-negative-exceptions-and-incident-handling.md#chunk-9",
+        "dense_hit1": true,
+        "keyword_hit1": false,
+        "hybrid_hit1": true
+      },
+      {
+        "id": "TC-REAL-50",
+        "query": "Quy trình kiểm tra vết quét thao tác (Scan Audit Trail) của bưu phẩm gồm các mốc chính nào?",
+        "gold": [
+          "09-negative-exceptions-and-incident-handling.md#chunk-10"
+        ],
+        "dense_top1": "09-negative-exceptions-and-incident-handling.md#chunk-10",
+        "keyword_top1": "09-negative-exceptions-and-incident-handling.md#chunk-10",
+        "hybrid_top1": "09-negative-exceptions-and-incident-handling.md#chunk-10",
+        "dense_hit1": true,
+        "keyword_hit1": true,
+        "hybrid_hit1": true
+      },
+      {
+        "id": "HO-01",
+        "query": "Thú nhồi bông nhẹ nhưng thùng carton kích thước rất lớn thì cách quy đổi trọng lượng tính tiền như thế nào?",
+        "gold": [
+          "01-pricing-and-iata-weight.md#chunk-2"
+        ],
+        "dense_top1": "01-pricing-and-iata-weight.md#chunk-2",
+        "keyword_top1": "01-pricing-and-iata-weight.md#chunk-2",
+        "hybrid_top1": "01-pricing-and-iata-weight.md#chunk-2",
+        "dense_hit1": true,
+        "keyword_hit1": true,
+        "hybrid_hit1": true
+      },
+      {
+        "id": "HO-02",
+        "query": "Đơn gửi nội thành cùng thành phố có bị cộng thêm phụ phí vùng miền không?",
+        "gold": [
+          "01-pricing-and-iata-weight.md#chunk-3"
+        ],
+        "dense_top1": "01-pricing-and-iata-weight.md#chunk-3",
+        "keyword_top1": "01-pricing-and-iata-weight.md#chunk-9",
+        "hybrid_top1": "01-pricing-and-iata-weight.md#chunk-3",
+        "dense_hit1": true,
+        "keyword_hit1": false,
+        "hybrid_hit1": true
+      },
+      {
+        "id": "HO-03",
+        "query": "Gói hàng nặng 72 kg hoặc một cạnh dài 165 cm có được phép tạo vận đơn chuyển phát thông thường không?",
+        "gold": [
+          "01-pricing-and-iata-weight.md#chunk-7",
+          "01-pricing-and-iata-weight.md#chunk-8"
+        ],
+        "dense_top1": "01-pricing-and-iata-weight.md#chunk-7",
+        "keyword_top1": "01-pricing-and-iata-weight.md#chunk-7",
+        "hybrid_top1": "01-pricing-and-iata-weight.md#chunk-7",
+        "dense_hit1": true,
+        "keyword_hit1": true,
+        "hybrid_hit1": true
+      },
+      {
+        "id": "HO-04",
+        "query": "Khách mua gói bảo vệ khai giá cho đồng hồ trị giá 18 triệu đồng thì mức phí bảo hiểm áp dụng bao nhiêu phần trăm?",
+        "gold": [
+          "02-insurance-and-claim-policy.md#chunk-3",
+          "02-insurance-and-claim-policy.md#chunk-1"
+        ],
+        "dense_top1": "02-insurance-and-claim-policy.md#chunk-3",
+        "keyword_top1": "02-insurance-and-claim-policy.md#chunk-3",
+        "hybrid_top1": "02-insurance-and-claim-policy.md#chunk-3",
+        "dense_hit1": true,
+        "keyword_hit1": true,
+        "hybrid_hit1": true
+      },
+      {
+        "id": "HO-05",
+        "query": "Nhờ tổng đài đổi địa điểm giao nhận sang quận khác trên cùng tỉnh trước khi bưu tá đi phát có mất thêm phí không?",
+        "gold": [
+          "04-delivery-process-and-faq.md#chunk-3"
+        ],
+        "dense_top1": "04-delivery-process-and-faq.md#chunk-3",
+        "keyword_top1": "04-delivery-process-and-faq.md#chunk-3",
+        "hybrid_top1": "04-delivery-process-and-faq.md#chunk-3",
+        "dense_hit1": true,
+        "keyword_hit1": true,
+        "hybrid_hit1": true
+      },
+      {
+        "id": "HO-06",
+        "query": "Người nhận tra cứu vận đơn online có thấy được biểu phí gốc và mức chiết khấu của chủ shop không?",
+        "gold": [
+          "04-delivery-process-and-faq.md#chunk-4"
+        ],
+        "dense_top1": "04-delivery-process-and-faq.md#chunk-4",
+        "keyword_top1": "04-delivery-process-and-faq.md#chunk-4",
+        "hybrid_top1": "04-delivery-process-and-faq.md#chunk-4",
+        "dense_hit1": true,
+        "keyword_hit1": true,
+        "hybrid_hit1": true
+      },
+      {
+        "id": "HO-07",
+        "query": "Tiền công nợ ví cước của cửa hàng bị âm quá 500 nghìn đồng thì hệ thống xử lý ra sao?",
+        "gold": [
+          "05-cod-policy-and-finance.md#chunk-4"
+        ],
+        "dense_top1": "05-cod-policy-and-finance.md#chunk-4",
+        "keyword_top1": "05-cod-policy-and-finance.md#chunk-4",
+        "hybrid_top1": "05-cod-policy-and-finance.md#chunk-4",
+        "dense_hit1": true,
+        "keyword_hit1": true,
+        "hybrid_hit1": true
+      },
+      {
+        "id": "HO-08",
+        "query": "Shipper thu hộ tiền mặt vượt ngưỡng cho phép trong một ca đi phát phải làm thủ tục gì trước khi giao đơn kế tiếp?",
+        "gold": [
+          "05-cod-policy-and-finance.md#chunk-2",
+          "09-negative-exceptions-and-incident-handling.md#chunk-11"
+        ],
+        "dense_top1": "05-cod-policy-and-finance.md#chunk-2",
+        "keyword_top1": "05-cod-policy-and-finance.md#chunk-2",
+        "hybrid_top1": "05-cod-policy-and-finance.md#chunk-2",
+        "dense_hit1": true,
+        "keyword_hit1": true,
+        "hybrid_hit1": true
+      },
+      {
+        "id": "HO-09",
+        "query": "Khi vận chuyển chai thủy tinh đựng mật ong hoặc chất lỏng thì nắp chai và khoảng trống bên trong thùng đóng gói ra sao?",
+        "gold": [
+          "06-packaging-and-fragile-goods.md#chunk-7",
+          "06-packaging-and-fragile-goods.md#chunk-3"
+        ],
+        "dense_top1": "06-packaging-and-fragile-goods.md#chunk-7",
+        "keyword_top1": "06-packaging-and-fragile-goods.md#chunk-7",
+        "hybrid_top1": "06-packaging-and-fragile-goods.md#chunk-7",
+        "dense_hit1": true,
+        "keyword_hit1": true,
+        "hybrid_hit1": true
+      },
+      {
+        "id": "HO-10",
+        "query": "Dịch vụ giao hàng mới đồng thời thu hồi sản phẩm lỗi 1-đổi-1 tận nơi yêu cầu bưu tá kiểm tra những gì?",
+        "gold": [
+          "07-special-delivery-services.md#chunk-4"
+        ],
+        "dense_top1": "07-special-delivery-services.md#chunk-4",
+        "keyword_top1": "07-special-delivery-services.md#chunk-4",
+        "hybrid_top1": "07-special-delivery-services.md#chunk-4",
+        "dense_hit1": true,
+        "keyword_hit1": true,
+        "hybrid_hit1": true
+      },
+      {
+        "id": "HO-11",
+        "query": "Xe tải chạy tuyến trục Bắc - Nam từ Hà Nội vào TP.HCM xuất bến mấy giờ mỗi ngày và hành trình mất bao lâu?",
+        "gold": [
+          "08-transit-time-and-network-sla.md#chunk-3"
+        ],
+        "dense_top1": "08-transit-time-and-network-sla.md#chunk-3",
+        "keyword_top1": "08-transit-time-and-network-sla.md#chunk-3",
+        "hybrid_top1": "08-transit-time-and-network-sla.md#chunk-3",
+        "dense_hit1": true,
+        "keyword_hit1": true,
+        "hybrid_hit1": true
+      },
+      {
+        "id": "HO-12",
+        "query": "Máy quét kích thước DWS tại Hub phát hiện cân nặng thực tế chênh lệch trên 15% so với khai báo của người gửi thì xử lý thế nào?",
+        "gold": [
+          "09-negative-exceptions-and-incident-handling.md#chunk-6"
+        ],
+        "dense_top1": "09-negative-exceptions-and-incident-handling.md#chunk-6",
+        "keyword_top1": "09-negative-exceptions-and-incident-handling.md#chunk-6",
+        "hybrid_top1": "09-negative-exceptions-and-incident-handling.md#chunk-6",
+        "dense_hit1": true,
+        "keyword_hit1": true,
+        "hybrid_hit1": true
+      }
+    ]
+  }
+}
