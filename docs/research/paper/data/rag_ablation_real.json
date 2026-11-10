@@ -1,0 +1,541 @@
+{
+  "corpus": {
+    "num_sop_documents": 9,
+    "num_chunks": 59,
+    "embedding_model": null,
+    "header_dimensions_field": 1536,
+    "actual_embedding_dimensions": 3072,
+    "hybrid_weights": "0.7 * cosineSimilarity(q, d) + min(0.35, (termHits / |keyTerms|) * 0.35)",
+    "min_score_threshold": 0.15,
+    "top_k": 5,
+    "synonym_thesaurus_entries": 13
+  },
+  "metrics": {
+    "dense": {
+      "n_queries": 39,
+      "hit_at_1": 92.31,
+      "hit_at_1_count": "36/39",
+      "hit_at_3": 100.0,
+      "hit_at_3_count": "39/39",
+      "hit_at_5": 100.0,
+      "hit_at_5_count": "39/39",
+      "recall_at_5": 98.5,
+      "mrr_at_5": 0.9573
+    },
+    "keyword": {
+      "n_queries": 39,
+      "hit_at_1": 66.67,
+      "hit_at_1_count": "26/39",
+      "hit_at_3": 92.31,
+      "hit_at_3_count": "36/39",
+      "hit_at_5": 97.44,
+      "hit_at_5_count": "38/39",
+      "recall_at_5": 88.03,
+      "mrr_at_5": 0.7893
+    },
+    "hybrid": {
+      "n_queries": 39,
+      "hit_at_1": 100.0,
+      "hit_at_1_count": "39/39",
+      "hit_at_3": 100.0,
+      "hit_at_3_count": "39/39",
+      "hit_at_5": 100.0,
+      "hit_at_5_count": "39/39",
+      "recall_at_5": 98.5,
+      "mrr_at_5": 1.0
+    }
+  },
+  "per_query": [
+    {
+      "id": "TC-REAL-01",
+      "gold": [
+        "03-prohibited-and-restricted-goods.md#chunk-2",
+        "06-packaging-and-fragile-goods.md#chunk-3",
+        "06-packaging-and-fragile-goods.md#chunk-5",
+        "06-packaging-and-fragile-goods.md#chunk-7"
+      ],
+      "dense_top1": "06-packaging-and-fragile-goods.md#chunk-3",
+      "keyword_top1": "06-packaging-and-fragile-goods.md#chunk-5",
+      "hybrid_top1": "06-packaging-and-fragile-goods.md#chunk-5",
+      "dense_hit1": true,
+      "keyword_hit1": true,
+      "hybrid_hit1": true
+    },
+    {
+      "id": "TC-REAL-02",
+      "gold": [
+        "06-packaging-and-fragile-goods.md#chunk-5",
+        "02-insurance-and-claim-policy.md#chunk-2",
+        "03-prohibited-and-restricted-goods.md#chunk-4"
+      ],
+      "dense_top1": "03-prohibited-and-restricted-goods.md#chunk-4",
+      "keyword_top1": "06-packaging-and-fragile-goods.md#chunk-5",
+      "hybrid_top1": "06-packaging-and-fragile-goods.md#chunk-5",
+      "dense_hit1": true,
+      "keyword_hit1": true,
+      "hybrid_hit1": true
+    },
+    {
+      "id": "TC-REAL-03",
+      "gold": [
+        "02-insurance-and-claim-policy.md#chunk-3"
+      ],
+      "dense_top1": "02-insurance-and-claim-policy.md#chunk-1",
+      "keyword_top1": "06-packaging-and-fragile-goods.md#chunk-5",
+      "hybrid_top1": "02-insurance-and-claim-policy.md#chunk-3",
+      "dense_hit1": false,
+      "keyword_hit1": false,
+      "hybrid_hit1": true
+    },
+    {
+      "id": "TC-REAL-04",
+      "gold": [
+        "02-insurance-and-claim-policy.md#chunk-4",
+        "02-insurance-and-claim-policy.md#chunk-3"
+      ],
+      "dense_top1": "02-insurance-and-claim-policy.md#chunk-4",
+      "keyword_top1": "06-packaging-and-fragile-goods.md#chunk-5",
+      "hybrid_top1": "02-insurance-and-claim-policy.md#chunk-4",
+      "dense_hit1": true,
+      "keyword_hit1": false,
+      "hybrid_hit1": true
+    },
+    {
+      "id": "TC-REAL-05",
+      "gold": [
+        "02-insurance-and-claim-policy.md#chunk-2"
+      ],
+      "dense_top1": "02-insurance-and-claim-policy.md#chunk-2",
+      "keyword_top1": "06-packaging-and-fragile-goods.md#chunk-5",
+      "hybrid_top1": "02-insurance-and-claim-policy.md#chunk-2",
+      "dense_hit1": true,
+      "keyword_hit1": false,
+      "hybrid_hit1": true
+    },
+    {
+      "id": "TC-REAL-06",
+      "gold": [
+        "02-insurance-and-claim-policy.md#chunk-5"
+      ],
+      "dense_top1": "02-insurance-and-claim-policy.md#chunk-5",
+      "keyword_top1": "02-insurance-and-claim-policy.md#chunk-5",
+      "hybrid_top1": "02-insurance-and-claim-policy.md#chunk-5",
+      "dense_hit1": true,
+      "keyword_hit1": true,
+      "hybrid_hit1": true
+    },
+    {
+      "id": "TC-REAL-07",
+      "gold": [
+        "04-delivery-process-and-faq.md#chunk-2"
+      ],
+      "dense_top1": "04-delivery-process-and-faq.md#chunk-2",
+      "keyword_top1": "04-delivery-process-and-faq.md#chunk-2",
+      "hybrid_top1": "04-delivery-process-and-faq.md#chunk-2",
+      "dense_hit1": true,
+      "keyword_hit1": true,
+      "hybrid_hit1": true
+    },
+    {
+      "id": "TC-REAL-08",
+      "gold": [
+        "09-negative-exceptions-and-incident-handling.md#chunk-3",
+        "04-delivery-process-and-faq.md#chunk-5"
+      ],
+      "dense_top1": "09-negative-exceptions-and-incident-handling.md#chunk-3",
+      "keyword_top1": "04-delivery-process-and-faq.md#chunk-5",
+      "hybrid_top1": "09-negative-exceptions-and-incident-handling.md#chunk-3",
+      "dense_hit1": true,
+      "keyword_hit1": true,
+      "hybrid_hit1": true
+    },
+    {
+      "id": "TC-REAL-09",
+      "gold": [
+        "04-delivery-process-and-faq.md#chunk-5",
+        "01-pricing-and-iata-weight.md#chunk-5"
+      ],
+      "dense_top1": "04-delivery-process-and-faq.md#chunk-5",
+      "keyword_top1": "04-delivery-process-and-faq.md#chunk-5",
+      "hybrid_top1": "04-delivery-process-and-faq.md#chunk-5",
+      "dense_hit1": true,
+      "keyword_hit1": true,
+      "hybrid_hit1": true
+    },
+    {
+      "id": "TC-REAL-10",
+      "gold": [
+        "01-pricing-and-iata-weight.md#chunk-6",
+        "04-delivery-process-and-faq.md#chunk-5"
+      ],
+      "dense_top1": "01-pricing-and-iata-weight.md#chunk-6",
+      "keyword_top1": "01-pricing-and-iata-weight.md#chunk-5",
+      "hybrid_top1": "01-pricing-and-iata-weight.md#chunk-6",
+      "dense_hit1": true,
+      "keyword_hit1": false,
+      "hybrid_hit1": true
+    },
+    {
+      "id": "TC-REAL-11",
+      "gold": [
+        "03-prohibited-and-restricted-goods.md#chunk-1"
+      ],
+      "dense_top1": "03-prohibited-and-restricted-goods.md#chunk-2",
+      "keyword_top1": "03-prohibited-and-restricted-goods.md#chunk-1",
+      "hybrid_top1": "03-prohibited-and-restricted-goods.md#chunk-1",
+      "dense_hit1": false,
+      "keyword_hit1": true,
+      "hybrid_hit1": true
+    },
+    {
+      "id": "TC-REAL-12",
+      "gold": [
+        "07-special-delivery-services.md#chunk-1",
+        "07-special-delivery-services.md#chunk-2",
+        "03-prohibited-and-restricted-goods.md#chunk-3"
+      ],
+      "dense_top1": "07-special-delivery-services.md#chunk-2",
+      "keyword_top1": "03-prohibited-and-restricted-goods.md#chunk-3",
+      "hybrid_top1": "03-prohibited-and-restricted-goods.md#chunk-3",
+      "dense_hit1": true,
+      "keyword_hit1": true,
+      "hybrid_hit1": true
+    },
+    {
+      "id": "TC-REAL-14",
+      "gold": [
+        "06-packaging-and-fragile-goods.md#chunk-6",
+        "03-prohibited-and-restricted-goods.md#chunk-4"
+      ],
+      "dense_top1": "06-packaging-and-fragile-goods.md#chunk-6",
+      "keyword_top1": "06-packaging-and-fragile-goods.md#chunk-6",
+      "hybrid_top1": "06-packaging-and-fragile-goods.md#chunk-6",
+      "dense_hit1": true,
+      "keyword_hit1": true,
+      "hybrid_hit1": true
+    },
+    {
+      "id": "TC-REAL-15",
+      "gold": [
+        "01-pricing-and-iata-weight.md#chunk-7"
+      ],
+      "dense_top1": "01-pricing-and-iata-weight.md#chunk-7",
+      "keyword_top1": "01-pricing-and-iata-weight.md#chunk-7",
+      "hybrid_top1": "01-pricing-and-iata-weight.md#chunk-7",
+      "dense_hit1": true,
+      "keyword_hit1": true,
+      "hybrid_hit1": true
+    },
+    {
+      "id": "TC-REAL-16",
+      "gold": [
+        "07-special-delivery-services.md#chunk-3"
+      ],
+      "dense_top1": "07-special-delivery-services.md#chunk-3",
+      "keyword_top1": "04-delivery-process-and-faq.md#chunk-5",
+      "hybrid_top1": "07-special-delivery-services.md#chunk-3",
+      "dense_hit1": true,
+      "keyword_hit1": false,
+      "hybrid_hit1": true
+    },
+    {
+      "id": "TC-REAL-17",
+      "gold": [
+        "05-cod-policy-and-finance.md#chunk-3"
+      ],
+      "dense_top1": "05-cod-policy-and-finance.md#chunk-3",
+      "keyword_top1": "01-pricing-and-iata-weight.md#chunk-5",
+      "hybrid_top1": "05-cod-policy-and-finance.md#chunk-3",
+      "dense_hit1": true,
+      "keyword_hit1": false,
+      "hybrid_hit1": true
+    },
+    {
+      "id": "TC-REAL-18",
+      "gold": [
+        "05-cod-policy-and-finance.md#chunk-6"
+      ],
+      "dense_top1": "05-cod-policy-and-finance.md#chunk-6",
+      "keyword_top1": "05-cod-policy-and-finance.md#chunk-6",
+      "hybrid_top1": "05-cod-policy-and-finance.md#chunk-6",
+      "dense_hit1": true,
+      "keyword_hit1": true,
+      "hybrid_hit1": true
+    },
+    {
+      "id": "TC-REAL-21",
+      "gold": [
+        "01-pricing-and-iata-weight.md#chunk-4",
+        "05-cod-policy-and-finance.md#chunk-5"
+      ],
+      "dense_top1": "01-pricing-and-iata-weight.md#chunk-4",
+      "keyword_top1": "01-pricing-and-iata-weight.md#chunk-5",
+      "hybrid_top1": "01-pricing-and-iata-weight.md#chunk-4",
+      "dense_hit1": true,
+      "keyword_hit1": false,
+      "hybrid_hit1": true
+    },
+    {
+      "id": "TC-REAL-22",
+      "gold": [
+        "01-pricing-and-iata-weight.md#chunk-4",
+        "05-cod-policy-and-finance.md#chunk-5"
+      ],
+      "dense_top1": "01-pricing-and-iata-weight.md#chunk-4",
+      "keyword_top1": "06-packaging-and-fragile-goods.md#chunk-5",
+      "hybrid_top1": "05-cod-policy-and-finance.md#chunk-5",
+      "dense_hit1": true,
+      "keyword_hit1": false,
+      "hybrid_hit1": true
+    },
+    {
+      "id": "TC-REAL-23",
+      "gold": [
+        "04-delivery-process-and-faq.md#chunk-7"
+      ],
+      "dense_top1": "04-delivery-process-and-faq.md#chunk-7",
+      "keyword_top1": "04-delivery-process-and-faq.md#chunk-7",
+      "hybrid_top1": "04-delivery-process-and-faq.md#chunk-7",
+      "dense_hit1": true,
+      "keyword_hit1": true,
+      "hybrid_hit1": true
+    },
+    {
+      "id": "TC-REAL-24",
+      "gold": [
+        "04-delivery-process-and-faq.md#chunk-1",
+        "09-negative-exceptions-and-incident-handling.md#chunk-2"
+      ],
+      "dense_top1": "04-delivery-process-and-faq.md#chunk-1",
+      "keyword_top1": "06-packaging-and-fragile-goods.md#chunk-5",
+      "hybrid_top1": "04-delivery-process-and-faq.md#chunk-1",
+      "dense_hit1": true,
+      "keyword_hit1": false,
+      "hybrid_hit1": true
+    },
+    {
+      "id": "TC-REAL-25",
+      "gold": [
+        "06-packaging-and-fragile-goods.md#chunk-1",
+        "06-packaging-and-fragile-goods.md#chunk-2",
+        "06-packaging-and-fragile-goods.md#chunk-4"
+      ],
+      "dense_top1": "06-packaging-and-fragile-goods.md#chunk-2",
+      "keyword_top1": "06-packaging-and-fragile-goods.md#chunk-1",
+      "hybrid_top1": "06-packaging-and-fragile-goods.md#chunk-1",
+      "dense_hit1": true,
+      "keyword_hit1": true,
+      "hybrid_hit1": true
+    },
+    {
+      "id": "TC-REAL-26",
+      "gold": [
+        "06-packaging-and-fragile-goods.md#chunk-3",
+        "06-packaging-and-fragile-goods.md#chunk-6"
+      ],
+      "dense_top1": "06-packaging-and-fragile-goods.md#chunk-6",
+      "keyword_top1": "02-insurance-and-claim-policy.md#chunk-3",
+      "hybrid_top1": "06-packaging-and-fragile-goods.md#chunk-6",
+      "dense_hit1": true,
+      "keyword_hit1": false,
+      "hybrid_hit1": true
+    },
+    {
+      "id": "TC-REAL-27",
+      "gold": [
+        "01-pricing-and-iata-weight.md#chunk-7"
+      ],
+      "dense_top1": "01-pricing-and-iata-weight.md#chunk-7",
+      "keyword_top1": "01-pricing-and-iata-weight.md#chunk-7",
+      "hybrid_top1": "01-pricing-and-iata-weight.md#chunk-7",
+      "dense_hit1": true,
+      "keyword_hit1": true,
+      "hybrid_hit1": true
+    },
+    {
+      "id": "TC-REAL-28",
+      "gold": [
+        "02-insurance-and-claim-policy.md#chunk-4"
+      ],
+      "dense_top1": "02-insurance-and-claim-policy.md#chunk-4",
+      "keyword_top1": "02-insurance-and-claim-policy.md#chunk-4",
+      "hybrid_top1": "02-insurance-and-claim-policy.md#chunk-4",
+      "dense_hit1": true,
+      "keyword_hit1": true,
+      "hybrid_hit1": true
+    },
+    {
+      "id": "TC-REAL-30",
+      "gold": [
+        "02-insurance-and-claim-policy.md#chunk-5"
+      ],
+      "dense_top1": "02-insurance-and-claim-policy.md#chunk-5",
+      "keyword_top1": "06-packaging-and-fragile-goods.md#chunk-5",
+      "hybrid_top1": "02-insurance-and-claim-policy.md#chunk-5",
+      "dense_hit1": true,
+      "keyword_hit1": false,
+      "hybrid_hit1": true
+    },
+    {
+      "id": "TC-REAL-31",
+      "gold": [
+        "02-insurance-and-claim-policy.md#chunk-2"
+      ],
+      "dense_top1": "02-insurance-and-claim-policy.md#chunk-2",
+      "keyword_top1": "02-insurance-and-claim-policy.md#chunk-2",
+      "hybrid_top1": "02-insurance-and-claim-policy.md#chunk-2",
+      "dense_hit1": true,
+      "keyword_hit1": true,
+      "hybrid_hit1": true
+    },
+    {
+      "id": "TC-REAL-32",
+      "gold": [
+        "03-prohibited-and-restricted-goods.md#chunk-3",
+        "07-special-delivery-services.md#chunk-1"
+      ],
+      "dense_top1": "03-prohibited-and-restricted-goods.md#chunk-3",
+      "keyword_top1": "07-special-delivery-services.md#chunk-1",
+      "hybrid_top1": "03-prohibited-and-restricted-goods.md#chunk-3",
+      "dense_hit1": true,
+      "keyword_hit1": true,
+      "hybrid_hit1": true
+    },
+    {
+      "id": "TC-REAL-33",
+      "gold": [
+        "03-prohibited-and-restricted-goods.md#chunk-2"
+      ],
+      "dense_top1": "03-prohibited-and-restricted-goods.md#chunk-2",
+      "keyword_top1": "03-prohibited-and-restricted-goods.md#chunk-2",
+      "hybrid_top1": "03-prohibited-and-restricted-goods.md#chunk-2",
+      "dense_hit1": true,
+      "keyword_hit1": true,
+      "hybrid_hit1": true
+    },
+    {
+      "id": "TC-REAL-35",
+      "gold": [
+        "03-prohibited-and-restricted-goods.md#chunk-3"
+      ],
+      "dense_top1": "03-prohibited-and-restricted-goods.md#chunk-3",
+      "keyword_top1": "03-prohibited-and-restricted-goods.md#chunk-3",
+      "hybrid_top1": "03-prohibited-and-restricted-goods.md#chunk-3",
+      "dense_hit1": true,
+      "keyword_hit1": true,
+      "hybrid_hit1": true
+    },
+    {
+      "id": "TC-REAL-37",
+      "gold": [
+        "03-prohibited-and-restricted-goods.md#chunk-2",
+        "08-transit-time-and-network-sla.md#chunk-2"
+      ],
+      "dense_top1": "03-prohibited-and-restricted-goods.md#chunk-2",
+      "keyword_top1": "03-prohibited-and-restricted-goods.md#chunk-2",
+      "hybrid_top1": "03-prohibited-and-restricted-goods.md#chunk-2",
+      "dense_hit1": true,
+      "keyword_hit1": true,
+      "hybrid_hit1": true
+    },
+    {
+      "id": "TC-REAL-38",
+      "gold": [
+        "08-transit-time-and-network-sla.md#chunk-4"
+      ],
+      "dense_top1": "08-transit-time-and-network-sla.md#chunk-4",
+      "keyword_top1": "08-transit-time-and-network-sla.md#chunk-4",
+      "hybrid_top1": "08-transit-time-and-network-sla.md#chunk-4",
+      "dense_hit1": true,
+      "keyword_hit1": true,
+      "hybrid_hit1": true
+    },
+    {
+      "id": "TC-REAL-39",
+      "gold": [
+        "05-cod-policy-and-finance.md#chunk-2",
+        "09-negative-exceptions-and-incident-handling.md#chunk-11"
+      ],
+      "dense_top1": "05-cod-policy-and-finance.md#chunk-7",
+      "keyword_top1": "06-packaging-and-fragile-goods.md#chunk-5",
+      "hybrid_top1": "09-negative-exceptions-and-incident-handling.md#chunk-11",
+      "dense_hit1": false,
+      "keyword_hit1": false,
+      "hybrid_hit1": true
+    },
+    {
+      "id": "TC-REAL-41",
+      "gold": [
+        "01-pricing-and-iata-weight.md#chunk-9"
+      ],
+      "dense_top1": "01-pricing-and-iata-weight.md#chunk-9",
+      "keyword_top1": "01-pricing-and-iata-weight.md#chunk-9",
+      "hybrid_top1": "01-pricing-and-iata-weight.md#chunk-9",
+      "dense_hit1": true,
+      "keyword_hit1": true,
+      "hybrid_hit1": true
+    },
+    {
+      "id": "TC-REAL-44",
+      "gold": [
+        "03-prohibited-and-restricted-goods.md#chunk-2"
+      ],
+      "dense_top1": "03-prohibited-and-restricted-goods.md#chunk-2",
+      "keyword_top1": "03-prohibited-and-restricted-goods.md#chunk-2",
+      "hybrid_top1": "03-prohibited-and-restricted-goods.md#chunk-2",
+      "dense_hit1": true,
+      "keyword_hit1": true,
+      "hybrid_hit1": true
+    },
+    {
+      "id": "TC-REAL-45",
+      "gold": [
+        "03-prohibited-and-restricted-goods.md#chunk-2"
+      ],
+      "dense_top1": "03-prohibited-and-restricted-goods.md#chunk-2",
+      "keyword_top1": "03-prohibited-and-restricted-goods.md#chunk-2",
+      "hybrid_top1": "03-prohibited-and-restricted-goods.md#chunk-2",
+      "dense_hit1": true,
+      "keyword_hit1": true,
+      "hybrid_hit1": true
+    },
+    {
+      "id": "TC-REAL-46",
+      "gold": [
+        "03-prohibited-and-restricted-goods.md#chunk-3",
+        "07-special-delivery-services.md#chunk-1"
+      ],
+      "dense_top1": "03-prohibited-and-restricted-goods.md#chunk-3",
+      "keyword_top1": "07-special-delivery-services.md#chunk-1",
+      "hybrid_top1": "03-prohibited-and-restricted-goods.md#chunk-3",
+      "dense_hit1": true,
+      "keyword_hit1": true,
+      "hybrid_hit1": true
+    },
+    {
+      "id": "TC-REAL-48",
+      "gold": [
+        "09-negative-exceptions-and-incident-handling.md#chunk-9",
+        "03-prohibited-and-restricted-goods.md#chunk-4"
+      ],
+      "dense_top1": "09-negative-exceptions-and-incident-handling.md#chunk-9",
+      "keyword_top1": "06-packaging-and-fragile-goods.md#chunk-5",
+      "hybrid_top1": "09-negative-exceptions-and-incident-handling.md#chunk-9",
+      "dense_hit1": true,
+      "keyword_hit1": false,
+      "hybrid_hit1": true
+    },
+    {
+      "id": "TC-REAL-50",
+      "gold": [
+        "09-negative-exceptions-and-incident-handling.md#chunk-10"
+      ],
+      "dense_top1": "09-negative-exceptions-and-incident-handling.md#chunk-10",
+      "keyword_top1": "09-negative-exceptions-and-incident-handling.md#chunk-10",
+      "hybrid_top1": "09-negative-exceptions-and-incident-handling.md#chunk-10",
+      "dense_hit1": true,
+      "keyword_hit1": true,
+      "hybrid_hit1": true
+    }
+  ]
+}
