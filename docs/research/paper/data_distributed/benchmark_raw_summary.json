@@ -1,0 +1,883 @@
+{
+  "startedAtIso": "2026-11-10T15:17:50.223Z",
+  "hardware": {
+    "os_platform": "darwin",
+    "os_release": "24.6.0",
+    "arch": "arm64",
+    "cpu_model": "Apple M4",
+    "cpu_cores": 10,
+    "total_mem_gb": 16,
+    "node_version": "v26.0.0",
+    "service_runtime": "Native macOS Node.js PM2 processes backed by Docker PostgreSQL 16 & RabbitMQ 3.13",
+    "postgres_version": "16.15",
+    "postgres_max_connections": 100,
+    "postgres_shared_buffers": "128MB",
+    "pm2_service_pools": {
+      "scan_service_pool": 3,
+      "shipment_service_pool": 15,
+      "tracking_service_pool": 3,
+      "reporting_service_pool": 3,
+      "reporting_consumer_interval_ms": 1000,
+      "reporting_consumer_batch_size": 20
+    },
+    "baseline_pool_cap": 21,
+    "ablation_p3_pool_cap": 3,
+    "rabbitmq": {
+      "rabbitmq_version": "3.13.7",
+      "erlang_version": "26.2.5.16",
+      "rates_mode": "basic"
+    }
+  },
+  "repeats_R": 5,
+  "notes": [
+    "Explicit warmup executed prior to all R=5 timed repetitions.",
+    "Baseline and ablation endpoints execute inside isolated child process (:13099, pg pool=21) symmetric with NestJS services."
+  ],
+  "warmupDurationMs": 1994.9,
+  "finishedAtIso": "2026-11-10T15:32:02.422Z",
+  "exp2bDrainRuns": [
+    {
+      "run": 1,
+      "sample_drain_ms": 4264,
+      "db_span_ms": 4133
+    },
+    {
+      "run": 2,
+      "sample_drain_ms": 4162,
+      "db_span_ms": 4120
+    },
+    {
+      "run": 3,
+      "sample_drain_ms": 3533,
+      "db_span_ms": 3366
+    },
+    {
+      "run": 4,
+      "sample_drain_ms": 4220,
+      "db_span_ms": 4060
+    },
+    {
+      "run": 5,
+      "sample_drain_ms": 4122,
+      "db_span_ms": 4026
+    }
+  ],
+  "exp2cRunTotals": [
+    {
+      "run": 1,
+      "HTTP_Mgmt_Sequential_ms": 330.4,
+      "AMQP_Confirm_Sequential_ms": 121.72,
+      "AMQP_Confirm_Batch50_ms": 10.77
+    },
+    {
+      "run": 2,
+      "HTTP_Mgmt_Sequential_ms": 265.02,
+      "AMQP_Confirm_Sequential_ms": 113.23,
+      "AMQP_Confirm_Batch50_ms": 8.85
+    },
+    {
+      "run": 3,
+      "HTTP_Mgmt_Sequential_ms": 276.15,
+      "AMQP_Confirm_Sequential_ms": 114.75,
+      "AMQP_Confirm_Batch50_ms": 8.08
+    },
+    {
+      "run": 4,
+      "HTTP_Mgmt_Sequential_ms": 247.93,
+      "AMQP_Confirm_Sequential_ms": 112.27,
+      "AMQP_Confirm_Batch50_ms": 8.5
+    },
+    {
+      "run": 5,
+      "HTTP_Mgmt_Sequential_ms": 238.57,
+      "AMQP_Confirm_Sequential_ms": 103.42,
+      "AMQP_Confirm_Batch50_ms": 9.56
+    }
+  ],
+  "exp3Runs": [
+    {
+      "run": 1,
+      "expected_unique": 60,
+      "http_requests": 200,
+      "http_2xx": 200,
+      "db_scans": 60,
+      "db_outbox": 60,
+      "db_aggregation_jobs": 60,
+      "broker_dups_injected": 30,
+      "tracking_dup_leak": 0,
+      "reporting_dup_leak": 0
+    },
+    {
+      "run": 2,
+      "expected_unique": 60,
+      "http_requests": 200,
+      "http_2xx": 200,
+      "db_scans": 60,
+      "db_outbox": 60,
+      "db_aggregation_jobs": 60,
+      "broker_dups_injected": 30,
+      "tracking_dup_leak": 0,
+      "reporting_dup_leak": 0
+    },
+    {
+      "run": 3,
+      "expected_unique": 60,
+      "http_requests": 200,
+      "http_2xx": 200,
+      "db_scans": 60,
+      "db_outbox": 60,
+      "db_aggregation_jobs": 60,
+      "broker_dups_injected": 30,
+      "tracking_dup_leak": 0,
+      "reporting_dup_leak": 0
+    },
+    {
+      "run": 4,
+      "expected_unique": 60,
+      "http_requests": 200,
+      "http_2xx": 200,
+      "db_scans": 60,
+      "db_outbox": 60,
+      "db_aggregation_jobs": 60,
+      "broker_dups_injected": 30,
+      "tracking_dup_leak": 0,
+      "reporting_dup_leak": 0
+    },
+    {
+      "run": 5,
+      "expected_unique": 60,
+      "http_requests": 200,
+      "http_2xx": 200,
+      "db_scans": 60,
+      "db_outbox": 60,
+      "db_aggregation_jobs": 60,
+      "broker_dups_injected": 30,
+      "tracking_dup_leak": 0,
+      "reporting_dup_leak": 0
+    }
+  ],
+  "f2CrashWindowProbe": {
+    "injected": 40,
+    "peak_popped_uncommitted_frames": 40,
+    "commit_span_ms": 1271,
+    "last_pop_to_commit_tail_ms": 1771
+  },
+  "phasedLockProbes": [
+    {
+      "mode": "phased",
+      "type": "Normal_Scan_Locked",
+      "status": 400,
+      "passed_policy": 1
+    },
+    {
+      "mode": "phased",
+      "type": "Normal_Scan_Locked",
+      "status": 400,
+      "passed_policy": 1
+    },
+    {
+      "mode": "phased",
+      "type": "Normal_Scan_Locked",
+      "status": 400,
+      "passed_policy": 1
+    },
+    {
+      "mode": "phased",
+      "type": "Normal_Scan_Locked",
+      "status": 400,
+      "passed_policy": 1
+    },
+    {
+      "mode": "phased",
+      "type": "Normal_Scan_Locked",
+      "status": 400,
+      "passed_policy": 1
+    },
+    {
+      "mode": "phased",
+      "type": "Normal_Scan_Locked",
+      "status": 400,
+      "passed_policy": 1
+    },
+    {
+      "mode": "phased",
+      "type": "Normal_Scan_Locked",
+      "status": 400,
+      "passed_policy": 1
+    },
+    {
+      "mode": "phased",
+      "type": "Normal_Scan_Locked",
+      "status": 400,
+      "passed_policy": 1
+    },
+    {
+      "mode": "phased",
+      "type": "Normal_Scan_Locked",
+      "status": 400,
+      "passed_policy": 1
+    },
+    {
+      "mode": "phased",
+      "type": "Normal_Scan_Locked",
+      "status": 400,
+      "passed_policy": 1
+    },
+    {
+      "mode": "phased",
+      "type": "Normal_Scan_Locked",
+      "status": 400,
+      "passed_policy": 1
+    },
+    {
+      "mode": "phased",
+      "type": "Normal_Scan_Locked",
+      "status": 400,
+      "passed_policy": 1
+    },
+    {
+      "mode": "phased",
+      "type": "Normal_Scan_Locked",
+      "status": 400,
+      "passed_policy": 1
+    },
+    {
+      "mode": "phased",
+      "type": "Normal_Scan_Locked",
+      "status": 400,
+      "passed_policy": 1
+    },
+    {
+      "mode": "phased",
+      "type": "Normal_Scan_Locked",
+      "status": 400,
+      "passed_policy": 1
+    },
+    {
+      "mode": "phased",
+      "type": "Normal_Scan_Locked",
+      "status": 400,
+      "passed_policy": 1
+    },
+    {
+      "mode": "phased",
+      "type": "Normal_Scan_Locked",
+      "status": 400,
+      "passed_policy": 1
+    },
+    {
+      "mode": "phased",
+      "type": "Normal_Scan_Locked",
+      "status": 400,
+      "passed_policy": 1
+    },
+    {
+      "mode": "phased",
+      "type": "Normal_Scan_Locked",
+      "status": 400,
+      "passed_policy": 1
+    },
+    {
+      "mode": "phased",
+      "type": "Normal_Scan_Locked",
+      "status": 400,
+      "passed_policy": 1
+    },
+    {
+      "mode": "phased",
+      "type": "Normal_Scan_Locked",
+      "status": 400,
+      "passed_policy": 1
+    },
+    {
+      "mode": "phased",
+      "type": "Normal_Scan_Locked",
+      "status": 400,
+      "passed_policy": 1
+    },
+    {
+      "mode": "phased",
+      "type": "Normal_Scan_Locked",
+      "status": 400,
+      "passed_policy": 1
+    },
+    {
+      "mode": "phased",
+      "type": "Normal_Scan_Locked",
+      "status": 400,
+      "passed_policy": 1
+    },
+    {
+      "mode": "phased",
+      "type": "Normal_Scan_Locked",
+      "status": 400,
+      "passed_policy": 1
+    },
+    {
+      "mode": "phased",
+      "type": "Normal_Scan_Locked",
+      "status": 400,
+      "passed_policy": 1
+    },
+    {
+      "mode": "phased",
+      "type": "Normal_Scan_Locked",
+      "status": 400,
+      "passed_policy": 1
+    },
+    {
+      "mode": "phased",
+      "type": "Normal_Scan_Locked",
+      "status": 400,
+      "passed_policy": 1
+    },
+    {
+      "mode": "phased",
+      "type": "Normal_Scan_Locked",
+      "status": 400,
+      "passed_policy": 1
+    },
+    {
+      "mode": "phased",
+      "type": "Normal_Scan_Locked",
+      "status": 400,
+      "passed_policy": 1
+    },
+    {
+      "mode": "phased",
+      "type": "Inventory_Check_Locked",
+      "status": 201,
+      "passed_policy": 1
+    },
+    {
+      "mode": "phased",
+      "type": "Inventory_Check_Locked",
+      "status": 201,
+      "passed_policy": 1
+    },
+    {
+      "mode": "phased",
+      "type": "Inventory_Check_Locked",
+      "status": 201,
+      "passed_policy": 1
+    },
+    {
+      "mode": "phased",
+      "type": "Inventory_Check_Locked",
+      "status": 201,
+      "passed_policy": 1
+    },
+    {
+      "mode": "phased",
+      "type": "Inventory_Check_Locked",
+      "status": 201,
+      "passed_policy": 1
+    },
+    {
+      "mode": "phased",
+      "type": "Inventory_Check_Locked",
+      "status": 201,
+      "passed_policy": 1
+    },
+    {
+      "mode": "phased",
+      "type": "Inventory_Check_Locked",
+      "status": 201,
+      "passed_policy": 1
+    },
+    {
+      "mode": "phased",
+      "type": "Inventory_Check_Locked",
+      "status": 201,
+      "passed_policy": 1
+    },
+    {
+      "mode": "phased",
+      "type": "Inventory_Check_Locked",
+      "status": 201,
+      "passed_policy": 1
+    },
+    {
+      "mode": "phased",
+      "type": "Inventory_Check_Locked",
+      "status": 201,
+      "passed_policy": 1
+    },
+    {
+      "mode": "phased",
+      "type": "Inventory_Check_Locked",
+      "status": 201,
+      "passed_policy": 1
+    },
+    {
+      "mode": "phased",
+      "type": "Inventory_Check_Locked",
+      "status": 201,
+      "passed_policy": 1
+    },
+    {
+      "mode": "phased",
+      "type": "Inventory_Check_Locked",
+      "status": 201,
+      "passed_policy": 1
+    },
+    {
+      "mode": "phased",
+      "type": "Inventory_Check_Locked",
+      "status": 201,
+      "passed_policy": 1
+    },
+    {
+      "mode": "phased",
+      "type": "Inventory_Check_Locked",
+      "status": 201,
+      "passed_policy": 1
+    },
+    {
+      "mode": "phased",
+      "type": "Inventory_Check_Locked",
+      "status": 201,
+      "passed_policy": 1
+    },
+    {
+      "mode": "phased",
+      "type": "Inventory_Check_Locked",
+      "status": 201,
+      "passed_policy": 1
+    },
+    {
+      "mode": "phased",
+      "type": "Inventory_Check_Locked",
+      "status": 201,
+      "passed_policy": 1
+    },
+    {
+      "mode": "phased",
+      "type": "Inventory_Check_Locked",
+      "status": 201,
+      "passed_policy": 1
+    },
+    {
+      "mode": "phased",
+      "type": "Inventory_Check_Locked",
+      "status": 201,
+      "passed_policy": 1
+    },
+    {
+      "mode": "phased",
+      "type": "Inventory_Check_Locked",
+      "status": 201,
+      "passed_policy": 1
+    },
+    {
+      "mode": "phased",
+      "type": "Inventory_Check_Locked",
+      "status": 201,
+      "passed_policy": 1
+    },
+    {
+      "mode": "phased",
+      "type": "Inventory_Check_Locked",
+      "status": 201,
+      "passed_policy": 1
+    },
+    {
+      "mode": "phased",
+      "type": "Inventory_Check_Locked",
+      "status": 201,
+      "passed_policy": 1
+    },
+    {
+      "mode": "phased",
+      "type": "Inventory_Check_Locked",
+      "status": 201,
+      "passed_policy": 1
+    },
+    {
+      "mode": "phased",
+      "type": "Inventory_Check_Locked",
+      "status": 201,
+      "passed_policy": 1
+    },
+    {
+      "mode": "phased",
+      "type": "Inventory_Check_Locked",
+      "status": 201,
+      "passed_policy": 1
+    },
+    {
+      "mode": "phased",
+      "type": "Inventory_Check_Locked",
+      "status": 201,
+      "passed_policy": 1
+    },
+    {
+      "mode": "phased",
+      "type": "Inventory_Check_Locked",
+      "status": 201,
+      "passed_policy": 1
+    },
+    {
+      "mode": "phased",
+      "type": "Inventory_Check_Locked",
+      "status": 201,
+      "passed_policy": 1
+    }
+  ],
+  "interleavedLockProbes": [
+    {
+      "mode": "interleaved",
+      "type": "Normal_Scan_Locked",
+      "status": 400,
+      "passed_policy": 1
+    },
+    {
+      "mode": "interleaved",
+      "type": "Inventory_Check_Locked",
+      "status": 201,
+      "passed_policy": 1
+    },
+    {
+      "mode": "interleaved",
+      "type": "Normal_Scan_Locked",
+      "status": 400,
+      "passed_policy": 1
+    },
+    {
+      "mode": "interleaved",
+      "type": "Inventory_Check_Locked",
+      "status": 201,
+      "passed_policy": 1
+    },
+    {
+      "mode": "interleaved",
+      "type": "Normal_Scan_Locked",
+      "status": 400,
+      "passed_policy": 1
+    },
+    {
+      "mode": "interleaved",
+      "type": "Inventory_Check_Locked",
+      "status": 201,
+      "passed_policy": 1
+    },
+    {
+      "mode": "interleaved",
+      "type": "Normal_Scan_Locked",
+      "status": 400,
+      "passed_policy": 1
+    },
+    {
+      "mode": "interleaved",
+      "type": "Inventory_Check_Locked",
+      "status": 201,
+      "passed_policy": 1
+    },
+    {
+      "mode": "interleaved",
+      "type": "Normal_Scan_Locked",
+      "status": 400,
+      "passed_policy": 1
+    },
+    {
+      "mode": "interleaved",
+      "type": "Inventory_Check_Locked",
+      "status": 201,
+      "passed_policy": 1
+    },
+    {
+      "mode": "interleaved",
+      "type": "Normal_Scan_Locked",
+      "status": 201,
+      "passed_policy": 0
+    },
+    {
+      "mode": "interleaved",
+      "type": "Inventory_Check_Locked",
+      "status": 201,
+      "passed_policy": 1
+    },
+    {
+      "mode": "interleaved",
+      "type": "Normal_Scan_Locked",
+      "status": 201,
+      "passed_policy": 0
+    },
+    {
+      "mode": "interleaved",
+      "type": "Inventory_Check_Locked",
+      "status": 201,
+      "passed_policy": 1
+    },
+    {
+      "mode": "interleaved",
+      "type": "Normal_Scan_Locked",
+      "status": 201,
+      "passed_policy": 0
+    },
+    {
+      "mode": "interleaved",
+      "type": "Inventory_Check_Locked",
+      "status": 201,
+      "passed_policy": 1
+    },
+    {
+      "mode": "interleaved",
+      "type": "Normal_Scan_Locked",
+      "status": 201,
+      "passed_policy": 0
+    },
+    {
+      "mode": "interleaved",
+      "type": "Inventory_Check_Locked",
+      "status": 201,
+      "passed_policy": 1
+    },
+    {
+      "mode": "interleaved",
+      "type": "Normal_Scan_Locked",
+      "status": 201,
+      "passed_policy": 0
+    },
+    {
+      "mode": "interleaved",
+      "type": "Inventory_Check_Locked",
+      "status": 201,
+      "passed_policy": 1
+    }
+  ],
+  "dlqFinal": {
+    "healCreateElapsedS": 3.11,
+    "finalRow": {
+      "step": 144,
+      "elapsed_s": "74.45",
+      "main_q": 0,
+      "retry_10s": 0,
+      "retry_1m": 0,
+      "dlq": 10,
+      "healed_count": 10
+    },
+    "xDeathProofs": [
+      {
+        "shipment_code": "333993999002",
+        "x_retry_count": 3,
+        "retry_10s_expire_epoch_s": 1794324657,
+        "retry_1m_expire_epoch_s": 1794324717,
+        "broker_ttl_1m_dwell_s": 60,
+        "broker_total_ttl_s": 70,
+        "deaths": [
+          {
+            "queue": "shipment-service.retry.1m",
+            "reason": "expired",
+            "count": 1,
+            "epoch_s": 1794324717
+          },
+          {
+            "queue": "shipment-service.retry.10s",
+            "reason": "expired",
+            "count": 1,
+            "epoch_s": 1794324657
+          }
+        ]
+      },
+      {
+        "shipment_code": "333993999003",
+        "x_retry_count": 3,
+        "retry_10s_expire_epoch_s": 1794324657,
+        "retry_1m_expire_epoch_s": 1794324717,
+        "broker_ttl_1m_dwell_s": 60,
+        "broker_total_ttl_s": 70,
+        "deaths": [
+          {
+            "queue": "shipment-service.retry.1m",
+            "reason": "expired",
+            "count": 1,
+            "epoch_s": 1794324717
+          },
+          {
+            "queue": "shipment-service.retry.10s",
+            "reason": "expired",
+            "count": 1,
+            "epoch_s": 1794324657
+          }
+        ]
+      },
+      {
+        "shipment_code": "333993999004",
+        "x_retry_count": 3,
+        "retry_10s_expire_epoch_s": 1794324657,
+        "retry_1m_expire_epoch_s": 1794324717,
+        "broker_ttl_1m_dwell_s": 60,
+        "broker_total_ttl_s": 70,
+        "deaths": [
+          {
+            "queue": "shipment-service.retry.1m",
+            "reason": "expired",
+            "count": 1,
+            "epoch_s": 1794324717
+          },
+          {
+            "queue": "shipment-service.retry.10s",
+            "reason": "expired",
+            "count": 1,
+            "epoch_s": 1794324657
+          }
+        ]
+      },
+      {
+        "shipment_code": "333993999005",
+        "x_retry_count": 3,
+        "retry_10s_expire_epoch_s": 1794324657,
+        "retry_1m_expire_epoch_s": 1794324717,
+        "broker_ttl_1m_dwell_s": 60,
+        "broker_total_ttl_s": 70,
+        "deaths": [
+          {
+            "queue": "shipment-service.retry.1m",
+            "reason": "expired",
+            "count": 1,
+            "epoch_s": 1794324717
+          },
+          {
+            "queue": "shipment-service.retry.10s",
+            "reason": "expired",
+            "count": 1,
+            "epoch_s": 1794324657
+          }
+        ]
+      },
+      {
+        "shipment_code": "333993999006",
+        "x_retry_count": 3,
+        "retry_10s_expire_epoch_s": 1794324657,
+        "retry_1m_expire_epoch_s": 1794324717,
+        "broker_ttl_1m_dwell_s": 60,
+        "broker_total_ttl_s": 70,
+        "deaths": [
+          {
+            "queue": "shipment-service.retry.1m",
+            "reason": "expired",
+            "count": 1,
+            "epoch_s": 1794324717
+          },
+          {
+            "queue": "shipment-service.retry.10s",
+            "reason": "expired",
+            "count": 1,
+            "epoch_s": 1794324657
+          }
+        ]
+      },
+      {
+        "shipment_code": "333993999001",
+        "x_retry_count": 3,
+        "retry_10s_expire_epoch_s": 1794324657,
+        "retry_1m_expire_epoch_s": 1794324717,
+        "broker_ttl_1m_dwell_s": 60,
+        "broker_total_ttl_s": 70,
+        "deaths": [
+          {
+            "queue": "shipment-service.retry.1m",
+            "reason": "expired",
+            "count": 1,
+            "epoch_s": 1794324717
+          },
+          {
+            "queue": "shipment-service.retry.10s",
+            "reason": "expired",
+            "count": 1,
+            "epoch_s": 1794324657
+          }
+        ]
+      },
+      {
+        "shipment_code": "333993999007",
+        "x_retry_count": 3,
+        "retry_10s_expire_epoch_s": 1794324657,
+        "retry_1m_expire_epoch_s": 1794324717,
+        "broker_ttl_1m_dwell_s": 60,
+        "broker_total_ttl_s": 70,
+        "deaths": [
+          {
+            "queue": "shipment-service.retry.1m",
+            "reason": "expired",
+            "count": 1,
+            "epoch_s": 1794324717
+          },
+          {
+            "queue": "shipment-service.retry.10s",
+            "reason": "expired",
+            "count": 1,
+            "epoch_s": 1794324657
+          }
+        ]
+      },
+      {
+        "shipment_code": "333993999008",
+        "x_retry_count": 3,
+        "retry_10s_expire_epoch_s": 1794324657,
+        "retry_1m_expire_epoch_s": 1794324717,
+        "broker_ttl_1m_dwell_s": 60,
+        "broker_total_ttl_s": 70,
+        "deaths": [
+          {
+            "queue": "shipment-service.retry.1m",
+            "reason": "expired",
+            "count": 1,
+            "epoch_s": 1794324717
+          },
+          {
+            "queue": "shipment-service.retry.10s",
+            "reason": "expired",
+            "count": 1,
+            "epoch_s": 1794324657
+          }
+        ]
+      },
+      {
+        "shipment_code": "333993999009",
+        "x_retry_count": 3,
+        "retry_10s_expire_epoch_s": 1794324657,
+        "retry_1m_expire_epoch_s": 1794324717,
+        "broker_ttl_1m_dwell_s": 60,
+        "broker_total_ttl_s": 70,
+        "deaths": [
+          {
+            "queue": "shipment-service.retry.1m",
+            "reason": "expired",
+            "count": 1,
+            "epoch_s": 1794324717
+          },
+          {
+            "queue": "shipment-service.retry.10s",
+            "reason": "expired",
+            "count": 1,
+            "epoch_s": 1794324657
+          }
+        ]
+      },
+      {
+        "shipment_code": "333993999010",
+        "x_retry_count": 3,
+        "retry_10s_expire_epoch_s": 1794324657,
+        "retry_1m_expire_epoch_s": 1794324717,
+        "broker_ttl_1m_dwell_s": 60,
+        "broker_total_ttl_s": 70,
+        "deaths": [
+          {
+            "queue": "shipment-service.retry.1m",
+            "reason": "expired",
+            "count": 1,
+            "epoch_s": 1794324717
+          },
+          {
+            "queue": "shipment-service.retry.10s",
+            "reason": "expired",
+            "count": 1,
+            "epoch_s": 1794324657
+          }
+        ]
+      }
+    ]
+  }
+}
