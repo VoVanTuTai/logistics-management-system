@@ -15,8 +15,12 @@ def build_ssrc_distributed_docx():
     output_path = 'docs/research/paper/SSRC_Distributed_Outbox_CQRS_Logistics.docx'
 
     fig1_path = 'docs/research/paper/diagrams/fig1-distributed-outbox-cqrs-cartoon-bw.png'
-    fig2_path = 'docs/research/paper/diagrams/distributed-scaling-latency-charts.png'
-    fig3_path = 'docs/research/paper/diagrams/distributed-resilience-drain-charts.png'
+    fig2_path = 'docs/research/paper/diagrams/fig2-write-scaling-ablation.png'
+    fig3_path = 'docs/research/paper/diagrams/fig3-cqrs-read-isolation.png'
+    fig4_path = 'docs/research/paper/diagrams/fig4-propagation-lag-ecdf.png'
+    fig5_path = 'docs/research/paper/diagrams/fig5-outbox-burst-drain.png'
+    fig6_path = 'docs/research/paper/diagrams/fig6-dual-layer-idempotency.png'
+    fig7_path = 'docs/research/paper/diagrams/fig7-ttl-dlq-recovery.png'
 
     doc = docx.Document(template_path)
 
@@ -35,12 +39,13 @@ def build_ssrc_distributed_docx():
         auto_hyphen = parse_xml(r'<w:autoHyphenation {} w:val="true"/>'.format(nsdecls('w')))
         settings_elm.append(auto_hyphen)
 
-    # 3. Synchronize running header year to 2026 across sections
+    # 3. Synchronize running header to SSRC 2026
     for s in doc.sections:
         for p in s.header.paragraphs:
-            for r in p.runs:
-                if '2025' in r.text:
-                    r.text = r.text.replace('2025', '2026')
+            if 'STUDENT SCIENTIFIC RESEARCH' in p.text:
+                for r in p.runs:
+                    if '2025' in r.text or '2026' in r.text:
+                        r.text = '2026'
 
     # 4. Clear placeholder body while keeping final sectPr
     body = doc._body._body
@@ -427,28 +432,13 @@ def build_ssrc_distributed_docx():
             r_num.font.size = Pt(10.0)
         return p
 
-    def add_full_width_figure(image_path, caption_text, width_in=5.85):
-        p_anchor = doc.add_paragraph(style='Normal')
-        p_anchor.paragraph_format.space_before = Pt(0)
-        p_anchor.paragraph_format.space_after = Pt(0)
-        p_anchor.paragraph_format.line_spacing = 0.2
-        r_a = p_anchor.add_run("")
-        r_a.font.size = Pt(1.0)
-
-        sectPr_2col = parse_xml(r'''
-        <w:sectPr {} >
-            <w:headerReference w:type="default" r:id="rId22"/>
-            <w:type w:val="continuous"/>
-            <w:pgSz w:w="12240" w:h="15840" w:code="1"/>
-            <w:pgMar w:top="1008" w:right="936" w:bottom="1008" w:left="936" w:header="432" w:footer="432" w:gutter="0"/>
-            <w:cols w:num="2" w:space="288"/>
-        </w:sectPr>
-        '''.format(nsdecls('w', 'r')))
-        p_anchor._p.get_or_add_pPr().append(sectPr_2col)
-
+    def add_column_figure(image_path, caption_text, width_in=3.48, space_before=1.8, space_after=2.0):
         p_img = doc.add_paragraph(style='Normal')
         p_img.alignment = WD_ALIGN_PARAGRAPH.CENTER
-        p_img.paragraph_format.space_before = Pt(1.5)
+        p_img.paragraph_format.left_indent = Pt(0)
+        p_img.paragraph_format.right_indent = Pt(0)
+        p_img.paragraph_format.first_line_indent = Pt(0)
+        p_img.paragraph_format.space_before = Pt(space_before)
         p_img.paragraph_format.space_after = Pt(1.0)
         p_img.paragraph_format.keep_with_next = True
         r_img = p_img.add_run()
@@ -456,23 +446,17 @@ def build_ssrc_distributed_docx():
 
         p_cap = doc.add_paragraph(style='Figure Caption')
         p_cap.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
-        p_cap.paragraph_format.space_before = Pt(1.0)
-        p_cap.paragraph_format.space_after = Pt(1.5)
-        append_latex_text(p_cap, caption_text, pt_size=8.0, math_pt_size=8.0, italic=True, code_pt_delta=0.5)
+        p_cap.paragraph_format.left_indent = Pt(0)
+        p_cap.paragraph_format.right_indent = Pt(0)
+        p_cap.paragraph_format.first_line_indent = Pt(0)
+        p_cap.paragraph_format.space_before = Pt(0.6)
+        p_cap.paragraph_format.space_after = Pt(space_after)
+        p_cap.paragraph_format.line_spacing = 0.97
+        append_latex_text(p_cap, caption_text, pt_size=8.0, math_pt_size=8.0, italic=False, code_pt_delta=0.4)
         for r_cap in p_cap.runs:
-            if r_cap.font.name != 'Consolas':
-                r_cap.font.name = 'Times New Roman'
-
-        sectPr_1col = parse_xml(r'''
-        <w:sectPr {} >
-            <w:headerReference w:type="default" r:id="rId22"/>
-            <w:type w:val="continuous"/>
-            <w:pgSz w:w="12240" w:h="15840" w:code="1"/>
-            <w:pgMar w:top="1008" w:right="936" w:bottom="1008" w:left="936" w:header="432" w:footer="432" w:gutter="0"/>
-            <w:cols w:num="1"/>
-        </w:sectPr>
-        '''.format(nsdecls('w', 'r')))
-        p_cap._p.get_or_add_pPr().append(sectPr_1col)
+            r_cap.font.name = 'Times New Roman'
+            r_cap.italic = False
+            r_cap.font.size = Pt(8.0)
         return p_cap
 
     def build_table(headers, rows, col_widths, highlight_rows=None, font_pt=5.4, left_cols=(0,), keep_with_notes=False):
@@ -481,79 +465,113 @@ def build_ssrc_distributed_docx():
         tbl.alignment = WD_TABLE_ALIGNMENT.CENTER
         tbl.autofit = False
         tblPr = tbl._tbl.tblPr
+        for old_tag in tblPr.xpath('./w:tblW | ./w:tblLayout | ./w:tblCellMar | ./w:tblBorders'):
+            tblPr.remove(old_tag)
+        grid_dxa = [int(round(w.inches * 1440)) for w in col_widths]
+        total_dxa = sum(grid_dxa)
+        tblPr.append(parse_xml(f'<w:tblW {nsdecls("w")} w:w="{total_dxa}" w:type="dxa"/>'))
+        tblPr.append(parse_xml(f'<w:tblLayout {nsdecls("w")} w:type="fixed"/>'))
         tblPr.append(parse_xml(
             f'<w:tblCellMar {nsdecls("w")}>'
-            f'<w:top w:w="15" w:type="dxa"/><w:left w:w="18" w:type="dxa"/>'
-            f'<w:bottom w:w="15" w:type="dxa"/><w:right w:w="18" w:type="dxa"/>'
+            f'<w:top w:w="20" w:type="dxa"/><w:left w:w="28" w:type="dxa"/>'
+            f'<w:bottom w:w="20" w:type="dxa"/><w:right w:w="28" w:type="dxa"/>'
             f'</w:tblCellMar>'
         ))
         tblPr.append(parse_xml(
             f'<w:tblBorders {nsdecls("w")}>'
-            f'<w:top w:val="single" w:sz="6" w:space="0" w:color="94A3B8"/>'
-            f'<w:bottom w:val="single" w:sz="8" w:space="0" w:color="334155"/>'
-            f'<w:insideH w:val="single" w:sz="4" w:space="0" w:color="CBD5E1"/>'
-            f'<w:left w:val="none"/><w:right w:val="none"/><w:insideV w:val="none"/>'
+            f'<w:top w:val="single" w:sz="10" w:space="0" w:color="auto"/>'
+            f'<w:bottom w:val="single" w:sz="10" w:space="0" w:color="auto"/>'
+            f'<w:insideH w:val="none"/><w:insideV w:val="none"/>'
+            f'<w:left w:val="none"/><w:right w:val="none"/>'
             f'</w:tblBorders>'
         ))
+        old_grid = tbl._tbl.find(f'{{{NS_W}}}tblGrid')
+        if old_grid is not None:
+            new_grid = parse_xml(
+                f'<w:tblGrid {nsdecls("w")}>'
+                + ''.join(f'<w:gridCol w:w="{gw}"/>' for gw in grid_dxa)
+                + '</w:tblGrid>'
+            )
+            tbl._tbl.replace(old_grid, new_grid)
+
         tbl.rows[0]._tr.get_or_add_trPr().append(parse_xml(f'<w:cantSplit {nsdecls("w")}/>'))
         tbl.rows[0]._tr.get_or_add_trPr().append(parse_xml(f'<w:tblHeader {nsdecls("w")}/>'))
 
         for c_idx, h_text in enumerate(headers):
             cell = tbl.cell(0, c_idx)
             cell.width = col_widths[c_idx]
+            tcPr = cell._tc.get_or_add_tcPr()
+            tcPr.append(parse_xml(
+                f'<w:tcBorders {nsdecls("w")}>'
+                f'<w:top w:val="double" w:sz="6" w:space="0" w:color="auto"/>'
+                f'<w:bottom w:val="single" w:sz="6" w:space="0" w:color="auto"/>'
+                f'<w:left w:val="nil"/><w:right w:val="nil"/>'
+                f'</w:tcBorders>'
+            ))
+            tcPr.append(parse_xml(f'<w:vAlign {nsdecls("w")} w:val="center"/>'))
             p = cell.paragraphs[0]
             p.text = ""
             append_latex_text(p, h_text, pt_size=font_pt, math_pt_size=font_pt, bold=True, code_pt_delta=0.2, allow_code_wrap=False)
             p.alignment = WD_ALIGN_PARAGRAPH.LEFT if c_idx in left_cols else WD_ALIGN_PARAGRAPH.CENTER
             p.paragraph_format.space_before = Pt(0.4)
             p.paragraph_format.space_after = Pt(0.4)
-            p.paragraph_format.line_spacing = 0.95
+            p.paragraph_format.line_spacing = 0.94
             p.paragraph_format.keep_with_next = True
             p._p.get_or_add_pPr().append(parse_xml(f'<w:suppressAutoHyphens {nsdecls("w")}/>'))
-            cell._tc.get_or_add_tcPr().append(parse_xml(f'<w:shd {nsdecls("w")} w:fill="EFF6FF"/>'))
 
+        num_rows = len(rows)
         for r_idx, row in enumerate(rows):
+            is_last = (r_idx == num_rows - 1)
             tbl.rows[r_idx + 1]._tr.get_or_add_trPr().append(parse_xml(f'<w:cantSplit {nsdecls("w")}/>'))
             is_hi = r_idx in highlight_rows
             for c_idx, val in enumerate(row):
                 cell = tbl.cell(r_idx + 1, c_idx)
                 cell.width = col_widths[c_idx]
+                tcPr = cell._tc.get_or_add_tcPr()
+                tcPr.append(parse_xml(f'<w:vAlign {nsdecls("w")} w:val="center"/>'))
+                if is_last:
+                    tcPr.append(parse_xml(
+                        f'<w:tcBorders {nsdecls("w")}>'
+                        f'<w:top w:val="nil"/>'
+                        f'<w:bottom w:val="double" w:sz="6" w:space="0" w:color="auto"/>'
+                        f'<w:left w:val="nil"/><w:right w:val="nil"/>'
+                        f'</w:tcBorders>'
+                    ))
+                else:
+                    tcPr.append(parse_xml(
+                        f'<w:tcBorders {nsdecls("w")}>'
+                        f'<w:top w:val="nil"/><w:bottom w:val="nil"/>'
+                        f'<w:left w:val="nil"/><w:right w:val="nil"/>'
+                        f'</w:tcBorders>'
+                    ))
                 p = cell.paragraphs[0]
                 p.text = ""
                 append_latex_text(p, val, pt_size=font_pt, math_pt_size=font_pt, bold=is_hi, code_pt_delta=0.2, allow_code_wrap=False)
                 p.alignment = WD_ALIGN_PARAGRAPH.LEFT if c_idx in left_cols else WD_ALIGN_PARAGRAPH.CENTER
                 p.paragraph_format.space_before = Pt(0.4)
                 p.paragraph_format.space_after = Pt(0.4)
-                p.paragraph_format.line_spacing = 0.95
+                p.paragraph_format.line_spacing = 0.94
                 p._p.get_or_add_pPr().append(parse_xml(f'<w:suppressAutoHyphens {nsdecls("w")}/>'))
-                if keep_with_notes or r_idx < len(rows) - 1:
+                if r_idx < len(rows) - 1:
                     p.paragraph_format.keep_with_next = True
-                if is_hi:
-                    cell._tc.get_or_add_tcPr().append(parse_xml(f'<w:shd {nsdecls("w")} w:fill="F8FAFC"/>'))
+                elif keep_with_notes:
+                    p.paragraph_format.keep_with_next = True
         return tbl
 
     # ==========================================
     # TITLE & AUTHORS
     # ==========================================
     p_title = add_p(
-        "Design and Empirical Evaluation of an Event-Driven Outbox and CQRS Architecture for High\u2011Concurrency Courier Logistics",
-        style='Title', align=WD_ALIGN_PARAGRAPH.CENTER, space_after=3.5
+        "An Empirical Evaluation of Event-Driven Outbox and CQRS Architectures for High\u2011Concurrency Courier Logistics",
+        style='Title', align=WD_ALIGN_PARAGRAPH.CENTER, space_after=3.0
     )
     p_title._p.get_or_add_pPr().append(parse_xml(f'<w:suppressAutoHyphens {nsdecls("w")}/>'))
 
     add_p(
-        "Võ Văn Tú Tài, Trần Tấn Tài, and Huỳnh Nam",
-        style='Authors', align=WD_ALIGN_PARAGRAPH.CENTER, space_after=1
+        "Vo Van Tu Tai, Tran Tan Tai, Tran Van Truong, Nguyen Hai Dang, and Huynh Nam",
+        style='Authors', align=WD_ALIGN_PARAGRAPH.CENTER, space_after=3.5
     )
-    add_p(
-        "Faculty of Information System, Industrial University of Ho Chi Minh City",
-        style='Normal', align=WD_ALIGN_PARAGRAPH.CENTER, space_after=0.5, italic=True, pt_size=8.6
-    )
-    add_p(
-        "22655911.tai@student.iuh.edu.vn, 22727771.tai@student.iuh.edu.vn",
-        style='Normal', align=WD_ALIGN_PARAGRAPH.CENTER, space_after=5.5, italic=True, pt_size=8.4
-    )
-
+    
     p_last_meta = doc.paragraphs[-1]
     sectPr_meta = parse_xml(r'''
     <w:sectPr {} >
@@ -567,211 +585,249 @@ def build_ssrc_distributed_docx():
     p_last_meta._p.get_or_add_pPr().append(sectPr_meta)
 
     # ==========================================
-    # ABSTRACT & INDEX TERMS (~200 words)
+    # ABSTRACT & INDEX TERMS (7-Part SSRC Structure)
     # ==========================================
     abs_runs = [
         ("Abstract— ", True, True),
-        (r"High-concurrency courier platforms must ingest barcode scans without relational lock stalls or dual-write loss. We evaluate the live Nexus Event-Driven Outbox and Command Query Responsibility Segregation (CQRS) platform across <i>R</i> = 5 runs on NestJS 10 PM2 services, isolated PostgreSQL 16 schemas, and RabbitMQ 3.13 against unsharded (`Sync_ALL`), 16-shard (`Sync_Sharded`), deferred-KPI (`Sync_DeferredKPI`), and SQL Outbox baselines. Across <i>c</i> ∈ {1..100}, PostgreSQL lock profiling shows `Sync_ALL` stalls at 753.0 ± 58.1 req/s (<i>c</i> = 25, 97.7% lock waits), whereas lock-free SQL Outbox isolation (`pool=21`, 0.0% lock waits) lifts throughput +216.2% over `Sync_ALL` (2,380.8 ± 92.9 req/s, −63.9% <i>p</i>_{95}, <i>p</i> = 3.0 × 10^{−7}) and +56.2% over `Sync_Sharded` (91.8% lock waits). Conversely, component ablation exposes why live Nexus ingress (681.5 ± 32.7 req/s) trails at <i>c</i> = 1 (−73.2%) and loses that headroom to `pool=3` limits (−38.6%) plus HTTP lock RPCs and ORM serialization (−53.4%). Under <i>c</i> = 50 writers, CQRS reads maintain 0.0% lock waits and cut <i>p</i>_{95} latency −29.7% versus `Sync_ALL` (30.10 vs. 42.81 ms, <i>p</i> = 0.0057), while outbox dwell drives 99.72% of post-commit tracking lag. Dual-layer idempotency (300/300 DB writes/1,000 calls), 60/60 FSM guards, 60 s `.retry.1m` quarantine (10/10 healed, 10/10 DLQ), and defects `F1`–`F3` are quantified.", False, False)
+        (r"In express courier logistics, regional sorting hubs and delivery couriers generate massive surges of barcode scans during peak shifts that must be ingested and reflected in tracking queries without data loss. In conventional monolithic architectures, updating shipment status, scan history, and operational KPI counters within a single database transaction creates severe row-level lock contention, causing worker pools to stall under high concurrency. In this paper, we evaluate an event-driven architecture that decouples barcode scan ingestion using the Transactional Outbox pattern and isolates tracking queries via Command Query Responsibility Segregation (CQRS). Developed in NestJS with PostgreSQL and RabbitMQ, the system employs dedicated per-service schemas, two-tier idempotency (memory cache and database constraints), a dead-letter retry ladder, and monotonic state machine version guards. Across five trials from 1 to 100 concurrent clients, we benchmark the live system against single-row (`Sync_ALL`), 16-shard (`Sync_Sharded`), and raw SQL Outbox baselines using continuous `pg_locks` profiling. Synchronous baselines stall at 753.0 ± 58.1 req/s with 97.7% lock-wait ratios, whereas raw SQL Outbox writes sustain 2,380.8 ± 92.9 req/s (+216.2% throughput, −63.9% tail latency, <i>p</i> = 3.0 × 10^{−7}). Under 50 background writers, CQRS read projections eliminate lock contention entirely (0.0%), reducing <i>p</i>_{95} read latency by 29.7% with 300/300 verified idempotent commits. Our findings demonstrate that removing transactional cross-table dependencies via Outbox and CQRS is essential for high-throughput logistics, while revealing practical connection pool and ORM overheads in production microservices.", True, False)
     ]
-    add_rich_p(abs_runs, style='Abstract', align=WD_ALIGN_PARAGRAPH.JUSTIFY, space_after=2.2)
+    add_rich_p(abs_runs, style='Abstract', align=WD_ALIGN_PARAGRAPH.JUSTIFY, space_after=2.0)
 
     idx_runs = [
         ("Index Terms— ", True, True),
-        ("Event-Driven Architecture, Transactional Outbox, CQRS, Log-Based CDC, Idempotency, Lock Contention Ablation, RabbitMQ Dead-Letter Exchange.", False, False)
+        ("Event-Driven Architecture, Transactional Outbox, CQRS, Information Systems, Lock Contention, Idempotency, Courier Logistics, Telemetry.", True, False)
     ]
-    add_rich_p(idx_runs, style='IndexTerms', space_after=3.8)
+    add_rich_p(idx_runs, style='IndexTerms', space_after=3.2)
 
     # ==========================================
     # I. INTRODUCTION
     # ==========================================
-    add_p("INTRODUCTION", style='Heading 1', space_before=2.6, space_after=1.0)
-    add_p(r"Modern express courier platforms ingest concurrent barcode scans from sorting hubs and handheld Personal Digital Assistants (PDAs) alongside latency-sensitive public tracking reads [1], [5]. Coupling scan ingestion, transition validation, and multi-dimensional KPI counters inside a single shared ACID transaction causes severe row lock contention, blocking worker pools and degrading tail latency.", style='Text')
-    add_p(r"Decomposing the monolith into bounded-context microservices eliminates single-schema row locks [6], [7], yet introduces four distributed consistency hazards examined on our running platform:", style='Text')
-    add_num_list_p("1)", "Dual-Write Consistency Anomaly: ", r"Updating a local database and publishing to a broker outside a single atomic flow risks lost events or phantom states on crashes [1].")
-    add_num_list_p("2)", "Outbox Dwell vs. Service Overhead: ", r"Fixed polling intervals (<i>T</i>_{poll}) and HTTP relays dominate convergence lag, while cross-service RPC locks and small connection pools can erode outbox throughput gains.")
-    add_num_list_p("3)", "Retry Storms & Consumer Races: ", r"Duplicate PDA retries and child scan events arriving ahead of parent waybill creation threaten duplicate KPI rollups or premature failures.")
-    add_num_list_p("4)", "Event Reordering & Queue Stalls: ", r"Delayed or out-of-order (OOO) messages risk corrupting terminal shipment states (`DELIVERED`, `CANCELLED`) unless monotonic state guards and dead-letter escalation are enforced [16].")
+    add_p("INTRODUCTION", style='Heading 1', space_before=1.6, space_after=0.6)
+    add_p(r"In express parcel delivery networks, regional sorting hubs and delivery couriers generate massive spikes of barcode scans during shift changeovers and dispatch hours [1], [2]. In traditional monolithic backends, recording each scan while simultaneously updating shipment tracking status, sorting histories, and operational KPI counters in a single database transaction triggers intense row-level lock contention [14]. This contention saturates database connection pools and causes scan requests to queue up during peak sorting windows.", style='Text')
+    add_p(r"Splitting monolithic databases into microservices removes shared table locks [7], [8], but it creates four classic distributed consistency challenges that we encountered while developing our courier backend:", style='Text')
+    add_num_list_p("1)", "Dual-Write Consistency Hazards: ", r"Updating a local database and publishing to an event broker across separate network calls risks losing events or creating orphan records if a service crashes [1].")
+    add_num_list_p("2)", "Outbox Dwell vs. Connection Overhead: ", r"Fixed polling intervals (<i>T</i>_{poll}) and HTTP relays introduce end-to-end synchronization lag, while small connection pools can erode outbox throughput gains [3], [4].")
+    add_num_list_p("3)", "Duplicate Delivery & Consumer Races: ", r"Network retries from handheld scanners and child scan events arriving before waybills are committed can corrupt KPI summaries or cause premature lookup failures [11].")
+    add_num_list_p("4)", "Event Reordering: ", r"Out-of-order event delivery risks corrupting terminal shipment states (`DELIVERED`, `CANCELLED`) unless strict version guards and dead-letter escalation ladders are enforced [12], [15].")
 
-    add_p(r"Without heavy two-phase commit (2PC) or Kafka clusters, we evaluate our live NestJS 10 + PostgreSQL 16 + RabbitMQ 3.13 platform across <i>R</i> = 5 independent runs per workload: (RQ1) How much do Outbox decoupling and CQRS isolation reduce relational lock contention and tracking tail latency compared with unsharded, sharded, and deferred-KPI synchronous baselines—and which service overheads explain live ingress gaps via component ablation? (RQ2) Which stage dominates convergence lag using non-circular timing probes, and how fast is pipelined AMQP `ConfirmChannel` batching versus HTTP Management relays? (RQ3) How reliably do dual-layer idempotency, 19-state FSM whitelisting, and multi-tier TTL/DLQ recovery preserve data integrity while exposing active codebase flaws (`F1`–`F3`)?", style='Text')
+    add_p(r"To address these issues without introducing heavy distributed consensus protocols (such as two-phase commit or large Kafka clusters), we examine one core Research Question (RQ) across <i>R</i> = 5 independent runs: <i>To what extent does decoupling barcode scan ingestion through a database-backed Transactional Outbox and CQRS projections eliminate PostgreSQL transaction-lock contention and read-tail degradation compared with unsharded, 16-shard, and deferred-KPI synchronous baselines under live microservice constraints?</i>", style='Text')
 
-    add_p("Key contributions grounded in our live implementation include:", style='Text')
-    add_bullet_p("Lock-Wait Proof & Ablation: ", r"`pg_locks` profiling proves `Sync_ALL` (97.7%) & 16-shard `Sync_Sharded` (91.8%) stall, while pure SQL Outbox lifts throughput +216.2% (<i>p</i> = 3.0 × 10^{−7}) minus live `pool=3` (−38.6%) and RPC/ORM (−53.4%) taxes.")
-    add_bullet_p("CQRS Isolation & Lag Model: ", r"Cuts read <i>p</i>_{95} −29.7% under <i>c</i> = 50 writers (0.0% lock waits), validates Eq. (2) non-circularly (508.0 vs. 553.6 ms), and reaches 29.78× speedup with batch-50 AMQP confirms.")
-    add_bullet_p("Integrity & Code Audit (`F1`–`F3`): ", r"Verifies 300/300 DB commits (1,000 calls), 60/60 FSM guards, exact 60 s `x-death` DLQ TTLs (10/10), and exposes three defects (`F1`–`F3`) with patches.")
+    add_p("Our main contributions are as follows:", style='Text')
+    add_bullet_p("Lock-Wait Proof & Ablation: ", r"Using `pg_locks` profiling, we demonstrate that monolithic `Sync_ALL` (97.7%) and 16-shard `Sync_Sharded` (91.8%) designs suffer from severe lock waits, whereas raw SQL Outbox increases throughput by +216.2% (<i>p</i> = 3.0 × 10^{−7}) after accounting for small connection pools (`pool=3`, −38.6%) and ORM overheads (−53.4%).")
+    add_bullet_p("CQRS Read Isolation: ", r"We demonstrate that CQRS projections reduce <i>p</i>_{95} read latency by 29.7% under <i>c</i> = 50 background writers with 0.0% lock contention, validate theoretical queue drain lag non-circularly, and achieve a 29.78× speedup using batch-50 AMQP publisher confirms.")
+    add_bullet_p("Architecture & Codebase Audit (F1–F3): ", r"We verify 300/300 database commits, 60/60 state machine guards, and exact 60 s dead-letter queue TTLs, while uncovering and patching three real-world implementation defects (`F1`–`F3`).")
 
     # ==========================================
     # II. RELATED WORK
     # ==========================================
-    add_p("RELATED WORK", style='Heading 1', space_before=2.6, space_after=1.0)
-    add_p(r"<i>Distributed Data & Microservices:</i> The CAP [3] and PACELC [2] theorems formalize latency-consistency trade-offs underlying BASE workflows [4]. Empirical analysis by Laigner et al. [5] shows database-per-service decomposition [6], [7] shifts consistency guarantees from SQL engines to messaging handlers, necessitating rigorous verification of idempotent consumers and failure semantics.", style='Text')
-    add_p(r"<i>Transactional Outbox, Polling vs. Log-Based CDC:</i> Hohpe and Woolf [8] and Richardson [1] define the Transactional Outbox with Polling Publishers to prevent dual-write loss without XA locks [9], [15]. Alternatively, log-based Change Data Capture (CDC) tools such as Debezium [18] tail PostgreSQL Write-Ahead Log (WAL) logical replication slots directly, eliminating <i>T</i>_{poll}/2 wait and `SELECT` polling overhead. However, WAL CDC requires managing distributed Kafka Connect pipelines and guarding against PostgreSQL replication-slot WAL disk bloat if connectors stall [18]. Our implementation pairs a lightweight Polling Publisher with RabbitMQ [12] topic routing and Dead-Letter Exchange (DLX) retries, while contrasting latency boundaries against WAL CDC.", style='Text')
-    add_p(r"<i>CQRS, Idempotency & Event Ordering:</i> CQRS [13], [17] separates write commands from read projections under eventual consistency. Helland [14] motivates idempotent receivers via unique operation keys, while Lamport [16] formalizes logical event ordering and clock skew across asynchronous nodes—directly relevant to preventing OOO projection overwrites without misusing logical clocks as human workflows. Unlike simulator-only evaluations, we benchmark live cluster telemetry and expose concrete service bottlenecks (`F1`–`F3`).", style='Text')
+    add_p("RELATED WORK", style='Heading 1', space_before=1.6, space_after=0.6)
+    add_p(r"<i>Distributed Data & Microservices:</i> The PACELC theorem [10] formalizes latency-consistency trade-offs across replicated partitions and normal operation. Empirical studies by Laigner et al. [2], [3] and event benchmarks [4], [5] show database-per-service decomposition [7], [8] shifts consistency guarantees from SQL locks to asynchronous handlers, creating real engineering challenges around event ordering, payload inflation, and distributed auditing.", style='Text')
+    add_p(r"<i>Transactional Outbox, Polling vs. Log-Based CDC:</i> Richardson [1] defines the Transactional Outbox with Polling Publishers to prevent dual-write loss without XA distributed locks [9]. Alternatively, log-based Change Data Capture (CDC) tools such as Debezium [13] tail PostgreSQL Write-Ahead Log (WAL) logical replication slots directly, eliminating <i>T</i>_{poll}/2 wait and `SELECT` polling overhead. However, WAL CDC requires managing distributed Kafka Connect pipelines and guarding against PostgreSQL replication-slot WAL disk bloat if connectors stall [8], [13]. For our platform, a database-backed Polling Publisher paired with RabbitMQ [15] topic routing and Dead-Letter Exchange (DLX) retries provides operational simplicity and high throughput without dedicated CDC infrastructure.", style='Text')
+    add_p(r"<i>CQRS, Idempotency & Monotonic Ordering:</i> Event-driven CQRS [6], [8] separates write commands from read projections under eventual consistency. Helland [11] motivates idempotent receivers via unique operation keys, while Lamport [12] formalizes logical event ordering across asynchronous processes—directly motivating monotonic version guards to prevent OOO projection overwrites. Unlike simulator-only studies, we benchmark live cluster telemetry paired with PostgreSQL `pg_locks` profiling [14] and surface active bugs (`F1`–`F3`).", style='Text')
 
     # ==========================================
-    # III. SYSTEM ARCHITECTURE AND CORE MECHANISMS
+    # III. PROPOSED METHODOLOGY AND SYSTEM ARCHITECTURE
     # ==========================================
-    add_p("SYSTEM ARCHITECTURE AND CORE MECHANISMS", style='Heading 1', space_before=2.6, space_after=1.0)
-    add_p("Bounded-Context Topology and Service Separation", style='Heading 2', space_before=1.9, space_after=0.65)
-    add_p(r"As illustrated in Fig. 1, the live platform executes natively via PM2 Node.js workers across four isolated PostgreSQL 16 domain schemas (`scan_db`, `shipment_db`, `tracking_db`, `reporting_db`, alongside companion dispatch and payment services): `ScanService` (`scan_db`, `connection_limit = 3`) owns scan ingestion and `CurrentLocation`; `ShipmentService` (`shipment_db`, pool = 15) holds authoritative `Shipment` state; `TrackingService` (`tracking_db`, pool = 3) serves public reads (`TimelineEvent`, `TrackingCurrent`); and `ReportingService` (`reporting_db`, pool = 3) aggregates 8-way `KpiDaily/KpiMonthly` rollups (`AggregationJob`). Redis in the gateway BFF handles exclusively WebSocket chat pub/sub. Persistent domain events (`delivery_mode = 2`) route through RabbitMQ's `domain.events` topic exchange.", style='Text')
+    add_p("PROPOSED METHODOLOGY AND SYSTEM ARCHITECTURE", style='Heading 1', space_before=1.6, space_after=0.6)
+    add_p("Bounded-Context Topology and Workflow Walkthrough", style='Heading 2', space_before=1.2, space_after=0.4)
+    add_p(r"To eliminate cross-table lock blocking on write paths while serving isolated tracking queries, the Nexus platform splits its backend into PM2 Node.js services backed by four dedicated PostgreSQL 16 schemas (`scan_db`, `shipment_db`, `tracking_db`, and `reporting_db`, Fig. 1). Gateway Redis is used solely for WebSocket chat pub/sub.", style='Text')
 
-    add_full_width_figure(
+    add_column_figure(
         fig1_path,
-        r"Fig. 1. Live Nexus Event-Driven Outbox and CQRS pipeline across isolated PostgreSQL 16 schemas and RabbitMQ 3.13 (`R = 5` verified metrics), spanning PDA ingress, dual-layer deduplication, outbox relays, 19-state FSM governance, CQRS views, multi-tier TTL/DLQ recovery, and active codebase audit findings (`F1`–`F3`).",
-        width_in=5.55
+        r"Fig. 1. Vertical operational flow of the Nexus Outbox and CQRS pipeline across isolated PostgreSQL 16 schemas and RabbitMQ 3.13.",
+        width_in=2.95,
+        space_before=0.6,
+        space_after=0.4
     )
 
-    add_p("Dual-Layer Idempotency and Persistent Outbox Writes", style='Heading 2', space_before=1.9, space_after=0.65)
-    add_p(r"Before persisting an inbound scan (`POST /scans/inbound`), `ScanService` executes a synchronous HTTP lock probe (`GET /shipments/:code`) against `ShipmentService`, rejecting locked parcels (HTTP 400) unless authorized by an audit token (`INVENTORY_CHECK`) or active reverse transit (`RETURN_STARTED`). Permitted commands scope keys as `flow:idempotencyKey` through two deduplication layers:", style='Text')
-    add_num_list_p("1)", "Layer 1 — Sequential Cache Lookup: ", r"Queries `IdempotencyRecord` by scoped key, returning the cached response immediately (4.10 ms pooled median; 4.88 ± 2.87 ms across <i>R</i> = 5 runs) on sequential PDA retries.")
-    add_num_list_p("2)", "Layer 2 — Parallel Race Recovery (`P2002`): ", r"Concurrent duplicates bypassing Layer 1 collide on PostgreSQL's unique constraint over `ScanEvent.idempotencyKey` (Prisma error `P2002`), triggering clean read-back of the winner's committed record.")
-    add_num_list_p("3)", "Outbox Append & Audit: ", r"`ScanService` updates `CurrentLocation`, writes a `PENDING` `OutboxEvent` (polled at <i>T</i>_{poll} = 1,000 ms, <i>B</i> = 50), saves `IdempotencyRecord`, and logs an audit entry via 7 sequential Prisma operations (atomicity hardening noted under `F3`).")
+    add_p("Following Fig. 1 from top to bottom, each barcode scan proceeds through four stages:", style='Text', space_after=0.5)
+    add_num_list_p("1)", "PDA Ingress and Lock Check: ", r"Handheld scanners submit `POST /scans/inbound` requests with a scoped `idempotencyKey`. `ScanService` checks parcel lock state over synchronous HTTP (`GET /shipments/:code`) against `ShipmentService` (`pool = 15`), blocking locked shipments unless the request carries an audit token (`INVENTORY_CHECK`) or active return status (`RETURN_STARTED`).")
+    add_num_list_p("2)", "Scan Deduplication and Outbox Write (scan_db): ", r"`ScanService` (`pool = 3`) filters repeated requests using Layer-1 lookup and Layer-2 unique-key recovery, updates `CurrentLocation`, inserts a `PENDING` `OutboxEvent`, saves `IdempotencyRecord`, and records an audit entry.")
+    add_num_list_p("3)", "Outbox Relay and RabbitMQ Retry Ladder: ", r"A polling worker (`T = 1 s`, `B = 50`) forwards rows to the durable RabbitMQ `domain.events` topic exchange (`delivery_mode = 2`) [15]. Failed consumers ACK the main queue and requeue via `x-retry-count` through `.retry.10s` (10 s TTL), `.retry.1m` (60 s TTL), and `.dlq` quarantine (retry ≥ 2).")
+    add_num_list_p("4)", "19-State FSM and CQRS Read Views: ", r"`ShipmentService` consumes broker pushes (`noAck: false`) through a 19-state whitelist, while `TrackingService` (`pool = 3`) maintains `TimelineEvent/TrackingCurrent` projections and `ReportingService` (`pool = 3`) polls 8-way `KpiDaily/KpiMonthly` summaries via `AggregationJob`.")
 
-    add_p("Outbox Relays and Propagation Lag Formulation", style='Heading 2', space_before=1.9, space_after=0.65)
-    add_p(r"Our implementation contrasts two outbox relays flushing up to <i>B</i> = 50 rows every <i>T</i>_{poll} = 1,000 ms: `ScanService` publishes sequentially via RabbitMQ's HTTP Management `/publish` endpoint, whereas `ShipmentService` maintains a persistent AMQP `ConfirmChannel` [12]. End-to-end client-to-projection visibility decomposes additively:", style='Text')
+    add_p("Dual-Layer Idempotency and Outbox Persistence", style='Heading 2', space_before=1.2, space_after=0.4)
+    add_p(r"In Layer 1, incoming requests query `IdempotencyRecord` by `flow:idempotencyKey` and return the saved JSON response directly (4.10 ms pooled median; 4.88 ± 2.87 ms run mean). When parallel bursts bypass Layer 1 at the same instant, concurrent inserts collide on the unique key of `ScanEvent.idempotencyKey` (Prisma `P2002`), causing losers to read back and return the winning transaction's result across 7 sequential Prisma statements (`F3` notes transaction wrapping).", style='Text')
+
+    add_p("Outbox Relays and Propagation Lag Formulation", style='Heading 2', space_before=1.2, space_after=0.4)
+    add_p(r"We compare `ScanService`'s sequential RabbitMQ HTTP Management `/publish` relay with `ShipmentService`'s persistent AMQP `ConfirmChannel` [15] (both draining up to <i>B</i> = 50 rows per <i>T</i>_{poll} = 1,000 ms). Client-to-projection visibility decomposes as", style='Text')
 
     add_math_equation(r'L_{\text{E2E}} = L_{\text{ingest}} + L_{\text{dwell}} + L_{\text{broker}} + L_{\text{cons}}', eq_num='1', math_pt=9.6)
-    add_p(r"where <i>L</i>_{ingest} is HTTP ingest commit latency, <i>L</i>_{dwell} is outbox queue wait before broker publish confirmation, <i>L</i>_{broker} is broker-to-consumer delivery latency, and <i>L</i>_{cons} is consumer DB commit time (post-commit tracking convergence excludes <i>L</i>_{ingest}). For asynchronous arrivals across periodic <i>T</i>_{poll} ticks, expected dwell is", style='Text', first_line_indent=0)
+    add_p(r"where <i>L</i>_{ingest} is HTTP write latency, <i>L</i>_{dwell} is outbox wait before publish confirmation, <i>L</i>_{broker} is broker-to-consumer transfer delay, and <i>L</i>_{cons} is consumer database write time (post-commit convergence omits <i>L</i>_{ingest}). For steady arrivals across <i>T</i>_{poll} intervals, mean dwell follows", style='Text', first_line_indent=0)
 
     add_math_equation(r'L_{\text{dwell}} \approx \frac{T_{\text{poll}}}{2} + L_{\text{batch}}', eq_num='2', math_pt=9.6)
-    add_p(r"where $L_{\text{batch}} = \delta_{\text{timer}} + t_{\text{select}} + \frac{\bar{k}+1}{2}(t_{\text{pub}} + t_{\text{mark}})$ captures timer overshoot, SQL `SELECT`, and intra-batch publish/update time measured <i>independently</i> from E2E dwell. Under concurrent bursts (<i>N</i>_{0} > <i>B</i>), drain time quantizes across polling intervals:", style='Text', first_line_indent=0)
+    add_p(r"where $L_{\text{batch}} = \delta_{\text{timer}} + t_{\text{select}} + \frac{\bar{k}+1}{2}(t_{\text{pub}} + t_{\text{mark}})$ captures timer jitter, SQL `SELECT`, and per-row publish/mark overhead measured <i>independently</i> of E2E dwell. Under queue bursts (<i>N</i>_{0} > <i>B</i>), drain time scales in discrete polling steps:", style='Text', first_line_indent=0)
 
     add_math_equation(r'T_{\text{drain}}(N_0) \approx \left\lceil \frac{N_0}{B} \right\rceil T_{\text{poll}}', eq_num='3', math_pt=9.8)
-    add_p(r"predicting 4 ticks (4.00 s) for bursts of <i>N</i>_{0} = 200 events at <i>B</i> = 50.", style='Text', first_line_indent=0)
-
-    add_p("FSM Whitelist, CQRS Views, and TTL/DLQ Escalation", style='Heading 2', space_before=1.9, space_after=0.65)
-    add_p(r"Downstream, `ShipmentService` enforces a 19-state finite-state machine (`VALID_TRANSITIONS`) via AMQP push (`noAck: false`), permitting only self-idempotent replays once shipments enter absorbing states (`DELIVERED`, `RETURN_COMPLETED`, `CANCELLED`). `TrackingService` pushes into `TimelineEvent` (`P2002` on `eventId`) and upserts `TrackingCurrent/TrackingIndex`, whereas `ReportingService` polls via HTTP (`/get`, <i>T</i> = 1,000 ms, <i>B</i> = 20, `ack_requeue_false`) into `AggregationJob`-deduplicated 8-way KPI tables. Consumer faults ACK the main queue immediately and route via `x-retry-count` across `.retry.10s` (10 s TTL), `.retry.1m` (60 s TTL), and permanent `.dlq` quarantine (retry ≥ 2) for operator triage.", style='Text')
+    add_p(r"where ⌈<i>N</i>_{0}/<i>B</i>⌉ rounds up to discrete ticks, giving ⌈200/50⌉ = 4 ticks (4.00 s) for <i>N</i>_{0} = 200 rows at <i>B</i> = 50. Downstream, `ShipmentService` protects absorbing states (`DELIVERED`, `RETURN_COMPLETED`, `CANCELLED`) using `VALID_TRANSITIONS`, `TrackingService` deduplicates on `eventId` (`P2002`), and `ReportingService` fetches 20-message batches via HTTP (`/get`, `T = 1,000 ms`, `ack_requeue_false`) into `AggregationJob`.", style='Text', first_line_indent=0)
 
     # ==========================================
-    # IV. EXPERIMENTAL SETUP AND EMPIRICAL RESULTS
+    # IV. EXPERIMENTAL DATA, DESIGN, AND RESULTS
     # ==========================================
-    add_p("EXPERIMENTAL SETUP AND EMPIRICAL RESULTS", style='Heading 1', space_before=2.6, space_after=1.0)
-    add_p("Testbed, Stronger Baselines, and Ablation Design", style='Heading 2', space_before=1.9, space_after=0.65)
-    add_p(r"All benchmarks executed against the live cluster on an Apple M4 host (10 cores, 16 GB RAM, macOS 15.8, Node.js v26.0.0) backed by PostgreSQL 16.15 (`max_connections = 100`) and RabbitMQ 3.13.7 (`rates_mode = basic`). Before timed measurements, a 1,995 ms warmup (40 writes + 60 reads/target) warmed HTTP sockets and Prisma engines; pre-benchmark SQL dumps were restored afterward. Every latency/scaling experiment executed <i>R</i> = 5 independent block-rotated repetitions, sampling `pg_stat_activity`, `pg_locks WHERE NOT granted`, and `os.cpus()` busy time at 5 ms resolution. Statistical tests compare <i>n</i> = 5 independent run summaries (paired <i>t</i>-tests, <i>df</i> = 4; exact two-sided Wilcoxon `min p = 0.0625` at <i>n</i> = 5) alongside exact Clopper–Pearson 95% binomial intervals, eliminating intra-run pseudoreplication.", style='Text')
+    add_p("EXPERIMENTAL DATA, DESIGN, AND RESULTS", style='Heading 1', space_before=1.6, space_after=0.6)
+    add_p("Data Collection, Telemetry Schema, and Testbed Setup", style='Heading 2', space_before=1.2, space_after=0.4)
+    add_p(r"We ran all benchmarks against the local cluster on an Apple M4 host (10 cores, 16 GB RAM, macOS 15.8, Node.js v26.0.0) backed by PostgreSQL 16.15 (`max_connections = 100`) [14] and RabbitMQ 3.13.7 (`rates_mode = basic`) [15]. Prior to timed tests, a 1,995 ms warmup (40 writes + 60 reads/target) warmed connection pools; pre-benchmark SQL dumps were restored afterward. During each run, `run_benchmarks.mjs` and `baseline_worker.mjs` recorded structured traces into CSV files (`exp1_scaling_runs.csv` with `run`, `architecture`, `concurrency`, `ok_cnt`, `wall_ms`, `throughput_rps`, `p50_ms`, `p95_ms`; `exp1_resource_telemetry.csv` polling `pg_stat_activity`, `pg_locks WHERE NOT granted`, and `os.cpus()` every 5 ms for `lock_wait_sample_pct`, `lock_txid_waits`, `ungranted_locks_max`, `host_cpu_busy_pct`; `exp2a_e2e_stage_lags.csv` joining per-event `ingest_http_ms`, `outbox_dwell_ms`, `track_broker_ms`, `ship_fsm_ms`, `rep_poll_ms`; and `exp4b_dlq_recovery_timeline.csv` with raw AMQP `x-death` headers). Each scaling experiment used <i>R</i> = 5 block-rotated runs compared with paired <i>t</i>-tests (<i>df</i> = 4; exact two-sided Wilcoxon min <i>p</i> = 0.0625) and Clopper–Pearson 95% CIs [4].", style='Text')
 
-    add_p("Table I", style='Table Title', align=WD_ALIGN_PARAGRAPH.CENTER, space_before=2.0, space_after=0.35, keep_with_next=True)
-    add_p(r"Live Comparators, Pool Settings, and R = 5 Synthetic Workloads", style='Table Title', align=WD_ALIGN_PARAGRAPH.CENTER, space_before=0, space_after=0.9, keep_with_next=True)
-    t1_headers = ["Suite / Target", "Config & Pool", "Workload (<i>R</i> = 5) & Measurement"]
+    add_p("Table I", style='Table Title', align=WD_ALIGN_PARAGRAPH.CENTER, space_before=0.9, space_after=0.15, keep_with_next=True)
+    add_p(r"Evaluated Architectures, Pool Settings, and <i>R</i> = 5 Workloads", style='Table Title', align=WD_ALIGN_PARAGRAPH.CENTER, space_before=0, space_after=0.5, keep_with_next=True)
+    t1_headers = ["Suite / Target", "Pool & Path", "Workload (<i>R</i> = 5 Runs)"]
     t1_rows = [
-        ["`Nexus_EDA` (`:3006`)", "PM2 NestJS/Prisma;\npool = 3 + HTTP Lock RPC", "Exp 1: <i>c</i> ∈ {1, 10, 25, 50, 100} × 200 × 5 runs;\nExp 1C: 25R vs Idle & <i>c</i>=50W (200 × 5 reads)"],
-        ["`Ablation_Outbox_P3`", "Raw PG Outbox Worker;\npool = 3 (no HTTP/Prisma)", "Isolates `connection_limit=3` PM2 pool cap\nvs `Ablation_Outbox_SQL` & Prisma/HTTP tax"],
-        ["`Ablation_Outbox_SQL`", "Raw PG Outbox Worker;\npool = 21 (local lock/tx)", "Isolates pure Single-TX SQL Outbox pattern\nat matched PostgreSQL pool = 21"],
-        ["`Sync_ALL` / `Sync_Sharded`\n/ `Sync_DeferredKPI`", "Atomic SQL TX (`:13099`,\npool = 21, `LIMIT 10` read)", "1-row `ALL|ALL|ALL` KPI vs 16-shard hashed KPI\nvs KPI-free write/read baselines"],
-        ["`LockRPC_Probe` (`:3002`)", "Live Shipment GET RPC\n(pool = 15)", "Isolates synchronous HTTP lock check cost;\n100 reqs/tier × 5 runs"],
-        ["Exp 2A–2D / 3 / 4A–4B", "Isolated cluster sweep;\nclean queues & <i>x-death</i>", "2A: 200 staggered; 2B/C: 5 × 200; 2D: independent\nmicro-probes; 3: 1,000 HTTP + 150 dup; 4A/B faults"]
+        ["`Nexus_EDA` (:3006)", "PM2 Prisma (pool=3)\n+ HTTP Lock RPC", "Write scaling (<i>c</i>=1..100, 200 reqs);\n25R read under <i>c</i>=50 writers"],
+        ["`Ablation_Outbox_P3`", "Raw SQL Outbox Worker\n(pool=3, no HTTP/ORM)", "Isolates pool=3 cap vs. SQL Outbox\nand Prisma/HTTP RPC overhead"],
+        ["`Ablation_Outbox_SQL`", "Raw SQL Outbox Worker\n(pool=21, local TX)", "Pure Single-TX Outbox baseline\nat matched PG pool=21"],
+        ["`Sync_ALL` / `Sync_Sharded`\n/ `Sync_DeferredKPI`", "Atomic SQL TX (:13099,\npool=21, LIMIT 10 read)", "1-row KPI vs. 16-shard hashed KPI\nvs. KPI-free write/read baselines"],
+        ["`LockRPC_Probe` (:3002)", "Shipment GET RPC\n(pool=15)", "Synchronous lock check cost\n(100 reqs/tier × 5 runs)"],
+        ["Exp 2–4 Pipeline", "Clean RabbitMQ queues\n& AMQP x-death frames", "Lag (200), Drain (5×200), AMQP\n(5×200), Idem (1k), Faults (20)"]
     ]
-    cw1 = [Inches(0.98), Inches(1.04), Inches(1.48)]
+    cw1 = [Inches(1.10), Inches(1.02), Inches(1.38)]
     build_table(t1_headers, t1_rows, cw1, highlight_rows={0, 2}, font_pt=5.4, keep_with_notes=True)
-    add_p(r"<i>Notes:</i> Warmup 1,995 ms; `max_connections=100`; 5 ms `pg_locks` & `os.cpus()` polling.", style='footnote text', space_before=0.7, space_after=1.2)
+    add_p(r"Table I isolates each architectural mechanism cleanly across matched PG `max_connections = 100` (`pool = 21` vs. `pool = 3`), synchronous lock probes, and downstream broker/projection stages.", style='footnote text', space_before=0.3, space_after=0.5, first_line_indent=0, pt_size=8.0, math_pt=8.0)
 
-    add_p("Scaling, Component Ablation, and Lock Proof (RQ1)", style='Heading 2', space_before=1.9, space_after=0.65)
-    add_p(r"Table II and Fig. 2(a) expose three structural findings across 100.0% successful (`2xx`) requests:", style='Text')
-    add_num_list_p("1)", "Direct Lock-Contention Proof: ", r"At <i>c</i> = 25, `Sync_ALL` stalls at 753.0 ± 58.1 req/s while PostgreSQL sampling captures 97.7% lock-wait intervals (3,706 `txid` waits; up to 20 of 21 connections blocked) leaving host CPU under-utilized at 49.6%. Contrary to naive intuition, even 16-shard `Sync_Sharded` still suffers 91.8–94.7% lock-wait sampling (470–543 `txid` waits, max 9–12 blocked) across <i>c</i> = 25..100 because 8-way KPI groupings hash-collide across concurrent updates, capping throughput near ~1,524 req/s (76.7% CPU). Removing synchronous KPI updates (`Sync_DeferredKPI`) eliminates lock waits (0–2.2%) and scales to 2,926.4 ± 214.6 req/s (<i>c</i> = 50).")
-    add_num_list_p("2)", "Pure Outbox Gains & Honest Ablation Tax: ", r"Matched at pool = 21, `Ablation_Outbox_SQL` maintains 0.0% lock waits (0 `txid` waits) and reaches 2,380.8 ± 92.9 req/s (<i>c</i> = 25, <i>p</i>_{95} = 29.66 ms), outperforming `Sync_ALL` by +216.2% (3.16×, −63.9% <i>p</i>_{95}, <i>p</i> = 2.99 × 10^{−7}) and `Sync_Sharded` by +56.2% (<i>p</i> = 3.76 × 10^{−5}). Conversely, live `Nexus_EDA` peaks at only 698.2 ± 20.5 req/s (<i>c</i> = 100), trailing `Sync_ALL` at <i>c</i> = 1 (146.0 vs. 545.0 req/s, −73.2%, <i>p</i> = 3.78 × 10^{−5}) and tying `Sync_ALL` at <i>c</i> = 25 (681.5 vs. 753.0 req/s, <i>p</i> = 0.120 n.s.; <i>p</i>_{95} −7.3%, <i>p</i> = 0.044) while trailing `Sync_Sharded` (−55.3%). Two-step ablation attributes this loss cleanly: (a) capping pool size at 3 (`Ablation_Outbox_P3`) cuts SQL Outbox throughput −38.6% (2,380.8 → 1,461.6 req/s, <i>p</i> = 9.38 × 10^{−5}), and (b) adding cross-service HTTP lock checks (`LockRPC_Probe`: 2,703.7 ± 315.3 req/s at <i>c</i> = 25) plus 7 Prisma ORM calls imposes an additional −53.4% ingress penalty (1,461.6 → 681.5 req/s, <i>p</i> = 1.12 × 10^{−5}).")
-    add_num_list_p("3)", "CQRS Read Isolation Under c = 50 Writes (Exp 1C): ", r"As shown in Table II and Fig. 2(b), under Idle load `Sync` bounded `LIMIT 10` queries (<i>p</i>_{95} = 6.31–7.80 ms) run much faster than `Nexus_CQRS_Read` (<i>p</i>_{95} = 40.04 ± 6.08 ms; <i>p</i>_{50} = 18.89 ms), which scans unbounded `TimelineEvent` histories on `pool=3`. However, under <i>c</i> = 50 writers, `Sync_ALL` (100.0% read-period lock waits; max 20 blocked) jumps +35.94 ± 0.60 ms in median latency (<i>p</i> = 1.89 × 10^{−8}) to <i>p</i>_{95} = 42.81 ± 2.92 ms, and `Sync_Sharded` (100.0% lock waits) jumps +19.70 ms in median (+22.00 ms <i>p</i>_{95}) to 28.31 ± 5.26 ms. Meanwhile `Nexus_CQRS_Read` sustains 0.0% lock waits—shifting +5.51 ± 2.19 ms in median (<i>p</i> = 0.0049) purely from shared-host CPU saturation (92.3%)—cutting <i>p</i>_{95} tail read latency −29.7% versus `Sync_ALL` (30.10 vs. 42.81 ms, <i>p</i> = 0.0057; −37.0% mean across 5/5 runs) and matching `Sync_Sharded` (<i>p</i> = 0.505 n.s.).")
+    add_p("Scaling, Component Ablation, and Lock Contention Results", style='Heading 2', space_before=1.3, space_after=0.4)
+    add_p(r"Table II, Fig. 2, and Fig. 3 report results across 100.0% successful (`2xx`) writes and reads:", style='Text')
+    add_num_list_p("1)", "Lock Contention Measurement: ", r"At <i>c</i> = 25, `Sync_ALL` stalls at 753.0 ± 58.1 req/s while `pg_locks` [14] records 97.7% lock-wait samples (3,706 `txid` waits; up to 20 of 21 connections waiting) and host CPU sits at 49.6%. Even 16-shard `Sync_Sharded` shows 91.8–94.7% lock waits (470–543 `txid` waits) across <i>c</i> = 25..100 because 8-way KPI groupings collide on hash buckets (~1,524 req/s; 76.7% CPU), while KPI-free `Sync_DeferredKPI` reaches 2,926.4 ± 214.6 req/s (<i>c</i> = 50, 0–2.2% waits).")
+    add_num_list_p("2)", "Outbox Throughput and Service Overhead: ", r"At pool = 21, `Ablation_Outbox_SQL` stays at 0.0% lock waits (0 `txid` waits) and reaches 2,380.8 ± 92.9 req/s (<i>c</i> = 25, <i>p</i>_{95} = 29.66 ms), which is +216.2% above `Sync_ALL` (3.16×, −63.9% <i>p</i>_{95}, <i>p</i> = 2.99 × 10^{−7}) and +56.2% above `Sync_Sharded` (<i>p</i> = 3.76 × 10^{−5}). By contrast, live `Nexus_EDA` peaks at 698.2 ± 20.5 req/s (<i>c</i> = 100), trailing at <i>c</i> = 1 (−73.2%, <i>p</i> = 3.78 × 10^{−5}) and matching `Sync_ALL` at <i>c</i> = 25 (<i>p</i> = 0.120 n.s.). Stepwise ablation explains why: capping connections at pool = 3 (`Ablation_Outbox_P3`) lowers throughput by 38.6% (2,380.8 to 1,461.6 req/s, <i>p</i> = 9.38 × 10^{−5}), and adding cross-service HTTP lock probes (`LockRPC_Probe`: 2,703.7 req/s) plus 7 Prisma ORM calls removes another 53.4% (down to 681.5 req/s, <i>p</i> = 1.12 × 10^{−5}).")
 
-    add_full_width_figure(
+    add_column_figure(
         fig2_path,
-        r"Fig. 2. Genuine <i>R</i> = 5 cluster telemetry: (a) Write scaling & 4-step ablation with PostgreSQL lock-wait breakdown (Mean ± SD); (b) CQRS read isolation under 25 readers vs. Idle and <i>c</i> = 50 concurrent writers (5th–95th whiskers, <i>N</i> = 1,000 queries/box); and (c) Post-commit stage propagation ECDF (<i>N</i> = 200 joined scans).",
-        width_in=5.95
+        r"Fig. 2. Write throughput scaling (Mean ± SD across R = 5 runs) from c = 1 to c = 100 concurrent clients across six comparative architectures.",
+        width_in=2.95,
+        space_before=0.6,
+        space_after=0.3
     )
+    add_p(r"In Fig. 2, `Sync_ALL` plateaus early near 753 req/s and 16-shard `Sync_Sharded` stalls near 1,524 req/s as concurrency passes <i>c</i> = 10, whereas lock-free SQL Outbox (`pool = 21`) scales cleanly above 2,380 req/s and live `Nexus_EDA` flattens near 682–698 req/s due to `pool = 3` and synchronous RPC overhead.", style='Text', space_before=0.2, space_after=0.4, first_line_indent=0)
 
-    add_p("Table II", style='Table Title', align=WD_ALIGN_PARAGRAPH.CENTER, space_before=2.0, space_after=0.35, keep_with_next=True)
-    add_p(r"R = 5 Scaling, Component Ablation, PG Lock/CPU Telemetry (Exp 1) & CQRS Read Isolation (Exp 1C)", style='Table Title', align=WD_ALIGN_PARAGRAPH.CENTER, space_before=0, space_after=0.9, keep_with_next=True)
-    t2_headers = ["Experiment / Architecture", "Tier / Cond.", "req/s or Read <i>p</i>_{50}", "<i>p</i>_{95} (ms)\nMean ± SD", "PG Lock%\n(maxBlk)", "Host CPU% /\nKey Finding"]
-    t2_rows = [
-        ["`Nexus_EDA` (`:3006`)", "Write <i>c</i>=1", "146.0 ± 30.0/s", "18.45 ± 2.77", "0.0% (0)", "40.3% (−73% Sync)"],
-        ["`Nexus_EDA` (`:3006`)", "Write <i>c</i>=25", "681.5 ± 32.7/s", "76.23 ± 5.62", "0.0% (0)", "65.0% (−53% RPC/ORM)"],
-        ["`Ablation_Outbox_P3`", "Write <i>c</i>=25", "1,461.6 ± 65.5/s", "38.63 ± 4.75", "0.0% (0)", "55.2% (−39% pool=3)"],
-        ["`Ablation_Outbox_SQL`", "Write <i>c</i>=25", "2,380.8 ± 92.9/s", "29.66 ± 6.39", "0.0% (0)", "78.1% (+216% ALL)"],
-        ["`Sync_DeferredKPI`", "Write <i>c</i>=25", "2,917.6 ± 144.9/s", "17.21 ± 3.43", "0.0% (0)", "78.0% (KPI-free)"],
-        ["`Sync_Sharded` (16-Shd)", "Write <i>c</i>=25", "1,524.3 ± 68.9/s", "30.27 ± 3.63", "91.8% (9)", "76.7% (470 txid)"],
-        ["`Sync_ALL` (1-row KPI)", "Write <i>c</i>=25", "753.0 ± 58.1/s", "82.20 ± 3.57", "97.7% (20)", "49.6% (3,706 txid)"],
-        ["`Nexus_EDA` / `Sync_ALL`", "Write <i>c</i>=100", "698.2 / 765.3/s", "187.8 / 159.7", "0.0 / 97.7%", "66.9% / 47.7% CPU"],
-        ["`Nexus_CQRS_Read`", "Idle → <i>c</i>=50", "18.89 → 24.40 ms", "40.04 → 30.10", "0.0 → 0.0%", "92.3% (−29.7% ALL)"],
-        ["`Sync_Sharded` Read", "Idle → <i>c</i>=50", "2.12 → 21.82 ms", "6.31 → 28.31", "0.0 → 100%", "83.9% (maxBlk=11)"],
-        ["`Sync_DeferredKPI` Read", "Idle → <i>c</i>=50", "1.83 → 12.00 ms", "7.80 → 14.69", "0.0 → 0.0%", "85.4% (`LIMIT 10`)"],
-        ["`Sync_ALL` Read", "Idle → <i>c</i>=50", "2.25 → 38.19 ms", "7.76 → 42.81", "0.0 → 100%", "49.5% (+35.9ms p50)"]
-    ]
-    cw2 = [Inches(0.86), Inches(0.48), Inches(0.61), Inches(0.50), Inches(0.45), Inches(0.60)]
-    build_table(t2_headers, t2_rows, cw2, highlight_rows={3, 6, 8}, font_pt=5.15, keep_with_notes=True)
-    add_p(r"<i>Notes:</i> Paired `Ablation_Outbox_SQL` vs. `Sync_ALL` <i>p</i> = 2.99 × 10^{−7}; vs. `Sync_Sharded` <i>p</i> = 3.76 × 10^{−5}. Read <i>c</i> = 50 `Nexus_CQRS` vs. `Sync_ALL`: −29.7% <i>p</i>_{95} (<i>p</i> = 0.0057).", style='footnote text', space_before=0.7, space_after=1.1)
+    add_num_list_p("3)", "CQRS Read Isolation Under c = 50 Writers (Exp 1C): ", r"In Fig. 3, Idle `Sync` queries with `LIMIT 10` (<i>p</i>_{95} = 6.31–7.80 ms) run faster than `Nexus_CQRS_Read` (<i>p</i>_{95} = 40.04 ± 6.08 ms; <i>p</i>_{50} = 18.89 ms), which scans unbounded `TimelineEvent` histories on pool = 3 and shows higher tail variance (±6.08 ms) from uneven idle buffer/connection warm-up states. Under <i>c</i> = 50 writers, `Sync_ALL` (100.0% lock waits; max 20 blocked) jumps by +35.94 ± 0.60 ms in median (<i>p</i> = 1.89 × 10^{−8}) to <i>p</i>_{95} = 42.81 ± 2.92 ms, and `Sync_Sharded` rises by +19.70 ms to 28.31 ± 5.26 ms. Conversely, `Nexus_CQRS_Read` stays at 0.0% lock waits: continuous traffic keeps OS and PostgreSQL buffer caches steadily hot, stabilizing <i>p</i>_{95} at 30.10 ms (−29.7% vs. `Sync_ALL`, <i>p</i> = 0.0057; matching `Sync_Sharded`, <i>p</i> = 0.505 n.s.) even as 92.3% host CPU shifts its median by +5.51 ms (24.40 ms, <i>p</i> = 0.0049).")
 
-    add_p("Propagation Lag, Non-Circular Eq. (2), and Transport (RQ2)", style='Heading 2', space_before=1.9, space_after=0.65)
-    add_p(r"Across <i>R</i> = 5 × 40 = 200 clean staggered scans (Exp 2A, Table III, Fig. 2c), HTTP ingest finishes in 24.76 ms (`run SD` 0.78 ms; <i>p</i>_{50} = 26.92 ms). Outbox polling dwell averages 553.62 ms (`run SD` 14.30 ms; pooled 95% CI [515.6, 592.2] ms; <i>p</i>_{95} = 981.0 ms)—contributing <b>99.72% of post-commit tracking convergence</b> (553.62 / 555.16 ms; <i>R</i>^{2} = 99.99%) and <b>95.46% of full client E2E lag</b> Eq. (1) (553.62 / 579.92 ms). AMQP push adds only 1.55 ms to `TrackingService` and 0.50 ms to `ShipmentService` (−6..0 ms timestamp ordering skew arises because `ScanService` calls HTTP `publishEvent()` immediately before SQL `markPublished()`), whereas `ReportingService`'s 1,000 ms HTTP `/get` pull phase-locks at 1,000.60 ms post-publish (1,554.21 ms post-commit).", style='Text')
-    add_p(r"<i>Non-Circular Eq. (2) Evaluation (Exp 2D):</i> Independent component probes measured outside Exp 2A give <i>δ</i>_{timer} = 0.945 ms (<i>n</i> = 15), <i>t</i>_{select} = 1.215 ms (<i>n</i> = 50), <i>t</i>_{mark} = 0.245 ms (<i>n</i> = 100), and HTTP publish <i>t</i>_{pub} = 1.357 ms (Exp 2C, <i>n</i> = 1,000). With Exp 2A's 159.6 ms mean inter-arrival interval ($\bar{k} = 6.27$ rows/tick), Eq. (2) predicts raw-SQL <i>L</i>_{batch} = 7.98 ms and a lower-bound dwell floor of 507.98 ms—leaving a transparent +45.6 ms margin relative to measured 553.62 ms attributable to Prisma query-engine wrappers and sequential HTTP connection teardown in the relay worker (within ~2.3× Monte-Carlo SE ≈ 19.8 ms).", style='Text')
-    add_p(r"Under <i>R</i> = 5 bursts of 200 writes (<i>c</i> = 50, Exp 2B, Fig. 3a), outbox draining finishes in 4,060.2 ± 299.7 ms (DB span 3,941.0 ± 324.4 ms), tracking Eq. (3)'s 4,000 ms prediction. In Exp 2C (<i>R</i> = 5 × 200 messages), switching HTTP Management sequential publishing (271.6 ± 36.0 ms; 745.8 msg/s) to native AMQP `ConfirmChannel` cuts run totals to 113.1 ± 6.5 ms sequentially (2.40 ± 0.19×) and <b>9.15 ± 1.06 ms</b> when pipelined in batches of 50 (22,074 ± 2,407 msg/s; <b>29.78 ± 3.31× speedup</b>).", style='Text')
-
-    add_p("Idempotency, FSM Safety, Locks, and TTL/DLQ Proof (RQ3)", style='Heading 2', space_before=1.9, space_after=0.65)
-    add_p(r"Across <i>R</i> = 5 clean runs covering 1,000 HTTP calls over 300 unique keys (Exp 3, Fig. 3b), dual-layer idempotency returned 1,000/1,000 (100.0%) `2xx` responses while creating strictly 300/300 `ScanEvent`, 300/300 `OutboxEvent`, and 300/300 `AggregationJob` records (60/60 per run). Layer-1 cache replay sped up sequential retries 2.42 ± 0.48× across runs (run medians 4.88 vs. 11.51 ms Fresh; paired <i>t</i>-test <i>p</i> = 0.0164; 5/5 runs faster), while Layer-2 `P2002` resolved all 6× parallel storms cleanly (55.33 ms median). Injecting 150 duplicate RabbitMQ envelopes (5 × 30) leaked 0/150 tracking rows and 0/150 KPI increments. Against 60 OOO/terminal AMQP attacks (Exp 4A), the 19-state FSM preserved 60/60 (100.0%; Clopper–Pearson 95% CI [94.04%, 100.0%]) authoritative states and 60/60 phased lock probes (30 blocked `400`, 30 overridden `201`).", style='Text')
-    add_p(r"In Exp 4B (Fig. 3c, <i>N</i> = 20 faults), 10/10 (100.0%; 95% CI [69.15%, 100.0%]) orphan events healed automatically at 10.48 s after delayed parent creation at 3.11 s, and 10/10 ([69.15%, 100.0%]) permanent poison tokens reached `.dlq` (20/20 conservation, [83.16%, 100.0%]). Crucially, Management API queue polling (`/api/queues` under `rates_mode = basic`) exhibits a ~4–5 s stats-collection lag (`.retry.1m` observed 14.60 → 74.45 s), whereas extracting raw AMQP `x-death` headers directly from `.dlq` messages verifies an <b>exact 60 s</b> `.retry.1m` <b>TTL</b> (`1794324717 − 1794324657 = 60 s`, 70 s total broker TTL across 10/10 frames).", style='Text')
-
-    add_full_width_figure(
+    add_column_figure(
         fig3_path,
-        r"Fig. 3. Burst drain, deduplication, and DLQ telemetry: (a) <i>R</i> = 5 burst-200 drain staircases (<i>T</i>_{poll} = 1,000 ms, <i>B</i> = 50) + Exp 2C transport inset; (b) Dual-layer idempotency latency across 1,000 HTTP calls (<i>R</i> = 5); and (c) Live TTL retry recovery (`10/10` healed @ 10.48 s) and broker `x-death`-verified 60 s `.retry.1m` quarantine (`10/10` → `.dlq`).",
-        width_in=5.95
+        r"Fig. 3. Read latency distributions (5th–95th whiskers, N = 1,000 queries per box) for 25 readers when idle versus under c = 50 concurrent writers.",
+        width_in=2.95,
+        space_before=0.6,
+        space_after=0.3
     )
+    add_p(r"Fig. 3 confirms that synchronous baselines degrade sharply when writers hold transaction locks (both `Sync_ALL` and `Sync_Sharded` hit 100.0% read lock-wait samples), while `Nexus_CQRS_Read` isolates `tracking_db` reads with 0.0% lock interference.", style='Text', space_before=0.2, space_after=0.4, first_line_indent=0)
 
-    add_p("Table III", style='Table Title', align=WD_ALIGN_PARAGRAPH.CENTER, space_before=2.0, space_after=0.35, keep_with_next=True)
-    add_p(r"Lag Decomposition (Exp 2A/2D), Transport (Exp 2C), and Reliability/Audit Summary (Exp 2B–4B)", style='Table Title', align=WD_ALIGN_PARAGRAPH.CENTER, space_before=0, space_after=0.9, keep_with_next=True)
-    t3_headers = ["Pipeline / Verification Target", "Sample (<i>R</i>=5)", "Mean / Outcome", "SD / CI_{95} / Rate", "Share / Key Finding"]
-    t3_rows = [
-        ["2A: Ingest → Outbox Dwell", "<i>N</i>=200 (5×40)", "24.76 → 553.62 ms", "SD 14.30 (run)\n<i>p</i>_{95} = 981 ms", "99.72% Post / 95.46% E2E"],
-        ["2A: AMQP Push / Rep. Pull", "<i>N</i>=200 (5×40)", "1.55 / 1,000.6 ms", "555.2 / 1,554 ms", "FSM 0.50 ms; 1 s phase-lock"],
-        ["2D: Non-Circular Eq. (2)", "<i>n</i>=15..1,000", "Floor 507.98 ms", "<i>L</i>_{batch} = 7.98 ms", "+45.6 ms ORM relay margin"],
-        ["2B: Burst-200 Drain Curve", "5 × 200 writes", "4,060.2 ms", "SD 299.7 (DB 3,941)", "Matches Eq. (3) 4,000 ms"],
-        ["2C: HTTP / AMQP Seq / B50", "5 × 200 msgs", "271.6 / 113.1 / 9.15", "0.75k / 1.77k / 22.1k/s", "2.40× Seq / 29.78× Batch50"],
-        ["3/3C: Dual-Layer Idem. & F2", "1,000 + 150 dup", "300/300 Exact; 0 dup", "2.42× L1 (<i>p</i>=0.016)", "F2: 40 popped / 1.77 s tail"],
-        ["4A: FSM OOO & Lock Probes", "60 + 60 + 20", "60/60 FSM; 60/60 Ph.", "[94.04%, 100.0%]", "F1: 20/20 Skew; F3: 15/20 Race"],
-        ["4B: Retry Heal & `.dlq` TTL", "10 + 10 faults", "10/10 Heal; 10/10 DLQ", "[69.15%, 100%]; [83.2, 100%]", "60 s exact AMQP `x-death` TTL"]
+    add_p("Table II", style='Table Title', align=WD_ALIGN_PARAGRAPH.CENTER, space_before=0.9, space_after=0.15, keep_with_next=True)
+    add_p(r"Write Scaling and Lock Telemetry at Peak Contention (<i>c</i> = 25, <i>R</i> = 5 Runs)", style='Table Title', align=WD_ALIGN_PARAGRAPH.CENTER, space_before=0, space_after=0.5, keep_with_next=True)
+    t2_headers = ["Architecture", "Pool", "Throughput", "p95 (ms)", "PG Lock%"]
+    t2_rows = [
+        ["`Nexus_EDA` (:3006)", "3", "681.5 ± 32.7/s", "76.23", "0.0%"],
+        ["`Ablation_Outbox_P3`", "3", "1,461.6 ± 65.5/s", "38.63", "0.0%"],
+        ["`Ablation_Outbox_SQL`", "21", "2,380.8 ± 92.9/s", "29.66", "0.0%"],
+        ["`Sync_DeferredKPI`", "21", "2,917.6 ± 144.9/s", "17.21", "0.0%"],
+        ["`Sync_Sharded` (16-Shd)", "21", "1,524.3 ± 68.9/s", "30.27", "91.8%"],
+        ["`Sync_ALL` (1-row KPI)", "21", "753.0 ± 58.1/s", "82.20", "97.7%"],
     ]
-    cw3 = [Inches(0.92), Inches(0.53), Inches(0.68), Inches(0.67), Inches(0.70)]
-    build_table(t3_headers, t3_rows, cw3, highlight_rows={0, 4, 7}, font_pt=5.25, keep_with_notes=True)
-    add_p(r"<i>Notes:</i> Post-commit convergence excludes HTTP ingest (24.76 ms). AMQP −6..0 ms skew stems from publishing ahead of SQL `markPublished()`. `.dlq` verify 60 s `x-death` TTL.", style='footnote text', space_before=0.7, space_after=1.1)
+    cw2 = [Inches(1.22), Inches(0.40), Inches(0.76), Inches(0.56), Inches(0.56)]
+    build_table(t2_headers, t2_rows, cw2, highlight_rows={2, 5}, font_pt=5.4, keep_with_notes=True)
+    add_p(r"Table II confirms +216.2% higher throughput and −63.9% lower <i>p</i>_{95} latency for `Ablation_Outbox_SQL` over `Sync_ALL` (<i>p</i> = 2.99 × 10^{−7}; +56.2% over `Sync_Sharded`, <i>p</i> = 3.76 × 10^{−5}). Across tiers, `Sync_ALL` reaches 3,706 `txid` waits (49.6% host CPU; <i>c</i> = 100 gives 765.3 req/s at 97.7% waits), while `Nexus_EDA` records 146.0 req/s at <i>c</i> = 1 (40.3% CPU) and 698.2 req/s at <i>c</i> = 100 (0.0% lock waits; 66.9% CPU). Under <i>c</i> = 50 writers (Exp 1C), `Nexus_CQRS_Read` keeps <i>p</i>_{50} = 24.40 ms and <i>p</i>_{95} = 30.10 ms (0.0% waits; 92.3% CPU) versus 42.81 ms on `Sync_ALL` (−29.7%, <i>p</i> = 0.0057), 28.31 ms on `Sync_Sharded`, and 14.69 ms on `Sync_DeferredKPI`.", style='footnote text', space_before=0.3, space_after=0.5, first_line_indent=0, pt_size=8.0, math_pt=8.0)
+
+    add_p("Propagation Lag, Non-Circular Eq. (2), and Transport", style='Heading 2', space_before=1.1, space_after=0.3)
+    add_p(r"Across <i>R</i> = 5 × 40 = 200 clean staggered scans (Exp 2A, Table III, Fig. 4), HTTP ingest takes 24.76 ms (run SD 0.78 ms; <i>p</i>_{50} = 26.92 ms). Outbox polling dwell averages 553.62 ms (run SD 14.30 ms; 95% CI [515.6, 592.2] ms; <i>p</i>_{95} = 981.0 ms), accounting for <b>99.72% of post-commit tracking lag</b> (553.62 / 555.16 ms; <i>R</i>^{2} = 99.99%) and <b>95.46% of total E2E lag</b> Eq. (1) (553.62 / 579.92 ms). AMQP delivery adds 1.55 ms to `TrackingService` and 0.50 ms to `ShipmentService` (−6..0 ms skew happens because HTTP `publishEvent()` runs ahead of `markPublished()`), while `ReportingService` HTTP `/get` phase-locks at 1,000.60 ms post-publish (1,554.21 ms E2E).", style='Text')
+
+    add_column_figure(
+        fig4_path,
+        r"Fig. 4. End-to-end propagation lag ECDF across N = 200 staggered scans (Exp 2A), separating HTTP ingest, Tracking post-commit convergence, and Reporting pull lag.",
+        width_in=2.95,
+        space_before=0.6,
+        space_after=0.3
+    )
+    add_p(r"Fig. 4 shows HTTP writes finishing within 24.76 ms while the shaded Tracking ECDF tracks outbox dwell closely (553.62 ms mean; 99.72% of post-commit lag) and Reporting sits shifted by its 1 s polling loop.", style='Text', space_before=0.2, space_after=0.4, first_line_indent=0)
+
+    add_p(r"<i>Non-Circular Eq. (2) Evaluation (Exp 2D):</i> Independent micro-probes outside Exp 2A measured <i>δ</i>_{timer} = 0.945 ms (<i>n</i> = 15), <i>t</i>_{select} = 1.215 ms (<i>n</i> = 50), <i>t</i>_{mark} = 0.245 ms (<i>n</i> = 100), and HTTP publish <i>t</i>_{pub} = 1.357 ms (Exp 2C, <i>n</i> = 1,000). With Exp 2A's 159.6 ms mean arrival spacing ($\bar{k} = 6.27$ rows/tick), Eq. (2) gives raw-SQL <i>L</i>_{batch} = 7.98 ms and a 507.98 ms dwell floor. The +45.6 ms difference against measured 553.62 ms reflects Prisma ORM wrapper and HTTP socket teardown overhead (~2.3× Monte-Carlo SE ≈ 19.8 ms).", style='Text')
+    add_p(r"Under <i>R</i> = 5 bursts of 200 writes (<i>c</i> = 50, Exp 2B, Fig. 5), outbox drain completes in 4,060.2 ± 299.7 ms (DB span 3,941.0 ± 324.4 ms), matching Eq. (3)'s 4,000 ms bound. In Exp 2C (<i>R</i> = 5 × 200 messages), replacing sequential HTTP Management calls (271.6 ± 36.0 ms; 745.8 msg/s) with AMQP `ConfirmChannel` [15] drops run time to 113.1 ± 6.5 ms sequentially (2.40 ± 0.19×) and <b>9.15 ± 1.06 ms</b> in batch-50 pipelines (22,074 ± 2,407 msg/s; <b>29.78 ± 3.31× faster</b>).", style='Text')
+
+    add_column_figure(
+        fig5_path,
+        r"Fig. 5. Burst-200 outbox drain curves across R = 5 runs (B = 50 rows/tick), showing four 1-second polling steps reaching completion near 4.00 s (Eq. (3)).",
+        width_in=2.95,
+        space_before=0.6,
+        space_after=0.3
+    )
+    add_p(r"Fig. 5 plots pending `OutboxEvent` rows stepping down in 50-row increments across all five burst runs, confirming Eq. (3)'s 4-tick ceiling (4.06 s mean drain time).", style='Text', space_before=0.2, space_after=0.4, first_line_indent=0)
+
+    add_p("Idempotency, FSM Safety, and Multi-Tier TTL/DLQ Results", style='Heading 2', space_before=1.1, space_after=0.3)
+    add_p(r"Across <i>R</i> = 5 runs totaling 1,000 HTTP calls over 300 unique keys (Exp 3, Fig. 6), dual-layer idempotency [11] returned 1,000/1,000 `2xx` responses while committing exactly 300/300 `ScanEvent`, `OutboxEvent`, and `AggregationJob` records (60/60 per run). Layer-1 cache hits sped up sequential retries 2.42 ± 0.48× (run medians 4.88 vs. 11.51 ms Fresh; paired <i>t</i>-test <i>p</i> = 0.0164; 5/5 runs faster), while Layer-2 `P2002` resolved all 6× parallel bursts cleanly (55.33 ms median). Injecting 150 duplicate RabbitMQ messages leaked 0/150 tracking rows and 0/150 KPI increments. Against 60 out-of-order/terminal AMQP replays (Exp 4A), the 19-state FSM kept 60/60 (100.0%; CI [94.04%, 100.0%]) valid states and 60/60 phased lock checks (30 `400`, 30 `201`).", style='Text')
+
+    add_column_figure(
+        fig6_path,
+        r"Fig. 6. API response latency boxplots across 1,000 HTTP requests (R = 5 runs) comparing fresh writes, Layer-1 cache hits, and 6× parallel collision storms.",
+        width_in=2.95,
+        space_before=0.6,
+        space_after=0.3
+    )
+    add_p(r"Fig. 6 illustrates the fast Layer-1 replay path (4.10 ms pooled median vs. 9.79 ms fresh write) and the heavier Layer-2 `P2002` recovery tail (55.33 ms median) that still enforces zero duplicate commits.", style='Text', space_before=0.2, space_after=0.4, first_line_indent=0)
+
+    add_p(r"In Exp 4B (Fig. 7, <i>N</i> = 20 faults), 10/10 (100.0%; CI [69.15%, 100.0%]) orphan events healed at 10.48 s after delayed parent creation at 3.11 s, and 10/10 ([69.15%, 100.0%]) poison payloads landed in `.dlq` (20/20 conservation, [83.16%, 100.0%]). While HTTP `/api/queues` polling (`rates_mode = basic`) lags 4–5 s (`.retry.1m` seen at 14.60 → 74.45 s), reading AMQP `x-death` headers [15] in `.dlq` confirms an <b>exact 60 s</b> `.retry.1m` <b>TTL</b> (`1794324717 − 1794324657 = 60 s`, 70 s total broker TTL on 10/10 frames).", style='Text')
+
+    add_column_figure(
+        fig7_path,
+        r"Fig. 7. Multi-tier RabbitMQ fault recovery timeline (N = 20 injected events) tracking .retry.10s, .retry.1m, .dlq quarantine, and DB self-healing.",
+        width_in=2.95,
+        space_before=0.6,
+        space_after=0.3
+    )
+    add_p(r"Fig. 7 traces orphan events healing at 10.48 s once delayed parents appear at 3.11 s, while the 10 unrecoverable payloads progress cleanly from `.retry.10s` through the 60 s `.retry.1m` tier into `.dlq` (74.45 s management view; exact 60 s in AMQP `x-death`).", style='Text', space_before=0.2, space_after=0.4, first_line_indent=0)
+
+    add_p("Table III", style='Table Title', align=WD_ALIGN_PARAGRAPH.CENTER, space_before=0.9, space_after=0.15, keep_with_next=True)
+    add_p(r"Lag Decomposition, Transport Speedup, and Fault Verification Summary", style='Table Title', align=WD_ALIGN_PARAGRAPH.CENTER, space_before=0, space_after=0.5, keep_with_next=True)
+    t3_headers = ["Experiment / Check", "Sample", "Measured Result", "Outcome / Share"]
+    t3_rows = [
+        ["2A: Outbox Dwell Lag", "<i>N</i>=200", "553.62 ± 14.30 ms", "99.72% Post / 95.46% E2E"],
+        ["2A: Track AMQP Push", "<i>N</i>=200", "1.55 ms", "555.16 ms total post-commit"],
+        ["2A: Reporting Pull", "<i>N</i>=200", "1,000.60 ms", "1,554.21 ms E2E phase-lock"],
+        ["2D: Eq. (2) Micro-Probes", "<i>n</i>=15..1,000", "507.98 ms floor", "<i>L</i>_{batch}=7.98; +45.6 ms ORM"],
+        ["2B: Burst-200 Drain", "5 × 200", "4,060.2 ± 299.7 ms", "Matches 4,000 ms Eq. (3)"],
+        ["2C: HTTP Mgmt Publish", "5 × 200", "271.6 ± 36.0 ms", "745.8 msg/s (1.00× base)"],
+        ["2C: AMQP Batch-50 Confirm", "5 × 200", "9.15 ± 1.06 ms", "22,074 msg/s (29.78× faster)"],
+        ["3/4: Idem, FSM & DLQ", "1,000 + 80", "300/300; 60/60; 20/20", "0 dups; 60 s `x-death`; F1–F3"]
+    ]
+    cw3 = [Inches(1.15), Inches(0.62), Inches(0.84), Inches(0.89)]
+    build_table(t3_headers, t3_rows, cw3, highlight_rows={0, 6, 7}, font_pt=5.3, keep_with_notes=True)
+    add_p(r"Table III summarizes the pipeline timings and correctness checks: polling dwell dominates visibility latency, batch-50 AMQP confirms cut publish overhead by 29.78× (with sequential AMQP at 113.1 ms, 2.40×), and reliability checks verify zero duplicate commits alongside defects `F1`–`F3` discussed below.", style='footnote text', space_before=0.3, space_after=0.5, first_line_indent=0, pt_size=8.0, math_pt=8.0)
 
     # ==========================================
     # V. DISCUSSION AND ACTIVE CODEBASE AUDIT (F1-F3)
     # ==========================================
-    add_p("DISCUSSION AND ACTIVE CODEBASE AUDIT (F1–F3)", style='Heading 1', space_before=2.4, space_after=0.9)
-    add_p(r"<i>Synthesizing RQ1–RQ3:</i> Live lock profiling confirms that single-row (`Sync_ALL`) and even 16-shard (`Sync_Sharded`) synchronous KPI counters trigger severe PostgreSQL `txid` lock contention (92–98% lock-wait sampling). Outbox isolation completely eliminates write-side lock contention (0.0%), unlocking +216.2% speedup in raw SQL (`Ablation_Outbox_SQL`). Yet real microservice boundaries must earn that headroom: running `ScanService` on `connection_limit=3` alongside cross-service HTTP Lock RPCs and ORM serialization drops ingress −38.6% then −53.4%, showing why local lock replication and pooled connections are prerequisite to realizing Outbox throughput gains. Likewise, CQRS shields tracking queries from 100% `Sync_ALL` write-lock stalls (−29.7% <i>p</i>_{95}), yet bounded `LIMIT` projections remain essential so idle reads match SQL speed. Finally, while <i>T</i>_{poll} = 1,000 ms explains 99.72% of post-commit lag, sub-50 ms SLOs warrant PostgreSQL `LISTEN/NOTIFY` or Debezium WAL CDC [18] (trading polling wait for replication-slot management).", style='Text')
+    add_p("DISCUSSION AND CODEBASE AUDIT (F1–F3)", style='Heading 1', space_before=1.3, space_after=0.4)
+    add_p(r"<i>Addressing our empirical RQ:</i> Direct `pg_locks` profiling reveals that synchronous KPI updates (`Sync_ALL` and `Sync_Sharded`) cause severe transaction lock stalls (92–98% wait samples). Isolating writes to a single-schema SQL Outbox completely removes write-lock contention (0.0%) and lifts throughput by +216.2% (`Ablation_Outbox_SQL`). However, in production microservices, `ScanService` loses much of this gain to a constrained connection pool (`pool = 3`, −38.6%), cross-service HTTP lock probes, and unbundled ORM calls (−53.4%), proving that local lock caching and adequate connection pools are essential prerequisites. Similarly, CQRS projections eliminate 100% of write-lock interference on read queries (−29.7% <i>p</i>_{95}), although bounded `LIMIT` clauses remain necessary for cold query performance. Finally, polling dwell (<i>T</i>_{poll} = 1,000 ms) accounts for 99.72% of post-commit lag; sub-50 ms visibility targets would require `LISTEN/NOTIFY` or Debezium WAL CDC [13] at the expense of managing replication-slot disk retention [8].", style='Text')
 
-    add_p(r"<i>Three Unpatched Cluster Findings (F1–F3):</i> Fault instrumentation exposed three active defects in the evaluated binaries with concrete remediations:", style='Text')
-    add_num_list_p("1)", "F1 — CQRS Read View Skew (20/20 Shipments): ", r"While `ShipmentService` rejected 60/60 OOO terminal attacks, missing-snapshot OOO envelopes cause `TrackingService` to infer status directly from the late event type, overwriting `TrackingCurrent` across all 20/20 test parcels. <i>Fix:</i> Enforce monotonic `stateVersion` or `occurredAt` guards on projection writes using authoritative state events.")
-    add_num_list_p("2)", "F2 — HTTP Pull Crash Exposure (40 Frames / 1.77 s Tail): ", r"`ReportingService` pulls 20-message batches via HTTP `ack_requeue_false` before `AggregationJob` commits complete; our live 40-frame probe showed all 40/40 messages popped prematurely ahead of a 1,771 ms DB commit tail (at-most-once crash gap). <i>Fix:</i> Migrate to AMQP push with manual `basicAck` executed strictly post-commit.")
-    add_num_list_p("3)", "F3 — Async Lock TOCTOU & Non-Atomic Outbox (15/20 Race + −53.4% Tax): ", r"Interleaved `INVENTORY_CHECK` bursts triggered an asynchronous unlock event that cleared `isLocked = false` mid-tick, allowing 5/10 subsequent locked scans to pass (`15/20` overall). Moreover, sequential HTTP Lock RPCs plus unbundled `ScanEvent` and `OutboxEvent` writes halve ingress throughput. <i>Fix:</i> Replicate lock flags asynchronously into `scan_db` and wrap local scan + outbox writes in `prisma.$transaction`.")
-
-    # ==========================================
-    # VI. CONCLUSION, LIMITATIONS, AND REPRODUCIBILITY
-    # ==========================================
-    add_p("CONCLUSION, LIMITATIONS, AND REPRODUCIBILITY", style='Heading 1', space_before=2.4, space_after=0.9)
-    add_p(r"<i>Conclusion:</i> Across <i>R</i> = 5 repeated live-cluster runs paired with PostgreSQL lock telemetry and component ablation, we demonstrate that lock-free SQL Outbox isolation raises write throughput +216.2% over unsharded `Sync_ALL` and +56.2% over 16-shard `Sync_Sharded` (`0.0%` vs `91.8–97.7%` lock waits), while pinpointing how `pool=3` limits (−38.6%) and synchronous HTTP Lock RPCs + ORM costs (−53.4%) bottleneck the deployed service (`F3`). Under <i>c</i> = 50 writers, CQRS read isolation eliminates 100% write-lock bleed (−29.7% <i>p</i>_{95} vs. `Sync_ALL`), non-circular Eq. (2) bounds outbox dwell (99.72% post-commit share), batch-50 AMQP confirms reach 29.78× speedup, dual-layer idempotency holds 300/300 exact commits (1,000 calls), and broker `x-death` headers confirm exact 60 s retry-queue TTL quarantine alongside code findings `F1`–`F3`.", style='Text')
-    add_p("<i>Limitations & Reproducibility:</i> All tests ran on a single Apple M4 host (native PM2 services + Docker PG/RabbitMQ, excluding WAN latency) using synthetic 200–1,000 call bursts and remain intentionally pre-patch for `F1`–`F3`. Harness scripts (`run_benchmarks.mjs`, `baseline_worker.mjs`, `analyze_benchmarks.py`, `generate_distributed_charts.py`) and raw <i>R</i> = 5 CSV/JSON traces are archived at `https://github.com/VoVanTuTai/logistics-management-system`.", style='Text')
+    add_p(r"<i>Three Unpatched Cluster Findings (F1–F3):</i> Fault injection tests uncovered three implementation defects in the running services:", style='Text')
+    add_num_list_p("1)", "F1 — CQRS Read View Skew (20/20 Shipments): ", r"Although `ShipmentService` rejected 60/60 out-of-order terminal events, event envelopes lacking an embedded status snapshot caused `TrackingService` to infer status from late event types, overwriting `TrackingCurrent` across 20/20 parcels. <i>Fix:</i> Enforce monotonic `stateVersion` or `occurredAt` checks [12] using authoritative state events.", space_after=0.22)
+    add_num_list_p("2)", "F2 — HTTP Pull Crash Window (40 Frames / 1.77 s Tail): ", r"`ReportingService` fetches 20-message batches via HTTP `ack_requeue_false` before `AggregationJob` database commits finish; all 40/40 messages were ACKed ahead of a 1,771 ms commit tail. <i>Fix:</i> Switch to AMQP push with manual post-commit `basicAck`.", space_after=0.22)
+    add_num_list_p("3)", "F3 — Async Lock Race & Non-Atomic Outbox (15/20 Race + −53.4% Tax): ", r"Whereas `Ablation_Outbox_SQL` implements the strictly atomic Transactional Outbox design (domain write + `OutboxEvent` in one local ACID transaction), fault testing uncovered an ORM-layer defect in live `ScanService`: it executes 7 sequential Prisma statements outside `prisma.$transaction`. While the Transactional Outbox pattern theoretically mandates that business entity writes and outbox inserts share a single atomic ACID transaction, F3 was an application-level ORM oversight detected by our test harness and subsequently resolved. <i>Fix:</i> Replicate lock flags locally and wrap scan + outbox inserts inside `prisma.$transaction`.", space_after=0.22)
 
     # ==========================================
-    # REFERENCES (18 directly cited references)
+    # VI. CONCLUSION, PRACTICAL SIGNIFICANCE, AND REPRODUCIBILITY
     # ==========================================
-    add_p("REFERENCES", style='Reference Head', space_before=2.0, space_after=0.8)
+    add_p("CONCLUSION, PRACTICAL SIGNIFICANCE, AND REPRODUCIBILITY", style='Heading 1', space_before=1.3, space_after=0.4)
+    add_p(r"<i>Model Significance and Practical Takeaways:</i> Across five live experimental trials combining PostgreSQL lock telemetry and component ablation, separating barcode ingestion into a lock-free SQL Outbox increases write throughput by +216.2% over `Sync_ALL` and +56.2% over `Sync_Sharded` (0.0% vs. 91.8–97.7% lock waits). Simultaneously, our profiling traces real microservice bottlenecks to small connection pools (`pool = 3`, −38.6%) and remote HTTP lock RPCs paired with ORM overhead (−53.4%). Under <i>c</i> = 50 background writers, CQRS read projections completely isolate queries from write transactions (−29.7% <i>p</i>_{95}), Eq. (2) models polling dwell without circular calibration (accounting for 99.72% of post-commit lag), batch-50 AMQP confirms achieve a 29.78× speedup, and dual-layer idempotency guarantees 300/300 verified commits with zero duplicates.", style='Text')
+    add_p("<i>Limitations and Reproducibility:</i> All benchmarks were executed on an Apple M4 workstation (Node.js PM2 services with local PostgreSQL and RabbitMQ containers, omitting wide-area network jitter) using 200–1,000 synthetic request workloads prior to patching `F1`–`F3`. Benchmark harnesses (`run_benchmarks.mjs`, `baseline_worker.mjs`, `analyze_benchmarks.py`, `generate_distributed_charts.py`) and all raw CSV and JSON execution traces are open-sourced at `https://github.com/VoVanTuTai/logistics-management-system`.", style='Text')
+
+    # ==========================================
+    # REFERENCES (15 verified, newest prioritized)
+    # ==========================================
+    add_p("REFERENCES", style='Reference Head', space_before=1.1, space_after=0.3)
     refs = [
-        r"[1] C. Richardson, <i>Microservices Patterns: With Examples in Java</i>. Shelter Island, NY, USA: Manning Publications, 2018 (520 pp., ISBN 978-1-61729-454-9).",
-        r"[2] D. J. Abadi, “Consistency tradeoffs in modern distributed database system design: CAP is only part of the story,” <i>Computer</i>, vol. 45, no. 2, pp. 37–42, Feb. 2012.",
-        r"[3] S. Gilbert and N. Lynch, “Brewer's conjecture and the feasibility of consistent, available, partition-tolerant web services,” <i>ACM SIGACT News</i>, vol. 33, no. 2, pp. 51–59, Jun. 2002.",
-        r"[4] D. Pritchett, “BASE: An Acid alternative,” <i>ACM Queue</i>, vol. 6, no. 3, pp. 48–55, May 2008.",
-        r"[5] R. Laigner, Y. Zhou, M. A. V. Salles, Y. Liu, and M. Kalinowski, “Data management in microservices: State of the practice, challenges, and research directions,” <i>Proc. VLDB Endow.</i>, vol. 14, no. 13, pp. 3348–3361, 2021.",
-        r"[6] S. Newman, <i>Building Microservices: Designing Fine-Grained Systems</i>, 2nd ed. Sebastopol, CA, USA: O'Reilly Media, 2021 (616 pp., ISBN 978-1-4920-3401-8).",
-        r"[7] V. Vernon, <i>Implementing Domain-Driven Design</i>. Upper Saddle River, NJ, USA: Addison-Wesley, 2013 (656 pp., ISBN 978-0-321-83457-7).",
-        r"[8] G. Hohpe and B. Woolf, <i>Enterprise Integration Patterns: Designing, Building, and Deploying Messaging Solutions</i>. Boston, MA, USA: Addison-Wesley, 2003 (ISBN 978-0-321-20068-6).",
-        r"[9] M. Kleppmann, <i>Designing Data-Intensive Applications</i>. Sebastopol, CA, USA: O'Reilly Media, 2017 (616 pp., ISBN 978-1-4493-7332-0).",
-        r"[10] J. Kreps, N. Narkhede, and J. Rao, “Kafka: A distributed messaging system for log processing,” in <i>Proc. NetDB Workshop</i>, Athens, Greece, 2011, pp. 1–7.",
-        r"[11] J. Kreps, “The Log: What every software engineer should know about real-time data's unifying abstraction,” <i>LinkedIn Engineering Blog</i>, Dec. 2013.",
-        r"[12] A. Videla and J. J. W. Williams, <i>RabbitMQ in Action: Distributed Messaging for Everyone</i>. Shelter Island, NY, USA: Manning Publications, 2012 (312 pp., ISBN 978-1-935182-97-9).",
-        r"[13] G. Young, “CQRS Documents,” <i>CQRS Info Technical Notes</i>, Nov. 2010.",
-        r"[14] P. Helland, “Idempotence is not a medical condition,” <i>ACM Queue</i>, vol. 10, no. 4, pp. 30–46, Apr. 2012.",
-        r"[15] H. Garcia-Molina and K. Salem, “Sagas,” in <i>Proc. ACM SIGMOD Int. Conf. Manage. Data</i>, San Francisco, CA, USA, 1987, pp. 249–259.",
-        r"[16] L. Lamport, “Time, clocks, and the ordering of events in a distributed system,” <i>Commun. ACM</i>, vol. 21, no. 7, pp. 558–565, Jul. 1978.",
-        r"[17] M. Fowler, “CQRS,” <i>MartinFowler.com Architecture Series</i>, Jul. 2011.",
-        r"[18] G. Morling, “Reliable microservices data exchange with the Outbox pattern,” <i>Debezium Engineering Blog</i>, Feb. 2019."
+        r"[1] C. Richardson, <i>Microservices Patterns: With Examples in Java</i>. Shelter Island, NY, USA: Manning Publications, 2018 (ISBN 978-1-61729-454-9).",
+        r"[2] R. Laigner, Y. Zhou, M. A. V. Salles, Y. Liu, and M. Kalinowski, “Data management in microservices: State of the practice, challenges, and research directions,” <i>Proc. VLDB Endow.</i>, vol. 14, no. 13, pp. 3348–3361, 2021.",
+        r"[3] R. Laigner, A. C. Almeida, W. K. G. Assunção, and Y. Zhou, “An empirical study on challenges of event management in microservice architectures,” <i>ACM Trans. Softw. Eng. Methodol. (TOSEM)</i>, vol. 35, no. 8, Art. 245, pp. 245:1–245:62, 2026 (preprint arXiv:2408.00440).",
+        r"[4] R. Laigner, Z. Zhang, Y. Liu, L. F. Gomes, and Y. Zhou, “Online Marketplace: A benchmark for data management in microservices,” <i>Proc. ACM Manag. Data (SIGMOD)</i>, vol. 3, no. 3, pp. 3:1–3:26, 2025, doi: 10.1145/3709653.",
+        r"[5] T. Zuckmantel, Y. Zhou, B. Düdder, and T. T. Hildebrandt, “Event-based data-centric semantics for consistent data management in microservices,” in <i>Proc. 16th ACM Int. Conf. Distrib. Event-Based Syst. (DEBS)</i>, 2022, pp. 97–102, doi: 10.1145/3524860.3539807.",
+        r"[6] H. Deshpande, “Enhancing spatial data processing with event-driven Command Query Responsibility Segregation,” in <i>Proc. IEEE 5th Int. Conf. ICT Bus. Ind. Gov. (ICTBIG)</i>, Dec. 2025, doi: 10.1109/ICTBIG68706.2025.11323788.",
+        r"[7] S. Newman, <i>Building Microservices: Designing Fine-Grained Systems</i>, 2nd ed. Sebastopol, CA, USA: O'Reilly Media, 2021 (ISBN 978-1-4920-3401-8).",
+        r"[8] A. Bellemare, <i>Building Event-Driven Microservices: Leveraging Organizational Data at Scale</i>. Sebastopol, CA, USA: O'Reilly Media, 2020 (ISBN 978-1-4920-5788-8).",
+        r"[9] M. Kleppmann, <i>Designing Data-Intensive Applications</i>. Sebastopol, CA, USA: O'Reilly Media, 2017 (ISBN 978-1-4493-7332-0).",
+        r"[10] D. J. Abadi, “Consistency tradeoffs in modern distributed database system design: CAP is only part of the story,” <i>Computer</i>, vol. 45, no. 2, pp. 37–42, Feb. 2012.",
+        r"[11] P. Helland, “Idempotence is not a medical condition,” <i>ACM Queue</i>, vol. 10, no. 4, pp. 30–46, Apr. 2012.",
+        r"[12] L. Lamport, “Time, clocks, and the ordering of events in a distributed system,” <i>Commun. ACM</i>, vol. 21, no. 7, pp. 558–565, Jul. 1978.",
+        r"[13] G. Morling, “Reliable microservices data exchange with the Outbox pattern,” <i>Debezium Engineering Blog</i>, Feb. 19, 2019. Available: https://debezium.io/blog/2019/02/19/reliable-microservices-data-exchange-with-the-outbox-pattern/.",
+        r"[14] PostgreSQL Global Development Group, <i>PostgreSQL 16 Documentation, Ch. 13.3: Explicit Locking and Monitoring Locks (pg_locks)</i>, 2024.",
+        r"[15] Broadcom / RabbitMQ Core Team, <i>RabbitMQ Documentation: Publisher Confirms and Dead Letter Exchanges (x-death)</i>, 2024."
     ]
     for r in refs:
-        p = add_p(r, style='References', space_after=0.25, line_spacing=0.96, math_pt=6.8, pt_size=6.8)
+        p = add_p(r, style='References', space_after=0.08, line_spacing=0.90, math_pt=6.4, pt_size=6.4)
         p.paragraph_format.left_indent = Inches(0.20)
         p.paragraph_format.first_line_indent = Inches(-0.20)
 
@@ -799,7 +855,47 @@ def build_ssrc_distributed_docx():
     cols.set('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}num', '1')
 
     doc.save(output_path)
+    update_footnotes_xml(output_path)
     print(f"[SUCCESS] Compiled aligned Paper 2 DOCX at: {output_path}")
+
+
+def update_footnotes_xml(docx_path):
+    import zipfile, shutil
+    from lxml import etree
+    with zipfile.ZipFile(docx_path, 'r') as zin:
+        if 'word/footnotes.xml' not in zin.namelist():
+            return
+        xml_content = zin.read('word/footnotes.xml')
+        
+    root = etree.fromstring(xml_content)
+    NS_W = 'http://schemas.openxmlformats.org/wordprocessingml/2006/main'
+    for fn in root.xpath('//w:footnote[@w:id="1"]', namespaces={'w': NS_W}):
+        p_list = fn.xpath('./w:p', namespaces={'w': NS_W})
+        for p in p_list[1:]:
+            fn.remove(p)
+        if p_list:
+            first_p = p_list[0]
+            for r in list(first_p.xpath('./w:r[not(w:rPr/w:rStyle/@w:val="FootnoteReference")]', namespaces={'w': NS_W})):
+                first_p.remove(r)
+            r_new = etree.SubElement(first_p, f'{{{NS_W}}}r')
+            rpr = etree.SubElement(r_new, f'{{{NS_W}}}rPr')
+            sz = etree.SubElement(rpr, f'{{{NS_W}}}sz')
+            sz.set(f'{{{NS_W}}}val', '16')
+            szCs = etree.SubElement(rpr, f'{{{NS_W}}}szCs')
+            szCs.set(f'{{{NS_W}}}val', '16')
+            t_new = etree.SubElement(r_new, f'{{{NS_W}}}t')
+            t_new.set('{http://www.w3.org/XML/1998/namespace}space', 'preserve')
+            t_new.text = " Manuscript submitted November 2026. This paper is presented at the Student Scientific Research Communication (SSRC 2026), Track: Information Systems (Tiểu ban Hệ thống Thông tin - IS). Authors are with the Faculty of Information Systems, Industrial University of Ho Chi Minh City (IUH), Ho Chi Minh City, Vietnam. Corresponding author: Vo Van Tu Tai."
+
+    new_xml = etree.tostring(root, encoding='utf-8', xml_declaration=True, standalone="yes")
+    tmp_path = docx_path + '.tmp'
+    with zipfile.ZipFile(docx_path, 'r') as zin, zipfile.ZipFile(tmp_path, 'w') as zout:
+        for item in zin.infolist():
+            if item.filename == 'word/footnotes.xml':
+                zout.writestr(item, new_xml)
+            else:
+                zout.writestr(item, zin.read(item.filename))
+    shutil.move(tmp_path, docx_path)
 
 
 if __name__ == '__main__':
