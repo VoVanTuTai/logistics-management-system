@@ -11,6 +11,9 @@
     "web": "node ./scripts/start-with-gateway.js --web",
     "test:qr": "node ./scripts/start-with-gateway.js --lan",
     "build:web": "expo export --platform web",
+    "sync:ip": "node ../../scripts/sync-mobile-ip.js",
+    "build:apk": "npx -y eas-cli build --platform android --profile preview",
+    "build:apk:prod": "npx -y eas-cli build --platform android --profile production-apk",
     "typecheck": "tsc --noEmit"
   },
   "keywords": [],
@@ -26,6 +29,7 @@
     "@types/qrcode-generator": "^0.0.16",
     "expo": "57.0.9",
     "expo-asset": "~57.0.16",
+    "expo-build-properties": "~57.0.16",
     "expo-constants": "~57.0.8",
     "expo-font": "~57.0.3",
     "expo-location": "~57.0.15",
