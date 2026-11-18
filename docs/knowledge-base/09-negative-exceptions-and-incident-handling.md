@@ -57,3 +57,31 @@ Hệ thống Logistics Nexus quy chuẩn hóa quy trình xử lý cho 06 kịch 
   - Bàn giao ngay toàn bộ tang vật cho cơ quan chức năng có thẩm quyền (Công an, Quản lý thị trường).
   - **Tuyệt đối không bồi thường** giá trị bưu gửi và không hoàn lại cước phí.
   - Khóa vĩnh viễn tài khoản người gửi và chuyển giao toàn bộ thông tin định danh cho cơ quan điều tra.
+
+## 7. Chế Tài Khi Bưu Tá Tự Ý Ký Tên Thay Người Nhận (Fake POD Violation)
+- **Hành vi vi phạm:** Bưu tá tự ý ký tên thay người nhận hoặc cập nhật khống trạng thái "Đã giao hàng" (Fake POD) khi chưa phát hàng thực tế tới tay khách hàng.
+- **Hình thức chế tài & xử lý:**
+  - Đây là vi phạm nghiêm trọng quy trình vận hành và đạo đức nghề nghiệp bưu chính.
+  - Bưu tá vi phạm lập tức bị đình chỉ công việc, xử lý kỷ luật nghiêm khắc theo quy chế lao động.
+  - Trường hợp khách hàng khiếu nại chưa nhận được hàng hoặc kiện hàng bị thất lạc, bưu tá vi phạm phải liên đới chịu trách nhiệm bồi thường 100% giá trị bưu gửi bị mất cho khách hàng.
+
+## 8. Khai Báo Sai Lệch Tính Chất Hàng Hóa (Khai Man Hàng Hóa)
+- **Hành vi vi phạm:** Người gửi cố tình khai báo sai tính chất hàng hóa (ví dụ: khai man đồ thủy tinh, gốm sứ dễ vỡ thành quần áo hoặc hàng thông thường để né phụ phí hoặc yêu cầu đóng gói).
+- **Nguyên tắc giải quyết sự cố:**
+  - Nếu xảy ra vỡ hỏng cơ học trong quá trình vận chuyển, Người gửi phải tự chịu trách nhiệm hoàn toàn do đã không tuân thủ quy chuẩn đóng gói chuyên dụng và khai báo trung thực.
+  - Đơn vị vận chuyển từ chối bồi thường thiệt hại đối với các bưu phẩm bị vỡ hỏng do lỗi khai sai tính chất hàng hóa của người gửi.
+
+## 9. Quy Trình Kiểm Tra Vết Quét Thao Tác (Scan Audit Trail) & Tính Bất Biến Của Dữ Liệu
+- **Chuỗi vết quét 4 giai đoạn:**
+  1. **Scan Inbound nhập Hub:** Ghi nhận kiện hàng vật lý chính thức cập bến trạm/Hub bưu chính.
+  2. **Scan Sorting phân loại:** Quét phân tuyến luồng đích trên băng chuyền tự động.
+  3. **Scan Outbound xuất Hub:** Quét đóng bao, kẹp chì seal xe tải đường trục (Linehaul).
+  4. **Scan Last-mile phát hàng:** Quét bàn giao kiện hàng cho Shipper đi phát và ghi nhận chữ ký/ảnh chụp POD.
+- **Tính bất biến của dữ liệu vết quét (Immutable Audit Trail):**
+  - Mọi lịch sử quét mã (scan events) đều được lưu trữ phân tán, gắn nhãn thời gian thực (timestamp), mã nhân sự (operator ID) và tọa độ trạm phát sinh.
+  - Toàn bộ dữ liệu log vết quét là **bất biến, không thể bị xóa hoặc sửa đổi** bởi bất kỳ người dùng hay tác vụ nào (kể cả yêu cầu bypass IDOR). Điều này bảo đảm tính toàn vẹn và giá trị chứng cứ pháp lý khi thực hiện giám định thất lạc.
+
+## 10. Nguyên Tắc An Toàn Tài Chính & Quản Trị Rủi Ro Hệ Thống
+- **Hạn mức thu hộ COD tối đa của bưu tá:** Trần thu hộ tiền mặt tối đa cho một bưu tá đi phát hàng là 15.000.000 VNĐ. Mọi yêu cầu điều chỉnh COD vượt hạn mức (như lên 25 triệu) bắt buộc phải do Kế toán kiểm soát nội bộ phê duyệt và tuân thủ quy trình bảo hiểm tài chính.
+- **Bảo mật ví tiền cước:** Nghiêm cấm mọi hành vi trích xuất tiền trực tiếp từ ví cước doanh nghiệp sang tài khoản cá nhân thông qua hội thoại bot; việc rút ví bắt buộc phải thực hiện trên cổng quản trị chính chủ có xác thực bảo mật OTP hai lớp.
+- **Minh bạch tài chính:** Mọi tác vụ trừ tiền cước đều bắt buộc phải hiển thị xác nhận số tiền cụ thể rõ ràng tới người dùng trước khi thực thi.

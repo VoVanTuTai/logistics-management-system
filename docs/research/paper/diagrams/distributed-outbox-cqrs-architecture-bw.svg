@@ -1,0 +1,180 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="2040" height="980" viewBox="0 0 2040 980">
+<rect width="2040" height="980" fill="#FFFFFF"/>
+<rect x="12" y="12" width="2016" height="956" rx="8" fill="#FFFFFF" stroke="#000000" stroke-width="2.8"/>
+<rect x="20" y="20" width="2000" height="940" rx="4" fill="none" stroke="#000000" stroke-width="1.0" stroke-dasharray="7 4"/>
+<rect x="32" y="30" width="1976" height="74" rx="6" fill="#F1F5F9" stroke="#000000" stroke-width="2.2"/>
+<text x="50" y="61" font-family="'Times New Roman', 'Liberation Sans', Arial, sans-serif" font-size="25" font-weight="900" fill="#000000">NEXUS DISTRIBUTED EVENT-DRIVEN OUTBOX &amp; CQRS ARCHITECTURE (POSTGRESQL 16 + RABBITMQ 3.13)</text>
+<text x="50" y="88" font-family="ui-monospace, 'SFMono-Regular', Menlo, Monaco, Consolas, monospace" font-size="14.5" font-weight="800" fill="#1E293B">Bounded-Context DB Ownership  •  Dual-Layer Idempotency  •  Deterministic FSM  •  Multi-Tier TTL Retry &amp; DLQ</text>
+<rect x="1764" y="42" width="228" height="48" rx="5" fill="#000000"/>
+<text x="1878" y="63" font-family="ui-monospace, 'SFMono-Regular', Menlo, Monaco, Consolas, monospace" font-size="13" font-weight="900" fill="#FFFFFF" text-anchor="middle">FIG. 1  •  BLUEPRINT</text>
+<text x="1878" y="81" font-family="ui-monospace, 'SFMono-Regular', Menlo, Monaco, Consolas, monospace" font-size="12" font-weight="700" fill="#E2E8F0" text-anchor="middle">6 Services / 7 ACID DBs</text>
+<rect x="34" y="118" width="560" height="768" rx="8" fill="#FAFAFA" stroke="#000000" stroke-width="1.8" stroke-dasharray="8 4"/>
+<rect x="34" y="118" width="560" height="34" rx="6" fill="#000000"/>
+<text x="314" y="140" font-family="'Times New Roman', 'Liberation Sans', Arial, sans-serif" font-size="16" font-weight="900" fill="#FFFFFF" text-anchor="middle">1. COMMAND INGESTION &amp; TRANSACTIONAL OUTBOX (ACID)</text>
+<rect x="688" y="118" width="590" height="768" rx="8" fill="#FAFAFA" stroke="#000000" stroke-width="1.8" stroke-dasharray="8 4"/>
+<rect x="688" y="118" width="590" height="34" rx="6" fill="#000000"/>
+<text x="983" y="140" font-family="'Times New Roman', 'Liberation Sans', Arial, sans-serif" font-size="16" font-weight="900" fill="#FFFFFF" text-anchor="middle">2. RABBITMQ 3.13 TOPIC BROKER &amp; MULTI-TIER RETRY</text>
+<rect x="1372" y="118" width="634" height="768" rx="8" fill="#FAFAFA" stroke="#000000" stroke-width="1.8" stroke-dasharray="8 4"/>
+<rect x="1372" y="118" width="634" height="34" rx="6" fill="#000000"/>
+<text x="1689" y="140" font-family="'Times New Roman', 'Liberation Sans', Arial, sans-serif" font-size="16" font-weight="900" fill="#FFFFFF" text-anchor="middle">3. AUTONOMOUS BOUNDED-CONTEXT CONSUMERS &amp; CQRS VIEWS</text>
+<rect x="52" y="168" width="524" height="128" rx="10" fill="#FFFFFF" stroke="#000000" stroke-width="2.2"/>
+<path d="M 52 212 L 52 178 Q 52 168 62 168 L 566 168 Q 576 168 576 178 L 576 212 Z" fill="#E2E8F0" stroke="#000000" stroke-width="2.0"/>
+<text x="68" y="192" font-family="'Times New Roman', 'Liberation Sans', Arial, sans-serif" font-size="18" font-weight="900" fill="#000000">PDA Scanners / API Gateway BFF (:3000)</text>
+<text x="68" y="207" font-family="ui-monospace, 'SFMono-Regular', Menlo, Monaco, Consolas, monospace" font-size="12" font-weight="800" fill="#1E293B">POST /scans/inbound | /pickup | /outbound (idempotencyKey)</text>
+<rect x="488.6" y="178" width="75.39999999999999" height="24" rx="4" fill="#000000"/>
+<text x="526.3000000000001" y="194" font-family="ui-monospace, 'SFMono-Regular', Menlo, Monaco, Consolas, monospace" font-size="12" font-weight="900" fill="#FFFFFF" text-anchor="middle">INGRESS</text>
+<text x="68" y="234" font-family="'Times New Roman', 'Liberation Sans', Arial, sans-serif" font-size="14.0" font-weight="900" fill="#000000">1) Client Burst / Concurrent Retries: c = 1..100 writers</text>
+<text x="68" y="256" font-family="ui-monospace, 'SFMono-Regular', Menlo, Monaco, Consolas, monospace" font-size="13.0" font-weight="800" fill="#0F172A">   Header/Body: shipmentCode + locationCode + idempotencyKey</text>
+<text x="68" y="278" font-family="ui-monospace, 'SFMono-Regular', Menlo, Monaco, Consolas, monospace" font-size="13.0" font-weight="800" fill="#0F172A">   Write ACK fast-path: p50 = 21.2 ms (N=120), no downstream wait</text>
+<rect x="52" y="326" width="524" height="248" rx="10" fill="#FFFFFF" stroke="#000000" stroke-width="2.2"/>
+<path d="M 52 370 L 52 336 Q 52 326 62 326 L 566 326 Q 576 326 576 336 L 576 370 Z" fill="#F1F5F9" stroke="#000000" stroke-width="2.0"/>
+<text x="68" y="350" font-family="'Times New Roman', 'Liberation Sans', Arial, sans-serif" font-size="18" font-weight="900" fill="#000000">ScanService (:3006) — Dual-Layer Idempotency</text>
+<text x="68" y="365" font-family="ui-monospace, 'SFMono-Regular', Menlo, Monaco, Consolas, monospace" font-size="12" font-weight="800" fill="#1E293B">scans.service.ts + scan_db (PostgreSQL 16)</text>
+<rect x="505.0" y="336" width="59.0" height="24" rx="4" fill="#000000"/>
+<text x="534.5" y="352" font-family="ui-monospace, 'SFMono-Regular', Menlo, Monaco, Consolas, monospace" font-size="12" font-weight="900" fill="#FFFFFF" text-anchor="middle">WRITE</text>
+<text x="68" y="392" font-family="ui-monospace, 'SFMono-Regular', Menlo, Monaco, Consolas, monospace" font-size="13.0" font-weight="800" fill="#0F172A">1. Guard : HTTP GET shipment-service:3002/shipments/:code</text>
+<text x="68" y="414" font-family="ui-monospace, 'SFMono-Regular', Menlo, Monaco, Consolas, monospace" font-size="13.0" font-weight="800" fill="#0F172A">           Block isLocked unless INVENTORY_CHECK or RETURN scan</text>
+<text x="68" y="436" font-family="ui-monospace, 'SFMono-Regular', Menlo, Monaco, Consolas, monospace" font-size="13.0" font-weight="800" fill="#0F172A">2. Layer1: IdempotencyRecord lookup -&gt; 1.83 ms replay fast-path</text>
+<text x="68" y="458" font-family="ui-monospace, 'SFMono-Regular', Menlo, Monaco, Consolas, monospace" font-size="13.0" font-weight="800" fill="#0F172A">3. Layer2: ScanEvent INSERT (scopedKey @unique -&gt; P2002 race)</text>
+<text x="68" y="480" font-family="ui-monospace, 'SFMono-Regular', Menlo, Monaco, Consolas, monospace" font-size="13.0" font-weight="800" fill="#0F172A">4. Owner : Upsert CurrentLocation (Single-Writer Ownership)</text>
+<text x="68" y="502" font-family="ui-monospace, 'SFMono-Regular', Menlo, Monaco, Consolas, monospace" font-size="13.0" font-weight="800" fill="#0F172A">5. Enqueue: OutboxEvent(status='PENDING', eventId=UUID)</text>
+<rect x="66" y="510" width="496" height="24" rx="4" fill="#F1F5F9" stroke="#000000" stroke-width="1.2" stroke-dasharray="4 3"/>
+<text x="74" y="526" font-family="ui-monospace, 'SFMono-Regular', Menlo, Monaco, Consolas, monospace" font-size="12.2" font-weight="800" fill="#000000">DB Guarantees: 150/150 Unique ScanEvents across 500 writes</text>
+<path d="M 67.5 620.0 L 67.5 680.0 A 92.5 9 0 0 0 252.5 680.0 L 252.5 620.0 Z" fill="#FFFFFF" stroke="#000000" stroke-width="2.0"/>
+<ellipse cx="160" cy="620.0" rx="92.5" ry="9" fill="#E2E8F0" stroke="#000000" stroke-width="2.0"/>
+<text x="160" y="653" font-family="ui-monospace, 'SFMono-Regular', Menlo, Monaco, Consolas, monospace" font-size="13.5" font-weight="900" fill="#000000" text-anchor="middle">scan_db (PG 16)</text>
+<text x="160" y="669" font-family="ui-monospace, 'SFMono-Regular', Menlo, Monaco, Consolas, monospace" font-size="11.5" font-weight="700" fill="#1E293B" text-anchor="middle">ScanEvent + OutboxEvent</text>
+<rect x="280" y="608" width="296" height="134" rx="10" fill="#FFFFFF" stroke="#000000" stroke-width="2.2"/>
+<path d="M 280 652 L 280 618 Q 280 608 290 608 L 566 608 Q 576 608 576 618 L 576 652 Z" fill="#E2E8F0" stroke="#000000" stroke-width="2.0"/>
+<text x="296" y="632" font-family="'Times New Roman', 'Liberation Sans', Arial, sans-serif" font-size="16.5" font-weight="900" fill="#000000">Dual Outbox Relays</text>
+<text x="296" y="647" font-family="ui-monospace, 'SFMono-Regular', Menlo, Monaco, Consolas, monospace" font-size="12" font-weight="800" fill="#1E293B">T_poll = 1000 ms, Batch B = 50</text>
+<text x="296" y="674" font-family="ui-monospace, 'SFMono-Regular', Menlo, Monaco, Consolas, monospace" font-size="12.3" font-weight="800" fill="#0F172A">ScanOutboxRelay (HTTP Mgmt):</text>
+<text x="296" y="696" font-family="ui-monospace, 'SFMono-Regular', Menlo, Monaco, Consolas, monospace" font-size="12.3" font-weight="800" fill="#0F172A">  1.67 ms/msg (599.9 msg/s)</text>
+<text x="296" y="718" font-family="ui-monospace, 'SFMono-Regular', Menlo, Monaco, Consolas, monospace" font-size="12.3" font-weight="800" fill="#0F172A">ShipmentOutboxRelay (AMQP):</text>
+<text x="296" y="740" font-family="ui-monospace, 'SFMono-Regular', Menlo, Monaco, Consolas, monospace" font-size="12.3" font-weight="800" fill="#0F172A">  0.59 ms/msg (Batch50: 0.06ms)</text>
+<rect x="52" y="766" width="524" height="102" rx="10" fill="#FFFFFF" stroke="#000000" stroke-width="2.2"/>
+<path d="M 52 810 L 52 776 Q 52 766 62 766 L 566 766 Q 576 766 576 776 L 576 810 Z" fill="#F8FAFC" stroke="#000000" stroke-width="2.0"/>
+<text x="68" y="790" font-family="'Times New Roman', 'Liberation Sans', Arial, sans-serif" font-size="16" font-weight="900" fill="#000000">Cross-Boundary Consistency Contract</text>
+<text x="68" y="805" font-family="ui-monospace, 'SFMono-Regular', Menlo, Monaco, Consolas, monospace" font-size="12" font-weight="800" fill="#1E293B">shipment-service (:3002) &lt;-&gt; scan-service (:3006)</text>
+<text x="68" y="832" font-family="ui-monospace, 'SFMono-Regular', Menlo, Monaco, Consolas, monospace" font-size="11.9" font-weight="800" fill="#0F172A">Pre-write HTTP lock check incurs c=1 overhead (6.91 ms)</text>
+<text x="68" y="854" font-family="ui-monospace, 'SFMono-Regular', Menlo, Monaco, Consolas, monospace" font-size="11.9" font-weight="800" fill="#0F172A">Scales 7.52x at c=25 (783 req/s); INVENTORY_CHECK unlocks async</text>
+<polyline points="314,296 314,326" fill="none" stroke="#000000" stroke-width="2.2"/>
+<polygon points="314,326 307.95,315.0 320.05,315.0" fill="#000000"/>
+<rect x="359.0" y="300.0" width="102" height="22" rx="5" fill="#FFFFFF" stroke="#000000" stroke-width="1.4"/>
+<text x="410" y="315.5" font-family="ui-monospace, 'SFMono-Regular', Menlo, Monaco, Consolas, monospace" font-size="11.5" font-weight="900" fill="#000000" text-anchor="middle">HTTP POST</text>
+<polyline points="160,574 160,611" fill="none" stroke="#000000" stroke-width="2.2"/>
+<polygon points="160,611 153.95,600.0 166.05,600.0" fill="#000000"/>
+<polyline points="253,652 280,652" fill="none" stroke="#000000" stroke-width="2.2"/>
+<polygon points="280,652 269.0,645.95 269.0,658.05" fill="#000000"/>
+<polyline points="428,608 428,574" fill="none" stroke="#000000" stroke-width="2.2" stroke-dasharray="7 5"/>
+<polygon points="428,574 421.95,585.0 434.05,585.0" fill="#000000"/>
+<rect x="438.0" y="580.0" width="132" height="22" rx="5" fill="#FFFFFF" stroke="#000000" stroke-width="1.4"/>
+<text x="504" y="595.5" font-family="ui-monospace, 'SFMono-Regular', Menlo, Monaco, Consolas, monospace" font-size="11.5" font-weight="900" fill="#000000" text-anchor="middle">markPublished()</text>
+<rect x="708" y="174" width="550" height="152" rx="10" fill="#FFFFFF" stroke="#000000" stroke-width="2.2"/>
+<path d="M 708 218 L 708 184 Q 708 174 718 174 L 1248 174 Q 1258 174 1258 184 L 1258 218 Z" fill="#E2E8F0" stroke="#000000" stroke-width="2.0"/>
+<text x="724" y="198" font-family="'Times New Roman', 'Liberation Sans', Arial, sans-serif" font-size="18" font-weight="900" fill="#000000">Exchange: domain.events (Topic, Durable)</text>
+<text x="724" y="213" font-family="ui-monospace, 'SFMono-Regular', Menlo, Monaco, Consolas, monospace" font-size="12" font-weight="800" fill="#1E293B">RabbitMQ 3.13-management-alpine  •  65 Queue Bindings</text>
+<rect x="1178.8" y="184" width="67.19999999999999" height="24" rx="4" fill="#000000"/>
+<text x="1212.3999999999999" y="200" font-family="ui-monospace, 'SFMono-Regular', Menlo, Monaco, Consolas, monospace" font-size="12" font-weight="900" fill="#FFFFFF" text-anchor="middle">BROKER</text>
+<text x="724" y="240" font-family="'Times New Roman', 'Liberation Sans', Arial, sans-serif" font-size="14.0" font-weight="900" fill="#000000">Routing Keys Across 6 Microservice Subscribers:</text>
+<text x="724" y="262" font-family="ui-monospace, 'SFMono-Regular', Menlo, Monaco, Consolas, monospace" font-size="13.0" font-weight="800" fill="#0F172A">  scan.inbound | scan.outbound | scan.pickup_confirmed</text>
+<text x="724" y="284" font-family="ui-monospace, 'SFMono-Regular', Menlo, Monaco, Consolas, monospace" font-size="13.0" font-weight="800" fill="#0F172A">  shipment.created | task.assigned | delivery.delivered</text>
+<text x="724" y="306" font-family="ui-monospace, 'SFMono-Regular', Menlo, Monaco, Consolas, monospace" font-size="13.0" font-weight="800" fill="#0F172A">  ndr.created | return.started | return.completed | manifest.*</text>
+<rect x="708" y="364" width="550" height="172" rx="10" fill="#FFFFFF" stroke="#000000" stroke-width="2.2"/>
+<path d="M 708 408 L 708 374 Q 708 364 718 364 L 1248 364 Q 1258 364 1258 374 L 1258 408 Z" fill="#F1F5F9" stroke="#000000" stroke-width="2.0"/>
+<text x="724" y="388" font-family="'Times New Roman', 'Liberation Sans', Arial, sans-serif" font-size="18" font-weight="900" fill="#000000">Persistent Service Queues (Dead-Letter Enabled)</text>
+<text x="724" y="403" font-family="ui-monospace, 'SFMono-Regular', Menlo, Monaco, Consolas, monospace" font-size="12" font-weight="800" fill="#1E293B">delivery_mode=2 (Persistent)  •  noAck:false (AMQP) / B=20 (HTTP)</text>
+<text x="724" y="430" font-family="ui-monospace, 'SFMono-Regular', Menlo, Monaco, Consolas, monospace" font-size="12.1" font-weight="800" fill="#0F172A">[Q1] shipment-service.q  -&gt; AMQP Push (consume, noAck:false)</text>
+<text x="724" y="452" font-family="ui-monospace, 'SFMono-Regular', Menlo, Monaco, Consolas, monospace" font-size="12.1" font-weight="800" fill="#0F172A">[Q2] tracking-service.q  -&gt; AMQP Push (1.03 ms broker lag)</text>
+<text x="724" y="474" font-family="ui-monospace, 'SFMono-Regular', Menlo, Monaco, Consolas, monospace" font-size="12.1" font-weight="800" fill="#0F172A">[Q3] reporting-service.q -&gt; HTTP Pull (/get, ack_requeue_false)</text>
+<text x="724" y="496" font-family="ui-monospace, 'SFMono-Regular', Menlo, Monaco, Consolas, monospace" font-size="12.1" font-weight="800" fill="#0F172A">[Q4] scan/dispatch/delivery queues (cross-domain triggers)</text>
+<rect x="722" y="504" width="522" height="24" rx="4" fill="#F1F5F9" stroke="#000000" stroke-width="1.2" stroke-dasharray="4 3"/>
+<text x="730" y="520" font-family="ui-monospace, 'SFMono-Regular', Menlo, Monaco, Consolas, monospace" font-size="12.2" font-weight="800" fill="#000000">Measured Fan-Out E2E Dwell Dominated by T_poll: 99.69% Track Lag</text>
+<rect x="708" y="578" width="550" height="290" rx="10" fill="#FFFFFF" stroke="#000000" stroke-width="2.2"/>
+<path d="M 708 622 L 708 588 Q 708 578 718 578 L 1248 578 Q 1258 578 1258 588 L 1258 622 Z" fill="#E2E8F0" stroke="#000000" stroke-width="2.0"/>
+<text x="724" y="602" font-family="'Times New Roman', 'Liberation Sans', Arial, sans-serif" font-size="18" font-weight="900" fill="#000000">Multi-Tier Dead-Letter TTL Retry Topology</text>
+<text x="724" y="617" font-family="ui-monospace, 'SFMono-Regular', Menlo, Monaco, Consolas, monospace" font-size="12" font-weight="800" fill="#1E293B">Self-Healing Race Recovery &amp; Poison Message Quarantine</text>
+<rect x="1170.6" y="588" width="75.39999999999999" height="24" rx="4" fill="#000000"/>
+<text x="1208.3" y="604" font-family="ui-monospace, 'SFMono-Regular', Menlo, Monaco, Consolas, monospace" font-size="12" font-weight="900" fill="#FFFFFF" text-anchor="middle">TTL/DLQ</text>
+<text x="724" y="644" font-family="'Times New Roman', 'Liberation Sans', Arial, sans-serif" font-size="13.1" font-weight="900" fill="#000000">Bounded Exponential Escalation (Zero Consumer Thread Stall):</text>
+<text x="724" y="666" font-family="ui-monospace, 'SFMono-Regular', Menlo, Monaco, Consolas, monospace" font-size="12.1" font-weight="800" fill="#0F172A">  Stage 0: .q ack + direct publish -&gt; retry.10s (attempt=0)</text>
+<text x="724" y="688" font-family="ui-monospace, 'SFMono-Regular', Menlo, Monaco, Consolas, monospace" font-size="12.1" font-weight="800" fill="#0F172A">  Stage 1: .retry.10s (TTL=10s -&gt; domain.events/retry)</text>
+<text x="724" y="710" font-family="ui-monospace, 'SFMono-Regular', Menlo, Monaco, Consolas, monospace" font-size="12.1" font-weight="800" fill="#0F172A">  Stage 2: .retry.1m  (TTL=60s -&gt; domain.events/retry)</text>
+<text x="724" y="732" font-family="ui-monospace, 'SFMono-Regular', Menlo, Monaco, Consolas, monospace" font-size="12.1" font-weight="800" fill="#0F172A">  Stage 3: .dlq       (Permanent Poison Audit Quarantine)</text>
+<rect x="722" y="740" width="522" height="24" rx="4" fill="#F1F5F9" stroke="#000000" stroke-width="1.2" stroke-dasharray="4 3"/>
+<text x="730" y="756" font-family="ui-monospace, 'SFMono-Regular', Menlo, Monaco, Consolas, monospace" font-size="12.2" font-weight="800" fill="#000000">Exp 4B: 5/5 Healed @10.36s | 5/5 Poison -&gt; DLQ @71.97s</text>
+<polyline points="983,326 983,364" fill="none" stroke="#000000" stroke-width="2.2"/>
+<polygon points="983,364 976.95,353.0 989.05,353.0" fill="#000000"/>
+<rect x="1012.0" y="334.0" width="148" height="22" rx="5" fill="#FFFFFF" stroke="#000000" stroke-width="1.4"/>
+<text x="1086" y="349.5" font-family="ui-monospace, 'SFMono-Regular', Menlo, Monaco, Consolas, monospace" font-size="11.5" font-weight="900" fill="#000000" text-anchor="middle">route(event_type)</text>
+<polyline points="576,672 641,672 641,250 708,250" fill="none" stroke="#000000" stroke-width="2.2"/>
+<polygon points="708,250 697.0,243.95 697.0,256.05" fill="#000000"/>
+<rect x="589.0" y="448.0" width="104" height="24" rx="5" fill="#FFFFFF" stroke="#000000" stroke-width="1.4"/>
+<text x="641" y="464.5" font-family="ui-monospace, 'SFMono-Regular', Menlo, Monaco, Consolas, monospace" font-size="11.2" font-weight="900" fill="#000000" text-anchor="middle">532ms dwell</text>
+<polyline points="860,536 860,578" fill="none" stroke="#000000" stroke-width="2.2"/>
+<polygon points="860,578 853.95,567.0 866.05,567.0" fill="#000000"/>
+<rect x="722.0" y="546.0" width="126" height="22" rx="5" fill="#FFFFFF" stroke="#000000" stroke-width="1.4"/>
+<text x="785" y="561.5" font-family="ui-monospace, 'SFMono-Regular', Menlo, Monaco, Consolas, monospace" font-size="11" font-weight="900" fill="#000000" text-anchor="middle">NACK (attempt&lt;3)</text>
+<polyline points="1090,578 1090,536" fill="none" stroke="#000000" stroke-width="2.2" stroke-dasharray="7 5"/>
+<polygon points="1090,536 1083.95,547.0 1096.05,547.0" fill="#000000"/>
+<rect x="1107.0" y="546.0" width="110" height="22" rx="5" fill="#FFFFFF" stroke="#000000" stroke-width="1.4"/>
+<text x="1162" y="561.5" font-family="ui-monospace, 'SFMono-Regular', Menlo, Monaco, Consolas, monospace" font-size="11" font-weight="900" fill="#000000" text-anchor="middle">TTL Re-route</text>
+<rect x="1390" y="168" width="598" height="224" rx="10" fill="#FFFFFF" stroke="#000000" stroke-width="2.2"/>
+<path d="M 1390 212 L 1390 178 Q 1390 168 1400 168 L 1978 168 Q 1988 168 1988 178 L 1988 212 Z" fill="#E2E8F0" stroke="#000000" stroke-width="2.0"/>
+<text x="1406" y="192" font-family="'Times New Roman', 'Liberation Sans', Arial, sans-serif" font-size="18" font-weight="900" fill="#000000">ShipmentService (:3002) — Domain Authority FSM</text>
+<text x="1406" y="207" font-family="ui-monospace, 'SFMono-Regular', Menlo, Monaco, Consolas, monospace" font-size="12" font-weight="800" fill="#1E293B">shipment-state-machine.ts + shipment_db (shipments table)</text>
+<rect x="1884.2" y="178" width="91.8" height="24" rx="4" fill="#000000"/>
+<text x="1930.1000000000001" y="194" font-family="ui-monospace, 'SFMono-Regular', Menlo, Monaco, Consolas, monospace" font-size="12" font-weight="900" fill="#FFFFFF" text-anchor="middle">AUTHORITY</text>
+<text x="1406" y="234" font-family="ui-monospace, 'SFMono-Regular', Menlo, Monaco, Consolas, monospace" font-size="12.1" font-weight="800" fill="#0F172A">Consumer: AMQP Push -&gt; applyExternalEvent() (0.19 ms broker lag)</text>
+<text x="1406" y="256" font-family="ui-monospace, 'SFMono-Regular', Menlo, Monaco, Consolas, monospace" font-size="12.1" font-weight="800" fill="#0F172A">FSM Spec: 19 States | 15 Consumed Events | VALID_TRANSITIONS Graph</text>
+<text x="1406" y="278" font-family="ui-monospace, 'SFMono-Regular', Menlo, Monaco, Consolas, monospace" font-size="12.1" font-weight="800" fill="#0F172A">Terminals: Absorbing {DELIVERED, RETURN_COMPLETED, CANCELLED}</text>
+<text x="1406" y="300" font-family="ui-monospace, 'SFMono-Regular', Menlo, Monaco, Consolas, monospace" font-size="12.1" font-weight="800" fill="#0F172A">Lock FSM : EXCEPTION/return.started lock; INVENTORY_CHECK unlocks</text>
+<rect x="1404" y="308" width="570" height="24" rx="4" fill="#F1F5F9" stroke="#000000" stroke-width="1.2" stroke-dasharray="4 3"/>
+<text x="1412" y="324" font-family="ui-monospace, 'SFMono-Regular', Menlo, Monaco, Consolas, monospace" font-size="12.2" font-weight="800" fill="#000000">Safety Proof (Exp 4A): 60/60 (100%) Out-of-Order Attacks Rejected</text>
+<rect x="1390" y="412" width="598" height="224" rx="10" fill="#FFFFFF" stroke="#000000" stroke-width="2.2"/>
+<path d="M 1390 456 L 1390 422 Q 1390 412 1400 412 L 1978 412 Q 1988 412 1988 422 L 1988 456 Z" fill="#F1F5F9" stroke="#000000" stroke-width="2.0"/>
+<text x="1406" y="436" font-family="'Times New Roman', 'Liberation Sans', Arial, sans-serif" font-size="18" font-weight="900" fill="#000000">TrackingService (:3008) — Operational CQRS Projection</text>
+<text x="1406" y="451" font-family="ui-monospace, 'SFMono-Regular', Menlo, Monaco, Consolas, monospace" font-size="12" font-weight="800" fill="#1E293B">tracking-projection.store.ts + tracking_db (PG 16)</text>
+<rect x="1884.2" y="422" width="91.8" height="24" rx="4" fill="#000000"/>
+<text x="1930.1000000000001" y="438" font-family="ui-monospace, 'SFMono-Regular', Menlo, Monaco, Consolas, monospace" font-size="12" font-weight="900" fill="#FFFFFF" text-anchor="middle">CQRS READ</text>
+<text x="1406" y="478" font-family="ui-monospace, 'SFMono-Regular', Menlo, Monaco, Consolas, monospace" font-size="12.1" font-weight="800" fill="#0F172A">Consumer: AMQP Push -&gt; TimelineEvent (eventId @unique -&gt; P2002)</text>
+<text x="1406" y="500" font-family="ui-monospace, 'SFMono-Regular', Menlo, Monaco, Consolas, monospace" font-size="12.1" font-weight="800" fill="#0F172A">Views   : TrackingCurrent + TrackingIndex (Zero Cross-DB JOIN)</text>
+<text x="1406" y="522" font-family="ui-monospace, 'SFMono-Regular', Menlo, Monaco, Consolas, monospace" font-size="12.1" font-weight="800" fill="#0F172A">Read API: GET /public/track/:code (p50=13.0ms, p95=15.7ms @c=50W)</text>
+<text x="1406" y="544" font-family="ui-monospace, 'SFMono-Regular', Menlo, Monaco, Consolas, monospace" font-size="12.1" font-weight="800" fill="#0F172A">Isolation: 65.6% lower p95 tail vs Sync RDBMS Join (p = 4.8e-67)</text>
+<rect x="1404" y="552" width="570" height="24" rx="4" fill="#F1F5F9" stroke="#000000" stroke-width="1.2" stroke-dasharray="4 3"/>
+<text x="1412" y="568" font-family="ui-monospace, 'SFMono-Regular', Menlo, Monaco, Consolas, monospace" font-size="12.2" font-weight="800" fill="#000000">Audit Finding: Late OOO events lacking snapshot skew TrackingCurrent</text>
+<rect x="1390" y="656" width="598" height="212" rx="10" fill="#FFFFFF" stroke="#000000" stroke-width="2.2"/>
+<path d="M 1390 700 L 1390 666 Q 1390 656 1400 656 L 1978 656 Q 1988 656 1988 666 L 1988 700 Z" fill="#E2E8F0" stroke="#000000" stroke-width="2.0"/>
+<text x="1406" y="680" font-family="'Times New Roman', 'Liberation Sans', Arial, sans-serif" font-size="18" font-weight="900" fill="#000000">ReportingService (:3009) — Analytical CQRS Rollup Cube</text>
+<text x="1406" y="695" font-family="ui-monospace, 'SFMono-Regular', Menlo, Monaco, Consolas, monospace" font-size="12" font-weight="800" fill="#1E293B">reporting-rabbitmq-consumer.service.ts + reporting_db</text>
+<rect x="1884.2" y="666" width="91.8" height="24" rx="4" fill="#000000"/>
+<text x="1930.1000000000001" y="682" font-family="ui-monospace, 'SFMono-Regular', Menlo, Monaco, Consolas, monospace" font-size="12" font-weight="900" fill="#FFFFFF" text-anchor="middle">ANALYTICS</text>
+<text x="1406" y="722" font-family="ui-monospace, 'SFMono-Regular', Menlo, Monaco, Consolas, monospace" font-size="12.1" font-weight="800" fill="#0F172A">Consumer: HTTP Pull /get (batch=20, 1000ms, ack_requeue_false)</text>
+<text x="1406" y="744" font-family="ui-monospace, 'SFMono-Regular', Menlo, Monaco, Consolas, monospace" font-size="12.1" font-weight="800" fill="#0F172A">Dedup   : AggregationJob (jobKey=event_id @unique -&gt; P2002)</text>
+<text x="1406" y="766" font-family="ui-monospace, 'SFMono-Regular', Menlo, Monaco, Consolas, monospace" font-size="12.1" font-weight="800" fill="#0F172A">Cube    : 8-Way KpiDaily/KpiMonthly ({courier, hub, zone} x ALL)</text>
+<rect x="1404" y="774" width="570" height="24" rx="4" fill="#F1F5F9" stroke="#000000" stroke-width="1.2" stroke-dasharray="4 3"/>
+<text x="1412" y="790" font-family="ui-monospace, 'SFMono-Regular', Menlo, Monaco, Consolas, monospace" font-size="12.2" font-weight="800" fill="#000000">Latency : Mean 895.1 ms E2E (+363.2 ms Pull) | 0/50 Dup Leak</text>
+<polyline points="1258,398 1325,398 1325,270 1390,270" fill="none" stroke="#000000" stroke-width="2.2"/>
+<polygon points="1390,270 1379.0,263.95 1379.0,276.05" fill="#000000"/>
+<polyline points="1258,434 1325,434 1325,524 1390,524" fill="none" stroke="#000000" stroke-width="2.2"/>
+<polygon points="1390,524 1379.0,517.95 1379.0,530.05" fill="#000000"/>
+<polyline points="1258,470 1325,470 1325,760 1390,760" fill="none" stroke="#000000" stroke-width="2.2" stroke-dasharray="7 5"/>
+<polygon points="1390,760 1379.0,753.95 1379.0,766.05" fill="#000000"/>
+<rect x="1279.0" y="214.0" width="92" height="22" rx="5" fill="#FFFFFF" stroke="#000000" stroke-width="1.4"/>
+<text x="1325" y="229.5" font-family="ui-monospace, 'SFMono-Regular', Menlo, Monaco, Consolas, monospace" font-size="11" font-weight="900" fill="#000000" text-anchor="middle">AMQP Push</text>
+<rect x="1279.0" y="479.0" width="92" height="22" rx="5" fill="#FFFFFF" stroke="#000000" stroke-width="1.4"/>
+<text x="1325" y="494.5" font-family="ui-monospace, 'SFMono-Regular', Menlo, Monaco, Consolas, monospace" font-size="11" font-weight="900" fill="#000000" text-anchor="middle">AMQP Push</text>
+<rect x="1279.0" y="701.0" width="92" height="22" rx="5" fill="#FFFFFF" stroke="#000000" stroke-width="1.4"/>
+<text x="1325" y="716.5" font-family="ui-monospace, 'SFMono-Regular', Menlo, Monaco, Consolas, monospace" font-size="11" font-weight="900" fill="#000000" text-anchor="middle">HTTP Pull</text>
+<rect x="34" y="898" width="1972" height="52" rx="6" fill="#F8FAFC" stroke="#000000" stroke-width="1.6"/>
+<text x="52" y="929" font-family="'Times New Roman', 'Liberation Sans', Arial, sans-serif" font-size="14.5" font-weight="900" fill="#000000">LEGEND:</text>
+<line x1="138" y1="924" x2="188" y2="924" stroke="#000000" stroke-width="2.4"/>
+<polygon points="194,924 184,918.5 184,929.5" fill="#000000"/>
+<text x="204" y="929" font-family="'Times New Roman', 'Liberation Sans', Arial, sans-serif" font-size="14" font-weight="700" fill="#000000">Primary Command / AMQP Event Flow</text>
+<line x1="495" y1="924" x2="545" y2="924" stroke="#000000" stroke-width="2.4" stroke-dasharray="7 5"/>
+<polygon points="551,924 541,918.5 541,929.5" fill="#000000"/>
+<text x="561" y="929" font-family="'Times New Roman', 'Liberation Sans', Arial, sans-serif" font-size="14" font-weight="700" fill="#000000">HTTP Polling / TTL Retry Loop / State Commit</text>
+<rect x="910" y="913" width="28" height="20" rx="3" fill="#F1F5F9" stroke="#000000" stroke-width="1.2" stroke-dasharray="4 3"/>
+<text x="948" y="929" font-family="'Times New Roman', 'Liberation Sans', Arial, sans-serif" font-size="14" font-weight="700" fill="#000000">Measured Empirical Benchmark Metric / Verified Code Finding (N=120..500)</text>
+<text x="1986" y="929" font-family="ui-monospace, 'SFMono-Regular', Menlo, Monaco, Consolas, monospace" font-size="13" font-weight="800" fill="#0F172A" text-anchor="end">Verified Live: PG 16 + RabbitMQ 3.13 + NestJS</text>
+</svg>

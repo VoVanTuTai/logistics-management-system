@@ -1,0 +1,516 @@
+#!/usr/bin/env python3
+"""
+generate_code_aligned_diagram.py
+Generates the publication-grade System Architecture Blueprint strictly aligned with:
+1. The ACTUAL CODEBASE (services/chatbot-service):
+   - Center: ChatService (LangGraph Orchestrator) with handleMessage(), streamMessage(), and sessions Map<conversationId, ChatSessionContext>
+   - Top: VectorStoreService (Knowledge RAG) with hybridSearch(), Thesaurus Expansion, 9 Carrier SOPs, and Postal Law
+   - Top-Left: Client Layer with Merchant Web, Customer Mobile (iOS/Android), Guest Tracking, and normalizePhone() PII Masking
+   - Right: LogisticsToolsService with trackShipment(), calculatePricing() [IATA V/6000], cancelShipment(), and Action Draft DTO
+   - Bottom-Right: ValidationCriticGatekeeper with callValidationAgent(), Physical Limits (<=70kg, 150cm), isProhibitedGoods, and requiresHITL Interruption
+   - Bottom-Left: Core Backend Mesh with Gateway BFF, Shipment/Tracking/Pricing Services, PostgreSQL + pgvector, and ai_agent_audit_logs
+2. Strict scientific standards: 100% vendor-agnostic (ZERO brand names: no Google, Alibaba, OpenAI, NVIDIA).
+3. Flat, hand-drawn digital illustration aesthetic with bold black outlines, pastel yellow, pastel purple, light grey, white background.
+
+Outputs:
+  docs/research/paper/diagrams/code-aligned-hmas-architecture.svg
+  docs/research/paper/diagrams/code-aligned-hmas-architecture.png (300 DPI, 4000x2800 px)
+"""
+
+import os
+import subprocess
+import xml.etree.ElementTree as ET
+
+SVG_OUTPUT = "docs/research/paper/diagrams/code-aligned-hmas-architecture.svg"
+PNG_OUTPUT = "docs/research/paper/diagrams/code-aligned-hmas-architecture.png"
+
+def build_svg():
+    W = 2400
+    H = 1700
+    cx, cy = 1200, 850
+
+    lines = []
+    lines.append(f'''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {W} {H}" width="{W}" height="{H}">
+  <defs>
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800;900&amp;family=JetBrains+Mono:wght@700;800&amp;display=swap');
+      * {{ box-sizing: border-box; }}
+      text {{ font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif; }}
+      .hand-title {{ font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 900; }}
+      .pill-text {{ font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 800; }}
+      .mono {{ font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace; font-weight: 800; }}
+    </style>
+  </defs>
+
+  <!-- PURE CLEAN WHITE BACKGROUND -->
+  <rect width="{W}" height="{H}" fill="#FFFFFF"/>
+
+  <!-- MASTER DIAGRAM HEADER -->
+  <g transform="translate({cx}, 55)">
+    <text x="0" y="0" class="hand-title" font-size="34" font-weight="900" fill="#0F172A" text-anchor="middle" letter-spacing="-0.02em">
+      Logistics Multi-Agent Chatbot System Architecture
+    </text>
+    <text x="0" y="28" font-size="14" font-weight="800" fill="#64748B" text-anchor="middle" letter-spacing="0.05em">
+      CODEBASE MAPPING (@NEXUS/chatbot-service) • MULTI-AGENT STATE GRAPH • TWO-PHASE COMMIT WITH HITL
+    </text>
+  </g>
+
+  <!-- DECORATIVE HAND-DRAWN SPARKLES -->
+  <g stroke="#CBD5E1" stroke-width="2.5" stroke-linecap="round" fill="none">
+    <path d="M 680 220 L 680 240 M 670 230 L 690 230"/>
+    <path d="M 1720 250 L 1720 270 M 1710 260 L 1730 260"/>
+    <path d="M 1120 700 L 1120 716 M 1112 708 L 1128 708" stroke="#FDE047"/>
+    <path d="M 1280 990 L 1280 1006 M 1272 998 L 1288 998" stroke="#DDD6FE"/>
+    <path d="M 320 950 L 320 970 M 310 960 L 330 960"/>
+    <path d="M 2150 1200 L 2150 1220 M 2140 1210 L 2160 1210"/>
+  </g>
+
+  <!-- =========================================================================
+       5 MAIN CURVED DASHED ARROWS FROM CENTER OVAL TO CLUSTERS
+       ========================================================================= -->
+  <g id="Radial_Connectors" stroke="#1E293B" stroke-width="3.2" stroke-linecap="round" fill="none">
+    <!-- 1. Center -> Top (VectorStoreService / Knowledge RAG) -->
+    <path d="M 1200 740 Q 1180 570 1200 440" stroke-dasharray="9,7"/>
+    <polygon points="1200,432 1192,448 1208,448" fill="#1E293B"/>
+
+    <!-- 2. Center -> Top-Left (Client Layer & PII Obfuscation) -->
+    <path d="M 1030 800 Q 820 710 660 560" stroke-dasharray="9,7"/>
+    <polygon points="652,554 669,559 660,573" fill="#1E293B"/>
+
+    <!-- 3. Center -> Right (LogisticsToolsService / Operational Tools) -->
+    <path d="M 1390 850 Q 1550 850 1700 850" stroke-dasharray="9,7"/>
+    <polygon points="1712,850 1696,842 1696,858" fill="#1E293B"/>
+
+    <!-- 4. Center -> Bottom-Left (Core Logistics Microservices & Storage) -->
+    <path d="M 1050 910 Q 840 1030 680 1140" stroke-dasharray="9,7"/>
+    <polygon points="672,1146 680,1130 691,1143" fill="#1E293B"/>
+
+    <!-- 5. Center -> Bottom-Right (ValidationCriticGatekeeper / Safety & HITL) -->
+    <path d="M 1350 915 Q 1520 1020 1640 1140" stroke-dasharray="9,7"/>
+    <polygon points="1648,1146 1629,1142 1640,1129" fill="#1E293B"/>
+  </g>
+
+  <!-- =========================================================================
+       CENTER: CHATSERVICE (LANGGRAPH ORCHESTRATOR)
+       Maps to services/chatbot-service/src/chat/chat.service.ts
+       ========================================================================= -->
+  <g id="Center_ChatService" transform="translate({cx}, {cy})">
+    <!-- Offset decorative outer line -->
+    <ellipse cx="2" cy="3" rx="218" ry="110" fill="none" stroke="#E2E8F0" stroke-width="3" stroke-dasharray="6,6"/>
+
+    <!-- Main Light Grey Oval -->
+    <ellipse cx="0" cy="0" rx="215" ry="106" fill="#F1F5F9" stroke="#1E293B" stroke-width="3.8"/>
+
+    <!-- Inner decorative border -->
+    <ellipse cx="0" cy="0" rx="202" ry="94" fill="none" stroke="#CBD5E1" stroke-width="1.8" stroke-dasharray="5,4"/>
+
+    <!-- Spark / Brain Core Icon -->
+    <g transform="translate(0, -38)">
+      <circle cx="0" cy="0" r="16" fill="#FEF08A" stroke="#1E293B" stroke-width="2.6"/>
+      <path d="M 0 -24 L 0 -16 M 0 16 L 0 24 M -24 0 L -16 0 M 16 0 L 24 0" stroke="#1E293B" stroke-width="2.6" stroke-linecap="round"/>
+      <circle cx="-34" cy="-6" r="5" fill="#E9D5FF" stroke="#1E293B" stroke-width="2"/>
+      <circle cx="34" cy="-6" r="5" fill="#E9D5FF" stroke="#1E293B" stroke-width="2"/>
+    </g>
+
+    <text x="0" y="8" class="hand-title" font-size="21" font-weight="900" fill="#0F172A" text-anchor="middle">
+      ChatService
+    </text>
+    <text x="0" y="28" font-size="13" font-weight="800" fill="#1D4ED8" text-anchor="middle">
+      LangGraph Orchestrator &amp; Stream Aggregator
+    </text>
+    <text x="0" y="46" class="mono" font-size="11" font-weight="700" fill="#047857" text-anchor="middle">
+      handleMessage() &amp; streamMessage() (SSE)
+    </text>
+    <text x="0" y="62" class="mono" font-size="10" font-weight="700" fill="#64748B" text-anchor="middle">
+      sessions: Map&lt;conversationId, ChatSessionContext&gt;
+    </text>
+  </g>''')
+
+    # =========================================================================
+    # CLUSTER 1 (TOP): VECTORSTORESERVICE (KNOWLEDGE RAG ENGINE)
+    # Maps to services/chatbot-service/src/rag/vector-store.service.ts
+    # =========================================================================
+    top_x, top_y = 1200, 310
+    lines.append(f'''
+  <!-- =========================================================================
+       CLUSTER 1 (TOP): VECTORSTORESERVICE (KNOWLEDGE RAG ENGINE)
+       ========================================================================= -->
+  <g id="Cluster_VectorStoreService">
+    <g stroke="#1E293B" stroke-width="2.5" stroke-dasharray="6,5" stroke-linecap="round" fill="none">
+      <path d="M 1070 {top_y - 50} Q 980 230 940 185"/>
+      <path d="M 1150 {top_y - 60} Q 1170 230 1180 185"/>
+      <path d="M 1250 {top_y - 60} Q 1330 230 1420 185"/>
+      <path d="M 1200 {top_y - 60} L 1200 95"/>
+    </g>
+
+    <!-- Sub-Pill 1: 9 Carrier SOP Corpus -->
+    <g transform="translate(930, 150)">
+      <rect x="-95" y="-24" width="190" height="48" rx="24" fill="#E9D5FF" stroke="#1E293B" stroke-width="3"/>
+      <text x="0" y="6" class="pill-text" font-size="14.5" fill="#1E293B" text-anchor="middle">9 Carrier SOP Corpus</text>
+    </g>
+
+    <!-- Sub-Pill 2: Postal Law & Decree 47 -->
+    <g transform="translate(1180, 150)">
+      <rect x="-115" y="-24" width="230" height="48" rx="24" fill="#F1F5F9" stroke="#1E293B" stroke-width="3"/>
+      <text x="0" y="6" class="pill-text" font-size="14" fill="#1E293B" text-anchor="middle">Postal Law &amp; Decree 47 (Art. 25)</text>
+    </g>
+
+    <!-- Sub-Pill 3: hybridSearch() with Thesaurus -->
+    <g transform="translate(1440, 150)">
+      <rect x="-115" y="-24" width="230" height="48" rx="24" fill="#FEF08A" stroke="#1E293B" stroke-width="3"/>
+      <text x="0" y="6" class="mono" font-size="13" font-weight="900" fill="#1E293B" text-anchor="middle">hybridSearch() + Thesaurus</text>
+    </g>
+
+    <!-- Sub-Pill 4: Dense Cosine + Keyword Scoring -->
+    <g transform="translate(1200, 70)">
+      <rect x="-120" y="-22" width="240" height="44" rx="22" fill="#E9D5FF" stroke="#1E293B" stroke-width="3"/>
+      <text x="0" y="5" class="mono" font-size="12.5" font-weight="800" fill="#1E293B" text-anchor="middle">Dense Cosine + Keyword Scoring</text>
+    </g>
+
+    <!-- Main Card: VectorStoreService -->
+    <g transform="translate({top_x}, {top_y})">
+      <rect x="-245" y="-58" width="490" height="116" rx="26" fill="#FEF9C3" stroke="#1E293B" stroke-width="3.5"/>
+
+      <!-- SOP Manual Book + Magnifying Glass Icon -->
+      <g transform="translate(-160, 0)">
+        <rect x="-24" y="-30" width="48" height="60" rx="4" fill="#FDE047" stroke="#1E293B" stroke-width="2.5"/>
+        <line x1="-16" y1="-16" x2="16" y2="-16" stroke="#1E293B" stroke-width="2"/>
+        <line x1="-16" y1="-4" x2="16" y2="-4" stroke="#1E293B" stroke-width="2"/>
+        <line x1="-16" y1="8" x2="6" y2="8" stroke="#1E293B" stroke-width="2"/>
+        <circle cx="20" cy="14" r="14" fill="#E9D5FF" stroke="#1E293B" stroke-width="2.4"/>
+        <line x1="30" y1="24" x2="42" y2="36" stroke="#1E293B" stroke-width="3.2" stroke-linecap="round"/>
+      </g>
+
+      <g transform="translate(32, 0)">
+        <text x="0" y="-8" class="hand-title" font-size="20.5" font-weight="900" fill="#0F172A" text-anchor="middle">
+          VectorStoreService (Knowledge RAG)
+        </text>
+        <text x="0" y="14" class="mono" font-size="12.5" font-weight="800" fill="#92400E" text-anchor="middle">
+          EmbeddingService: MRL 512-dim RAM Index
+        </text>
+        <text x="0" y="32" class="mono" font-size="11" font-weight="700" fill="#64748B" text-anchor="middle">
+          Context Sandwich &#x2192; Verifiable Legal Citations
+        </text>
+      </g>
+    </g>
+  </g>''')
+
+    # =========================================================================
+    # CLUSTER 2 (TOP-LEFT): CLIENT LAYER & PII OBFUSCATION
+    # Maps to normalizePhone(), phonesMatch(), and 3 frontends
+    # =========================================================================
+    clt_x, clt_y = 500, 480
+    lines.append(f'''
+  <!-- =========================================================================
+       CLUSTER 2 (TOP-LEFT): CLIENT LAYER & PII OBFUSCATION
+       ========================================================================= -->
+  <g id="Cluster_ClientLayer">
+    <g stroke="#1E293B" stroke-width="2.5" stroke-dasharray="6,5" stroke-linecap="round" fill="none">
+      <path d="M {clt_x - 170} {clt_y - 20} Q 320 400 230 350"/>
+      <path d="M {clt_x - 190} {clt_y + 15} Q 280 500 210 520"/>
+      <path d="M {clt_x - 130} {clt_y + 55} Q 260 620 220 680"/>
+      <path d="M {clt_x - 70} {clt_y - 55} Q 400 320 390 260"/>
+    </g>
+
+    <!-- Sub-Pill 1: Merchant Web Portal -->
+    <g transform="translate(200, 340)">
+      <rect x="-95" y="-24" width="190" height="48" rx="24" fill="#FEF08A" stroke="#1E293B" stroke-width="3"/>
+      <text x="0" y="6" class="pill-text" font-size="14.5" fill="#1E293B" text-anchor="middle">Merchant Web Portal</text>
+    </g>
+
+    <!-- Sub-Pill 2: Customer Mobile (iOS/Android) -->
+    <g transform="translate(190, 520)">
+      <rect x="-110" y="-24" width="220" height="48" rx="24" fill="#E9D5FF" stroke="#1E293B" stroke-width="3"/>
+      <text x="0" y="6" class="pill-text" font-size="14" fill="#1E293B" text-anchor="middle">Customer Mobile (iOS/Android)</text>
+    </g>
+
+    <!-- Sub-Pill 3: Guest Tracking Portal -->
+    <g transform="translate(200, 690)">
+      <rect x="-95" y="-24" width="190" height="48" rx="24" fill="#F1F5F9" stroke="#1E293B" stroke-width="3"/>
+      <text x="0" y="6" class="pill-text" font-size="14.5" fill="#1E293B" text-anchor="middle">Guest Tracking Portal</text>
+    </g>
+
+    <!-- Sub-Pill 4: normalizePhone() & PII Masking -->
+    <g transform="translate(390, 240)">
+      <rect x="-115" y="-22" width="230" height="44" rx="22" fill="#FEF08A" stroke="#1E293B" stroke-width="3"/>
+      <text x="0" y="5" class="mono" font-size="12" font-weight="900" fill="#DC2626" text-anchor="middle">normalizePhone() &amp; PII Mask</text>
+    </g>
+
+    <!-- Main Card: Client Layer & PII Obfuscation -->
+    <g transform="translate({clt_x}, {clt_y})">
+      <rect x="-225" y="-55" width="450" height="110" rx="26" fill="#FEF08A" stroke="#1E293B" stroke-width="3.5"/>
+
+      <!-- Web Browser + Mobile + Lock Icon -->
+      <g transform="translate(-145, 0)">
+        <rect x="-24" y="-18" width="44" height="32" rx="4" fill="#FFFFFF" stroke="#1E293B" stroke-width="2.4"/>
+        <line x1="-24" y1="-8" x2="20" y2="-8" stroke="#1E293B" stroke-width="1.8"/>
+        <rect x="24" y="-14" width="18" height="28" rx="3" fill="#E9D5FF" stroke="#1E293B" stroke-width="2.2"/>
+        <rect x="-9" y="10" width="18" height="14" rx="3" fill="#FDE047" stroke="#1E293B" stroke-width="2.2"/>
+      </g>
+
+      <g transform="translate(32, 0)">
+        <text x="0" y="-8" class="hand-title" font-size="20.5" font-weight="900" fill="#0F172A" text-anchor="middle">
+          Client Layer &amp; PII Obfuscation
+        </text>
+        <text x="0" y="14" font-size="13" font-weight="800" fill="#1D4ED8" text-anchor="middle">
+          Omnichannel Frontends • Cryptographic Masking
+        </text>
+        <text x="0" y="32" class="mono" font-size="11" font-weight="700" fill="#64748B" text-anchor="middle">
+          phonesMatch() Challenge Verification
+        </text>
+      </g>
+    </g>
+  </g>''')
+
+    # =========================================================================
+    # CLUSTER 3 (RIGHT): LOGISTICSTOOLSSERVICE (OPERATIONAL TOOLS)
+    # Maps to services/chatbot-service/src/tools/logistics-tools.service.ts
+    # =========================================================================
+    ops_x, ops_y = 1920, 850
+    lines.append(f'''
+  <!-- =========================================================================
+       CLUSTER 3 (RIGHT): LOGISTICSTOOLSSERVICE (OPERATIONAL TOOLS)
+       ========================================================================= -->
+  <g id="Cluster_LogisticsToolsService">
+    <g stroke="#1E293B" stroke-width="2.5" stroke-dasharray="6,5" stroke-linecap="round" fill="none">
+      <path d="M {ops_x + 190} {ops_y - 35} Q 2120 730 2200 680"/>
+      <path d="M {ops_x + 210} {ops_y - 12} Q 2140 800 2220 790"/>
+      <path d="M {ops_x + 210} {ops_y + 15} Q 2140 900 2210 920"/>
+      <path d="M {ops_x + 190} {ops_y + 40} Q 2120 1010 2190 1040"/>
+    </g>
+
+    <!-- Sub-Pill 1: trackShipment() -->
+    <g transform="translate(2250, 670)">
+      <rect x="-85" y="-24" width="170" height="48" rx="24" fill="#FEF08A" stroke="#1E293B" stroke-width="3"/>
+      <text x="0" y="6" class="mono" font-size="13.5" font-weight="900" fill="#1E293B" text-anchor="middle">trackShipment()</text>
+    </g>
+
+    <!-- Sub-Pill 2: calculatePricing() [IATA V/6000] -->
+    <g transform="translate(2250, 790)">
+      <rect x="-115" y="-24" width="230" height="48" rx="24" fill="#F1F5F9" stroke="#1E293B" stroke-width="3"/>
+      <text x="0" y="6" class="mono" font-size="12.5" font-weight="900" fill="#1E293B" text-anchor="middle">calculatePricing() [IATA V/6000]</text>
+    </g>
+
+    <!-- Sub-Pill 3: cancelShipment() & changeAddress() -->
+    <g transform="translate(2240, 920)">
+      <rect x="-115" y="-24" width="230" height="48" rx="24" fill="#E9D5FF" stroke="#1E293B" stroke-width="3"/>
+      <text x="0" y="6" class="mono" font-size="12" font-weight="900" fill="#1E293B" text-anchor="middle">cancel() &amp; changeAddress()</text>
+    </g>
+
+    <!-- Sub-Pill 4: Action Draft DTO Synthesis -->
+    <g transform="translate(2230, 1045)">
+      <rect x="-105" y="-24" width="210" height="48" rx="24" fill="#FEF08A" stroke="#1E293B" stroke-width="3"/>
+      <text x="0" y="6" class="mono" font-size="12.5" font-weight="900" fill="#1E293B" text-anchor="middle">Action Draft DTO</text>
+    </g>
+
+    <!-- Main Card: LogisticsToolsService -->
+    <g transform="translate({ops_x}, {ops_y})">
+      <rect x="-230" y="-60" width="460" height="120" rx="26" fill="#E9D5FF" stroke="#1E293B" stroke-width="3.5"/>
+
+      <!-- Parcel Box + Gears Icon -->
+      <g transform="translate(-145, 0)">
+        <polygon points="-20,-8 0,-18 20,-8 0,2" fill="#FEF08A" stroke="#1E293B" stroke-width="2.4" stroke-linejoin="round"/>
+        <polygon points="-20,-8 0,2 0,20 -20,10" fill="#FDE047" stroke="#1E293B" stroke-width="2.4" stroke-linejoin="round"/>
+        <polygon points="20,-8 0,2 0,20 20,10" fill="#FEF9C3" stroke="#1E293B" stroke-width="2.4" stroke-linejoin="round"/>
+        <circle cx="28" cy="8" r="14" fill="#DDD6FE" stroke="#1E293B" stroke-width="2.5"/>
+        <circle cx="28" cy="8" r="5" fill="#FFFFFF" stroke="#1E293B" stroke-width="2"/>
+      </g>
+
+      <g transform="translate(32, 0)">
+        <text x="0" y="-8" class="hand-title" font-size="20.5" font-weight="900" fill="#0F172A" text-anchor="middle">
+          LogisticsToolsService (Tools)
+        </text>
+        <text x="0" y="14" font-size="13" font-weight="800" fill="#581C87" text-anchor="middle">
+          Deterministic Function Calling &amp; Action Drafting
+        </text>
+        <text x="0" y="32" class="mono" font-size="11" font-weight="700" fill="#64748B" text-anchor="middle">
+          Strict Schema Validation &#x2022; Non-Mutating Execution
+        </text>
+      </g>
+    </g>
+  </g>''')
+
+    # =========================================================================
+    # CLUSTER 4 (BOTTOM-RIGHT): VALIDATIONCRITICGATEKEEPER (SAFETY & HITL)
+    # Maps to callValidationAgent(), physical limits, prohibited goods, and HITL
+    # =========================================================================
+    val_x, val_y = 1780, 1260
+    lines.append(f'''
+  <!-- =========================================================================
+       CLUSTER 4 (BOTTOM-RIGHT): VALIDATIONCRITICGATEKEEPER (SAFETY & HITL)
+       ========================================================================= -->
+  <g id="Cluster_ValidationCritic">
+    <g stroke="#1E293B" stroke-width="2.5" stroke-dasharray="6,5" stroke-linecap="round" fill="none">
+      <path d="M {val_x - 140} {val_y + 45} Q 1580 1390 1510 1450"/>
+      <path d="M {val_x - 20} {val_y + 55} Q 1720 1420 1740 1480"/>
+      <path d="M {val_x + 130} {val_y + 45} Q 1920 1380 2000 1440"/>
+      <path d="M {val_x + 40} {val_y + 55} Q 1850 1400 1880 1360"/>
+    </g>
+
+    <!-- Sub-Pill 1: Physical Limits (<=70kg, 150cm) -->
+    <g transform="translate(1480, 1470)">
+      <rect x="-95" y="-24" width="190" height="48" rx="24" fill="#E9D5FF" stroke="#1E293B" stroke-width="3"/>
+      <text x="0" y="6" class="pill-text" font-size="13.5" fill="#1E293B" text-anchor="middle">Limits (&#x2264;70kg, 150cm)</text>
+    </g>
+
+    <!-- Sub-Pill 2: isProhibitedGoods Hard Block -->
+    <g transform="translate(1740, 1500)">
+      <rect x="-105" y="-24" width="210" height="48" rx="24" fill="#F1F5F9" stroke="#1E293B" stroke-width="3"/>
+      <text x="0" y="6" class="mono" font-size="12.5" font-weight="900" fill="#1E293B" text-anchor="middle">isProhibitedGoods Block</text>
+    </g>
+
+    <!-- Sub-Pill 3: COD Fraud Check (>=15M) -->
+    <g transform="translate(2020, 1460)">
+      <rect x="-105" y="-24" width="210" height="48" rx="24" fill="#FEF08A" stroke="#1E293B" stroke-width="3"/>
+      <text x="0" y="6" class="pill-text" font-size="14" fill="#1E293B" text-anchor="middle">COD Limit (&#x2265;15M Cash)</text>
+    </g>
+
+    <!-- Sub-Pill 4: requiresHITL State Interruption -->
+    <g transform="translate(1920, 1340)">
+      <rect x="-120" y="-22" width="240" height="44" rx="22" fill="#FCE7F3" stroke="#BE185D" stroke-width="3"/>
+      <text x="0" y="5" class="mono" font-size="12.5" font-weight="900" fill="#BE185D" text-anchor="middle">requiresHITL Interruption</text>
+    </g>
+
+    <!-- Main Card: ValidationCriticGatekeeper -->
+    <g transform="translate({val_x}, {val_y})">
+      <rect x="-225" y="-55" width="450" height="110" rx="26" fill="#FEF08A" stroke="#1E293B" stroke-width="3.5"/>
+
+      <!-- Shield + Stamp Icon -->
+      <g transform="translate(-142, 0)">
+        <path d="M 0 -22 C -18 -22 -22 -10 -22 4 C -22 18 0 26 0 26 Z" fill="#DDD6FE" stroke="#1E293B" stroke-width="2.5" stroke-linejoin="round"/>
+        <path d="M 0 -22 C 18 -22 22 -10 22 4 C 22 18 0 26 0 26 Z" fill="#FDE047" stroke="#1E293B" stroke-width="2.5" stroke-linejoin="round"/>
+        <line x1="0" y1="-22" x2="0" y2="26" stroke="#1E293B" stroke-width="2.4"/>
+        <line x1="16" y1="16" x2="38" y2="-10" stroke="#1E293B" stroke-width="3" stroke-linecap="round"/>
+      </g>
+
+      <g transform="translate(32, 0)">
+        <text x="0" y="-8" class="hand-title" font-size="19.5" font-weight="900" fill="#0F172A" text-anchor="middle">
+          ValidationCriticGatekeeper
+        </text>
+        <text x="0" y="14" class="mono" font-size="12.5" font-weight="800" fill="#9D174D" text-anchor="middle">
+          callValidationAgent() Safety Critic
+        </text>
+        <text x="0" y="32" class="mono" font-size="11" font-weight="700" fill="#64748B" text-anchor="middle">
+          5 Operational Gatekeepers &#x2022; Two-Phase Commit
+        </text>
+      </g>
+    </g>
+  </g>''')
+
+    # =========================================================================
+    # CLUSTER 5 (BOTTOM-LEFT): CORE BACKEND MESH & STORAGE TIER
+    # Maps to Gateway BFF, Core Microservices, PostgreSQL + pgvector, ai_agent_audit_logs
+    # =========================================================================
+    bk_x, bk_y = 500, 1220
+    lines.append(f'''
+  <!-- =========================================================================
+       CLUSTER 5 (BOTTOM-LEFT): CORE BACKEND MESH & STORAGE TIER
+       ========================================================================= -->
+  <g id="Cluster_BackendMesh">
+    <g stroke="#1E293B" stroke-width="2.5" stroke-dasharray="6,5" stroke-linecap="round" fill="none">
+      <path d="M {bk_x - 170} {bk_y - 20} Q 320 1170 230 1190"/>
+      <path d="M {bk_x - 160} {bk_y + 35} Q 300 1320 250 1370"/>
+      <path d="M {bk_x - 60} {bk_y + 55} Q 400 1420 440 1470"/>
+      <path d="M {bk_x - 140} {bk_y - 45} Q 320 1090 270 1060"/>
+    </g>
+
+    <!-- Sub-Pill 1: API Gateway BFF -->
+    <g transform="translate(190, 1190)">
+      <rect x="-85" y="-24" width="170" height="48" rx="24" fill="#FEF08A" stroke="#1E293B" stroke-width="3"/>
+      <text x="0" y="6" class="pill-text" font-size="14.5" fill="#1E293B" text-anchor="middle">API Gateway BFF</text>
+    </g>
+
+    <!-- Sub-Pill 2: PostgreSQL + pgvector -->
+    <g transform="translate(240, 1370)">
+      <rect x="-95" y="-24" width="190" height="48" rx="24" fill="#E9D5FF" stroke="#1E293B" stroke-width="3"/>
+      <text x="0" y="6" class="pill-text" font-size="14.5" fill="#1E293B" text-anchor="middle">PostgreSQL + pgvector</text>
+    </g>
+
+    <!-- Sub-Pill 3: Table: ai_agent_audit_logs -->
+    <g transform="translate(460, 1480)">
+      <rect x="-105" y="-24" width="210" height="48" rx="24" fill="#F1F5F9" stroke="#1E293B" stroke-width="3"/>
+      <text x="0" y="6" class="mono" font-size="12" font-weight="900" fill="#1E293B" text-anchor="middle">ai_agent_audit_logs</text>
+    </g>
+
+    <!-- Sub-Pill 4: MinIO S3 CCTV Evidence -->
+    <g transform="translate(260, 1060)">
+      <rect x="-95" y="-22" width="190" height="44" rx="22" fill="#FEF08A" stroke="#1E293B" stroke-width="3"/>
+      <text x="0" y="5" class="pill-text" font-size="14" fill="#1E293B" text-anchor="middle">MinIO S3 Evidence</text>
+    </g>
+
+    <!-- Main Card: Core Backend Mesh & Storage -->
+    <g transform="translate({bk_x}, {bk_y})">
+      <rect x="-225" y="-55" width="450" height="110" rx="26" fill="#F1F5F9" stroke="#1E293B" stroke-width="3.5"/>
+
+      <!-- Database Stack + Gateway Arch Icon -->
+      <g transform="translate(-142, 0)">
+        <path d="M -18 0 L -18 12 C -18 18 18 18 18 12 L 18 0" fill="#FDE047" stroke="#1E293B" stroke-width="2.2"/>
+        <ellipse cx="0" cy="0" rx="18" ry="7" fill="#FEF9C3" stroke="#1E293B" stroke-width="2.2"/>
+        <path d="M 20 18 L 20 -4 C 20 -16 38 -16 38 -4 L 38 18" fill="#DDD6FE" stroke="#1E293B" stroke-width="2.4"/>
+      </g>
+
+      <g transform="translate(32, 0)">
+        <text x="0" y="-8" class="hand-title" font-size="20.5" font-weight="900" fill="#0F172A" text-anchor="middle">
+          Core Backend Mesh &amp; Storage
+        </text>
+        <text x="0" y="14" font-size="13" font-weight="800" fill="#1E3A8A" text-anchor="middle">
+          Tracking, Pricing &amp; Shipment Microservices
+        </text>
+        <text x="0" y="32" class="mono" font-size="11" font-weight="700" fill="#64748B" text-anchor="middle">
+          ACID Commit &#x2022; Immutable Forensic Logs
+        </text>
+      </g>
+    </g>
+  </g>
+
+</svg>''')
+
+    svg_content = "\n".join(lines)
+    return svg_content
+
+def main():
+    svg_content = build_svg()
+
+    # Validate XML
+    try:
+        ET.fromstring(svg_content)
+        print("XML Syntax Validation: PASSED (Well-formed XML)")
+    except ET.ParseError as e:
+        print(f"XML Validation FAILED: {e}")
+        return 1
+
+    # Write SVG
+    os.makedirs(os.path.dirname(SVG_OUTPUT), exist_ok=True)
+    with open(SVG_OUTPUT, "w", encoding="utf-8") as f:
+        f.write(svg_content)
+    print(f"Successfully generated {SVG_OUTPUT} ({len(svg_content.encode('utf-8'))} bytes)")
+
+    # Render PNG using Chrome Headless at 300 DPI
+    chrome_path = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
+    abs_svg = os.path.abspath(SVG_OUTPUT)
+    abs_png = os.path.abspath(PNG_OUTPUT)
+
+    cmd = [
+        chrome_path,
+        "--headless",
+        "--disable-gpu",
+        "--force-device-scale-factor=1.6667",
+        f"--screenshot={abs_png}",
+        "--window-size=2400,1700",
+        f"file://{abs_svg}"
+    ]
+
+    print("Rendering publication-grade 300 DPI PNG via Headless Chrome...")
+    res = subprocess.run(cmd, capture_output=True, text=True)
+    if os.path.exists(abs_png):
+        size = os.path.getsize(abs_png)
+        print(f"Successfully rendered {PNG_OUTPUT} ({size} bytes, 4000x2833 px)")
+    else:
+        print(f"Chrome screenshot error: {res.stderr}")
+        return 1
+
+    return 0
+
+if __name__ == "__main__":
+    import sys
+    sys.exit(main())

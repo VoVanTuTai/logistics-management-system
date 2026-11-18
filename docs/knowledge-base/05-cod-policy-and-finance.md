@@ -24,3 +24,24 @@ Tiền thu hộ COD (Cash On Delivery) là khoản tiền bưu tá thay mặt Ch
 - **Quy tắc cấn trừ tự động:** Tiền cước phát sinh được hệ thống tự động cấn trừ vào số tiền COD thu hộ được đối soát trong kỳ.
 - **Trần nợ cước (-500.000 VNĐ):** Nếu số tiền cước phát sinh vượt quá số tiền COD thu hộ (Số dư ví âm vượt quá -500.000 VNĐ), hệ thống sẽ **TẠM KHÓA TÍNH NĂNG TẠO ĐƠN MỚI** của shop.
 - **Mở khóa tạo đơn:** Chủ shop mở cổng Merchant Web, bấm vào nút "Thanh toán công nợ", màn hình sẽ hiện mã VietQR động với đúng số tiền nợ. Sau khi shop chuyển khoản thành công, hệ thống SePay tự động bắt webhook và mở khóa tạo đơn trong vòng 30 giây.
+
+## 5. Biểu Phí Dịch Vụ Thu Hộ COD & Chính Sách Miễn Phí
+- **Đơn hàng có số tiền COD dưới 1.000.000 VNĐ:** **Hoàn toàn miễn phí dịch vụ thu hộ COD (0 VNĐ)**. Khách hàng chỉ phải thanh toán cước phí vận chuyển thông thường.
+- **Đơn hàng có số tiền COD từ 1.000.000 VNĐ trở lên:** Mức phí dịch vụ thu hộ COD bằng **0.5% số tiền thu hộ**, trần tối đa **35.000 VNĐ / đơn hàng**.
+- **Chính sách thu hộ đối với khách VIP / Hợp đồng Doanh nghiệp:** Miễn phí thu hộ COD 100% không giới hạn hạn mức theo thỏa thuận sản lượng.
+
+## 6. Quy Định Sử Dụng Ví Trả Trước & Số Dư Ví Cước (GHN Xu / Nexus Xu)
+- **Phạm vi thanh toán của Ví trả trước:** Số dư ví trả trước (Ví cước, GHN Xu, Nexus Xu) được sử dụng để thanh toán các khoản:
+  1. Cước phí vận chuyển bưu gửi toàn quốc.
+  2. Phụ phí vượt nấc khối lượng, cước thể tích IATA.
+  3. Phí bảo hiểm khai giá hàng hóa (Comprehensive Insurance).
+  4. Cước phí chuyển hoàn bưu phẩm (50% cước chiều đi khi đơn phát thất bại).
+- **Quy định rút số dư ví:** Số dư trong ví trả trước không hỗ trợ quy đổi trực tiếp thành tiền mặt nếu chưa qua đối soát thanh toán cước, nhằm phòng chống rửa tiền và gian lận thương mại.
+
+## 7. Thủ Tục Ủy Quyền Nhận Tiền Thu Hộ COD Tại Bưu Cục
+Trường hợp Chủ tài khoản/Chủ shop không thể trực tiếp đến bưu cục nhận tiền COD mà ủy quyền cho nhân viên hoặc người thân:
+- **Hồ sơ bắt buộc xuất trình:**
+  1. Bản gốc Căn cước công dân (CCCD) hoặc Hộ chiếu của người được ủy quyền.
+  2. Giấy ủy quyền nhận tiền COD hợp lệ: có công chứng hoặc có chữ ký và đóng dấu tròn pháp nhân của doanh nghiệp/chủ shop.
+  3. Tin nhắn xác nhận hoặc mã OTP giao dịch gửi từ số điện thoại chính chủ của chủ shop đăng ký trên hệ thống.
+- **Giới hạn chi trả tiền mặt ủy quyền:** Bưu cục chỉ chi trả tiền mặt tối đa 15.000.000 VNĐ/lần ủy quyền; các khoản tiền lớn hơn bắt buộc chuyển khoản ngân hàng về đúng tài khoản chính chủ.

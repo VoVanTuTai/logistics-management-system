@@ -8,8 +8,9 @@
   - Khách hàng nhận được tin nhắn SMS / thông báo ứng dụng về việc giao không thành công kèm số điện thoại bưu tá để chủ động hẹn lại.
 
 ## 2. Quy Định Lưu Kho Bưu Cục & Chuyển Hoàn
-- **Thời gian lưu kho miễn phí:** Tối đa 05 ngày làm việc tại bưu cục đích (Destination Hub) sau lần phát thứ 3 không thành công để chờ người nhận đến lấy trực tiếp hoặc chỉ định giao lại.
-- **Chuyển hoàn bưu gửi:** Sau thời hạn 05 ngày nếu người nhận không nhận hàng hoặc người gửi yêu cầu hoàn, đơn hàng sẽ được kích hoạt tiến trình Chuyển Hoàn (Returning) về cho người gửi.
+- **Ý nghĩa trạng thái 'Lưu kho chờ phát lại' (STORED_FOR_REDELIVERY):** Đơn hàng đang được lưu giữ an toàn tại bưu cục phát do bưu tá chưa phát hàng thành công ở lần phát trước đó (người nhận bận hoặc hẹn lại giờ).
+- **Thời gian lưu kho miễn phí:** Tối đa 05 ngày làm việc tại bưu cục phát để bưu tá tiếp tục sắp xếp phát hàng lại tận nhà cho khách hoặc chờ khách đến nhận tại quầy.
+- **Chuyển hoàn bưu gửi:** Sau thời hạn 05 ngày nếu người nhận không nhận hàng hoặc người gửi yêu cầu hoàn, đơn hàng sẽ được kích hoạt tiến trình chuyển hoàn về lại cho người gửi (Shop).
 
 ## 3. Quy Định Đổi Địa Chỉ Nhận & Hẹn Giờ Giao
 - Người nhận có thể yêu cầu đổi địa chỉ nhận hàng trong cùng quận/huyện miễn phí bằng cách liên hệ tổng đài hoặc thao tác trên ứng dụng Customer Mobile trước khi đơn hàng chuyển sang trạng thái "Đang giao hàng" (Out For Delivery).
@@ -29,4 +30,9 @@ Khi đơn hàng giao không thành công sau 03 lần phát (NDR) hoặc ngườ
 - **Hình thức thu tiền cước chuyển hoàn:**
   - *Đối với Shop có tài khoản ký hợp đồng:* Hệ thống tự động khấu trừ vào **Bảng kê đối soát tiền thu hộ COD (COD Settlement Batch)** của kỳ thanh toán tiếp theo hoặc trừ vào số dư Ví điện tử của Shop.
   - *Đối với Khách gửi hàng lẻ tại bưu cục:* Bưu tá phát hoàn hoặc giao dịch viên tại bưu cục thu tiền mặt hoặc quét mã VietQR khi bàn giao lại bưu kiện cho người gửi (Return POD).
+
+## 6. Dịch Vụ Shipper Đến Tận Nhà Lấy Hàng (Pickup Service)
+- **Cước phí dịch vụ lấy hàng:** **Hoàn toàn miễn phí 100% (0 VNĐ)**. Khách hàng/Shop không phải trả thêm bất kỳ phụ phí lấy hàng tận nơi nào, chỉ thanh toán cước phí vận chuyển thông thường.
+- **Thời gian bưu tá đến lấy hàng:** Bưu tá tiếp nhận lệnh điều phối và đến lấy hàng tận nhà trong vòng 02 đến 04 giờ sau khi tạo đơn thành công, theo ca sáng (trước 12:00) hoặc ca chiều (trước 18:00).
+- **Hẹn giờ giao lại hàng (Redelivery):** Khách hàng có thể hẹn lại thời gian phát hàng phù hợp (hẹn buổi chiều, hẹn ngày mai, hẹn cuối tuần) bằng cách phản hồi tin nhắn hoặc thông báo cho bưu tá qua ứng dụng.
 

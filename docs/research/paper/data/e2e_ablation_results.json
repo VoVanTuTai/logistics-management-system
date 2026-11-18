@@ -1,0 +1,289 @@
+{
+  "timestamp_utc": "2026-11-10T09:40:45Z",
+  "model": "gemini-3.5-flash-lite",
+  "temperature": 0.2,
+  "conditions": {
+    "vanilla_llm": {
+      "n": 100,
+      "passed": 68,
+      "pass_rate": 68.0,
+      "pass_rate_ci95": [
+        57.9,
+        77.0
+      ],
+      "mean_score": 62.78,
+      "std_score": 21.63,
+      "median_score": 61.7,
+      "mean_tier": 2.92,
+      "std_tier": 1.17,
+      "rdr": 89.7,
+      "asr": 10.3,
+      "rdr_count": "26/29",
+      "rdr_ci95": [
+        72.6,
+        97.8
+      ],
+      "mean_latency_ms": 1411.7,
+      "p50_latency_ms": 1300.5,
+      "categories": {
+        "SOP_KNOWLEDGE": {
+          "count": 39,
+          "pass_count": 26,
+          "pass_rate": 66.7,
+          "mean_score": 60.1
+        },
+        "OPERATIONAL_TOOLS": {
+          "count": 23,
+          "pass_count": 8,
+          "pass_rate": 34.8,
+          "mean_score": 50.0
+        },
+        "ADVERSARIAL_SAFETY": {
+          "count": 28,
+          "pass_count": 26,
+          "pass_rate": 92.9,
+          "mean_score": 77.3
+        },
+        "OUT_OF_DOMAIN": {
+          "count": 10,
+          "pass_count": 8,
+          "pass_rate": 80.0,
+          "mean_score": 61.7
+        }
+      }
+    },
+    "no_stage0_guards": {
+      "n": 100,
+      "passed": 80,
+      "pass_rate": 80.0,
+      "pass_rate_ci95": [
+        70.8,
+        87.3
+      ],
+      "mean_score": 78.14,
+      "std_score": 28.86,
+      "median_score": 85.0,
+      "mean_tier": 3.86,
+      "std_tier": 1.5,
+      "rdr": 44.8,
+      "asr": 55.2,
+      "rdr_count": "13/29",
+      "rdr_ci95": [
+        26.4,
+        64.3
+      ],
+      "mean_latency_ms": 1990.2,
+      "p50_latency_ms": 1730.5,
+      "categories": {
+        "SOP_KNOWLEDGE": {
+          "count": 39,
+          "pass_count": 39,
+          "pass_rate": 100.0,
+          "mean_score": 90.4
+        },
+        "OPERATIONAL_TOOLS": {
+          "count": 23,
+          "pass_count": 21,
+          "pass_rate": 91.3,
+          "mean_score": 89.0
+        },
+        "ADVERSARIAL_SAFETY": {
+          "count": 28,
+          "pass_count": 12,
+          "pass_rate": 42.9,
+          "mean_score": 51.8
+        },
+        "OUT_OF_DOMAIN": {
+          "count": 10,
+          "pass_count": 8,
+          "pass_rate": 80.0,
+          "mean_score": 79.0
+        }
+      }
+    },
+    "full_agent_before_fix": {
+      "n": 100,
+      "passed": 89,
+      "pass_rate": 89.0,
+      "pass_rate_ci95": [
+        81.2,
+        94.4
+      ],
+      "mean_score": 85.18,
+      "std_score": 19.79,
+      "median_score": 93.0,
+      "mean_tier": 4.19,
+      "std_tier": 1.13,
+      "rdr": 100.0,
+      "asr": 0.0,
+      "rdr_count": "29/29",
+      "rdr_ci95": [
+        88.1,
+        100.0
+      ],
+      "mean_latency_ms": 3712.5,
+      "p50_latency_ms": 3320.0,
+      "categories": {
+        "SOP_KNOWLEDGE": {
+          "count": 39,
+          "pass_count": 34,
+          "pass_rate": 87.2,
+          "mean_score": 87.2
+        },
+        "OPERATIONAL_TOOLS": {
+          "count": 23,
+          "pass_count": 19,
+          "pass_rate": 82.6,
+          "mean_score": 80.0
+        },
+        "ADVERSARIAL_SAFETY": {
+          "count": 28,
+          "pass_count": 28,
+          "pass_rate": 100.0,
+          "mean_score": 89.6
+        },
+        "OUT_OF_DOMAIN": {
+          "count": 10,
+          "pass_count": 8,
+          "pass_rate": 80.0,
+          "mean_score": 76.7
+        }
+      }
+    },
+    "full_agent_after_fix": {
+      "n": 100,
+      "passed": 97,
+      "pass_rate": 97.0,
+      "pass_rate_ci95": [
+        91.5,
+        99.4
+      ],
+      "mean_score": 89.48,
+      "std_score": 12.89,
+      "median_score": 100.0,
+      "mean_tier": 4.44,
+      "std_tier": 0.72,
+      "rdr": 100.0,
+      "asr": 0.0,
+      "rdr_count": "29/29",
+      "rdr_ci95": [
+        88.1,
+        100.0
+      ],
+      "mean_latency_ms": 2378.3,
+      "p50_latency_ms": 2304.5,
+      "categories": {
+        "SOP_KNOWLEDGE": {
+          "count": 39,
+          "pass_count": 38,
+          "pass_rate": 97.4,
+          "mean_score": 92.1
+        },
+        "OPERATIONAL_TOOLS": {
+          "count": 23,
+          "pass_count": 22,
+          "pass_rate": 95.7,
+          "mean_score": 88.3
+        },
+        "ADVERSARIAL_SAFETY": {
+          "count": 28,
+          "pass_count": 28,
+          "pass_rate": 100.0,
+          "mean_score": 89.3
+        },
+        "OUT_OF_DOMAIN": {
+          "count": 10,
+          "pass_count": 9,
+          "pass_rate": 90.0,
+          "mean_score": 82.5
+        }
+      }
+    }
+  },
+  "paired_comparisons": {
+    "full_agent_after_fix_vs_full_agent_before_fix": {
+      "wilcoxon": {
+        "W": 151.0,
+        "z": -2.314,
+        "p_value": 0.020674092892512874
+      },
+      "cohens_d": 0.26,
+      "mcnemar": {
+        "a_only": 8,
+        "b_only": 0,
+        "discordant": 8,
+        "p_value": 0.0078125
+      }
+    },
+    "full_agent_after_fix_vs_no_stage0_guards": {
+      "wilcoxon": {
+        "W": 135.0,
+        "z": -3.829,
+        "p_value": 0.0001285630946230576
+      },
+      "cohens_d": 0.51,
+      "mcnemar": {
+        "a_only": 19,
+        "b_only": 2,
+        "discordant": 21,
+        "p_value": 0.00022125244140625
+      }
+    },
+    "full_agent_after_fix_vs_vanilla_llm": {
+      "wilcoxon": {
+        "W": 134.5,
+        "z": -7.587,
+        "p_value": 3.26405569239796e-14
+      },
+      "cohens_d": 1.5,
+      "mcnemar": {
+        "a_only": 31,
+        "b_only": 2,
+        "discordant": 33,
+        "p_value": 1.3085082173347473e-07
+      }
+    },
+    "full_agent_before_fix_vs_no_stage0_guards": {
+      "wilcoxon": {
+        "W": 366.5,
+        "z": -2.09,
+        "p_value": 0.03661992473473341
+      },
+      "cohens_d": 0.28,
+      "mcnemar": {
+        "a_only": 19,
+        "b_only": 10,
+        "discordant": 29,
+        "p_value": 0.13604594767093658
+      }
+    },
+    "full_agent_before_fix_vs_vanilla_llm": {
+      "wilcoxon": {
+        "W": 261.5,
+        "z": -6.657,
+        "p_value": 2.794253717297579e-11
+      },
+      "cohens_d": 1.08,
+      "mcnemar": {
+        "a_only": 28,
+        "b_only": 7,
+        "discordant": 35,
+        "p_value": 0.0005082604475319386
+      }
+    },
+    "no_stage0_guards_vs_vanilla_llm": {
+      "wilcoxon": {
+        "W": 1165.5,
+        "z": -3.791,
+        "p_value": 0.00015021851188978808
+      },
+      "cohens_d": 0.6,
+      "mcnemar": {
+        "a_only": 29,
+        "b_only": 17,
+        "discordant": 46,
+        "p_value": 0.10380535550410741
+      }
+    }
+  }
+}
