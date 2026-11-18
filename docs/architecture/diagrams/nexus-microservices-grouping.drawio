@@ -1,0 +1,102 @@
+<mxfile host="app.diagrams.net" modified="2026-11-18T10:55:00.000Z" agent="Antigravity" version="24.7.17" type="device">
+  <diagram id="nexus-microservices-grouping" name="Nexus Microservices Grouping (DDD)">
+    <mxGraphModel dx="1320" dy="1000" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1280" pageHeight="960" background="#FFFFFF" math="0" shadow="0">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+        <mxCell id="2" value="1. Edge &amp; API Composition Layer (1 Service)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#0F766E;strokeWidth=2.3;verticalAlign=top;align=left;fontFamily=Helvetica;fontSize=12;fontStyle=1;fontColor=#115E59;spacingLeft=8;spacingTop=5;dashed=1;dashPattern=9 5;" vertex="1" parent="1">
+          <mxGeometry x="278" y="34" width="580" height="102" as="geometry"/>
+        </mxCell>
+        <mxCell id="3" value="gateway-bff (:3000 · chat_db pg · Redis · S3)
+Single Entrypoint · Opaque Token · REST/WS Proxy · HMAC" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#0F766E;strokeWidth=1.6;verticalAlign=middle;align=left;fontFamily=Helvetica;fontSize=10;fontStyle=1;fontColor=#111111;spacingLeft=8;spacingTop=5;" vertex="1" parent="1">
+          <mxGeometry x="356" y="68" width="484" height="54" as="geometry"/>
+        </mxCell>
+        <mxCell id="4" value="2. Core Logistics Domain — Vận hành Lõi (6 Services)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#2563EB;strokeWidth=2.4;verticalAlign=top;align=left;fontFamily=Helvetica;fontSize=12;fontStyle=1;fontColor=#1D4ED8;spacingLeft=8;spacingTop=5;dashed=1;dashPattern=9 5;" vertex="1" parent="1">
+          <mxGeometry x="46" y="206" width="730" height="382" as="geometry"/>
+        </mxCell>
+        <mxCell id="5" value="shipment-service (:3002 · shipment_db)
+Vận đơn trung tâm · Giám định · Claims · CSKH · Webhook" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#2563EB;strokeWidth=1.7;verticalAlign=middle;align=left;fontFamily=Helvetica;fontSize=10;fontStyle=1;fontColor=#111111;spacingLeft=8;spacingTop=5;" vertex="1" parent="1">
+          <mxGeometry x="156" y="272" width="494" height="54" as="geometry"/>
+        </mxCell>
+        <mxCell id="6" value="pickup-service (:3003 · pickup_db)
+Tạo &amp; duyệt lấy hàng" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#111111;strokeWidth=1.4;verticalAlign=middle;align=left;fontFamily=Helvetica;fontSize=9.8;fontStyle=1;fontColor=#111111;spacingLeft=8;spacingTop=5;" vertex="1" parent="1">
+          <mxGeometry x="72" y="366" width="214" height="56" as="geometry"/>
+        </mxCell>
+        <mxCell id="7" value="dispatch-service (:3004 · dispatch_db)
+Điều phối · /ws/tasks" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#111111;strokeWidth=1.4;verticalAlign=middle;align=left;fontFamily=Helvetica;fontSize=9.8;fontStyle=1;fontColor=#111111;spacingLeft=8;spacingTop=5;" vertex="1" parent="1">
+          <mxGeometry x="72" y="438" width="214" height="56" as="geometry"/>
+        </mxCell>
+        <mxCell id="8" value="manifest-service (:3005 · manifest_db)
+Đóng bao · Kẹp chì seal" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#111111;strokeWidth=1.4;verticalAlign=middle;align=left;fontFamily=Helvetica;fontSize=9.8;fontStyle=1;fontColor=#111111;spacingLeft=8;spacingTop=5;" vertex="1" parent="1">
+          <mxGeometry x="308" y="382" width="214" height="56" as="geometry"/>
+        </mxCell>
+        <mxCell id="9" value="scan-service (:3006 · scan_db)
+Quét In/Out · GPS /ws/locations" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#111111;strokeWidth=1.4;verticalAlign=middle;align=left;fontFamily=Helvetica;fontSize=9.8;fontStyle=1;fontColor=#111111;spacingLeft=8;spacingTop=5;" vertex="1" parent="1">
+          <mxGeometry x="308" y="454" width="214" height="56" as="geometry"/>
+        </mxCell>
+        <mxCell id="10" value="delivery-service (:3007 · delivery_db)
+POD · OTP · NDR · Chuyển hoàn" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#111111;strokeWidth=1.4;verticalAlign=middle;align=left;fontFamily=Helvetica;fontSize=9.8;fontStyle=1;fontColor=#111111;spacingLeft=8;spacingTop=5;" vertex="1" parent="1">
+          <mxGeometry x="544" y="372" width="208" height="128" as="geometry"/>
+        </mxCell>
+        <mxCell id="11" value="3. Commercial &amp; Finance (2 Services)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#059669;strokeWidth=2.4;verticalAlign=top;align=left;fontFamily=Helvetica;fontSize=12;fontStyle=1;fontColor=#047857;spacingLeft=8;spacingTop=5;dashed=1;dashPattern=9 5;" vertex="1" parent="1">
+          <mxGeometry x="858" y="186" width="376" height="224" as="geometry"/>
+        </mxCell>
+        <mxCell id="12" value="pricing-service (:3012 · Stateless)
+Tính cước IATA V/6000 · 3 tầng trần" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#111111;strokeWidth=1.4;verticalAlign=middle;align=left;fontFamily=Helvetica;fontSize=9.8;fontStyle=1;fontColor=#111111;spacingLeft=8;spacingTop=5;" vertex="1" parent="1">
+          <mxGeometry x="880" y="250" width="332" height="62" as="geometry"/>
+        </mxCell>
+        <mxCell id="13" value="payment-service (:3011 · payment_db)
+COD · Đối soát ví · SePay VietQR" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#111111;strokeWidth=1.4;verticalAlign=middle;align=left;fontFamily=Helvetica;fontSize=9.8;fontStyle=1;fontColor=#111111;spacingLeft=8;spacingTop=5;" vertex="1" parent="1">
+          <mxGeometry x="880" y="326" width="332" height="64" as="geometry"/>
+        </mxCell>
+        <mxCell id="14" value="4. CQRS Read &amp; AI Intelligence (3 Services)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#7C3AED;strokeWidth=2.4;verticalAlign=top;align=left;fontFamily=Helvetica;fontSize=12;fontStyle=1;fontColor=#5B21B6;spacingLeft=8;spacingTop=5;dashed=1;dashPattern=9 5;" vertex="1" parent="1">
+          <mxGeometry x="828" y="480" width="406" height="362" as="geometry"/>
+        </mxCell>
+        <mxCell id="15" value="tracking-service (:3008 · tracking_db)
+CQRS Read · Timeline hành trình" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#111111;strokeWidth=1.4;verticalAlign=middle;align=left;fontFamily=Helvetica;fontSize=9.8;fontStyle=1;fontColor=#111111;spacingLeft=8;spacingTop=5;" vertex="1" parent="1">
+          <mxGeometry x="852" y="548" width="358" height="62" as="geometry"/>
+        </mxCell>
+        <mxCell id="16" value="reporting-service (:3009 · reporting_db)
+CQRS Read · KPI &amp; Dashboard" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#111111;strokeWidth=1.4;verticalAlign=middle;align=left;fontFamily=Helvetica;fontSize=9.8;fontStyle=1;fontColor=#111111;spacingLeft=8;spacingTop=5;" vertex="1" parent="1">
+          <mxGeometry x="852" y="626" width="358" height="62" as="geometry"/>
+        </mxCell>
+        <mxCell id="17" value="chatbot-service (:3013 · vector-index.json)
+Hybrid RAG · Tools · Guardrail HITL · SSE" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#7C3AED;strokeWidth=1.6;verticalAlign=middle;align=left;fontFamily=Helvetica;fontSize=9.8;fontStyle=1;fontColor=#111111;spacingLeft=8;spacingTop=5;" vertex="1" parent="1">
+          <mxGeometry x="852" y="704" width="358" height="114" as="geometry"/>
+        </mxCell>
+        <mxCell id="18" value="5. Platform &amp; Generic Subdomain (2 Services)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#D97706;strokeWidth=2.4;verticalAlign=top;align=left;fontFamily=Helvetica;fontSize=12;fontStyle=1;fontColor=#B45309;spacingLeft=8;spacingTop=5;dashed=1;dashPattern=9 5;" vertex="1" parent="1">
+          <mxGeometry x="112" y="660" width="612" height="174" as="geometry"/>
+        </mxCell>
+        <mxCell id="19" value="auth-service (:3010 · auth_db)
+Opaque Token · RBAC 5 roles · AuditLog" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#111111;strokeWidth=1.4;verticalAlign=middle;align=left;fontFamily=Helvetica;fontSize=9.8;fontStyle=1;fontColor=#111111;spacingLeft=8;spacingTop=5;" vertex="1" parent="1">
+          <mxGeometry x="134" y="724" width="270" height="88" as="geometry"/>
+        </mxCell>
+        <mxCell id="20" value="masterdata-service (:3001 · masterdata_db)
+Hub · Zone · NDR · Policy" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#111111;strokeWidth=1.4;verticalAlign=middle;align=left;fontFamily=Helvetica;fontSize=9.8;fontStyle=1;fontColor=#111111;spacingLeft=8;spacingTop=5;" vertex="1" parent="1">
+          <mxGeometry x="426" y="724" width="276" height="88" as="geometry"/>
+        </mxCell>
+        <mxCell id="21" value="REST / WS Proxy" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#111111;strokeWidth=1.4;fontFamily=Helvetica;fontSize=10.4;fontStyle=1;fontColor=#111111;labelBackgroundColor=#FFFFFF;endArrow=classic;endFill=1;" edge="1" parent="1" source="2" target="4">
+          <mxGeometry relative="1" as="geometry"></mxGeometry>
+        </mxCell>
+        <mxCell id="22" value="Pricing / COD API" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#111111;strokeWidth=1.4;fontFamily=Helvetica;fontSize=10.4;fontStyle=1;fontColor=#111111;labelBackgroundColor=#FFFFFF;endArrow=classic;endFill=1;" edge="1" parent="1" source="2" target="11">
+          <mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="1046" y="86"/></Array></mxGeometry>
+        </mxCell>
+        <mxCell id="23" value="IATA / COD" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#111111;strokeWidth=1.4;fontFamily=Helvetica;fontSize=10.4;fontStyle=1;fontColor=#111111;labelBackgroundColor=#FFFFFF;endArrow=classic;endFill=1;startArrow=classic;startFill=1;" edge="1" parent="1" source="4" target="11">
+          <mxGeometry relative="1" as="geometry"></mxGeometry>
+        </mxCell>
+        <mxCell id="24" value="CQRS" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#111111;strokeWidth=1.4;fontFamily=Helvetica;fontSize=10.4;fontStyle=1;fontColor=#111111;labelBackgroundColor=#FFFFFF;endArrow=classic;endFill=1;dashed=1;dashPattern=5 4;" edge="1" parent="1" source="4" target="14">
+          <mxGeometry relative="1" as="geometry"></mxGeometry>
+        </mxCell>
+        <mxCell id="25" value="Hub / Policy Lookup" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#111111;strokeWidth=1.4;fontFamily=Helvetica;fontSize=10.4;fontStyle=1;fontColor=#111111;labelBackgroundColor=#FFFFFF;endArrow=classic;endFill=1;" edge="1" parent="1" source="4" target="18">
+          <mxGeometry relative="1" as="geometry"></mxGeometry>
+        </mxCell>
+        <mxCell id="26" value="COD Events / Tool" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#111111;strokeWidth=1.4;fontFamily=Helvetica;fontSize=10.4;fontStyle=1;fontColor=#111111;labelBackgroundColor=#FFFFFF;endArrow=classic;endFill=1;dashed=1;dashPattern=5 4;startArrow=classic;startFill=1;" edge="1" parent="1" source="11" target="14">
+          <mxGeometry relative="1" as="geometry"></mxGeometry>
+        </mxCell>
+        <mxCell id="27" value="Introspect" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#111111;strokeWidth=1.4;fontFamily=Helvetica;fontSize=10.4;fontStyle=1;fontColor=#111111;labelBackgroundColor=#FFFFFF;endArrow=classic;endFill=1;dashed=1;dashPattern=5 4;" edge="1" parent="1" source="2" target="18">
+          <mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="26" y="86"/><mxPoint x="26" y="748"/></Array></mxGeometry>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

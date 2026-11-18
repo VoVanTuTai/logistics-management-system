@@ -1,0 +1,195 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 1130" width="1280" height="1130">
+  <defs>
+    <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M 0 1 L 10 5 L 0 9 z" fill="#111111"/>
+    </marker>
+    <marker id="arrStart" viewBox="0 0 10 10" refX="1" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M 10 1 L 0 5 L 10 9 z" fill="#111111"/>
+    </marker>
+  </defs>
+<rect x="0" y="0" width="1280" height="1130" fill="#FFFFFF"/>
+<rect x="70" y="44" width="188" height="94" fill="#FFFFFF" stroke="#111111" stroke-width="1.4"/>
+<text x="164.0" y="63" text-anchor="middle" font-family="Helvetica, Arial, -apple-system, BlinkMacSystemFont, sans-serif" font-size="12" font-weight="700" fill="#111111">Clients</text>
+<image x="118.0" y="66.0" width="90.0" height="54.0" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA5MiA2MCI+CiAgICAgIDxyZWN0IHg9IjQiIHk9IjYiIHdpZHRoPSI1MiIgaGVpZ2h0PSIzNSIgcng9IjMiIGZpbGw9IiNGRkZGRkYiIHN0cm9rZT0iIzExMTExMSIgc3Ryb2tlLXdpZHRoPSIxLjgiLz4KICAgICAgPGxpbmUgeDE9IjQiIHkxPSIxNCIgeDI9IjU2IiB5Mj0iMTQiIHN0cm9rZT0iIzExMTExMSIgc3Ryb2tlLXdpZHRoPSIxLjIiLz4KICAgICAgPGNpcmNsZSBjeD0iMTAiIGN5PSIxMCIgcj0iMS4zIiBmaWxsPSIjRUY0NDQ0Ii8+CiAgICAgIDxjaXJjbGUgY3g9IjE1IiBjeT0iMTAiIHI9IjEuMyIgZmlsbD0iI0Y1OUUwQiIvPgogICAgICA8Y2lyY2xlIGN4PSIyMCIgY3k9IjEwIiByPSIxLjMiIGZpbGw9IiMyMkM1NUUiLz4KICAgICAgPHBhdGggZD0iTTEgNDIgTDYwIDQyIEw2MiA0OCBMLTEgNDggWiIgZmlsbD0iI0YzRjRGNiIgc3Ryb2tlPSIjMTExMTExIiBzdHJva2Utd2lkdGg9IjEuNSIvPgogICAgICA8cmVjdCB4PSI2NSIgeT0iMTMiIHdpZHRoPSIyMyIgaGVpZ2h0PSI0MCIgcng9IjQiIGZpbGw9IiNGRkZGRkYiIHN0cm9rZT0iIzI1NjNFQiIgc3Ryb2tlLXdpZHRoPSIxLjgiLz4KICAgICAgPHJlY3QgeD0iNjgiIHk9IjE5IiB3aWR0aD0iMTciIGhlaWdodD0iMjUiIHJ4PSIxLjUiIGZpbGw9IiNFRkY2RkYiIHN0cm9rZT0iIzI1NjNFQiIgc3Ryb2tlLXdpZHRoPSIxIi8+CiAgICAgIDxjaXJjbGUgY3g9Ijc2LjUiIGN5PSI0OSIgcj0iMS41IiBmaWxsPSIjMjU2M0VCIi8+CiAgICA8L3N2Zz4="/>
+<text x="164.0" y="130.0" text-anchor="middle" font-family="Helvetica, Arial, -apple-system, BlinkMacSystemFont, sans-serif" font-size="9.4" font-weight="400" fill="#4B5563">4 Web · 2 Mobile APK</text>
+<rect x="378" y="34" width="440" height="112" fill="#FFFFFF" stroke="#0F766E" stroke-width="2.2"/>
+<text x="388" y="53" font-family="Helvetica, Arial, -apple-system, BlinkMacSystemFont, sans-serif" font-size="12.8" font-weight="700" fill="#115E59">API Gateway BFF (:3000)</text>
+<image x="394.0" y="62.0" width="82.0" height="30.0" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMTIgNDIiPgogICAgICA8Y2lyY2xlIGN4PSIyMCIgY3k9IjIxIiByPSIxNiIgZmlsbD0iI0UwMjM0RSIvPgogICAgICA8cGF0aCBkPSJNMTMgMjZjMS02IDQtMTEgOS0xMyAzIDIgNSA1IDUgMTAgMCAzLTIgNS00IDYgMi0yIDItNSAwLTctMiAyLTMgNC00IDctMyAwLTUtMS02LTN6IiBmaWxsPSIjRkZGRkZGIi8+CiAgICAgIDx0ZXh0IHg9IjQzIiB5PSIyNyIgZm9udC1mYW1pbHk9IkhlbHZldGljYSxBcmlhbCxzYW5zLXNlcmlmIiBmb250LXNpemU9IjE4IiBmb250LXdlaWdodD0iNzAwIiBmaWxsPSIjRTAyMzRFIj5OZXN0SlM8L3RleHQ+CiAgICA8L3N2Zz4="/>
+<image x="492.0" y="58.0" width="64.0" height="38.0" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA4MCA0OCI+CiAgICAgIDxyZWN0IHg9IjMiIHk9IjQiIHdpZHRoPSI3NCIgaGVpZ2h0PSI0MCIgcng9IjciIGZpbGw9IiNFRkY2RkYiIHN0cm9rZT0iIzAyODRDNyIgc3Ryb2tlLXdpZHRoPSIyIi8+CiAgICAgIDx0ZXh0IHg9IjQwIiB5PSIyMiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZm9udC1mYW1pbHk9IkhlbHZldGljYSxBcmlhbCxzYW5zLXNlcmlmIiBmb250LXNpemU9IjEyIiBmb250LXdlaWdodD0iODAwIiBmaWxsPSIjMDI4NEM3Ij5IVFRQPC90ZXh0PgogICAgICA8dGV4dCB4PSI0MCIgeT0iMzYiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZvbnQtZmFtaWx5PSJIZWx2ZXRpY2EsQXJpYWwsc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxMSIgZm9udC13ZWlnaHQ9IjgwMCIgZmlsbD0iIzAzNjlBMSI+UkVTVDwvdGV4dD4KICAgIDwvc3ZnPg=="/>
+<image x="572.0" y="58.0" width="64.0" height="38.0" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA4MCA0OCI+CiAgICAgIDxyZWN0IHg9IjMiIHk9IjQiIHdpZHRoPSI3NCIgaGVpZ2h0PSI0MCIgcng9IjciIGZpbGw9IiNGNUYzRkYiIHN0cm9rZT0iIzdDM0FFRCIgc3Ryb2tlLXdpZHRoPSIyIi8+CiAgICAgIDxwYXRoIGQ9Ik0xMyAxOCBMMzEgMTggTTI2IDE0IEwzMSAxOCBMMjYgMjIiIGZpbGw9Im5vbmUiIHN0cm9rZT0iIzdDM0FFRCIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiLz4KICAgICAgPHBhdGggZD0iTTMxIDMwIEwxMyAzMCBNMTggMjYgTDEzIDMwIEwxOCAzNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjRDk3NzA2IiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPgogICAgICA8dGV4dCB4PSI1NCIgeT0iMjkiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZvbnQtZmFtaWx5PSJIZWx2ZXRpY2EsQXJpYWwsc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxMy41IiBmb250LXdlaWdodD0iODAwIiBmaWxsPSIjNUIyMUI2Ij5XUzwvdGV4dD4KICAgIDwvc3ZnPg=="/>
+<text x="726.0" y="74.0" text-anchor="middle" font-family="Helvetica, Arial, -apple-system, BlinkMacSystemFont, sans-serif" font-size="10" font-weight="700" fill="#111111">REST Proxy (:3001–:3013)</text>
+<text x="726.0" y="91.0" text-anchor="middle" font-family="Helvetica, Arial, -apple-system, BlinkMacSystemFont, sans-serif" font-size="9.1" font-weight="700" fill="#5B21B6">/ws/chat · /ws/tasks · /ws/locations</text>
+<text x="598.0" y="130.0" text-anchor="middle" font-family="Helvetica, Arial, -apple-system, BlinkMacSystemFont, sans-serif" font-size="9.2" font-weight="400" fill="#4B5563">Opaque Token RBAC · Rate Limit (2,400/m) · HMAC Auth · S3 Presign</text>
+<rect x="964" y="46" width="256" height="86" fill="#FFFFFF" stroke="#7C3AED" stroke-width="1.7"/>
+<image x="976.0" y="67.0" width="108.0" height="38.0" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMTYgNDAiPgogICAgICA8cG9seWdvbiBwb2ludHM9IjIyLDI1IDUsMzIgMjIsMzggMzksMzIiIGZpbGw9IiNBNDFFMTEiLz4KICAgICAgPHBvbHlnb24gcG9pbnRzPSIyMiwxNyA1LDI0IDIyLDMwIDM5LDI0IiBmaWxsPSIjQzYyODI4Ii8+CiAgICAgIDxwb2x5Z29uIHBvaW50cz0iMjIsOCA1LDE1IDIyLDIyIDM5LDE1IiBmaWxsPSIjREMzODJEIi8+CiAgICAgIDxjaXJjbGUgY3g9IjE3IiBjeT0iMTQiIHI9IjEuOSIgZmlsbD0iI0ZGRkZGRiIvPgogICAgICA8cG9seWdvbiBwb2ludHM9IjI2LDEyIDI5LDE2IDIzLDE2IiBmaWxsPSIjRkZGRkZGIi8+CiAgICAgIDx0ZXh0IHg9IjQ2IiB5PSIyNiIgZm9udC1mYW1pbHk9IkhlbHZldGljYSxBcmlhbCxzYW5zLXNlcmlmIiBmb250LXNpemU9IjE1LjUiIGZvbnQtd2VpZ2h0PSI4MDAiIGZpbGw9IiNEQzM4MkQiPlJlZGlzIDc8L3RleHQ+CiAgICA8L3N2Zz4="/>
+<text x="1094.0" y="76.0" text-anchor="start" font-family="Helvetica, Arial, -apple-system, BlinkMacSystemFont, sans-serif" font-size="10.4" font-weight="700" fill="#DC2626">Pub/Sub (:6379)</text>
+<text x="1094.0" y="93.0" text-anchor="start" font-family="Helvetica, Arial, -apple-system, BlinkMacSystemFont, sans-serif" font-size="9.5" font-weight="700" fill="#374151">gateway-bff:chat</text>
+<text x="1094.0" y="109.0" text-anchor="start" font-family="Helvetica, Arial, -apple-system, BlinkMacSystemFont, sans-serif" font-size="9" font-weight="400" fill="#6B7280">Sync /ws/chat realtime</text>
+<rect x="44" y="240" width="198" height="104" fill="#FFFFFF" stroke="#111111" stroke-width="1.4"/>
+<text x="54" y="259" font-family="Helvetica, Arial, -apple-system, BlinkMacSystemFont, sans-serif" font-size="11.5" font-weight="700" fill="#111111">DT_COMMERCE</text>
+<image x="110.0" y="266.0" width="62.0" height="46.0" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA3MCA1MiI+CiAgICAgIDxjaXJjbGUgY3g9IjM1IiBjeT0iMTQiIHI9IjciIGZpbGw9Im5vbmUiIHN0cm9rZT0iI0UxMUQ0OCIgc3Ryb2tlLXdpZHRoPSIyLjYiLz4KICAgICAgPGNpcmNsZSBjeD0iMTkiIGN5PSI0MCIgcj0iNyIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjMjU2M0VCIiBzdHJva2Utd2lkdGg9IjIuNiIvPgogICAgICA8Y2lyY2xlIGN4PSI1MSIgY3k9IjQwIiByPSI3IiBmaWxsPSJub25lIiBzdHJva2U9IiMxNkEzNEEiIHN0cm9rZS13aWR0aD0iMi42Ii8+CiAgICAgIDxsaW5lIHgxPSIzMCIgeTE9IjIwIiB4Mj0iMjMiIHkyPSIzMyIgc3Ryb2tlPSIjMzc0MTUxIiBzdHJva2Utd2lkdGg9IjIuMiIvPgogICAgICA8bGluZSB4MT0iNDAiIHkxPSIyMCIgeDI9IjQ3IiB5Mj0iMzMiIHN0cm9rZT0iIzM3NDE1MSIgc3Ryb2tlLXdpZHRoPSIyLjIiLz4KICAgICAgPGxpbmUgeDE9IjI2IiB5MT0iNDAiIHgyPSI0NCIgeTI9IjQwIiBzdHJva2U9IiMzNzQxNTEiIHN0cm9rZS13aWR0aD0iMi4yIi8+CiAgICA8L3N2Zz4="/>
+<text x="143.0" y="323.0" text-anchor="middle" font-family="Helvetica, Arial, -apple-system, BlinkMacSystemFont, sans-serif" font-size="10" font-weight="700" fill="#111111">api.truongam.tech</text>
+<text x="143.0" y="337.0" text-anchor="middle" font-family="Helvetica, Arial, -apple-system, BlinkMacSystemFont, sans-serif" font-size="8.8" font-weight="400" fill="#4B5563">HMAC (In) · Webhook (Out)</text>
+<rect x="296" y="212" width="580" height="376" fill="#FFFFFF" stroke="#2563EB" stroke-width="2.3" stroke-dasharray="9,5"/>
+<text x="580.0" y="234.0" text-anchor="start" font-family="Helvetica, Arial, -apple-system, BlinkMacSystemFont, sans-serif" font-size="11.8" font-weight="700" fill="#1D4ED8">Sync HTTP / REST (Nội bộ phản hồi ngay)</text>
+<rect x="318" y="258" width="212" height="62" fill="#FFFFFF" stroke="#2563EB" stroke-width="1.8"/>
+<text x="424.0" y="277" text-anchor="middle" font-family="Helvetica, Arial, -apple-system, BlinkMacSystemFont, sans-serif" font-size="11.5" font-weight="700" fill="#1D4ED8">shipment-service (:3002)</text>
+<text x="424.0" y="294.0" text-anchor="middle" font-family="Helvetica, Arial, -apple-system, BlinkMacSystemFont, sans-serif" font-size="9.4" font-weight="700" fill="#111111">Core Order Hub · shipment_db</text>
+<text x="424.0" y="309.0" text-anchor="middle" font-family="Helvetica, Arial, -apple-system, BlinkMacSystemFont, sans-serif" font-size="9" font-weight="400" fill="#B45309">Outbound Webhook (retry 3x)</text>
+<rect x="616" y="262" width="184" height="56" fill="#FFFFFF" stroke="#111111" stroke-width="1.4"/>
+<text x="708.0" y="281" text-anchor="middle" font-family="Helvetica, Arial, -apple-system, BlinkMacSystemFont, sans-serif" font-size="11" font-weight="700" fill="#111111">pricing-service (:3012)</text>
+<text x="708.0" y="296.0" text-anchor="middle" font-family="Helvetica, Arial, -apple-system, BlinkMacSystemFont, sans-serif" font-size="9.3" font-weight="700" fill="#1D4ED8">Stateless · IATA Fee</text>
+<text x="708.0" y="310.0" text-anchor="middle" font-family="Helvetica, Arial, -apple-system, BlinkMacSystemFont, sans-serif" font-size="8.7" font-weight="400" fill="#6B7280">Không DB / AMQP</text>
+<rect x="316" y="372" width="124" height="56" fill="#FFFFFF" stroke="#111111" stroke-width="1.4"/>
+<text x="378.0" y="391" text-anchor="middle" font-family="Helvetica, Arial, -apple-system, BlinkMacSystemFont, sans-serif" font-size="10.6" font-weight="700" fill="#111111">pickup (:3003)</text>
+<text x="378.0" y="406.0" text-anchor="middle" font-family="Helvetica, Arial, -apple-system, BlinkMacSystemFont, sans-serif" font-size="9" font-weight="400" fill="#4B5563">Lấy hàng</text>
+<rect x="454" y="378" width="126" height="52" fill="#FFFFFF" stroke="#111111" stroke-width="1.4"/>
+<text x="517.0" y="397" text-anchor="middle" font-family="Helvetica, Arial, -apple-system, BlinkMacSystemFont, sans-serif" font-size="10.6" font-weight="700" fill="#111111">manifest (:3005)</text>
+<text x="517.0" y="412.0" text-anchor="middle" font-family="Helvetica, Arial, -apple-system, BlinkMacSystemFont, sans-serif" font-size="9" font-weight="400" fill="#4B5563">Đóng bao · seal</text>
+<rect x="594" y="374" width="126" height="56" fill="#FFFFFF" stroke="#111111" stroke-width="1.4"/>
+<text x="657.0" y="393" text-anchor="middle" font-family="Helvetica, Arial, -apple-system, BlinkMacSystemFont, sans-serif" font-size="10.6" font-weight="700" fill="#111111">delivery (:3007)</text>
+<text x="657.0" y="408.0" text-anchor="middle" font-family="Helvetica, Arial, -apple-system, BlinkMacSystemFont, sans-serif" font-size="8.9" font-weight="400" fill="#4B5563">POD · NDR · Hoàn</text>
+<rect x="742" y="372" width="116" height="58" fill="#FFFFFF" stroke="#111111" stroke-width="1.4"/>
+<text x="800.0" y="391" text-anchor="middle" font-family="Helvetica, Arial, -apple-system, BlinkMacSystemFont, sans-serif" font-size="10.6" font-weight="700" fill="#111111">scan (:3006)</text>
+<text x="800.0" y="406.0" text-anchor="middle" font-family="Helvetica, Arial, -apple-system, BlinkMacSystemFont, sans-serif" font-size="9" font-weight="700" fill="#5B21B6">In/Out · GPS</text>
+<rect x="316" y="496" width="132" height="62" fill="#FFFFFF" stroke="#111111" stroke-width="1.4"/>
+<text x="382.0" y="515" text-anchor="middle" font-family="Helvetica, Arial, -apple-system, BlinkMacSystemFont, sans-serif" font-size="10.6" font-weight="700" fill="#111111">dispatch (:3004)</text>
+<text x="382.0" y="530.0" text-anchor="middle" font-family="Helvetica, Arial, -apple-system, BlinkMacSystemFont, sans-serif" font-size="9" font-weight="700" fill="#5B21B6">Điều phối · WS</text>
+<text x="382.0" y="545.0" text-anchor="middle" font-family="Helvetica, Arial, -apple-system, BlinkMacSystemFont, sans-serif" font-size="8.6" font-weight="400" fill="#6B7280">dispatch_db</text>
+<rect x="476" y="504" width="134" height="54" fill="#FFFFFF" stroke="#111111" stroke-width="1.4"/>
+<text x="543.0" y="523" text-anchor="middle" font-family="Helvetica, Arial, -apple-system, BlinkMacSystemFont, sans-serif" font-size="10.5" font-weight="700" fill="#111111">masterdata (:3001)</text>
+<text x="543.0" y="538.0" text-anchor="middle" font-family="Helvetica, Arial, -apple-system, BlinkMacSystemFont, sans-serif" font-size="8.9" font-weight="400" fill="#4B5563">Hub · Zone · NDR</text>
+<rect x="636" y="506" width="98" height="50" fill="#FFFFFF" stroke="#111111" stroke-width="1.4"/>
+<text x="685.0" y="525" text-anchor="middle" font-family="Helvetica, Arial, -apple-system, BlinkMacSystemFont, sans-serif" font-size="10.5" font-weight="700" fill="#111111">auth (:3010)</text>
+<text x="685.0" y="539.0" text-anchor="middle" font-family="Helvetica, Arial, -apple-system, BlinkMacSystemFont, sans-serif" font-size="8.6" font-weight="400" fill="#4B5563">Opaque · RBAC</text>
+<rect x="748" y="496" width="110" height="62" fill="#FFFFFF" stroke="#111111" stroke-width="1.4"/>
+<text x="803.0" y="515" text-anchor="middle" font-family="Helvetica, Arial, -apple-system, BlinkMacSystemFont, sans-serif" font-size="10.6" font-weight="700" fill="#111111">payment (:3011)</text>
+<text x="803.0" y="530.0" text-anchor="middle" font-family="Helvetica, Arial, -apple-system, BlinkMacSystemFont, sans-serif" font-size="8.9" font-weight="700" fill="#0F766E">COD · Ví shop</text>
+<text x="803.0" y="545.0" text-anchor="middle" font-family="Helvetica, Arial, -apple-system, BlinkMacSystemFont, sans-serif" font-size="8.6" font-weight="400" fill="#6B7280">payment_db</text>
+<rect x="964" y="482" width="276" height="120" fill="#FFFFFF" stroke="#7C3AED" stroke-width="1.6"/>
+<text x="974" y="501" font-family="Helvetica, Arial, -apple-system, BlinkMacSystemFont, sans-serif" font-size="11.5" font-weight="700" fill="#5B21B6">chatbot-service (:3013)</text>
+<image x="976.0" y="514.0" width="54.0" height="46.0" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2MCA1MCI+CiAgICAgIDxyZWN0IHg9IjUiIHk9IjUiIHdpZHRoPSIzMiIgaGVpZ2h0PSIzOSIgcng9IjQiIGZpbGw9IiNGRkZGRkYiIHN0cm9rZT0iIzExMTExMSIgc3Ryb2tlLXdpZHRoPSIxLjgiLz4KICAgICAgPGxpbmUgeDE9IjEyIiB5MT0iMTUiIHgyPSIzMSIgeTI9IjE1IiBzdHJva2U9IiM2QjcyODAiIHN0cm9rZS13aWR0aD0iMS43Ii8+CiAgICAgIDxsaW5lIHgxPSIxMiIgeTE9IjIyIiB4Mj0iMjgiIHkyPSIyMiIgc3Ryb2tlPSIjNkI3MjgwIiBzdHJva2Utd2lkdGg9IjEuNyIvPgogICAgICA8bGluZSB4MT0iMTIiIHkxPSIyOSIgeDI9IjI0IiB5Mj0iMjkiIHN0cm9rZT0iIzZCNzI4MCIgc3Ryb2tlLXdpZHRoPSIxLjciLz4KICAgICAgPGNpcmNsZSBjeD0iNDAiIGN5PSIzMSIgcj0iMTEiIGZpbGw9IiNFRkY2RkYiIHN0cm9rZT0iIzI1NjNFQiIgc3Ryb2tlLXdpZHRoPSIyLjEiLz4KICAgICAgPGxpbmUgeDE9IjQ4IiB5MT0iMzkiIHgyPSI1NSIgeTI9IjQ2IiBzdHJva2U9IiMyNTYzRUIiIHN0cm9rZS13aWR0aD0iMi42IiBzdHJva2UtbGluZWNhcD0icm91bmQiLz4KICAgICAgPHRleHQgeD0iNDAiIHk9IjM0LjUiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZvbnQtZmFtaWx5PSJIZWx2ZXRpY2EsQXJpYWwsc2Fucy1zZXJpZiIgZm9udC1zaXplPSI4IiBmb250LXdlaWdodD0iODAwIiBmaWxsPSIjMUQ0RUQ4Ij5SQUc8L3RleHQ+CiAgICA8L3N2Zz4="/>
+<text x="1040.0" y="526.0" text-anchor="start" font-family="Helvetica, Arial, -apple-system, BlinkMacSystemFont, sans-serif" font-size="9.8" font-weight="700" fill="#1D4ED8">POST /chat/stream (SSE)</text>
+<text x="1040.0" y="544.0" text-anchor="start" font-family="Helvetica, Arial, -apple-system, BlinkMacSystemFont, sans-serif" font-size="9.4" font-weight="700" fill="#374151">Sync Function Calling:</text>
+<text x="1040.0" y="560.0" text-anchor="start" font-family="Helvetica, Arial, -apple-system, BlinkMacSystemFont, sans-serif" font-size="8.9" font-weight="400" fill="#4B5563">• shipment (:3002) · pricing (:3012)</text>
+<text x="1040.0" y="576.0" text-anchor="start" font-family="Helvetica, Arial, -apple-system, BlinkMacSystemFont, sans-serif" font-size="8.9" font-weight="400" fill="#4B5563">• tracking (:3008) + RAG Index</text>
+<rect x="676" y="624" width="232" height="56" fill="#FFFFFF" stroke="#111111" stroke-width="1.3"/>
+<image x="686.0" y="629.0" width="44.0" height="44.0" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2MCA1NCI+CiAgICAgIDxyZWN0IHg9IjYiIHk9IjQiIHdpZHRoPSI0NiIgaGVpZ2h0PSI0NiIgcng9IjQiIGZpbGw9IiNGRkZGRkYiIHN0cm9rZT0iIzExMTExMSIgc3Ryb2tlLXdpZHRoPSIxLjkiLz4KICAgICAgPHJlY3QgeD0iMTIiIHk9IjEwIiB3aWR0aD0iMTEiIGhlaWdodD0iMTEiIGZpbGw9Im5vbmUiIHN0cm9rZT0iIzExMTExMSIgc3Ryb2tlLXdpZHRoPSIyLjEiLz4KICAgICAgPHJlY3QgeD0iMTUuNSIgeT0iMTMuNSIgd2lkdGg9IjQiIGhlaWdodD0iNCIgZmlsbD0iIzExMTExMSIvPgogICAgICA8cmVjdCB4PSIzNSIgeT0iMTAiIHdpZHRoPSIxMSIgaGVpZ2h0PSIxMSIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjMTExMTExIiBzdHJva2Utd2lkdGg9IjIuMSIvPgogICAgICA8cmVjdCB4PSIzOC41IiB5PSIxMy41IiB3aWR0aD0iNCIgaGVpZ2h0PSI0IiBmaWxsPSIjMTExMTExIi8+CiAgICAgIDxyZWN0IHg9IjEyIiB5PSIzMyIgd2lkdGg9IjExIiBoZWlnaHQ9IjExIiBmaWxsPSJub25lIiBzdHJva2U9IiMxMTExMTEiIHN0cm9rZS13aWR0aD0iMi4xIi8+CiAgICAgIDxyZWN0IHg9IjE1LjUiIHk9IjM2LjUiIHdpZHRoPSI0IiBoZWlnaHQ9IjQiIGZpbGw9IiMxMTExMTEiLz4KICAgICAgPHJlY3QgeD0iMzMiIHk9IjMzIiB3aWR0aD0iNS41IiBoZWlnaHQ9IjUiIGZpbGw9IiNEQzI2MjYiLz4KICAgICAgPHJlY3QgeD0iNDAuNSIgeT0iMzMiIHdpZHRoPSI1LjUiIGhlaWdodD0iNSIgZmlsbD0iIzFENEVEOCIvPgogICAgICA8cmVjdCB4PSIzMyIgeT0iMzkuNSIgd2lkdGg9IjUuNSIgaGVpZ2h0PSI0LjUiIGZpbGw9IiMxRDRFRDgiLz4KICAgICAgPHJlY3QgeD0iNDAuNSIgeT0iMzkuNSIgd2lkdGg9IjUuNSIgaGVpZ2h0PSI0LjUiIGZpbGw9IiNEQzI2MjYiLz4KICAgIDwvc3ZnPg=="/>
+<text x="738.0" y="647.0" text-anchor="start" font-family="Helvetica, Arial, -apple-system, BlinkMacSystemFont, sans-serif" font-size="10.3" font-weight="700" fill="#111111">SePay Payment</text>
+<text x="738.0" y="663.0" text-anchor="start" font-family="Helvetica, Arial, -apple-system, BlinkMacSystemFont, sans-serif" font-size="9" font-weight="400" fill="#4B5563">qr.sepay.vn · COD Webhook</text>
+<rect x="92" y="716" width="1094" height="326" fill="#FFFFFF" stroke="#D97706" stroke-width="2.3" stroke-dasharray="9,5"/>
+<rect x="118" y="746" width="224" height="198" fill="#FFFFFF" stroke="#111111" stroke-width="1.4"/>
+<text x="230.0" y="765" text-anchor="middle" font-family="Helvetica, Arial, -apple-system, BlinkMacSystemFont, sans-serif" font-size="11.2" font-weight="700" fill="#111111">Outbox (9 Write Services)</text>
+<image x="196.0" y="772.0" width="68.0" height="48.0" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA3MCA1MCI+CiAgICAgIDxlbGxpcHNlIGN4PSIyMiIgY3k9IjEwIiByeD0iMTciIHJ5PSI1LjUiIGZpbGw9IiNFRkY2RkYiIHN0cm9rZT0iIzFENEVEOCIgc3Ryb2tlLXdpZHRoPSIxLjgiLz4KICAgICAgPHBhdGggZD0iTTUgMTAgVjM2IEExNyA1LjUgMCAwIDAgMzkgMzYgVjEwIiBmaWxsPSIjRkZGRkZGIiBzdHJva2U9IiMxRDRFRDgiIHN0cm9rZS13aWR0aD0iMS44Ii8+CiAgICAgIDxwYXRoIGQ9Ik01IDIwIEExNyA1LjUgMCAwIDAgMzkgMjAiIGZpbGw9Im5vbmUiIHN0cm9rZT0iIzkzQzVGRCIgc3Ryb2tlLXdpZHRoPSIxLjQiLz4KICAgICAgPHJlY3QgeD0iMzQiIHk9IjIwIiB3aWR0aD0iMzIiIGhlaWdodD0iMjMiIHJ4PSI0IiBmaWxsPSIjRkZGQkVCIiBzdHJva2U9IiNEOTc3MDYiIHN0cm9rZS13aWR0aD0iMS45Ii8+CiAgICAgIDxwYXRoIGQ9Ik0zOCAyNiBMNTAgMzQgTDYyIDI2IiBmaWxsPSJub25lIiBzdHJva2U9IiNEOTc3MDYiIHN0cm9rZS13aWR0aD0iMS43IiBzdHJva2UtbGluZWNhcD0icm91bmQiLz4KICAgIDwvc3ZnPg=="/>
+<text x="230.0" y="836.0" text-anchor="middle" font-family="Helvetica, Arial, -apple-system, BlinkMacSystemFont, sans-serif" font-size="9.8" font-weight="700" fill="#1D4ED8">DB Write + outbox_events</text>
+<text x="230.0" y="854.0" text-anchor="middle" font-family="Helvetica, Arial, -apple-system, BlinkMacSystemFont, sans-serif" font-size="9.3" font-weight="400" fill="#374151">ACID Transaction → Relay</text>
+<text x="230.0" y="878.0" text-anchor="middle" font-family="Helvetica, Arial, -apple-system, BlinkMacSystemFont, sans-serif" font-size="9" font-weight="400" fill="#4B5563">shipment.created · pickup.*</text>
+<text x="230.0" y="894.0" text-anchor="middle" font-family="Helvetica, Arial, -apple-system, BlinkMacSystemFont, sans-serif" font-size="9" font-weight="400" fill="#4B5563">task.assigned · manifest.*</text>
+<text x="230.0" y="910.0" text-anchor="middle" font-family="Helvetica, Arial, -apple-system, BlinkMacSystemFont, sans-serif" font-size="9" font-weight="400" fill="#4B5563">scan.* · delivery.* · ndr.*</text>
+<text x="230.0" y="926.0" text-anchor="middle" font-family="Helvetica, Arial, -apple-system, BlinkMacSystemFont, sans-serif" font-size="9" font-weight="400" fill="#4B5563">return.* · cod.* · masterdata.*</text>
+<rect x="406" y="780" width="188" height="128" fill="#FFFFFF" stroke="#D97706" stroke-width="1.8"/>
+<text x="500.0" y="799" text-anchor="middle" font-family="Helvetica, Arial, -apple-system, BlinkMacSystemFont, sans-serif" font-size="11.2" font-weight="700" fill="#B45309">Topic Exchange</text>
+<image x="432.0" y="808.0" width="136.0" height="40.0" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxNDQgNDIiPgogICAgICA8cmVjdCB4PSI0IiB5PSI0IiB3aWR0aD0iMzYiIGhlaWdodD0iMzQiIHJ4PSI2IiBmaWxsPSIjRkY2NjAwIi8+CiAgICAgIDxyZWN0IHg9IjkiIHk9IjgiIHdpZHRoPSI1LjUiIGhlaWdodD0iMTMiIHJ4PSIxLjUiIGZpbGw9IiNGRkZGRkYiLz4KICAgICAgPHJlY3QgeD0iMTguNSIgeT0iOCIgd2lkdGg9IjUuNSIgaGVpZ2h0PSIxMyIgcng9IjEuNSIgZmlsbD0iI0ZGRkZGRiIvPgogICAgICA8cmVjdCB4PSI5IiB5PSIxOCIgd2lkdGg9IjI2IiBoZWlnaHQ9IjE1IiByeD0iMi41IiBmaWxsPSIjRkZGRkZGIi8+CiAgICAgIDxyZWN0IHg9IjI1IiB5PSIyMyIgd2lkdGg9IjUuNSIgaGVpZ2h0PSI1LjUiIHJ4PSIxLjIiIGZpbGw9IiNGRjY2MDAiLz4KICAgICAgPHRleHQgeD0iNDgiIHk9IjI3IiBmb250LWZhbWlseT0iSGVsdmV0aWNhLEFyaWFsLHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMTYuNSIgZm9udC13ZWlnaHQ9IjcwMCIgZmlsbD0iI0ZGNjYwMCI+UmFiYml0TVE8L3RleHQ+CiAgICA8L3N2Zz4="/>
+<text x="500.0" y="866.0" text-anchor="middle" font-family="Helvetica, Arial, -apple-system, BlinkMacSystemFont, sans-serif" font-size="11" font-weight="700" fill="#B45309">domain.events</text>
+<text x="500.0" y="884.0" text-anchor="middle" font-family="Helvetica, Arial, -apple-system, BlinkMacSystemFont, sans-serif" font-size="9.5" font-weight="400" fill="#374151">AMQP :5672 · Topic</text>
+<text x="500.0" y="898.0" text-anchor="middle" font-family="Helvetica, Arial, -apple-system, BlinkMacSystemFont, sans-serif" font-size="8.9" font-weight="400" fill="#6B7280">idempotency_key + Ack</text>
+<rect x="654" y="744" width="186" height="40" fill="#FFFFFF" stroke="#111111" stroke-width="1.4"/>
+<text x="747.0" y="768.0" text-anchor="middle" font-family="Helvetica, Arial, -apple-system, BlinkMacSystemFont, sans-serif" font-size="9.8" font-weight="700" fill="#1D4ED8">Main Queue (&lt;svc&gt;.q)</text>
+<rect x="654" y="816" width="82" height="38" fill="#FFFFFF" stroke="#111111" stroke-width="1.4"/>
+<text x="695.0" y="832.0" text-anchor="middle" font-family="Helvetica, Arial, -apple-system, BlinkMacSystemFont, sans-serif" font-size="9.2" font-weight="700" fill="#B45309">retry.10s</text>
+<text x="695.0" y="846.0" text-anchor="middle" font-family="Helvetica, Arial, -apple-system, BlinkMacSystemFont, sans-serif" font-size="8.2" font-weight="400" fill="#6B7280">TTL 10s (#1)</text>
+<rect x="758" y="816" width="82" height="38" fill="#FFFFFF" stroke="#111111" stroke-width="1.4"/>
+<text x="799.0" y="832.0" text-anchor="middle" font-family="Helvetica, Arial, -apple-system, BlinkMacSystemFont, sans-serif" font-size="9.2" font-weight="700" fill="#B45309">retry.1m</text>
+<text x="799.0" y="846.0" text-anchor="middle" font-family="Helvetica, Arial, -apple-system, BlinkMacSystemFont, sans-serif" font-size="8.2" font-weight="400" fill="#6B7280">TTL 60s (#2)</text>
+<rect x="664" y="882" width="168" height="42" fill="#FFFFFF" stroke="#DC2626" stroke-width="1.5"/>
+<image x="674.0" y="888.0" width="30.0" height="28.0" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0MiAzOCI+CiAgICAgIDxwb2x5Z29uIHBvaW50cz0iMjEsMyAzOCwzMyA0LDMzIiBmaWxsPSIjRkVGMkYyIiBzdHJva2U9IiNEQzI2MjYiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPgogICAgICA8bGluZSB4MT0iMjEiIHkxPSIxMyIgeDI9IjIxIiB5Mj0iMjIiIHN0cm9rZT0iI0RDMjYyNiIgc3Ryb2tlLXdpZHRoPSIyLjQiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPgogICAgICA8Y2lyY2xlIGN4PSIyMSIgY3k9IjI3LjUiIHI9IjEuNiIgZmlsbD0iI0RDMjYyNiIvPgogICAgPC9zdmc+"/>
+<text x="762.0" y="900.0" text-anchor="middle" font-family="Helvetica, Arial, -apple-system, BlinkMacSystemFont, sans-serif" font-size="9.3" font-weight="700" fill="#991B1B">Dead-Letter (.dlq)</text>
+<text x="762.0" y="914.0" text-anchor="middle" font-family="Helvetica, Arial, -apple-system, BlinkMacSystemFont, sans-serif" font-size="8.6" font-weight="400" fill="#991B1B">Cách ly lỗi &gt; 2x</text>
+<path d="M 695.0 784.0 L 695.0 816.0" fill="none" stroke="#111111" stroke-width="1.4" stroke-linejoin="miter" marker-start="url(#arrStart)" marker-end="url(#arr)"/>
+<path d="M 799.0 784.0 L 799.0 816.0" fill="none" stroke="#111111" stroke-width="1.4" stroke-linejoin="miter" marker-start="url(#arrStart)" marker-end="url(#arr)"/>
+<path d="M 747.0 784.0 L 747.0 882.0" fill="none" stroke="#DC2626" stroke-width="1.4" stroke-linejoin="miter" stroke-dasharray="5,4" marker-end="url(#arr)"/>
+<rect x="904" y="740" width="254" height="114" fill="#FFFFFF" stroke="#111111" stroke-width="1.4"/>
+<text x="914" y="759" font-family="Helvetica, Arial, -apple-system, BlinkMacSystemFont, sans-serif" font-size="11" font-weight="700" fill="#1D4ED8">Domain Consumers (6)</text>
+<text x="916.0" y="776.0" text-anchor="start" font-family="Helvetica, Arial, -apple-system, BlinkMacSystemFont, sans-serif" font-size="9.4" font-weight="700" fill="#111111">• shipment.q (15 events)</text>
+<text x="916.0" y="793.0" text-anchor="start" font-family="Helvetica, Arial, -apple-system, BlinkMacSystemFont, sans-serif" font-size="9.4" font-weight="400" fill="#111111">• dispatch.q (7 events)</text>
+<text x="916.0" y="810.0" text-anchor="start" font-family="Helvetica, Arial, -apple-system, BlinkMacSystemFont, sans-serif" font-size="9.4" font-weight="400" fill="#111111">• payment.q (created, task)</text>
+<text x="916.0" y="827.0" text-anchor="start" font-family="Helvetica, Arial, -apple-system, BlinkMacSystemFont, sans-serif" font-size="9.4" font-weight="400" fill="#111111">• delivery · manifest · scan</text>
+<text x="916.0" y="843.0" text-anchor="start" font-family="Helvetica, Arial, -apple-system, BlinkMacSystemFont, sans-serif" font-size="8.9" font-weight="400" fill="#6B7280">Đồng bộ chéo không khóa</text>
+<rect x="896" y="878" width="262" height="102" fill="#FFFFFF" stroke="#0F766E" stroke-width="1.7"/>
+<text x="906" y="897" font-family="Helvetica, Arial, -apple-system, BlinkMacSystemFont, sans-serif" font-size="11" font-weight="700" fill="#115E59">CQRS Read Projections (2)</text>
+<text x="908.0" y="914.0" text-anchor="start" font-family="Helvetica, Arial, -apple-system, BlinkMacSystemFont, sans-serif" font-size="9.6" font-weight="700" fill="#0F766E">• tracking-service (:3008)</text>
+<text x="918.0" y="929.0" text-anchor="start" font-family="Helvetica, Arial, -apple-system, BlinkMacSystemFont, sans-serif" font-size="8.9" font-weight="400" fill="#4B5563">Timeline hành trình (zero outbox)</text>
+<text x="908.0" y="949.0" text-anchor="start" font-family="Helvetica, Arial, -apple-system, BlinkMacSystemFont, sans-serif" font-size="9.6" font-weight="700" fill="#0F766E">• reporting-service (:3009)</text>
+<text x="918.0" y="964.0" text-anchor="start" font-family="Helvetica, Arial, -apple-system, BlinkMacSystemFont, sans-serif" font-size="8.9" font-weight="400" fill="#4B5563">KPI &amp; Dashboard (zero outbox)</text>
+<text x="116.0" y="1004.0" text-anchor="start" font-family="Helvetica, Arial, -apple-system, BlinkMacSystemFont, sans-serif" font-size="12" font-weight="700" fill="#B45309">Async Event-Driven Mesh (RabbitMQ AMQP :5672 · Outbox · Retry/DLQ · CQRS)</text>
+<text x="116.0" y="1024.0" text-anchor="start" font-family="Helvetica, Arial, -apple-system, BlinkMacSystemFont, sans-serif" font-size="9.5" font-weight="400" fill="#6B7280">At-least-once delivery + Idempotent consumers (event_id &amp; idempotency_key)</text>
+<path d="M 102 1086 L 146 1086" fill="none" stroke="#111111" stroke-width="1.5" marker-end="url(#arr)"/>
+<text x="156.0" y="1090.0" text-anchor="start" font-family="Helvetica, Arial, -apple-system, BlinkMacSystemFont, sans-serif" font-size="10" font-weight="400" fill="#374151">HTTP / REST Đồng bộ</text>
+<path d="M 312 1086 L 356 1086" fill="none" stroke="#111111" stroke-width="1.5" stroke-dasharray="5,4" marker-end="url(#arr)"/>
+<text x="366.0" y="1090.0" text-anchor="start" font-family="Helvetica, Arial, -apple-system, BlinkMacSystemFont, sans-serif" font-size="10" font-weight="400" fill="#374151">Bất đồng bộ (RabbitMQ / Webhook)</text>
+<path d="M 592 1086 L 636 1086" fill="none" stroke="#111111" stroke-width="1.5" marker-start="url(#arrStart)" marker-end="url(#arr)"/>
+<text x="646.0" y="1090.0" text-anchor="start" font-family="Helvetica, Arial, -apple-system, BlinkMacSystemFont, sans-serif" font-size="10" font-weight="400" fill="#374151">Hai chiều (WS / PubSub / AI Tools)</text>
+<path d="M 258.0 90.0 L 378.0 90.0" fill="none" stroke="#111111" stroke-width="1.4" stroke-linejoin="miter" marker-start="url(#arrStart)" marker-end="url(#arr)"/>
+<rect x="278.4" y="64.8" width="79.3" height="18.5" fill="#FFFFFF" fill-opacity="0.96"/>
+<text x="318.0" y="77.8" text-anchor="middle" font-family="Helvetica, Arial, -apple-system, BlinkMacSystemFont, sans-serif" font-size="10.5" font-weight="700" fill="#111111">HTTPS / WSS</text>
+<path d="M 818.0 88.0 L 964.0 88.0" fill="none" stroke="#111111" stroke-width="1.4" stroke-linejoin="miter" marker-start="url(#arrStart)" marker-end="url(#arr)"/>
+<rect x="838.8" y="62.8" width="104.5" height="18.5" fill="#FFFFFF" fill-opacity="0.96"/>
+<text x="891.0" y="75.8" text-anchor="middle" font-family="Helvetica, Arial, -apple-system, BlinkMacSystemFont, sans-serif" font-size="10.5" font-weight="700" fill="#111111">/ws/chat PubSub</text>
+<path d="M 143.0 240.0 L 143.0 178.0 L 414.0 178.0 L 414.0 146.0" fill="none" stroke="#111111" stroke-width="1.4" stroke-linejoin="miter" marker-end="url(#arr)"/>
+<rect x="229.2" y="168.8" width="85.6" height="18.5" fill="#FFFFFF" fill-opacity="0.96"/>
+<text x="272.0" y="181.8" text-anchor="middle" font-family="Helvetica, Arial, -apple-system, BlinkMacSystemFont, sans-serif" font-size="10.5" font-weight="700" fill="#111111">Partner HMAC</text>
+<path d="M 318.0 289.0 L 242.0 289.0" fill="none" stroke="#111111" stroke-width="1.4" stroke-linejoin="miter" stroke-dasharray="5,4" marker-end="url(#arr)"/>
+<rect x="252.9" y="263.8" width="54.1" height="18.5" fill="#FFFFFF" fill-opacity="0.96"/>
+<text x="280.0" y="276.8" text-anchor="middle" font-family="Helvetica, Arial, -apple-system, BlinkMacSystemFont, sans-serif" font-size="10.5" font-weight="700" fill="#111111">Webhook</text>
+<path d="M 476.0 146.0 L 476.0 258.0" fill="none" stroke="#111111" stroke-width="1.4" stroke-linejoin="miter" marker-end="url(#arr)"/>
+<rect x="439.5" y="170.8" width="73.0" height="18.5" fill="#FFFFFF" fill-opacity="0.96"/>
+<text x="476.0" y="183.8" text-anchor="middle" font-family="Helvetica, Arial, -apple-system, BlinkMacSystemFont, sans-serif" font-size="10.5" font-weight="700" fill="#111111">REST Proxy</text>
+<path d="M 772.0 146.0 L 772.0 178.0 L 906.0 178.0 L 906.0 462.0 L 418.0 462.0 L 418.0 496.0" fill="none" stroke="#111111" stroke-width="1.4" stroke-linejoin="miter" marker-start="url(#arrStart)" marker-end="url(#arr)"/>
+<rect x="860.0" y="284.0" width="91.9" height="32.0" fill="#FFFFFF" fill-opacity="0.96"/>
+<text x="906.0" y="297.0" text-anchor="middle" font-family="Helvetica, Arial, -apple-system, BlinkMacSystemFont, sans-serif" font-size="10.5" font-weight="700" fill="#111111">/ws/tasks</text>
+<text x="906.0" y="310.5" text-anchor="middle" font-family="Helvetica, Arial, -apple-system, BlinkMacSystemFont, sans-serif" font-size="10.5" font-weight="700" fill="#111111">/ws/locations</text>
+<path d="M 800.0 462.0 L 800.0 430.0" fill="none" stroke="#111111" stroke-width="1.4" stroke-linejoin="miter" marker-end="url(#arr)"/>
+<path d="M 818.0 126.0 L 942.0 126.0 L 942.0 516.0 L 964.0 516.0" fill="none" stroke="#111111" stroke-width="1.4" stroke-linejoin="miter" marker-start="url(#arrStart)" marker-end="url(#arr)"/>
+<rect x="905.5" y="360.8" width="73.0" height="18.5" fill="#FFFFFF" fill-opacity="0.96"/>
+<text x="942.0" y="373.8" text-anchor="middle" font-family="Helvetica, Arial, -apple-system, BlinkMacSystemFont, sans-serif" font-size="10.5" font-weight="700" fill="#111111">HTTP / SSE</text>
+<path d="M 964.0 562.0 L 876.0 562.0" fill="none" stroke="#111111" stroke-width="1.4" stroke-linejoin="miter" marker-start="url(#arrStart)" marker-end="url(#arr)"/>
+<rect x="889.8" y="546.0" width="60.4" height="32.0" fill="#FFFFFF" fill-opacity="0.96"/>
+<text x="920.0" y="559.0" text-anchor="middle" font-family="Helvetica, Arial, -apple-system, BlinkMacSystemFont, sans-serif" font-size="10.5" font-weight="700" fill="#111111">Tools</text>
+<text x="920.0" y="572.5" text-anchor="middle" font-family="Helvetica, Arial, -apple-system, BlinkMacSystemFont, sans-serif" font-size="10.5" font-weight="700" fill="#111111">:3002/12</text>
+<path d="M 1140.0 602.0 L 1140.0 676.0 L 1222.0 676.0 L 1222.0 928.0 L 1158.0 928.0" fill="none" stroke="#111111" stroke-width="1.4" stroke-linejoin="miter" marker-start="url(#arrStart)" marker-end="url(#arr)"/>
+<rect x="1201.2" y="780.0" width="41.5" height="32.0" fill="#FFFFFF" fill-opacity="0.96"/>
+<text x="1222.0" y="793.0" text-anchor="middle" font-family="Helvetica, Arial, -apple-system, BlinkMacSystemFont, sans-serif" font-size="10.5" font-weight="700" fill="#111111">Track</text>
+<text x="1222.0" y="806.5" text-anchor="middle" font-family="Helvetica, Arial, -apple-system, BlinkMacSystemFont, sans-serif" font-size="10.5" font-weight="700" fill="#111111">:3008</text>
+<path d="M 530.0 290.0 L 616.0 290.0" fill="none" stroke="#111111" stroke-width="1.4" stroke-linejoin="miter" marker-end="url(#arr)"/>
+<rect x="542.8" y="265.8" width="60.4" height="18.5" fill="#FFFFFF" fill-opacity="0.96"/>
+<text x="573.0" y="278.8" text-anchor="middle" font-family="Helvetica, Arial, -apple-system, BlinkMacSystemFont, sans-serif" font-size="10.5" font-weight="700" fill="#111111">IATA Fee</text>
+<path d="M 378 372 L 378 346 L 800 346 L 800 372" fill="none" stroke="#111111" stroke-width="1.35"/>
+<path d="M 517 378 L 517 346" fill="none" stroke="#111111" stroke-width="1.35"/>
+<path d="M 657 374 L 657 346" fill="none" stroke="#111111" stroke-width="1.35"/>
+<path d="M 424.0 346.0 L 424.0 320.0" fill="none" stroke="#111111" stroke-width="1.4" stroke-linejoin="miter" marker-end="url(#arr)"/>
+<rect x="532.3" y="336.8" width="123.4" height="18.5" fill="#FFFFFF" fill-opacity="0.96"/>
+<text x="594.0" y="349.8" text-anchor="middle" font-family="Helvetica, Arial, -apple-system, BlinkMacSystemFont, sans-serif" font-size="10.5" font-weight="700" fill="#111111">GET Guard / Lookup</text>
+<path d="M 720.0 402.0 L 742.0 402.0" fill="none" stroke="#111111" stroke-width="1.4" stroke-linejoin="miter" marker-end="url(#arr)"/>
+<path d="M 352.0 496.0 L 352.0 428.0" fill="none" stroke="#111111" stroke-width="1.4" stroke-linejoin="miter" marker-end="url(#arr)"/>
+<rect x="302.1" y="452.8" width="47.8" height="18.5" fill="#FFFFFF" fill-opacity="0.96"/>
+<text x="326.0" y="465.8" text-anchor="middle" font-family="Helvetica, Arial, -apple-system, BlinkMacSystemFont, sans-serif" font-size="10.5" font-weight="700" fill="#111111">Pickup</text>
+<path d="M 448.0 530.0 L 476.0 530.0" fill="none" stroke="#111111" stroke-width="1.4" stroke-linejoin="miter" marker-end="url(#arr)"/>
+<path d="M 636.0 530.0 L 610.0 530.0" fill="none" stroke="#111111" stroke-width="1.4" stroke-linejoin="miter" marker-end="url(#arr)"/>
+<path d="M 803.0 558.0 L 803.0 624.0" fill="none" stroke="#111111" stroke-width="1.4" stroke-linejoin="miter" marker-start="url(#arrStart)" marker-end="url(#arr)"/>
+<rect x="779.1" y="588.8" width="47.8" height="18.5" fill="#FFFFFF" fill-opacity="0.96"/>
+<text x="803.0" y="601.8" text-anchor="middle" font-family="Helvetica, Arial, -apple-system, BlinkMacSystemFont, sans-serif" font-size="10.5" font-weight="700" fill="#111111">VietQR</text>
+<path d="M 358.0 588.0 L 358.0 650.0 L 230.0 650.0 L 230.0 746.0" fill="none" stroke="#111111" stroke-width="1.4" stroke-linejoin="miter" stroke-dasharray="5,4" marker-end="url(#arr)"/>
+<rect x="216.6" y="640.8" width="154.9" height="18.5" fill="#FFFFFF" fill-opacity="0.96"/>
+<text x="294.0" y="653.8" text-anchor="middle" font-family="Helvetica, Arial, -apple-system, BlinkMacSystemFont, sans-serif" font-size="10.5" font-weight="700" fill="#111111">ACID Write (9 Services)</text>
+<path d="M 342.0 844.0 L 406.0 844.0" fill="none" stroke="#111111" stroke-width="1.4" stroke-linejoin="miter" stroke-dasharray="5,4" marker-end="url(#arr)"/>
+<rect x="346.9" y="819.8" width="54.1" height="18.5" fill="#FFFFFF" fill-opacity="0.96"/>
+<text x="374.0" y="832.8" text-anchor="middle" font-family="Helvetica, Arial, -apple-system, BlinkMacSystemFont, sans-serif" font-size="10.5" font-weight="700" fill="#111111">Publish</text>
+<path d="M 594.0 844.0 L 624.0 844.0 L 624.0 764.0 L 654.0 764.0" fill="none" stroke="#111111" stroke-width="1.4" stroke-linejoin="miter" stroke-dasharray="5,4" marker-end="url(#arr)"/>
+<rect x="603.2" y="794.8" width="41.5" height="18.5" fill="#FFFFFF" fill-opacity="0.96"/>
+<text x="624.0" y="807.8" text-anchor="middle" font-family="Helvetica, Arial, -apple-system, BlinkMacSystemFont, sans-serif" font-size="10.5" font-weight="700" fill="#111111">Route</text>
+<path d="M 840.0 764.0 L 904.0 764.0" fill="none" stroke="#111111" stroke-width="1.4" stroke-linejoin="miter" stroke-dasharray="5,4" marker-end="url(#arr)"/>
+<rect x="845.0" y="738.8" width="54.1" height="18.5" fill="#FFFFFF" fill-opacity="0.96"/>
+<text x="872.0" y="751.8" text-anchor="middle" font-family="Helvetica, Arial, -apple-system, BlinkMacSystemFont, sans-serif" font-size="10.5" font-weight="700" fill="#111111">Deliver</text>
+<path d="M 840.0 764.0 L 870.0 764.0 L 870.0 928.0 L 896.0 928.0" fill="none" stroke="#111111" stroke-width="1.4" stroke-linejoin="miter" stroke-dasharray="5,4" marker-end="url(#arr)"/>
+</svg>

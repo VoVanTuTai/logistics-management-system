@@ -1,0 +1,123 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="760" viewBox="0 0 1280 760">
+  <defs>
+    <linearGradient id="brandGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#003D9B"/>
+      <stop offset="55%" stop-color="#0052CC"/>
+      <stop offset="100%" stop-color="#1D64E8"/>
+    </linearGradient>
+    <linearGradient id="navyGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0B1F44"/>
+      <stop offset="100%" stop-color="#1A3A75"/>
+    </linearGradient>
+    <filter id="cardShadow" x="-4%" y="-6%" width="108%" height="116%">
+      <feDropShadow dx="0" dy="3" stdDeviation="5" flood-color="#0F172A" flood-opacity="0.06"/>
+    </filter>
+  </defs>
+  <rect width="1280" height="760" fill="#FFFFFF"/>
+  <g filter="url(#cardShadow)"><rect x="24" y="18" width="1232" height="658" rx="14" fill="#F6F8FC" stroke="#CBD5E1" stroke-width="1.5"/></g>
+<path d="M24 32 Q24 18 38 18 H1242 Q1256 18 1256 32 V60 H24 Z" fill="#EEF2F7" stroke="#CBD5E1" stroke-width="1"/>
+<circle cx="46" cy="39" r="5" fill="#EF4444"/>
+<circle cx="62" cy="39" r="5" fill="#F59E0B"/>
+<circle cx="78" cy="39" r="5" fill="#22C55E"/>
+<rect x="100" y="26" width="236" height="26" rx="7" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1"/>
+<rect x="110" y="32" width="14" height="14" rx="3" fill="#0052CC" stroke="none"/>
+<text x="117" y="43" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="9.5" font-weight="700" fill="#FFFFFF" text-anchor="middle">N</text>
+<text x="132" y="43" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="10.5" font-weight="700" fill="#102548" text-anchor="start">NEXUS Public — Tra cứu &amp; Tính cước</text>
+<rect x="348" y="27" width="874" height="24" rx="12" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1"/>
+<text x="364" y="43" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="10.5" font-weight="500" fill="#5B6B86" text-anchor="start">🔒  https://tracking.nexus-ex.site/track/SHP-202605-0018</text>
+<rect x="25" y="60" width="1230" height="54" rx="0" fill="#FFFFFF" stroke="#DBE2F0" stroke-width="1"/>
+<rect x="50" y="73" width="28" height="28" rx="6" fill="#0052CC" stroke="none"/>
+<text x="64" y="92" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="10.5" font-weight="700" fill="#FFFFFF" text-anchor="middle">NX</text>
+<text x="86" y="92" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="14" font-weight="700" fill="#0052CC" text-anchor="start">NEXUS EXPRESS</text>
+<text x="260" y="92" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="11" font-weight="500" fill="#5B6B86" text-anchor="start">Tra cứu hành trình công khai (Ẩn dữ liệu PII nhạy cảm theo NĐ 13/2023)</text>
+<rect x="1070" y="73" width="160" height="28" rx="14.0" fill="#0052CC" stroke="none"/><text x="1150.0" y="90.5" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="10" font-weight="700" fill="#FFFFFF" text-anchor="middle">Nâng cấp tài khoản KH</text>
+<rect x="50" y="130" width="680" height="528" rx="14" fill="#FFFFFF" stroke="#DBE2F0" stroke-width="1.2"/>
+<text x="70" y="158" font-family="'SF Mono','Menlo','Consolas',monospace" font-size="14.5" font-weight="700" fill="#0052CC" text-anchor="start">Kết quả tra cứu vận đơn: SHP-202605-0018</text>
+<rect x="574" y="140" width="136" height="24" rx="12.0" fill="#DCFCE7" stroke="none"/><text x="642.0" y="155.325" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="9.5" font-weight="700" fill="#137F5D" text-anchor="middle">ĐANG GIAO HÀNG</text>
+<rect x="70" y="178" width="640" height="88" rx="12" fill="#F8FAFF" stroke="#BFDBFE" stroke-width="1"/>
+<circle cx="128" cy="212" r="11" fill="#0052CC"/>
+<text x="128" y="216" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="10" font-weight="700" fill="#FFFFFF" text-anchor="middle">✓</text>
+<line x1="139" y1="212" x2="247" y2="212" stroke="#0052CC" stroke-width="2.5"/>
+<text x="128" y="244" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="10" font-weight="500" fill="#102548" text-anchor="middle">Khởi tạo</text>
+<circle cx="258" cy="212" r="11" fill="#0052CC"/>
+<text x="258" y="216" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="10" font-weight="700" fill="#FFFFFF" text-anchor="middle">✓</text>
+<line x1="269" y1="212" x2="377" y2="212" stroke="#0052CC" stroke-width="2.5"/>
+<text x="258" y="244" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="10" font-weight="500" fill="#102548" text-anchor="middle">Đã lấy hàng</text>
+<circle cx="388" cy="212" r="11" fill="#0052CC"/>
+<text x="388" y="216" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="10" font-weight="700" fill="#FFFFFF" text-anchor="middle">✓</text>
+<line x1="399" y1="212" x2="507" y2="212" stroke="#0052CC" stroke-width="2.5"/>
+<text x="388" y="244" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="10" font-weight="500" fill="#102548" text-anchor="middle">Trung chuyển</text>
+<circle cx="518" cy="212" r="11" fill="#137F5D"/>
+<text x="518" y="216" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="10" font-weight="700" fill="#FFFFFF" text-anchor="middle">●</text>
+<line x1="529" y1="212" x2="637" y2="212" stroke="#CBD5E1" stroke-width="2.5"/>
+<text x="518" y="244" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="10" font-weight="700" fill="#137F5D" text-anchor="middle">Đang đi phát</text>
+<circle cx="648" cy="212" r="11" fill="#CBD5E1"/>
+<text x="648" y="216" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="10" font-weight="700" fill="#FFFFFF" text-anchor="middle">5</text>
+<text x="648" y="244" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="10" font-weight="500" fill="#102548" text-anchor="middle">Hoàn tất</text>
+<rect x="70" y="280" width="640" height="52" rx="10" fill="#FAFBFD" stroke="#DBE2F0" stroke-width="1"/>
+<text x="84" y="301" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="10.5" font-weight="700" fill="#102548" text-anchor="start">Tuyến: TP. Hồ Chí Minh  →  Quận 3, TP.HCM  ·  Gói: Giao Tiêu chuẩn</text>
+<text x="84" y="320" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="9.6" font-weight="500" fill="#5B6B86" text-anchor="start">Người nhận: Nguyễn *** Quân (0909***114)  ·  Khối lượng tính cước: 5,0 kg (IATA)</text>
+<text x="76" y="370" font-family="'SF Mono','Menlo','Consolas',monospace" font-size="10" font-weight="700" fill="#0052CC" text-anchor="start">18/05 09:30</text>
+<circle cx="174" cy="366" r="6" fill="#137F5D"/>
+<line x1="174" y1="372" x2="174" y2="416" stroke="#CBD5E1" stroke-width="2"/>
+<text x="194" y="370" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="10.8" font-weight="700" fill="#137F5D" text-anchor="start">Bưu tá đang trên đường giao kiện hàng</text>
+<text x="194" y="387" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="9.6" font-weight="500" fill="#5B6B86" text-anchor="start">Bưu cục phát Quận 3 (002P003)</text>
+<text x="76" y="426" font-family="'SF Mono','Menlo','Consolas',monospace" font-size="10" font-weight="700" fill="#5B6B86" text-anchor="start">18/05 06:15</text>
+<circle cx="174" cy="422" r="6" fill="#0052CC"/>
+<line x1="174" y1="428" x2="174" y2="472" stroke="#CBD5E1" stroke-width="2"/>
+<text x="194" y="426" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="10.8" font-weight="500" fill="#102548" text-anchor="start">Kiện hàng đã gỡ bao &amp; phân tuyến phát</text>
+<text x="194" y="443" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="9.6" font-weight="500" fill="#5B6B86" text-anchor="start">Mega Hub TP.HCM (002C001)</text>
+<text x="76" y="482" font-family="'SF Mono','Menlo','Consolas',monospace" font-size="10" font-weight="700" fill="#5B6B86" text-anchor="start">17/05 21:40</text>
+<circle cx="174" cy="478" r="6" fill="#0052CC"/>
+<line x1="174" y1="484" x2="174" y2="528" stroke="#CBD5E1" stroke-width="2"/>
+<text x="194" y="482" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="10.8" font-weight="500" fill="#102548" text-anchor="start">Đã nhập kho trung tâm khai thác</text>
+<text x="194" y="499" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="9.6" font-weight="500" fill="#5B6B86" text-anchor="start">Mega Hub TP.HCM (002C001)</text>
+<text x="76" y="538" font-family="'SF Mono','Menlo','Consolas',monospace" font-size="10" font-weight="700" fill="#5B6B86" text-anchor="start">17/05 16:20</text>
+<circle cx="174" cy="534" r="6" fill="#0052CC"/>
+<line x1="174" y1="540" x2="174" y2="584" stroke="#CBD5E1" stroke-width="2"/>
+<text x="194" y="538" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="10.8" font-weight="500" fill="#102548" text-anchor="start">Bưu tá đã thu gom hàng tại kho người gửi</text>
+<text x="194" y="555" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="9.6" font-weight="500" fill="#5B6B86" text-anchor="start">Bưu cục Quận 1 (002P001)</text>
+<text x="76" y="594" font-family="'SF Mono','Menlo','Consolas',monospace" font-size="10" font-weight="700" fill="#5B6B86" text-anchor="start">17/05 14:05</text>
+<circle cx="174" cy="590" r="6" fill="#0052CC"/>
+<text x="194" y="594" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="10.8" font-weight="500" fill="#102548" text-anchor="start">Vận đơn được khởi tạo trên hệ thống</text>
+<text x="194" y="611" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="9.6" font-weight="500" fill="#5B6B86" text-anchor="start">Cổng Đối tác Merchant</text>
+<rect x="748" y="130" width="482" height="528" rx="14" fill="#FFFFFF" stroke="#93C5FD" stroke-width="1.4"/>
+<path d="M748 144 Q748 130 762 130 H1216 Q1230 130 1230 144 V184 H748 Z" fill="url(#brandGrad)"/>
+<text x="768" y="163" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="13" font-weight="700" fill="#FFFFFF" text-anchor="start">Công cụ Ước tính cước chuẩn IATA (V/6000)</text>
+<text x="768" y="212" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="9.8" font-weight="700" fill="#5B6B86" text-anchor="start">Tỉnh/TP gửi → Tỉnh/TP nhận</text>
+<rect x="768" y="218" width="442" height="34" rx="8" fill="#F6F8FC" stroke="#DBE2F0" stroke-width="1"/>
+<text x="780" y="239" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="10.5" font-weight="700" fill="#102548" text-anchor="start">TP. Hồ Chí Minh  →  TP. Hà Nội (Trục chính)</text>
+<text x="768" y="274" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="9.8" font-weight="700" fill="#5B6B86" text-anchor="start">Khối lượng thực tế (kg)</text>
+<rect x="768" y="280" width="442" height="34" rx="8" fill="#F6F8FC" stroke="#DBE2F0" stroke-width="1"/>
+<text x="780" y="301" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="10.5" font-weight="700" fill="#102548" text-anchor="start">2,0 kg</text>
+<text x="768" y="336" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="9.8" font-weight="700" fill="#5B6B86" text-anchor="start">Kích thước Dài × Rộng × Cao (cm)</text>
+<rect x="768" y="342" width="442" height="34" rx="8" fill="#F6F8FC" stroke="#DBE2F0" stroke-width="1"/>
+<text x="780" y="363" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="10.5" font-weight="700" fill="#102548" text-anchor="start">40 × 30 × 20 cm  →  Thể tích: 4,0 kg</text>
+<rect x="768" y="392" width="442" height="44" rx="8" fill="#EFF6FF" stroke="#93C5FD" stroke-width="1"/>
+<text x="780" y="410" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="10" font-weight="700" fill="#0052CC" text-anchor="start">W tính cước = max(2,0 kg; 40×30×20 / 6000) = 4,0 kg</text>
+<text x="780" y="427" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="9.2" font-weight="500" fill="#5B6B86" text-anchor="start">Phụ phí vùng Trục chính HN–HCM: +7.000 VNĐ</text>
+<rect x="768" y="450" width="442" height="36" rx="8" fill="#FAFBFD" stroke="#DBE2F0" stroke-width="1"/>
+<text x="780" y="472" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="10.5" font-weight="700" fill="#102548" text-anchor="start">Giao Tiết kiệm (3–4 ngày)</text>
+<text x="1198" y="473" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="12.5" font-weight="700" fill="#137F5D" text-anchor="end">39.000 đ</text>
+<rect x="768" y="494" width="442" height="36" rx="8" fill="#FAFBFD" stroke="#DBE2F0" stroke-width="1"/>
+<text x="780" y="516" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="10.5" font-weight="700" fill="#102548" text-anchor="start">Giao Tiêu chuẩn (2–3 ngày)</text>
+<text x="1198" y="517" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="12.5" font-weight="700" fill="#0052CC" text-anchor="end">55.000 đ</text>
+<rect x="768" y="538" width="442" height="36" rx="8" fill="#FAFBFD" stroke="#DBE2F0" stroke-width="1"/>
+<text x="780" y="560" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="10.5" font-weight="700" fill="#102548" text-anchor="start">Giao Hỏa tốc (Trong 24h)</text>
+<text x="1198" y="561" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="12.5" font-weight="700" fill="#C26D0A" text-anchor="end">97.000 đ</text>
+<rect x="768" y="594" width="442" height="44" rx="10" fill="#0052CC" stroke="none"/>
+<text x="989.0" y="620" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="11.5" font-weight="700" fill="#FFFFFF" text-anchor="middle">Chuyển thông tin sang Tạo đơn ngay →</text>
+<rect x="24" y="692" width="1232" height="52" rx="10" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="1.2"/>
+<circle cx="53.0" cy="718" r="11" fill="#0052CC"/>
+<text x="53.0" y="722" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="10.5" font-weight="700" fill="#FFFFFF" text-anchor="middle">1</text>
+<text x="72.0" y="714" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="10.8" font-weight="700" fill="#102548" text-anchor="start">Tra cứu công khai bảo vệ PII</text>
+<text x="72.0" y="730" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="9.6" font-weight="500" fill="#5B6B86" text-anchor="start">Che ẩn một phần họ tên/SĐT người nhận theo NĐ 13/2023</text>
+<circle cx="453.0" cy="718" r="11" fill="#0052CC"/>
+<text x="453.0" y="722" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="10.5" font-weight="700" fill="#FFFFFF" text-anchor="middle">2</text>
+<text x="472.0" y="714" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="10.8" font-weight="700" fill="#102548" text-anchor="start">Tính cước IATA V/6000 trực tiếp</text>
+<text x="472.0" y="730" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="9.6" font-weight="500" fill="#5B6B86" text-anchor="start">Hiển thị tường minh trọng lượng thể tích &amp; 3 gói dịch vụ</text>
+<circle cx="853.0" cy="718" r="11" fill="#0052CC"/>
+<text x="853.0" y="722" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="10.5" font-weight="700" fill="#FFFFFF" text-anchor="middle">3</text>
+<text x="872.0" y="714" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="10.8" font-weight="700" fill="#102548" text-anchor="start">Chuyển tiếp Tạo đơn 1 chạm</text>
+<text x="872.0" y="730" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="9.6" font-weight="500" fill="#5B6B86" text-anchor="start">Giữ nguyên tham số đã nhập khi khách chuyển sang tạo đơn</text>
+</svg>
