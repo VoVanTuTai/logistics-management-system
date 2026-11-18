@@ -104,9 +104,9 @@ Hệ thống triển khai theo mô hình kiến trúc phân tán hiện đại: 
 [ pickup-service :3003 ]                                        [ delivery-service :3007 ]
   (pickup_db)                                                     (delivery_db)
 [ dispatch-service :3004 ]                                      [ manifest-service :3005 ]
-  (dispatch_db)                                                   (manifest_db)
-[ scan-service :3006 ]                                          [ linehaul-service :3014 ]
-  (scan_db)                                                       (Hub-to-hub transit)
+  (dispatch_db)                                                   (manifest_db · Bag/Seal/Transit)
+[ scan-service :3006 ]
+  (scan_db)
     |
     +--------> Outbox Relay Pattern publishes Domain Events
     |
@@ -156,8 +156,7 @@ logistics-management-system/
     reporting-service/  Read model tổng hợp chỉ số KPI, hiệu suất giao hàng và thống kê (:3009)
     payment-service/    Quản lý thu hộ COD, gom phiên đối soát, tích hợp SePay/VietQR webhook (:3011)
     pricing-service/    Động cơ định giá đa nền tảng chuẩn IATA V/6000, 3 vùng cước chuẩn hóa (:3012)
-    chatbot-service/    Trợ lý AI Logistics RAG, Gemini 3 Flash / GPT-4o-mini, 5 dynamic tools (:3013)
-    linehaul-service/   Quản lý tuyến xe tải trung chuyển liên tỉnh, cấp tem xe XT (:3014)
+    chatbot-service/    Trợ lý AI Logistics RAG, Gemini / Groq fallback, dynamic tools (:3013)
 
   packages/
     messaging/          Thư viện dùng chung kết nối RabbitMQ, outbox relay và consumer
@@ -255,8 +254,7 @@ Ghi chú triển khai: repository hiện không có `package.json` root; mỗi a
 | **`auth-service`** | `3010` | `auth_db` | Quản lý danh tính người dùng, cấp phát và thu hồi phiên đăng nhập Opaque Token, quản lý quyền hạn RBAC và nhật ký bảo mật Admin Audit. |
 | **`payment-service`** | `3011` | `payment_db` | Nguồn chân lý cho đối soát tài chính & COD: ghi nhận tiền thu hộ, gom phiên đối soát tự động (Settlement Batch), tích hợp Webhook SePay/VietQR quét biến động số dư. |
 | **`pricing-service`** | `3012` | *(In-memory)* | Động cơ định giá chuẩn hóa đa nền tảng: tính cước bưu chính dựa trên 3 vùng (Nội tỉnh / Trục chính / Liên tỉnh), nấc vượt cân lũy tiến và công thức quy đổi thể tích hàng không IATA $V/6000$. |
-| **`chatbot-service`** | `3013` | Vector Store | Phân hệ trợ lý trí tuệ nhân tạo chuyên biệt: kiến trúc Hybrid RAG + 5 công cụ tra cứu động (Dynamic Tools), mô hình Google Gemini 3 Flash kết hợp Fallback OpenAI GPT-4o-mini, truyền dữ liệu dạng SSE streaming. |
-| **`linehaul-service`** | `3014` | *(In-transit)* | Quản lý các chuyến xe tải trung chuyển đường dài giữa các trung tâm khai thác (Hub-to-Hub transit), điều phối xe, tài xế và cấp tem niêm phong thùng xe (mã `XT`). |
+| **`chatbot-service`** | `3013` | Vector Store | Phân hệ trợ lý trí tuệ nhân tạo chuyên biệt: kiến trúc Hybrid RAG + công cụ tra cứu động (Dynamic Tools), mô hình Google Gemini kết hợp Fallback Groq LPU, truyền dữ liệu dạng SSE streaming. |
 
 ## 11. Phân định thẩm quyền dữ liệu (Data Ownership)
 
@@ -268,11 +266,10 @@ Ghi chú triển khai: repository hiện không có `package.json` root; mỗi a
 | Bảng báo giá cước & Công thức IATA | `pricing-service` | Nguồn tính toán cước; khi đơn hàng tạo thành công, giá cước được snapshot vào metadata của `shipment-service`. |
 | Yêu cầu lấy hàng (Pickup Request) | `pickup-service` | Quản lý trạng thái và danh sách hàng cần lấy từ kho người gửi. |
 | Phân bổ công việc (Task Assignment) | `dispatch-service` | Quản lý danh sách nhiệm vụ gán cho tài xế giao/nhận. |
-| Bảng kê Manifest, Túi hàng (Bag), Kẹp chì Seal | `manifest-service` | Quản lý quy cách đóng gói cấp 2 (túi bưu gửi) luân chuyển giữa các Hub. |
+| Bảng kê Manifest, Túi hàng (Bag), Kẹp chì Seal & Chuyến đường trục | `manifest-service` | Quản lý đóng gói cấp 2 (túi bưu gửi), niêm phong seal và bàn giao trung chuyển giữa các Hub. |
 | Lịch sử quét mã & Tọa độ vật lý hiện tại | `scan-service` | Nguồn chân lý cho vị trí thực tế của bưu phẩm; chống ghi nhận trùng lặp bằng Idempotency. |
 | Kết quả phát, Bằng chứng POD, OTP, NDR, Hoàn hàng | `delivery-service` | Nguồn chân lý cho kết quả giao hàng và quy trình xử lý khiếu nại/giao lại/chuyển hoàn. |
 | Sổ cái thu hộ COD, Phiên đối soát, Giao dịch SePay | `payment-service` | Nguồn chân lý cho tiền thu hộ COD, lịch sử thanh toán và giải ngân qua tài khoản ngân hàng. |
-| Chuyến xe trung chuyển liên tỉnh (Linehaul Trip) | `linehaul-service` | Quản lý điều động xe tải đường dài, tem niêm phong xe `XT` và lịch trình kết nối liên miền. |
 | Ngữ cảnh hội thoại & Bộ nhớ Vector RAG | `chatbot-service` | Quản lý phiên hội thoại AI, lịch sử tin nhắn và cơ sở dữ liệu Vector Index tri thức bưu chính. |
 | Timeline hành trình bưu phẩm | `tracking-service` | Read Model tổng hợp từ các domain events, tối ưu cho khách hàng tra cứu tốc độ mili-giây. |
 | Báo cáo thống kê, KPI vận hành & Doanh thu | `reporting-service` | Read Model phân tích tổng hợp từ các sự kiện trong hệ thống. |
@@ -556,7 +553,6 @@ Client request
       /public/*    -> tracking/payment public endpoints
       /pricing/*   -> pricing-service (:3012 - Unified multi-platform rates)
       /chatbot/*   -> chatbot-service (:3013 - SSE streaming, RAG tools, session history)
-      /linehaul/*  -> linehaul-service (:3014 - Hub-to-hub trip management)
       /media/*     -> MinIO/S3 upload/download ảnh POD chữ ký
       /health      -> self health check
 ```

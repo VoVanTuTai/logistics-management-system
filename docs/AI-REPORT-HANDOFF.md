@@ -41,8 +41,7 @@ Nguyên tắc bắt buộc:
   - tracking-service và reporting-service chỉ là read model/projection từ events.
   - payment-service là source of truth cho COD settlement.
   - pricing-service tính phí/quote chuẩn hóa toàn hệ thống (bản NEXUS_RATES_2026_05), không có database riêng.
-  - chatbot-service là microservice AI chuyên biệt (Port 3013), tích hợp Hybrid RAG + 5 Dynamic Tools + SSE streaming.
-  - linehaul-service quản lý chuyến xe tải trung chuyển liên tỉnh giữa các Hub (Port 3014).
+  - chatbot-service là microservice AI chuyên biệt (Port 3013), tích hợp Hybrid RAG + Dynamic Tools + SSE streaming.
 - 4 trụ cột nghiệp vụ cốt lõi:
   1. Động cơ định giá chuẩn hóa IATA V/6000, 3 vùng cước (Nội tỉnh / Trục chính / Liên tỉnh), tự động bóc tách tiền tố hành chính.
   2. Phân tầng khách hàng 3 cấp (Guest, Standard SME, VIP Enterprise) và chính sách cước hoàn tự động (Return Fee SOP).
@@ -82,8 +81,7 @@ AI cần hiểu hệ thống theo 6 lớp, từ tổng quan đến chi tiết:
 | Reporting | `reporting-service` aggregate KPI/read model từ event, không xử lý nghiệp vụ write-side. |
 | COD | `payment-service` quản lý COD record, settlement batch, payment webhook SePay và remittance. |
 | Pricing | `pricing-service` tính quote/rate chuẩn hóa toàn hệ thống theo công thức IATA $V/6000$ và 3 vùng; shipment lưu snapshot pricing khi tạo đơn. |
-| AI Chatbot | `chatbot-service` (:3013) là microservice độc lập, chạy RAG + 5 tools động; không trực tiếp sửa DB mà gọi qua Gateway/services. |
-| Linehaul | `linehaul-service` (:3014) quản lý chuyến xe tải trung chuyển liên tỉnh hub-to-hub và cấp tem niêm phong xe `XT`. |
+| AI Chatbot | `chatbot-service` (:3013) là microservice độc lập, chạy RAG + dynamic tools; không trực tiếp sửa DB mà gọi qua Gateway/services. |
 | Database | Local dev dùng một PostgreSQL container nhưng vẫn theo nguyên tắc database-per-service tuyệt đối. |
 | Monorepo | Repo không có root `package.json`; mỗi app/service có package script riêng. |
 

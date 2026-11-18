@@ -1,0 +1,102 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1220" height="780" viewBox="0 0 1220 780">
+  <defs>
+    <linearGradient id="brandGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#003D9B"/>
+      <stop offset="55%" stop-color="#0052CC"/>
+      <stop offset="100%" stop-color="#1D64E8"/>
+    </linearGradient>
+    <linearGradient id="navyGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0B1F44"/>
+      <stop offset="100%" stop-color="#1A3A75"/>
+    </linearGradient>
+    <filter id="cardShadow" x="-4%" y="-6%" width="108%" height="116%">
+      <feDropShadow dx="0" dy="3" stdDeviation="5" flood-color="#0F172A" flood-opacity="0.06"/>
+    </filter>
+  </defs>
+  <rect width="1220" height="780" fill="#FFFFFF"/>
+  <rect x="24" y="18" width="1172" height="678" rx="16" fill="#F8FAFC" stroke="#DBE2F0" stroke-width="1.2"/>
+<text x="610.0" y="54" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="16" font-weight="700" fill="#102548" text-anchor="middle">CUSTOMER MOBILE — Tạo đơn cá nhân tính cước IATA &amp; Chi tiết Hành trình Timeline</text>
+<text x="610.0" y="76" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="11" font-weight="500" fill="#5B6B86" text-anchor="middle">Đồng bộ động cơ định giá pricing-service (:3012) &amp; Read Model hành trình tracking-service (:3008)</text>
+<g filter="url(#cardShadow)"><rect x="165" y="96" width="360" height="558" rx="34" fill="#0F172A" stroke="#334155" stroke-width="2"/></g>
+<rect x="175" y="106" width="340" height="538" rx="26" fill="#F6F8FC" stroke="none" stroke-width="1.2"/>
+<rect x="301.0" y="112" width="88" height="16" rx="8" fill="#0F172A" stroke="none"/>
+<text x="195" y="124" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="10" font-weight="700" fill="#102548" text-anchor="start">10:15</text>
+<text x="497" y="124" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="9.5" font-weight="700" fill="#102548" text-anchor="end">5G  100%</text>
+<text x="345.0" y="678" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="11.8" font-weight="700" fill="#102548" text-anchor="middle">Màn hình 3: Tạo đơn cá nhân &amp; Ước tính cước IATA</text>
+<rect x="175" y="132" width="340" height="42" rx="0" fill="#FFFFFF" stroke="#DBE2F0" stroke-width="1"/>
+<text x="345.0" y="158" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="13" font-weight="700" fill="#102548" text-anchor="middle">Tạo đơn gửi bưu phẩm</text>
+<rect x="191" y="184" width="308" height="92" rx="12" fill="#FFFFFF" stroke="#DBE2F0" stroke-width="1"/>
+<text x="203" y="205" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="9.8" font-weight="700" fill="#0052CC" text-anchor="start">● Gửi từ: Sổ địa chỉ mặc định (Q.1, TP.HCM)</text>
+<text x="203" y="228" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="9.8" font-weight="700" fill="#137F5D" text-anchor="start">● Giao đến: Lê Minh — Cầu Giấy, Hà Nội</text>
+<rect x="203" y="242" width="174" height="22" rx="11.0" fill="#E7EFFF" stroke="none"/><text x="290.0" y="256.15" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="9" font-weight="700" fill="#0052CC" text-anchor="middle">Tuyến: Trục chính (+7.000đ)</text>
+<rect x="191" y="286" width="308" height="114" rx="12" fill="#FFFFFF" stroke="#DBE2F0" stroke-width="1"/>
+<text x="203" y="308" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="10.8" font-weight="700" fill="#102548" text-anchor="start">Thông số bưu kiện &amp; Quy đổi IATA</text>
+<text x="203" y="330" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="9.6" font-weight="500" fill="#5B6B86" text-anchor="start">Cân nặng: 1,5 kg   |   D×R×C: 30 × 20 × 15 cm</text>
+<rect x="203" y="342" width="284" height="26" rx="6" fill="#E7EFFF" stroke="none"/>
+<text x="213" y="359" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="9.5" font-weight="700" fill="#0052CC" text-anchor="start">Trọng lượng tính cước: max(1,5; 1,5) = 1,5 kg</text>
+<text x="203" y="386" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="9.4" font-weight="500" fill="#5B6B86" text-anchor="start">Thu hộ COD: 0 đ   ·   Hàng thông thường</text>
+<rect x="191" y="412" width="308" height="38" rx="10" fill="#FFFFFF" stroke="#DBE2F0" stroke-width="1"/>
+<text x="203" y="429" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="10.5" font-weight="700" fill="#102548" text-anchor="start">Giao Tiết kiệm</text>
+<text x="203" y="443" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="8.8" font-weight="500" fill="#5B6B86" text-anchor="start">Dự kiến: 3–4 ngày</text>
+<text x="487" y="436" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="12" font-weight="700" fill="#102548" text-anchor="end">25.000 đ</text>
+<rect x="191" y="456" width="308" height="38" rx="10" fill="#EFF6FF" stroke="#0052CC" stroke-width="1.4"/>
+<text x="203" y="473" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="10.5" font-weight="700" fill="#0052CC" text-anchor="start">Giao Tiêu chuẩn</text>
+<text x="203" y="487" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="8.8" font-weight="500" fill="#5B6B86" text-anchor="start">Dự kiến: 2–3 ngày</text>
+<text x="487" y="480" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="12" font-weight="700" fill="#0052CC" text-anchor="end">35.000 đ</text>
+<rect x="191" y="500" width="308" height="38" rx="10" fill="#FFFFFF" stroke="#DBE2F0" stroke-width="1"/>
+<text x="203" y="517" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="10.5" font-weight="700" fill="#102548" text-anchor="start">Giao Hỏa tốc</text>
+<text x="203" y="531" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="8.8" font-weight="500" fill="#5B6B86" text-anchor="start">Dự kiến: Trong 24h</text>
+<text x="487" y="524" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="12" font-weight="700" fill="#102548" text-anchor="end">57.000 đ</text>
+<rect x="191" y="554" width="308" height="42" rx="10" fill="#0052CC" stroke="none"/>
+<text x="345.0" y="579" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="12" font-weight="700" fill="#FFFFFF" text-anchor="middle">Tạo đơn hàng (35.000 đ)</text>
+<g filter="url(#cardShadow)"><rect x="695" y="96" width="360" height="558" rx="34" fill="#0F172A" stroke="#334155" stroke-width="2"/></g>
+<rect x="705" y="106" width="340" height="538" rx="26" fill="#F6F8FC" stroke="none" stroke-width="1.2"/>
+<rect x="831.0" y="112" width="88" height="16" rx="8" fill="#0F172A" stroke="none"/>
+<text x="725" y="124" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="10" font-weight="700" fill="#102548" text-anchor="start">10:16</text>
+<text x="1027" y="124" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="9.5" font-weight="700" fill="#102548" text-anchor="end">5G  100%</text>
+<text x="875.0" y="678" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="11.8" font-weight="700" fill="#102548" text-anchor="middle">Màn hình 4: Chi tiết Hành trình &amp; Ảnh POD</text>
+<rect x="705" y="132" width="340" height="42" rx="0" fill="#0052CC" stroke="none"/>
+<text x="875.0" y="158" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="12.5" font-weight="700" fill="#FFFFFF" text-anchor="middle">Hành trình SHP-202605-0018</text>
+<rect x="721" y="184" width="308" height="66" rx="12" fill="#DCFCE7" stroke="#6EE7B7" stroke-width="1"/>
+<text x="733" y="206" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="11.5" font-weight="700" fill="#137F5D" text-anchor="start">✓  GIAO HÀNG THÀNH CÔNG</text>
+<text x="733" y="224" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="9.4" font-weight="500" fill="#065F46" text-anchor="start">Người nhận đã ký nhận lúc 10:12 · 18/05/2026</text>
+<text x="733" y="239" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="8.8" font-weight="500" fill="#047857" text-anchor="start">Dữ liệu Read Model tracking_db (32 ms)</text>
+<circle cx="737" cy="270" r="6" fill="#137F5D"/>
+<line x1="737" y1="276" x2="737" y2="312" stroke="#CBD5E1" stroke-width="2"/>
+<text x="753" y="273" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="9.8" font-weight="700" fill="#137F5D" text-anchor="start">10:12 · Giao thành công (Có ảnh POD &amp; OTP)</text>
+<text x="753" y="289" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="8.8" font-weight="500" fill="#5B6B86" text-anchor="start">Q.3, TP.HCM · Bưu tá NV01</text>
+<circle cx="737" cy="318" r="6" fill="#0052CC"/>
+<line x1="737" y1="324" x2="737" y2="360" stroke="#CBD5E1" stroke-width="2"/>
+<text x="753" y="321" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="9.8" font-weight="500" fill="#102548" text-anchor="start">08:05 · Đang đi phát chặng cuối</text>
+<text x="753" y="337" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="8.8" font-weight="500" fill="#5B6B86" text-anchor="start">Bưu cục phát Quận 3 (002P003)</text>
+<circle cx="737" cy="366" r="6" fill="#0052CC"/>
+<line x1="737" y1="372" x2="737" y2="408" stroke="#CBD5E1" stroke-width="2"/>
+<text x="753" y="369" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="9.8" font-weight="500" fill="#102548" text-anchor="start">05:40 · Đã gỡ bao &amp; chia chọn</text>
+<text x="753" y="385" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="8.8" font-weight="500" fill="#5B6B86" text-anchor="start">Mega Hub TP.HCM (002C001)</text>
+<circle cx="737" cy="414" r="6" fill="#0052CC"/>
+<line x1="737" y1="420" x2="737" y2="456" stroke="#CBD5E1" stroke-width="2"/>
+<text x="753" y="417" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="9.8" font-weight="500" fill="#102548" text-anchor="start">22:15 · Xe trung chuyển xuất bến</text>
+<text x="753" y="433" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="8.8" font-weight="500" fill="#5B6B86" text-anchor="start">Bao MB-202605-09 · Seal SL-88421</text>
+<circle cx="737" cy="462" r="6" fill="#0052CC"/>
+<text x="753" y="465" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="9.8" font-weight="500" fill="#102548" text-anchor="start">16:30 · Đã lấy hàng thành công</text>
+<text x="753" y="481" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="8.8" font-weight="500" fill="#5B6B86" text-anchor="start">Kho người gửi Q.1, TP.HCM</text>
+<rect x="721" y="510" width="308" height="86" rx="12" fill="#FFFFFF" stroke="#DBE2F0" stroke-width="1"/>
+<rect x="733" y="522" width="62" height="62" rx="8" fill="#EFF6FF" stroke="#93C5FD" stroke-width="1"/>
+<text x="764" y="557" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="11" font-weight="700" fill="#0052CC" text-anchor="middle">POD</text>
+<text x="807" y="540" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="10.2" font-weight="700" fill="#102548" text-anchor="start">Ảnh bằng chứng giao hàng (MinIO)</text>
+<text x="807" y="558" font-family="'SF Mono','Menlo','Consolas',monospace" font-size="9" font-weight="500" fill="#5B6B86" text-anchor="start">deliveries/SHP-202605-0018.jpg</text>
+<rect x="807" y="566" width="124" height="20" rx="10.0" fill="#FEF3C7" stroke="none"/><text x="869.0" y="578.975" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="8.5" font-weight="700" fill="#C26D0A" text-anchor="middle">Đánh giá bưu tá ★★★★★</text>
+<rect x="24" y="712" width="1172" height="52" rx="10" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="1.2"/>
+<circle cx="53.0" cy="738" r="11" fill="#0052CC"/>
+<text x="53.0" y="742" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="10.5" font-weight="700" fill="#FFFFFF" text-anchor="middle">1</text>
+<text x="72.0" y="734" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="10.8" font-weight="700" fill="#102548" text-anchor="start">Tính cước nhất quán IATA</text>
+<text x="72.0" y="750" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="9.6" font-weight="500" fill="#5B6B86" text-anchor="start">Cùng động cơ pricing-service cho 3 gói Tiết kiệm/Tiêu chuẩn/Hỏa tốc</text>
+<circle cx="433.0" cy="738" r="11" fill="#0052CC"/>
+<text x="433.0" y="742" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="10.5" font-weight="700" fill="#FFFFFF" text-anchor="middle">2</text>
+<text x="452.0" y="734" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="10.8" font-weight="700" fill="#102548" text-anchor="start">Timeline Read Model tốc độ cao</text>
+<text x="452.0" y="750" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="9.6" font-weight="500" fill="#5B6B86" text-anchor="start">Truy vấn trực tiếp tracking_db tách tải hoàn toàn khỏi CSDL ghi</text>
+<circle cx="813.0" cy="738" r="11" fill="#0052CC"/>
+<text x="813.0" y="742" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="10.5" font-weight="700" fill="#FFFFFF" text-anchor="middle">3</text>
+<text x="832.0" y="734" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="10.8" font-weight="700" fill="#102548" text-anchor="start">Minh bạch POD &amp; Đánh giá</text>
+<text x="832.0" y="750" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="9.6" font-weight="500" fill="#5B6B86" text-anchor="start">Hiển thị ảnh bàn giao từ MinIO S3 &amp; đánh giá chất lượng bưu tá</text>
+</svg>

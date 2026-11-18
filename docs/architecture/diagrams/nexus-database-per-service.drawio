@@ -1,0 +1,97 @@
+<mxfile host="app.diagrams.net" modified="2026-11-18T11:08:00.000Z" agent="Antigravity" version="24.7.17" type="device">
+  <diagram id="nexus-database-per-service" name="Database-per-Service Architecture">
+    <mxGraphModel dx="1340" dy="1100" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1300" pageHeight="1060" background="#FFFFFF" math="0" shadow="0">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+        <mxCell id="2" value="1. Transactional Write DBs (9 Isolated PostgreSQL DBs · Prisma + Outbox)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#2563EB;strokeWidth=2.4;verticalAlign=top;align=left;fontFamily=Helvetica;fontSize=11.8;fontStyle=1;fontColor=#1D4ED8;spacingLeft=8;spacingTop=5;dashed=1;dashPattern=9 5;" vertex="1" parent="1">
+          <mxGeometry x="46" y="34" width="758" height="556" as="geometry"/>
+        </mxCell>
+        <mxCell id="3" value="shipment-service → shipment_db
+Shipment · Claims · Investigation · Outbox" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#2563EB;strokeWidth=1.7;verticalAlign=middle;align=left;fontFamily=Helvetica;fontSize=9.5;fontStyle=1;fontColor=#111111;spacingLeft=8;spacingTop=5;" vertex="1" parent="1">
+          <mxGeometry x="68" y="96" width="316" height="60" as="geometry"/>
+        </mxCell>
+        <mxCell id="4" value="delivery-service → delivery_db
+DeliveryAttempt · Pod · Otp · Ndr · Return" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#111111;strokeWidth=1.4;verticalAlign=middle;align=left;fontFamily=Helvetica;fontSize=9.5;fontStyle=1;fontColor=#111111;spacingLeft=8;spacingTop=5;" vertex="1" parent="1">
+          <mxGeometry x="476" y="96" width="306" height="60" as="geometry"/>
+        </mxCell>
+        <mxCell id="5" value="pickup → pickup_db" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#111111;strokeWidth=1.4;verticalAlign=middle;align=center;fontFamily=Helvetica;fontSize=9.5;fontStyle=1;fontColor=#111111;spacingLeft=8;spacingTop=5;" vertex="1" parent="1">
+          <mxGeometry x="68" y="186" width="224" height="52" as="geometry"/>
+        </mxCell>
+        <mxCell id="6" value="dispatch → dispatch_db" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#111111;strokeWidth=1.4;verticalAlign=middle;align=center;fontFamily=Helvetica;fontSize=9.5;fontStyle=1;fontColor=#111111;spacingLeft=8;spacingTop=5;" vertex="1" parent="1">
+          <mxGeometry x="312" y="180" width="230" height="52" as="geometry"/>
+        </mxCell>
+        <mxCell id="7" value="manifest → manifest_db" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#111111;strokeWidth=1.4;verticalAlign=middle;align=center;fontFamily=Helvetica;fontSize=9.5;fontStyle=1;fontColor=#111111;spacingLeft=8;spacingTop=5;" vertex="1" parent="1">
+          <mxGeometry x="560" y="188" width="222" height="52" as="geometry"/>
+        </mxCell>
+        <mxCell id="8" value="scan-service → scan_db
+ScanEvent · CurrentLocation · Idempotency" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#111111;strokeWidth=1.4;verticalAlign=middle;align=left;fontFamily=Helvetica;fontSize=9.5;fontStyle=1;fontColor=#111111;spacingLeft=8;spacingTop=5;" vertex="1" parent="1">
+          <mxGeometry x="68" y="266" width="344" height="56" as="geometry"/>
+        </mxCell>
+        <mxCell id="9" value="payment-service → payment_db
+CodRecord · SettlementBatch · Idempotency" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#111111;strokeWidth=1.4;verticalAlign=middle;align=left;fontFamily=Helvetica;fontSize=9.5;fontStyle=1;fontColor=#111111;spacingLeft=8;spacingTop=5;" vertex="1" parent="1">
+          <mxGeometry x="438" y="268" width="344" height="56" as="geometry"/>
+        </mxCell>
+        <mxCell id="10" value="auth-service → auth_db
+UserAccount · AuthSession · RBAC" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#111111;strokeWidth=1.4;verticalAlign=middle;align=left;fontFamily=Helvetica;fontSize=9.5;fontStyle=1;fontColor=#111111;spacingLeft=8;spacingTop=5;" vertex="1" parent="1">
+          <mxGeometry x="92" y="352" width="312" height="54" as="geometry"/>
+        </mxCell>
+        <mxCell id="11" value="masterdata-service → masterdata_db
+Hub · Zone · NdrReason · PolicyVersion" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#111111;strokeWidth=1.4;verticalAlign=middle;align=left;fontFamily=Helvetica;fontSize=9.5;fontStyle=1;fontColor=#111111;spacingLeft=8;spacingTop=5;" vertex="1" parent="1">
+          <mxGeometry x="434" y="352" width="326" height="54" as="geometry"/>
+        </mxCell>
+        <mxCell id="12" value="2. Edge BFF Stores — gateway-bff (:3000)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#0F766E;strokeWidth=2.4;verticalAlign=top;align=left;fontFamily=Helvetica;fontSize=11.8;fontStyle=1;fontColor=#115E59;spacingLeft=8;spacingTop=5;dashed=1;dashPattern=9 5;" vertex="1" parent="1">
+          <mxGeometry x="860" y="54" width="394" height="318" as="geometry"/>
+        </mxCell>
+        <mxCell id="13" value="chat_db (PostgreSQL · pg.Pool)
+chat_conversations · chat_messages" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#0F766E;strokeWidth=1.5;verticalAlign=middle;align=left;fontFamily=Helvetica;fontSize=9.5;fontStyle=1;fontColor=#111111;spacingLeft=8;spacingTop=5;" vertex="1" parent="1">
+          <mxGeometry x="882" y="114" width="350" height="68" as="geometry"/>
+        </mxCell>
+        <mxCell id="14" value="MinIO S3 (:9000)
+Bucket: nexus-pod-images (POD · CCTV)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#111111;strokeWidth=1.4;verticalAlign=middle;align=left;fontFamily=Helvetica;fontSize=9.5;fontStyle=1;fontColor=#111111;spacingLeft=8;spacingTop=5;" vertex="1" parent="1">
+          <mxGeometry x="882" y="200" width="350" height="68" as="geometry"/>
+        </mxCell>
+        <mxCell id="15" value="Redis 7 (:6379)
+Pub/Sub: gateway-bff:chat" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#111111;strokeWidth=1.4;verticalAlign=middle;align=left;fontFamily=Helvetica;fontSize=9.5;fontStyle=1;fontColor=#111111;spacingLeft=8;spacingTop=5;" vertex="1" parent="1">
+          <mxGeometry x="882" y="286" width="350" height="64" as="geometry"/>
+        </mxCell>
+        <mxCell id="16" value="3. Non-RDBMS &amp; Stateless Services (2 Services)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#7C3AED;strokeWidth=2.4;verticalAlign=top;align=left;fontFamily=Helvetica;fontSize=11.8;fontStyle=1;fontColor=#5B21B6;spacingLeft=8;spacingTop=5;dashed=1;dashPattern=9 5;" vertex="1" parent="1">
+          <mxGeometry x="884" y="414" width="370" height="192" as="geometry"/>
+        </mxCell>
+        <mxCell id="17" value="pricing-service (:3012) → Stateless Rules" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#111111;strokeWidth=1.4;verticalAlign=middle;align=left;fontFamily=Helvetica;fontSize=9.5;fontStyle=1;fontColor=#111111;spacingLeft=8;spacingTop=5;" vertex="1" parent="1">
+          <mxGeometry x="906" y="472" width="326" height="52" as="geometry"/>
+        </mxCell>
+        <mxCell id="18" value="chatbot-service (:3013) → vector-index.json (RAM)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#111111;strokeWidth=1.4;verticalAlign=middle;align=left;fontFamily=Helvetica;fontSize=9.5;fontStyle=1;fontColor=#111111;spacingLeft=8;spacingTop=5;" vertex="1" parent="1">
+          <mxGeometry x="906" y="536" width="326" height="54" as="geometry"/>
+        </mxCell>
+        <mxCell id="19" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#D97706;strokeWidth=2.4;verticalAlign=top;align=left;fontFamily=Helvetica;fontSize=11.8;fontStyle=1;fontColor=#111111;spacingLeft=8;spacingTop=5;dashed=1;dashPattern=9 5;" vertex="1" parent="1">
+          <mxGeometry x="96" y="668" width="1118" height="298" as="geometry"/>
+        </mxCell>
+        <mxCell id="20" value="&lt;b&gt;4. Eventual Consistency &amp;amp; CQRS Read DBs (Outbox → RabbitMQ → Read Projections)&lt;/b&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;fontFamily=Helvetica;fontSize=11.5;fontStyle=0;fontColor=#B45309;" vertex="1" parent="1">
+          <mxGeometry x="116" y="908" width="760" height="26" as="geometry"/>
+        </mxCell>
+        <mxCell id="21" value="Transactional Outbox
+Đọc OutboxEvent từ 9 Write DBs" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#111111;strokeWidth=1.4;verticalAlign=middle;align=center;fontFamily=Helvetica;fontSize=10;fontStyle=1;fontColor=#111111;spacingLeft=8;spacingTop=5;" vertex="1" parent="1">
+          <mxGeometry x="122" y="698" width="238" height="180" as="geometry"/>
+        </mxCell>
+        <mxCell id="22" value="RabbitMQ domain.events
+AMQP :5672 · DLX/TTL Retry" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#D97706;strokeWidth=1.8;verticalAlign=middle;align=center;fontFamily=Helvetica;fontSize=10;fontStyle=1;fontColor=#B45309;spacingLeft=8;spacingTop=5;" vertex="1" parent="1">
+          <mxGeometry x="426" y="728" width="198" height="120" as="geometry"/>
+        </mxCell>
+        <mxCell id="23" value="2 CQRS Read-Model DBs (Zero Outbox)
+tracking_db (:3008) · reporting_db (:3009)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#0F766E;strokeWidth=1.7;verticalAlign=middle;align=left;fontFamily=Helvetica;fontSize=10;fontStyle=1;fontColor=#115E59;spacingLeft=8;spacingTop=5;" vertex="1" parent="1">
+          <mxGeometry x="694" y="692" width="494" height="194" as="geometry"/>
+        </mxCell>
+        <mxCell id="24" value="ACID Outbox (9 DBs)" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#111111;strokeWidth=1.4;fontFamily=Helvetica;fontSize=10.4;fontStyle=1;fontColor=#111111;labelBackgroundColor=#FFFFFF;endArrow=classic;endFill=1;dashed=1;dashPattern=5 4;" edge="1" parent="1" source="2" target="21">
+          <mxGeometry relative="1" as="geometry"></mxGeometry>
+        </mxCell>
+        <mxCell id="25" value="Publish" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#111111;strokeWidth=1.4;fontFamily=Helvetica;fontSize=10.4;fontStyle=1;fontColor=#111111;labelBackgroundColor=#FFFFFF;endArrow=classic;endFill=1;dashed=1;dashPattern=5 4;" edge="1" parent="1" source="21" target="22">
+          <mxGeometry relative="1" as="geometry"></mxGeometry>
+        </mxCell>
+        <mxCell id="26" value="Project" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#111111;strokeWidth=1.4;fontFamily=Helvetica;fontSize=10.4;fontStyle=1;fontColor=#111111;labelBackgroundColor=#FFFFFF;endArrow=classic;endFill=1;dashed=1;dashPattern=5 4;" edge="1" parent="1" source="22" target="23">
+          <mxGeometry relative="1" as="geometry"></mxGeometry>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

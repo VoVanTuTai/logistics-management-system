@@ -1,0 +1,135 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="760" viewBox="0 0 1280 760">
+  <defs>
+    <linearGradient id="brandGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#003D9B"/>
+      <stop offset="55%" stop-color="#0052CC"/>
+      <stop offset="100%" stop-color="#1D64E8"/>
+    </linearGradient>
+    <linearGradient id="navyGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0B1F44"/>
+      <stop offset="100%" stop-color="#1A3A75"/>
+    </linearGradient>
+    <filter id="cardShadow" x="-4%" y="-6%" width="108%" height="116%">
+      <feDropShadow dx="0" dy="3" stdDeviation="5" flood-color="#0F172A" flood-opacity="0.06"/>
+    </filter>
+  </defs>
+  <rect width="1280" height="760" fill="#FFFFFF"/>
+  <g filter="url(#cardShadow)"><rect x="24" y="18" width="1232" height="658" rx="14" fill="#F6F8FC" stroke="#CBD5E1" stroke-width="1.5"/></g>
+<path d="M24 32 Q24 18 38 18 H1242 Q1256 18 1256 32 V60 H24 Z" fill="#EEF2F7" stroke="#CBD5E1" stroke-width="1"/>
+<circle cx="46" cy="39" r="5" fill="#EF4444"/>
+<circle cx="62" cy="39" r="5" fill="#F59E0B"/>
+<circle cx="78" cy="39" r="5" fill="#22C55E"/>
+<rect x="100" y="26" width="236" height="26" rx="7" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1"/>
+<rect x="110" y="32" width="14" height="14" rx="3" fill="#0052CC" stroke="none"/>
+<text x="117" y="43" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="9.5" font-weight="700" fill="#FFFFFF" text-anchor="middle">N</text>
+<text x="132" y="43" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="10.5" font-weight="700" fill="#102548" text-anchor="start">NEXUS Admin — Phân quyền &amp; Mạng lưới</text>
+<rect x="348" y="27" width="874" height="24" rx="12" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1"/>
+<text x="364" y="43" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="10.5" font-weight="500" fill="#5B6B86" text-anchor="start">🔒  https://admin.nexus-ex.site/app/mobile-permissions</text>
+<rect x="25" y="60" width="200" height="615" rx="0" fill="#FFFFFF" stroke="#DBE2F0" stroke-width="1"/>
+<text x="42" y="92" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="15" font-weight="700" fill="#102548" text-anchor="start">Quản trị hệ thống</text>
+<text x="48" y="142" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="10.8" font-weight="500" fill="#5B6B86" text-anchor="start">Tổng quan</text>
+<text x="48" y="182" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="10.8" font-weight="500" fill="#5B6B86" text-anchor="start">Tài khoản Ops/Shipper</text>
+<rect x="36" y="202" width="178" height="32" rx="8" fill="#EEF2FF" stroke="#818CF8" stroke-width="1.2"/>
+<text x="48" y="222" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="11" font-weight="700" fill="#3730A3" text-anchor="start">Phân quyền Mobile</text>
+<text x="48" y="262" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="10.8" font-weight="500" fill="#5B6B86" text-anchor="start">Mạng lưới Hub (4 cấp)</text>
+<text x="48" y="302" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="10.8" font-weight="500" fill="#5B6B86" text-anchor="start">Phân vùng Zone</text>
+<text x="48" y="342" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="10.8" font-weight="500" fill="#5B6B86" text-anchor="start">Nhật ký Audit Log</text>
+<rect x="244" y="76" width="520" height="582" rx="12" fill="#FFFFFF" stroke="#DBE2F0" stroke-width="1.2"/>
+<text x="262" y="104" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="14" font-weight="700" fill="#102548" text-anchor="start">1. Ma trận Phân quyền Di động (Profile &amp; Override)</text>
+<text x="262" y="122" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="9.8" font-weight="500" fill="#5B6B86" text-anchor="start">Thu hồi tức thì qua Opaque Token Introspect — Không cần đổi vai trò gốc</text>
+<rect x="262" y="138" width="142" height="26" rx="13.0" fill="#0052CC" stroke="none"/><text x="333.0" y="154.43" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="9.8" font-weight="700" fill="#FFFFFF" text-anchor="middle">Nhóm: COURIER</text>
+<rect x="414" y="138" width="132" height="26" rx="13.0" fill="#F6F8FC" stroke="none"/><text x="480.0" y="154.43" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="9.8" font-weight="700" fill="#5B6B86" text-anchor="middle">Nhóm: OPS_SCAN</text>
+<rect x="556" y="138" width="190" height="26" rx="13.0" fill="#FEF3C7" stroke="#FCD34D" stroke-width="1"/><text x="651.0" y="154.325" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="9.5" font-weight="700" fill="#C26D0A" text-anchor="middle">Ghi đè: NV01 (Override)</text>
+<rect x="262" y="180" width="484" height="46" rx="9" fill="#FAFBFD" stroke="#DBE2F0" stroke-width="1"/>
+<text x="274" y="199" font-family="'SF Mono','Menlo','Consolas',monospace" font-size="10.3" font-weight="700" fill="#0052CC" text-anchor="start">SCAN_PICKUP</text>
+<text x="274" y="216" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="9.4" font-weight="500" fill="#5B6B86" text-anchor="start">Quét nhận hàng tại kho Merchant</text>
+<rect x="688" y="192" width="42" height="22" rx="11" fill="#137F5D" stroke="none"/>
+<circle cx="719" cy="203" r="8" fill="#FFFFFF"/>
+<rect x="262" y="234" width="484" height="46" rx="9" fill="#FAFBFD" stroke="#DBE2F0" stroke-width="1"/>
+<text x="274" y="253" font-family="'SF Mono','Menlo','Consolas',monospace" font-size="10.3" font-weight="700" fill="#0052CC" text-anchor="start">DELIVERY_POD</text>
+<text x="274" y="270" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="9.4" font-weight="500" fill="#5B6B86" text-anchor="start">Xác nhận phát hàng &amp; tải ảnh POD</text>
+<rect x="688" y="246" width="42" height="22" rx="11" fill="#137F5D" stroke="none"/>
+<circle cx="719" cy="257" r="8" fill="#FFFFFF"/>
+<rect x="262" y="288" width="484" height="46" rx="9" fill="#FAFBFD" stroke="#DBE2F0" stroke-width="1"/>
+<text x="274" y="307" font-family="'SF Mono','Menlo','Consolas',monospace" font-size="10.3" font-weight="700" fill="#0052CC" text-anchor="start">REPORT_NDR</text>
+<text x="274" y="324" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="9.4" font-weight="500" fill="#5B6B86" text-anchor="start">Báo cáo sự cố giao thất bại (NDR)</text>
+<rect x="688" y="300" width="42" height="22" rx="11" fill="#137F5D" stroke="none"/>
+<circle cx="719" cy="311" r="8" fill="#FFFFFF"/>
+<rect x="262" y="342" width="484" height="46" rx="9" fill="#FFFBEB" stroke="#FCD34D" stroke-width="1"/>
+<text x="274" y="361" font-family="'SF Mono','Menlo','Consolas',monospace" font-size="10.3" font-weight="700" fill="#0052CC" text-anchor="start">MANIFEST_SEAL</text>
+<text x="274" y="378" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="9.4" font-weight="500" fill="#5B6B86" text-anchor="start">Đóng bao trung chuyển &amp; kẹp chì Seal</text>
+<rect x="578" y="354" width="82" height="22" rx="11.0" fill="#FEF3C7" stroke="none"/><text x="619.0" y="367.975" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="8.5" font-weight="700" fill="#C26D0A" text-anchor="middle">OVERRIDE</text>
+<rect x="688" y="354" width="42" height="22" rx="11" fill="#137F5D" stroke="none"/>
+<circle cx="719" cy="365" r="8" fill="#FFFFFF"/>
+<rect x="262" y="396" width="484" height="46" rx="9" fill="#FAFBFD" stroke="#DBE2F0" stroke-width="1"/>
+<text x="274" y="415" font-family="'SF Mono','Menlo','Consolas',monospace" font-size="10.3" font-weight="700" fill="#0052CC" text-anchor="start">VEHICLE_SCAN</text>
+<text x="274" y="432" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="9.4" font-weight="500" fill="#5B6B86" text-anchor="start">Quét xuất/nhập chuyến xe liên Hub</text>
+<rect x="688" y="408" width="42" height="22" rx="11" fill="#CBD5E1" stroke="none"/>
+<circle cx="699" cy="419" r="8" fill="#FFFFFF"/>
+<rect x="262" y="450" width="484" height="46" rx="9" fill="#FFFBEB" stroke="#FCD34D" stroke-width="1"/>
+<text x="274" y="469" font-family="'SF Mono','Menlo','Consolas',monospace" font-size="10.3" font-weight="700" fill="#0052CC" text-anchor="start">COD_EXCEED_LIMIT</text>
+<text x="274" y="486" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="9.4" font-weight="500" fill="#5B6B86" text-anchor="start">Ghi đè thu COD vượt hạn mức tạm thời</text>
+<rect x="578" y="462" width="82" height="22" rx="11.0" fill="#FEF3C7" stroke="none"/><text x="619.0" y="475.975" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="8.5" font-weight="700" fill="#C26D0A" text-anchor="middle">OVERRIDE</text>
+<rect x="688" y="462" width="42" height="22" rx="11" fill="#137F5D" stroke="none"/>
+<circle cx="719" cy="473" r="8" fill="#FFFFFF"/>
+<rect x="262" y="504" width="484" height="46" rx="9" fill="#FAFBFD" stroke="#DBE2F0" stroke-width="1"/>
+<text x="274" y="523" font-family="'SF Mono','Menlo','Consolas',monospace" font-size="10.3" font-weight="700" fill="#0052CC" text-anchor="start">CANCEL_FIELD</text>
+<text x="274" y="540" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="9.4" font-weight="500" fill="#5B6B86" text-anchor="start">Hủy tác vụ đột xuất ngoài hiện trường</text>
+<rect x="688" y="516" width="42" height="22" rx="11" fill="#CBD5E1" stroke="none"/>
+<circle cx="699" cy="527" r="8" fill="#FFFFFF"/>
+<rect x="262" y="568" width="484" height="72" rx="8" fill="#F8FAFC" stroke="#DBE2F0" stroke-width="1"/>
+<text x="274" y="590" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="10" font-weight="700" fill="#102548" text-anchor="start">AdminAuditLog tự động ghi vết:</text>
+<text x="274" y="608" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="9.2" font-weight="500" fill="#5B6B86" text-anchor="start">• 15:02 SYSTEM_ADMIN bật override MANIFEST_SEAL cho NV01 (Hiệu lực 24h)</text>
+<text x="274" y="625" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="9.2" font-weight="500" fill="#137F5D" text-anchor="start">• Phiên Opaque Token tự cập nhật quyền ở lần gọi API kế tiếp.</text>
+<rect x="782" y="76" width="456" height="582" rx="12" fill="#FFFFFF" stroke="#DBE2F0" stroke-width="1.2"/>
+<text x="800" y="104" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="13.5" font-weight="700" fill="#102548" text-anchor="start">2. Cấu trúc Mạng lưới Hub 4 cấp &amp; Tuyến Đa giác (Zone)</text>
+<text x="800" y="122" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="9.6" font-weight="500" fill="#5B6B86" text-anchor="start">Quản trị cây Hub (masterdata_db) &amp; vùng Spatial Polygon phục vụ điều phối tự động</text>
+<rect x="800" y="140" width="420" height="210" rx="12" fill="#EFF6FF" stroke="#93C5FD" stroke-width="1.2"/>
+<line x1="840" y1="140" x2="840" y2="350" stroke="#DBEAFE" stroke-width="1"/>
+<line x1="895" y1="140" x2="895" y2="350" stroke="#DBEAFE" stroke-width="1"/>
+<line x1="950" y1="140" x2="950" y2="350" stroke="#DBEAFE" stroke-width="1"/>
+<line x1="1005" y1="140" x2="1005" y2="350" stroke="#DBEAFE" stroke-width="1"/>
+<line x1="1060" y1="140" x2="1060" y2="350" stroke="#DBEAFE" stroke-width="1"/>
+<line x1="1115" y1="140" x2="1115" y2="350" stroke="#DBEAFE" stroke-width="1"/>
+<line x1="1170" y1="140" x2="1170" y2="350" stroke="#DBEAFE" stroke-width="1"/>
+<line x1="800" y1="175" x2="1220" y2="175" stroke="#DBEAFE" stroke-width="1"/>
+<line x1="800" y1="217" x2="1220" y2="217" stroke="#DBEAFE" stroke-width="1"/>
+<line x1="800" y1="259" x2="1220" y2="259" stroke="#DBEAFE" stroke-width="1"/>
+<line x1="800" y1="301" x2="1220" y2="301" stroke="#DBEAFE" stroke-width="1"/>
+<line x1="800" y1="343" x2="1220" y2="343" stroke="#DBEAFE" stroke-width="1"/>
+<polygon points="838,178 978,162 996,256 866,274" fill="#3B82F6" fill-opacity="0.22" stroke="#0052CC" stroke-width="2"/>
+<text x="916" y="224" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="9.5" font-weight="700" fill="#0052CC" text-anchor="middle">ZONE-HCM-Q1/Q3</text>
+<polygon points="996,170 1158,184 1174,290 1006,266" fill="#10B981" fill-opacity="0.22" stroke="#137F5D" stroke-width="2"/>
+<text x="1084" y="232" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="9.5" font-weight="700" fill="#137F5D" text-anchor="middle">ZONE-THUDUC</text>
+<circle cx="980" cy="242" r="9" fill="#B91C1C" stroke="#FFFFFF" stroke-width="2"/>
+<rect x="814" y="316" width="224" height="22" rx="11.0" fill="#FFFFFF" stroke="none"/><text x="926.0" y="330.08" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="8.8" font-weight="700" fill="#102548" text-anchor="middle">● Mega Hub 002C001 (Bán kính phủ 25km)</text>
+<rect x="800" y="368" width="420" height="58" rx="10" fill="#FAFBFD" stroke="#DBE2F0" stroke-width="1"/>
+<rect x="800" y="368" width="6" height="58" rx="3" fill="#0052CC" stroke="none"/>
+<text x="816" y="391" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="11.2" font-weight="700" fill="#0052CC" text-anchor="start">Cấp 1 · Mega Hub (3)</text>
+<text x="816" y="411" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="9.6" font-weight="500" fill="#5B6B86" text-anchor="start">Hà Nội · Đà Nẵng · TP.HCM — Cửa ngõ liên miền</text>
+<rect x="800" y="436" width="420" height="58" rx="10" fill="#FAFBFD" stroke="#DBE2F0" stroke-width="1"/>
+<rect x="800" y="436" width="6" height="58" rx="3" fill="#0284C7" stroke="none"/>
+<text x="816" y="459" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="11.2" font-weight="700" fill="#0284C7" text-anchor="start">Cấp 2 · Regional Hub (6)</text>
+<text x="816" y="479" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="9.6" font-weight="500" fill="#5B6B86" text-anchor="start">Trung tâm gom tuyến cụm tỉnh khu vực</text>
+<rect x="800" y="504" width="420" height="58" rx="10" fill="#FAFBFD" stroke="#DBE2F0" stroke-width="1"/>
+<rect x="800" y="504" width="6" height="58" rx="3" fill="#137F5D" stroke="none"/>
+<text x="816" y="527" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="11.2" font-weight="700" fill="#137F5D" text-anchor="start">Cấp 3 · Provincial Hub (12)</text>
+<text x="816" y="547" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="9.6" font-weight="500" fill="#5B6B86" text-anchor="start">Bưu cục cấp tỉnh/thành phố điều phối quận huyện</text>
+<rect x="800" y="572" width="420" height="58" rx="10" fill="#FAFBFD" stroke="#DBE2F0" stroke-width="1"/>
+<rect x="800" y="572" width="6" height="58" rx="3" fill="#C26D0A" stroke="none"/>
+<text x="816" y="595" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="11.2" font-weight="700" fill="#C26D0A" text-anchor="start">Cấp 4 · Local Post Office (17)</text>
+<text x="816" y="615" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="9.6" font-weight="500" fill="#5B6B86" text-anchor="start">Bưu cục cơ sở quản lý trực tiếp bưu tá chặng cuối</text>
+<rect x="24" y="692" width="1232" height="52" rx="10" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="1.2"/>
+<circle cx="53.0" cy="718" r="11" fill="#0052CC"/>
+<text x="53.0" y="722" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="10.5" font-weight="700" fill="#FFFFFF" text-anchor="middle">1</text>
+<text x="72.0" y="714" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="10.8" font-weight="700" fill="#102548" text-anchor="start">Phân quyền Mobile động</text>
+<text x="72.0" y="730" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="9.6" font-weight="500" fill="#5B6B86" text-anchor="start">Bật/tắt thao tác theo nhóm hoặc ghi đè riêng từng nhân sự</text>
+<circle cx="453.0" cy="718" r="11" fill="#0052CC"/>
+<text x="453.0" y="722" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="10.5" font-weight="700" fill="#FFFFFF" text-anchor="middle">2</text>
+<text x="472.0" y="714" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="10.8" font-weight="700" fill="#102548" text-anchor="start">Bản đồ đa giác Spatial Polygon</text>
+<text x="472.0" y="730" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="9.6" font-weight="500" fill="#5B6B86" text-anchor="start">Cố định tọa độ kho Merchant giúp tự động phân tuyến chính xác</text>
+<circle cx="853.0" cy="718" r="11" fill="#0052CC"/>
+<text x="853.0" y="722" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="10.5" font-weight="700" fill="#FFFFFF" text-anchor="middle">3</text>
+<text x="872.0" y="714" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="10.8" font-weight="700" fill="#102548" text-anchor="start">Quản trị cây Hub 4 cấp</text>
+<text x="872.0" y="730" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="9.6" font-weight="500" fill="#5B6B86" text-anchor="start">Chuẩn hóa danh mục nền tảng tại masterdata-service</text>
+</svg>

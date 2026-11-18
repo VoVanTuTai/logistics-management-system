@@ -15,12 +15,12 @@ boundary "Gateway BFF (:3000)\n(OpsLinehaulController)" as Gateway
 end box
 
 box "Control Layer (Điều Khiển & Lập Lịch Chuyến Xe)" #FFFFFF
-control "LinehaulController\n(:3013 linehaul-service)" as LinehaulCtrl
-control "TripSchedulingService\n(fleet manager)" as TripSvc
+control "ManifestsController\n(:3005 manifest-service)" as LinehaulCtrl
+control "ManifestsService\n(seal & linehaul dispatch)" as TripSvc
 end box
 
 box "Entity Layer (Lưu Trữ & Cơ Sở Dữ Liệu)" #FFFFFF
-entity "PostgreSQL (linehaul_db)\n[linehaul_trips & trip_manifests Table]" as LinehaulDB
+entity "PostgreSQL (manifest_db)\n[manifests & seal_records Table]" as LinehaulDB
 end box
 
 ' GIAI ĐOẠN 1: THIẾT LẬP THÔNG TIN CHUYẾN XE ĐƯỜNG TRỤC MỚI
