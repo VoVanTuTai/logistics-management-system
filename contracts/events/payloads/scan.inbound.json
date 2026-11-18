@@ -1,0 +1,37 @@
+{
+  "schema_version": "1.0",
+  "event_type": "scan.inbound",
+  "producer": "scan-service",
+  "lifecycle_status": "ACTIVE",
+  "exchange": "domain.events",
+  "required_envelope": [
+    "event_id",
+    "event_type",
+    "occurred_at",
+    "shipment_code",
+    "actor",
+    "location",
+    "data"
+  ],
+  "data_properties": {
+    "scanEventId": "string",
+    "scanType": "INBOUND",
+    "locationCode": "string",
+    "manifestCode": "string|null"
+  },
+  "example": {
+    "schema_version": "1.0",
+    "event_id": "550e8400-e29b-41d4-a716-446655440000",
+    "event_type": "scan.inbound",
+    "occurred_at": "2026-05-18T08:00:00.000Z",
+    "shipment_code": "SHP-202605-0018",
+    "actor": "20000101",
+    "location": "003P001",
+    "data": {
+      "scanEventId": "scn_01",
+      "scanType": "INBOUND",
+      "locationCode": "003P001",
+      "manifestCode": "MB003-2605-01"
+    }
+  }
+}
