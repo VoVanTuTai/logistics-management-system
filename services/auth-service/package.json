@@ -7,7 +7,8 @@
     "db:prepare": "prisma generate --schema prisma/schema.prisma && prisma db push --schema prisma/schema.prisma",
     "db:seed": "prisma generate --schema prisma/schema.prisma && ts-node --transpile-only prisma/seed.ts",
     "start": "node dist/main.js",
-    "start:dev": "npm run db:prepare && ts-node src/main.ts"
+    "start:dev": "npm run db:prepare && ts-node src/main.ts",
+    "test:lockout": "node --test -r ts-node/register src/application/services/auth-lockout.spec.ts"
   },
   "dependencies": {
     "@nestjs/common": "^10.4.15",
