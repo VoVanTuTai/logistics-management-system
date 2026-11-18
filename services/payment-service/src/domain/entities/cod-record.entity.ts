@@ -233,6 +233,23 @@ export interface CodSettlementQr {
   transferMemo: string;
 }
 
+export type ErpAccountingFormat = 'MISA' | 'SAP' | 'GENERIC';
+
+export interface CodErpExportQuery extends CodDailySettlementQuery {
+  format?: string | null;
+  bankCode?: string | null;
+}
+
+export interface CodErpExportResult {
+  filename: string;
+  format: ErpAccountingFormat;
+  reportDate: string;
+  bankCode: string;
+  rowCount: number;
+  totalAmount: number;
+  csv: string;
+}
+
 export interface CodSettlementPaymentEvent {
   id: string;
   provider: string;

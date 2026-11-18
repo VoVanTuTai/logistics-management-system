@@ -13,7 +13,10 @@ import type {
   CodCollectionStatus,
   CodDailySettlementQuery,
   CodDailySettlementSummary,
+  CodErpExportQuery,
+  CodErpExportResult,
   CodRecord,
+  ErpAccountingFormat,
   CodSettlementBatch,
   CodSummary,
   CodSettlementQr,
@@ -1084,6 +1087,112 @@ export class CodService {
     });
 
     return `https://qr.sepay.vn/img?${searchParams.toString()}`;
+  }
+
+  async exportSettlementsErpCsv(
+    query: CodErpExportQuery,
+  ): Promise<CodErpExportResult> {
+    const summary = await this.getDailySettlement(query);
+    const bankInfo = this.getCompanyBankInfo();
+    const rawFormat = (query.format ?? 'MISA').trim().toUpperCase();
+    const format: ErpAccountingFormat =
+      rawFormat === 'SAP' || rawFormat === 'GENERIC' ? rawFormat : 'MISA';
+    const bankCode =
+      query.bankCode?.trim().toUpperCase() ||
+      resolveSePayQrBankCode(bankInfo).toUpperCase();
+
+    const csvEscape = (value: string | number | null | undefined): string => {
+      const str = value == null ? '' : String(value);
+      return /[",\n\r]/.test(str) ? `"${str.replace(/"/g, '""')}"` : str;
+    };
+
+    const headers =
+      format === 'SAP'
+        ? [
+            'PostingDate',
+            'DocumentNo',
+            'Reference',
+            'DebitGL',
+            'CreditGL',
+            'Amount',
+            'Currency',
+            'BankCode',
+            'BankBIN',
+            'BankAccount',
+            'ProfitCenter',
+            'Status',
+          ]
+        : [
+            'NgayChungTu',
+            'SoChungTu',
+            'DienGiai',
+            'TaiKhoanNo',
+            'TaiKhoanCo',
+            'SoTienVND',
+            'MaNganHang',
+            'MaBIN',
+            'SoTaiKhoan',
+            'MaBuuCuc',
+            'MaBuuTa',
+            'TrangThai',
+          ];
+
+    const lines: string[] = [headers.join(',')];
+    let totalAmount = 0;
+
+    for (const batch of summary.batches) {
+      const postingDate = batch.reportDate.toISOString().slice(0, 10);
+      const debitAccount = '1121'; // Tiền gửi ngân hàng (TT200/2014/TT-BTC)
+      const creditAccount = '3388'; // Phải trả hộ COD cho Merchant
+      const description = `Doi soat COD ${batch.settlementCode} - Hub ${batch.hubCode} - Courier ${batch.courierId} (${batch.items.length} don)`;
+      totalAmount += batch.totalAmount;
+
+      const rowValues =
+        format === 'SAP'
+          ? [
+              postingDate,
+              batch.settlementCode,
+              batch.transferMemo,
+              debitAccount,
+              creditAccount,
+              Math.round(batch.totalAmount),
+              'VND',
+              bankCode,
+              bankInfo.bin,
+              bankInfo.accountNumber,
+              batch.hubCode,
+              batch.status,
+            ]
+          : [
+              postingDate,
+              batch.settlementCode,
+              description,
+              debitAccount,
+              creditAccount,
+              Math.round(batch.totalAmount),
+              bankCode,
+              bankInfo.bin,
+              bankInfo.accountNumber,
+              batch.hubCode,
+              batch.courierId,
+              batch.status,
+            ];
+
+      lines.push(rowValues.map(csvEscape).join(','));
+    }
+
+    const csv = `\uFEFF${lines.join('\r\n')}\r\n`;
+    const filename = `nexus-cod-${format.toLowerCase()}-${summary.reportDate}.csv`;
+
+    return {
+      filename,
+      format,
+      reportDate: summary.reportDate,
+      bankCode,
+      rowCount: summary.batches.length,
+      totalAmount,
+      csv,
+    };
   }
 
   private verifySePayWebhook(input: HandleSePaySettlementWebhookInput): void {
