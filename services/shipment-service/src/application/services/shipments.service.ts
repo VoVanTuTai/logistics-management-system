@@ -1345,6 +1345,24 @@ function validatePhysicalOperationalCeilings(meta: Record<string, unknown> | nul
   }
 }
 
+/**
+ * ===================================================================================
+ * 📦 QUY CHUẨN CARRIER: PHÂN LOẠI 5 NHÓM HÀNG & 3 TẦNG TRẦN VẬT LÝ BƯU CỤC
+ * ===================================================================================
+ * 📌 1. KIỂM THỬ GIÁ TRỊ BIÊN (BVA) - 3 TẦNG TRẦN VẬT LÝ MẠNG LƯỚI:
+ *   - Khối lượng tối đa: <= 70 kg / kiện.
+ *   - Chiều dài 1 cạnh lớn nhất: <= 150 cm.
+ *   - Tổng kích thước 3 chiều: D + R + C <= 300 cm.
+ *   -> Vượt bất kỳ chỉ số nào: Chặn cứng Validation (HTTP 400), bảo vệ an toàn Hub.
+ *
+ * 📌 2. PHÂN LOẠI 5 NHÓM MẶT HÀNG CHUẨN CARRIER:
+ *   - GENERAL: Hàng thông thường, tính cước theo cân nặng thực tế.
+ *   - FRAGILE: Hàng dễ vỡ, tự động gắn nhãn "XIN NHẸ TAY", kích hoạt SOP bọc Bubble wrap >= 3 lớp.
+ *   - HIGH_VALUE: Giá trị cao, bắt buộc khai giá, tự động kích hoạt bảo hiểm 100% (cước 0.5%) + tem seal niêm phong.
+ *   - BULKY: Hàng cồng kềnh, tính cước IATA max(W, D*R*C/6000), tự động gán nhãn [CẦN XE TẢI].
+ *   - DOCUMENT: Hồ sơ thư từ, miễn trừ cước thể tích, khóa đồng kiểm nội dung theo Luật Bưu chính.
+ * ===================================================================================
+ */
 function enrichCommodityAndValidateCeilings(meta: Record<string, JsonValue>): void {
   const pkg = asJsonRecord(meta.package);
   if (!pkg) return;

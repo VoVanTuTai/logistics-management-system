@@ -22,6 +22,18 @@ interface ErrorBoundaryState {
   showDetails: boolean;
 }
 
+/**
+ * ===================================================================================
+ * 🛡️ LƯỚI BẢO VỆ CHỐNG VĂNG ỨNG DỤNG & CƠ CHẾ TỰ PHỤC HỒI (ROOT ERROR BOUNDARY)
+ * ===================================================================================
+ * 📌 NGUYÊN LÝ BẢO VỆ:
+ *   - Bắt toàn bộ các ngoại lệ không mong muốn trong vòng đời render React (Uncaught Render Exceptions).
+ *   - Thay vì để ứng dụng crash văng ra Springboard/Launcher của Android/iOS:
+ *       + Hiển thị giao diện cảnh báo sang trọng, giải trình nguyên nhân lỗi.
+ *       + Cung cấp nút "Tải lại & Khôi phục" (Self-Healing Reset Action) dọn dẹp state lỗi.
+ *       + Tự động xóa bộ nhớ cache hỏng nếu phát hiện lỗi định dạng JSON.
+ * ===================================================================================
+ */
 export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
   constructor(props: ErrorBoundaryProps) {
     super(props);

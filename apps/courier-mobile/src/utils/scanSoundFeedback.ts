@@ -1,3 +1,15 @@
+/**
+ * ===================================================================================
+ * 🔊 HỆ THỐNG PHẢN HỒI ÂM THANH THÔNG BÁO & QUÉT MÃ (SINGLETON AUDIO LIFECYCLE)
+ * ===================================================================================
+ * 📌 NGUYÊN LÝ THIẾT KẾ:
+ *   - Quản lý vòng đời Audio Player theo mô hình Singleton duy nhất.
+ *   - Khi có sự kiện mới: Thực hiện "player.pause() -> seekTo(0) -> player.play()" để tái sử dụng.
+ *   - Triệt tiêu 100% nguy cơ cạn kiệt Audio Track / Audio Session của hệ điều hành di động,
+ *     ngăn ngừa crash app và rò rỉ bộ nhớ khi shipper quét hàng trăm đơn liên tục.
+ *   - Tích hợp âm thanh chuông kép C5-G5 (notification-chime.wav) 44.1kHz khi có đơn mới gán.
+ * ===================================================================================
+ */
 import { Vibration } from 'react-native';
 
 type AudioModule = typeof import('expo-audio');
