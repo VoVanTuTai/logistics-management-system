@@ -1,0 +1,732 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1560 920" width="1560" height="920">
+  <defs>
+    <!-- Sketch Filter for Hand-Drawn Wobble -->
+    <filter id="handdrawn" x="-10%" y="-10%" width="120%" height="120%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.04" numOctaves="3" result="noise" />
+      <feDisplacementMap in="SourceGraphic" in2="noise" scale="2.5" xChannelSelector="R" yChannelSelector="G" />
+    </filter>
+
+    <!-- Soft Drop Shadow for Draw.io / Sticky Note Feel -->
+    <filter id="sketch-shadow" x="-5%" y="-5%" width="115%" height="115%">
+      <feDropShadow dx="3" dy="4" stdDeviation="3" flood-color="#1e293b" flood-opacity="0.12" />
+    </filter>
+    <filter id="card-shadow" x="-5%" y="-5%" width="115%" height="115%">
+      <feDropShadow dx="2" dy="3" stdDeviation="2" flood-color="#0f172a" flood-opacity="0.08" />
+    </filter>
+
+    <!-- Markers for Sketch Arrows -->
+    <marker id="arrow-sketch" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#334155" stroke="#334155" stroke-width="1" stroke-linejoin="round"/>
+    </marker>
+    <marker id="arrow-orange" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#ea580c" stroke="#ea580c" stroke-width="1" stroke-linejoin="round"/>
+    </marker>
+    <marker id="arrow-green" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#16a34a" stroke="#16a34a" stroke-width="1" stroke-linejoin="round"/>
+    </marker>
+    <marker id="arrow-blue" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#0284c7" stroke="#0284c7" stroke-width="1" stroke-linejoin="round"/>
+    </marker>
+
+    <!-- Patterns -->
+    <pattern id="grid-dots" width="20" height="20" patternUnits="userSpaceOnUse">
+      <circle cx="2" cy="2" r="1" fill="#cbd5e1" opacity="0.4" />
+    </pattern>
+    <pattern id="diagonal-stripe" width="8" height="8" patternUnits="userSpaceOnUse">
+      <path d="M-1,1 l2,-2 M0,8 l8,-8 M7,9 l2,-2" stroke="#e2e8f0" stroke-width="1.2"/>
+    </pattern>
+  </defs>
+
+  <style>
+    .hand-title { font-family: 'Comic Sans MS', 'Chalkboard SE', 'Comic Neue', cursive, sans-serif; font-size: 24px; font-weight: bold; fill: #1e293b; }
+    .hand-subtitle { font-family: 'Comic Sans MS', 'Chalkboard SE', 'Comic Neue', cursive, sans-serif; font-size: 13px; fill: #64748b; }
+    .hand-heading { font-family: 'Comic Sans MS', 'Chalkboard SE', 'Comic Neue', cursive, sans-serif; font-size: 16px; font-weight: bold; fill: #0f172a; }
+    .hand-subheading { font-family: 'Comic Sans MS', 'Chalkboard SE', 'Comic Neue', cursive, sans-serif; font-size: 13px; font-weight: bold; fill: #334155; }
+    .hand-text { font-family: 'Comic Sans MS', 'Chalkboard SE', 'Comic Neue', cursive, sans-serif; font-size: 11.5px; fill: #334155; line-height: 1.4; }
+    .hand-code { font-family: 'SFMono-Regular', Consolas, Monaco, monospace; font-size: 11px; fill: #0f172a; font-weight: 600; }
+    .hand-badge { font-family: 'Comic Sans MS', 'Chalkboard SE', cursive, sans-serif; font-size: 14px; font-weight: bold; fill: #ffffff; text-anchor: middle; dominant-baseline: central; }
+    .sticky-note { fill: #fef9c3; stroke: #ca8a04; stroke-width: 1.8; filter: url(#sketch-shadow); }
+    .tape { fill: #f1f5f9; opacity: 0.75; stroke: #cbd5e1; stroke-width: 1; }
+  </style>
+
+  <!-- Background Canvas -->
+  <rect x="0" y="0" width="1560" height="920" fill="#f8fafc" />
+  <rect x="0" y="0" width="1560" height="920" fill="url(#grid-dots)" />
+
+  <!-- Outer Border Frame with hand-drawn aesthetic -->
+  <rect x="18" y="18" width="1524" height="884" rx="18" fill="none" stroke="#94a3b8" stroke-width="2" stroke-dasharray="8 6" />
+
+  <!-- HEADER BANNER (Draw.io Comic / Sketch Style) -->
+  <g transform="translate(40, 32)">
+    <!-- Main Title Card -->
+    <path d="
+    M 12 0 
+    Q 510.0 0.20914019768682562 1008 0
+    Q 1020 0 1020 12
+    Q 1019.287516132834 36.0 1020 60
+    Q 1020 72 1008 72
+    Q 510.0 71.66254397755368 12 72
+    Q 0 72 0 60
+    Q -0.4151838927767659 36.0 0 12
+    Q 0 0 12 0
+    Z
+    " fill="#ffffff" stroke="#1e293b" stroke-width="2.2" filter="url(#sketch-shadow)" />
+    <!-- Tape accent top left -->
+    <rect x="25" y="-6" width="60" height="15" transform="rotate(-3 55 2)" class="tape" />
+    <text x="30" y="32" class="hand-title">🛠️ SƠ ĐỒ NGUYÊN LÝ: BIẾN MÁY MAC CỤC BỘ THÀNH SERVER INTERNET</text>
+    <text x="32" y="56" class="hand-subtitle">Mô hình Cloudflare Zero Trust Tunnel (Bypass CGNAT · Không cần IP Tĩnh · Không mở Port Forwarding)</text>
+    
+    <!-- Legend / Status Pill right side -->
+    <g transform="translate(1040, 8)">
+      <path d="
+    M 10 0 
+    Q 220.0 0.3547068212460186 430 0
+    Q 440 0 440 10
+    Q 440.26504923113436 28.0 440 46
+    Q 440 56 430 56
+    Q 220.0 56.588269351557265 10 56
+    Q 0 56 0 46
+    Q -0.6195917510558757 28.0 0 10
+    Q 0 0 10 0
+    Z
+    " fill="#f0fdf4" stroke="#16a34a" stroke-width="2" filter="url(#card-shadow)" />
+      <circle cx="28" cy="28" r="14" fill="#22c55e" />
+      <path d="M 21 28 L 26 33 L 35 22" fill="none" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+      <text x="52" y="24" class="hand-heading" fill="#15803d" font-size="13">TRẠNG THÁI: ONLINE 24/7 (SẴN SÀNG)</text>
+      <text x="52" y="44" class="hand-text" fill="#166534">LaunchDaemon PID 397 · Zero Trust Tunnel Active</text>
+    </g>
+  </g>
+
+  <!-- =================================================================== -->
+  <!-- ZONE 1: CLIENTS & USERS (LEFT COLUMN) -->
+  <!-- =================================================================== -->
+  <g transform="translate(40, 130)">
+    <!-- Container Box -->
+    <path d="
+    M 14 0 
+    Q 130.0 -0.11711727047209436 246 0
+    Q 260 0 260 14
+    Q 259.2946958291571 240.0 260 466
+    Q 260 480 246 480
+    Q 130.0 479.5779569622054 14 480
+    Q 0 480 0 466
+    Q 0.008032932155043582 240.0 0 14
+    Q 0 0 14 0
+    Z
+    " fill="#ffffff" stroke="#0284c7" stroke-width="2.2" filter="url(#sketch-shadow)" />
+    <!-- Header Pill -->
+    <path d="
+    M 20 12 
+    Q 130.0 11.289803954525796 240 12
+    Q 248 12 248 20
+    Q 247.54825647602996 34.0 248 48
+    Q 248 56 240 56
+    Q 130.0 56.224826656669286 20 56
+    Q 12 56 12 48
+    Q 12.067412220904824 34.0 12 20
+    Q 12 12 20 12
+    Z
+    " fill="#e0f2fe" stroke="#0284c7" stroke-width="1.8" />
+    <text x="130" y="38" text-anchor="middle" class="hand-heading" fill="#0369a1">👥 NGƯỜI DÙNG &amp; THIẾT BỊ</text>
+
+    <!-- Client Card 1: Web Browsers -->
+    <g transform="translate(16, 74)">
+      <path d="
+    M 10 0 
+    Q 114.0 -0.41933906693895495 218 0
+    Q 228 0 228 10
+    Q 228.13389852581386 60.0 228 110
+    Q 228 120 218 120
+    Q 114.0 120.46414568501675 10 120
+    Q 0 120 0 110
+    Q -0.7402518604829085 60.0 0 10
+    Q 0 0 10 0
+    Z
+    " fill="#f8fafc" stroke="#64748b" stroke-width="1.5" />
+      <!-- Browser window mockup -->
+      <rect x="14" y="12" width="200" height="30" rx="4" fill="#e2e8f0" stroke="#94a3b8" stroke-width="1"/>
+      <circle cx="24" cy="27" r="3.5" fill="#ef4444"/>
+      <circle cx="34" cy="27" r="3.5" fill="#f59e0b"/>
+      <circle cx="44" cy="27" r="3.5" fill="#22c55e"/>
+      <rect x="56" y="20" width="150" height="14" rx="3" fill="#ffffff"/>
+      <text x="62" y="31" class="hand-code" font-size="8.5" fill="#0284c7">https://ops.nexus-ex.site</text>
+      
+      <text x="14" y="62" class="hand-subheading" fill="#1e293b">Trình duyệt Web (4 Portals)</text>
+      <text x="14" y="80" class="hand-text">• ops.nexus-ex.site (Điều hành)</text>
+      <text x="14" y="96" class="hand-text">• merchant.nexus-ex.site (Shop)</text>
+      <text x="14" y="112" class="hand-text">• admin · tracking (Tra cứu)</text>
+    </g>
+
+    <!-- Client Card 2: Mobile Apps (Courier & Customer) -->
+    <g transform="translate(16, 212)">
+      <path d="
+    M 10 0 
+    Q 114.0 0.45872887774921184 218 0
+    Q 228 0 228 10
+    Q 228.29720909248235 57.5 228 105
+    Q 228 115 218 115
+    Q 114.0 114.76037577477699 10 115
+    Q 0 115 0 105
+    Q -0.5167807502823276 57.5 0 10
+    Q 0 0 10 0
+    Z
+    " fill="#f8fafc" stroke="#64748b" stroke-width="1.5" />
+      <!-- Phone mockup -->
+      <rect x="16" y="14" width="34" height="60" rx="6" fill="#1e293b" />
+      <rect x="19" y="20" width="28" height="48" rx="2" fill="#38bdf8" />
+      <circle cx="33" cy="71" r="2" fill="#94a3b8"/>
+      
+      <text x="60" y="30" class="hand-subheading" fill="#1e293b">Ứng dụng Mobile APK</text>
+      <text x="60" y="48" class="hand-text">• Courier Mobile (Shipper)</text>
+      <text x="60" y="64" class="hand-text">• Customer App (Khách)</text>
+      <text x="60" y="82" class="hand-code" font-size="9" fill="#0284c7">API: https://ops.nexus-ex.site</text>
+      <text x="60" y="98" class="hand-text" fill="#64748b">React Native / Expo</text>
+    </g>
+
+    <!-- Client Card 3: External Webhooks -->
+    <g transform="translate(16, 345)">
+      <path d="
+    M 10 0 
+    Q 114.0 0.6858196083101717 218 0
+    Q 228 0 228 10
+    Q 227.75489181766895 57.5 228 105
+    Q 228 115 218 115
+    Q 114.0 114.38911876507022 10 115
+    Q 0 115 0 105
+    Q -0.604925434749804 57.5 0 10
+    Q 0 0 10 0
+    Z
+    " fill="#fff7ed" stroke="#ea580c" stroke-width="1.5" />
+      <text x="14" y="26" class="hand-subheading" fill="#9a3412">🔗 Đối tác &amp; Webhook</text>
+      <text x="14" y="46" class="hand-text">• DT_COMMERCE (api.truongam.tech)</text>
+      <text x="14" y="64" class="hand-text">• SePay (qr.sepay.vn - Bắn IPN)</text>
+      <text x="14" y="84" class="hand-text">• External AI LLMs (Gemini, Cohere)</text>
+      <text x="14" y="102" class="hand-code" font-size="9" fill="#ea580c">POST /api/webhooks/*</text>
+    </g>
+  </g>
+
+  <!-- Numbered Step 1 Badge on Arrow from Clients to Cloudflare -->
+  <g transform="translate(325, 290)">
+    <circle cx="18" cy="18" r="16" fill="#0284c7" stroke="#ffffff" stroke-width="2" filter="url(#card-shadow)"/>
+    <text x="18" y="19" class="hand-badge">1</text>
+  </g>
+
+  <!-- Arrow from Clients to Cloudflare Edge -->
+  <path d="M 302 320 C 330 320, 340 320, 370 320" fill="none" stroke="#0284c7" stroke-width="3.5" marker-end="url(#arrow-blue)" stroke-dasharray="7 4" />
+  <text x="336" y="348" text-anchor="middle" class="hand-code" font-size="10.5" fill="#0369a1">HTTPS :443</text>
+  <text x="336" y="362" text-anchor="middle" class="hand-text" font-size="9" fill="#64748b">WSS :443</text>
+
+  <!-- =================================================================== -->
+  <!-- ZONE 2: CLOUDFLARE EDGE (MIDDLE-LEFT COLUMN) -->
+  <!-- =================================================================== -->
+  <g transform="translate(375, 130)">
+    <!-- Container Box -->
+    <path d="
+    M 14 0 
+    Q 140.0 0.5212415495211897 266 0
+    Q 280 0 280 14
+    Q 280.15558904705034 240.0 280 466
+    Q 280 480 266 480
+    Q 140.0 480.4606924099116 14 480
+    Q 0 480 0 466
+    Q 0.34459768004072683 240.0 0 14
+    Q 0 0 14 0
+    Z
+    " fill="#ffffff" stroke="#ea580c" stroke-width="2.2" filter="url(#sketch-shadow)" />
+    <!-- Header Pill -->
+    <path d="
+    M 20 12 
+    Q 140.0 12.05434213718205 260 12
+    Q 268 12 268 20
+    Q 268.7096736459691 34.0 268 48
+    Q 268 56 260 56
+    Q 140.0 55.81780156581253 20 56
+    Q 12 56 12 48
+    Q 12.07806094690984 34.0 12 20
+    Q 12 12 20 12
+    Z
+    " fill="#ffedd5" stroke="#ea580c" stroke-width="1.8" />
+    <text x="140" y="38" text-anchor="middle" class="hand-heading" fill="#c2410c">☁️ CLOUDFLARE EDGE</text>
+
+    <!-- Cloud Icon & Subtitle -->
+    <g transform="translate(20, 68)">
+      <!-- Fluffy cloud sketch -->
+      <path d="M 30 40 A 18 18 0 0 1 65 30 A 24 24 0 0 1 105 32 A 16 16 0 0 1 125 45 A 14 14 0 0 1 120 62 L 25 62 A 14 14 0 0 1 30 40 Z" fill="#ffedd5" stroke="#ea580c" stroke-width="2" />
+      <text x="145" y="38" class="hand-subheading" fill="#9a3412">Anycast DNS</text>
+      <text x="145" y="55" class="hand-code" font-size="10" fill="#ea580c">*.nexus-ex.site</text>
+    </g>
+
+    <!-- Feature 1: SSL/TLS Termination -->
+    <g transform="translate(16, 140)">
+      <path d="
+    M 8 0 
+    Q 124.0 0.4941069963794923 240 0
+    Q 248 0 248 8
+    Q 248.17777962854638 31.0 248 54
+    Q 248 62 240 62
+    Q 124.0 62.54256035046617 8 62
+    Q 0 62 0 54
+    Q 0.11602821788514306 31.0 0 8
+    Q 0 0 8 0
+    Z
+    " fill="#fffbeb" stroke="#f59e0b" stroke-width="1.4" />
+      <text x="12" y="24" class="hand-subheading" fill="#b45309">🔒 Cấp Chứng chỉ SSL/TLS Miễn phí</text>
+      <text x="12" y="42" class="hand-text">Tự động kích hoạt HTTPS/WSS cho mọi</text>
+      <text x="12" y="55" class="hand-text">subdomain. Mã hóa đầu cuối (Full Strict).</text>
+    </g>
+
+    <!-- Feature 2: DDoS & WAF Protection -->
+    <g transform="translate(16, 214)">
+      <path d="
+    M 8 0 
+    Q 124.0 0.3068577543223852 240 0
+    Q 248 0 248 8
+    Q 247.31873657548348 31.0 248 54
+    Q 248 62 240 62
+    Q 124.0 61.59184741347732 8 62
+    Q 0 62 0 54
+    Q -0.31591805459683925 31.0 0 8
+    Q 0 0 8 0
+    Z
+    " fill="#fef2f2" stroke="#ef4444" stroke-width="1.4" />
+      <text x="12" y="24" class="hand-subheading" fill="#b91c1c">🛡️ Lá Chắn Bảo Vệ Chu Vi (WAF)</text>
+      <text x="12" y="42" class="hand-text">Chống DDoS L3/L4/L7, Botnet, che giấu</text>
+      <text x="12" y="55" class="hand-text">hoàn toàn địa chỉ IP thật của máy Mac.</text>
+    </g>
+
+    <!-- Feature 3: Zero Trust Tunnel Endpoint -->
+    <g transform="translate(16, 288)">
+      <path d="
+    M 8 0 
+    Q 124.0 -0.6303120346145588 240 0
+    Q 248 0 248 8
+    Q 247.59918632954154 43.0 248 78
+    Q 248 86 240 86
+    Q 124.0 85.40150214411459 8 86
+    Q 0 86 0 78
+    Q -0.3330395953348618 43.0 0 8
+    Q 0 0 8 0
+    Z
+    " fill="#f0fdf4" stroke="#16a34a" stroke-width="1.4" />
+      <text x="12" y="24" class="hand-subheading" fill="#15803d">⚡ Đầu Nhận Zero Trust Tunnel</text>
+      <text x="12" y="44" class="hand-code" font-size="9.5" fill="#166534">CNAME *.cfargotunnel.com</text>
+      <text x="12" y="62" class="hand-text">Tiếp nhận gói tin từ Internet và đẩy vào</text>
+      <text x="12" y="77" class="hand-text">kênh hầm đã được thiết lập sẵn từ Mac.</text>
+    </g>
+
+    <!-- Post-it Note at bottom of Cloudflare Edge -->
+    <g transform="translate(16, 386)">
+      <path d="
+    M 8 0 
+    Q 124.0 0.20352666639660028 240 0
+    Q 248 0 248 8
+    Q 247.79724826845512 40.0 248 72
+    Q 248 80 240 80
+    Q 124.0 79.80527145067532 8 80
+    Q 0 80 0 72
+    Q -0.43573945384276846 40.0 0 8
+    Q 0 0 8 0
+    Z
+    " fill="#fef9c3" stroke="#ca8a04" stroke-width="1.6" />
+      <text x="12" y="22" class="hand-subheading" fill="#854d0e">💡 Bí quyết công nghệ:</text>
+      <text x="12" y="40" class="hand-text" fill="#713f12">Không trỏ IP vào máy Mac!</text>
+      <text x="12" y="56" class="hand-text" fill="#713f12">Mọi subdomain trỏ CNAME về Tunnel,</text>
+      <text x="12" y="72" class="hand-text" fill="#713f12">an toàn tuyệt đối trước kẻ tấn công.</text>
+    </g>
+  </g>
+
+  <!-- =================================================================== -->
+  <!-- MIDDLE PIPE: THE ENCRYPTED OUTBOUND TUNNEL -->
+  <!-- =================================================================== -->
+  <g transform="translate(665, 250)">
+    <!-- Tunnel Tube Graphics -->
+    <rect x="0" y="20" width="120" height="90" rx="12" fill="#eff6ff" stroke="#3b82f6" stroke-width="2" stroke-dasharray="6 4" />
+    <path d="M 0 20 C 30 20, 30 110, 0 110" fill="none" stroke="#2563eb" stroke-width="2" />
+    <path d="M 40 20 C 70 20, 70 110, 40 110" fill="none" stroke="#93c5fd" stroke-width="1.5" stroke-dasharray="4 3" />
+    <path d="M 80 20 C 110 20, 110 110, 80 110" fill="none" stroke="#93c5fd" stroke-width="1.5" stroke-dasharray="4 3" />
+    <path d="M 120 20 C 150 20, 150 110, 120 110" fill="none" stroke="#2563eb" stroke-width="2" />
+
+    <!-- Outbound Arrow (Initiated from Mac -> Cloudflare) -->
+    <path d="M 115 50 L 10 50" fill="none" stroke="#16a34a" stroke-width="3.5" marker-end="url(#arrow-green)" stroke-dasharray="6 3" />
+    <text x="60" y="44" text-anchor="middle" class="hand-subheading" font-size="10" fill="#15803d">Outbound (Khởi tạo từ Mac)</text>
+
+    <!-- Inbound Traffic Return (Multiplexed) -->
+    <path d="M 10 80 L 115 80" fill="none" stroke="#ea580c" stroke-width="3" marker-end="url(#arrow-orange)" />
+    <text x="60" y="98" text-anchor="middle" class="hand-subheading" font-size="10" fill="#c2410c">Data Ingress (Đón Request)</text>
+
+    <!-- Badge 2 & 3 -->
+    <g transform="translate(42, -26)">
+      <circle cx="18" cy="18" r="16" fill="#16a34a" stroke="#ffffff" stroke-width="2" filter="url(#card-shadow)"/>
+      <text x="18" y="19" class="hand-badge">2</text>
+    </g>
+
+    <!-- Crossed out Router / NAT Badge underneath tunnel -->
+    <g transform="translate(-10, 130)">
+      <path d="
+    M 8 0 
+    Q 70.0 -0.34953326692632997 132 0
+    Q 140 0 140 8
+    Q 140.65498188156874 47.5 140 87
+    Q 140 95 132 95
+    Q 70.0 95.22205307786989 8 95
+    Q 0 95 0 87
+    Q 0.16369650850048229 47.5 0 8
+    Q 0 0 8 0
+    Z
+    " fill="#fef2f2" stroke="#ef4444" stroke-width="1.5" />
+      <text x="70" y="24" text-anchor="middle" class="hand-subheading" fill="#b91c1c" font-size="11">🚫 Router NAT / CGNAT</text>
+      <line x1="15" y1="36" x2="125" y2="36" stroke="#fca5a5" stroke-width="1"/>
+      <text x="70" y="52" text-anchor="middle" class="hand-text" font-size="10" fill="#991b1b">KHÔNG mở port router!</text>
+      <text x="70" y="68" text-anchor="middle" class="hand-text" font-size="10" fill="#991b1b">KHÔNG sợ ISP đổi IP!</text>
+      <text x="70" y="84" text-anchor="middle" class="hand-text" font-size="10" fill="#991b1b">Vượt qua mọi Firewall</text>
+    </g>
+  </g>
+
+  <!-- =================================================================== -->
+  <!-- ZONE 3: LOCAL HOST (APPLE SILICON MAC SERVER) (RIGHT COLUMN) -->
+  <!-- =================================================================== -->
+  <g transform="translate(795, 130)">
+    <!-- Container Box (Big Mac Server) -->
+    <path d="
+    M 16 0 
+    Q 362.5 -0.4932920277028545 709 0
+    Q 725 0 725 16
+    Q 725.3436901969255 240.0 725 464
+    Q 725 480 709 480
+    Q 362.5 479.4951037406429 16 480
+    Q 0 480 0 464
+    Q -0.18081683736352833 240.0 0 16
+    Q 0 0 16 0
+    Z
+    " fill="#ffffff" stroke="#4f46e5" stroke-width="2.5" filter="url(#sketch-shadow)" />
+    <!-- Header Pill -->
+    <path d="
+    M 24 12 
+    Q 362.5 12.734285025954893 701 12
+    Q 711 12 711 22
+    Q 711.2099996397811 35.0 711 48
+    Q 711 58 701 58
+    Q 362.5 58.08542461566197 24 58
+    Q 14 58 14 48
+    Q 14.276921376484811 35.0 14 22
+    Q 14 12 24 12
+    Z
+    " fill="#e0e7ff" stroke="#4f46e5" stroke-width="1.8" />
+    <text x="24" y="40" class="hand-heading" fill="#3730a3">🖥️ MÁY CHỦ CỤC BỘ APPLE SILICON (macOS · ARM64 · Apple M-Series)</text>
+    <rect x="580" y="22" width="120" height="26" rx="6" fill="#4338ca"/>
+    <text x="640" y="39" text-anchor="middle" class="hand-code" font-size="11" fill="#ffffff">HOST: LOCALHOST</text>
+
+    <!-- Sub-container 1: cloudflared daemon -->
+    <g transform="translate(18, 70)">
+      <path d="
+    M 10 0 
+    Q 140.0 0.5142778802847143 270 0
+    Q 280 0 280 10
+    Q 280.4139998673194 92.5 280 175
+    Q 280 185 270 185
+    Q 140.0 184.59357210794616 10 185
+    Q 0 185 0 175
+    Q -0.7018496341439433 92.5 0 10
+    Q 0 0 10 0
+    Z
+    " fill="#f5f3ff" stroke="#7c3aed" stroke-width="1.8" />
+      <rect x="12" y="10" width="130" height="24" rx="5" fill="#7c3aed"/>
+      <text x="77" y="26" text-anchor="middle" class="hand-heading" font-size="12" fill="#ffffff">cloudflared daemon</text>
+      <text x="150" y="27" class="hand-code" font-size="10.5" fill="#6d28d9">PID 397 (LaunchDaemon)</text>
+
+      <text x="14" y="54" class="hand-subheading" fill="#5b21b6">⚙️ Ingress Rules (/etc/cloudflared):</text>
+      <text x="14" y="74" class="hand-code" font-size="9.5" fill="#1e293b">• api.nexus-ex.site → :3000</text>
+      <text x="14" y="92" class="hand-code" font-size="9.5" fill="#1e293b">• ops.nexus-ex.site → :8080</text>
+      <text x="14" y="110" class="hand-code" font-size="9.5" fill="#1e293b">• merchant.* → :8080</text>
+      <text x="14" y="128" class="hand-code" font-size="9.5" fill="#1e293b">• admin.* · tracking.* → :8080</text>
+      <text x="14" y="146" class="hand-code" font-size="9.5" fill="#1e293b">• minio.nexus-ex.site → :9000</text>
+      <text x="14" y="168" class="hand-code" font-size="9.5" fill="#9333ea">- service: http_status:404</text>
+    </g>
+
+    <!-- Sub-container 2: Reverse Proxy & Static Web -->
+    <g transform="translate(315, 70)">
+      <path d="
+    M 10 0 
+    Q 196.0 -0.2768204279113771 382 0
+    Q 392 0 392 10
+    Q 391.65161131396354 92.5 392 175
+    Q 392 185 382 185
+    Q 196.0 184.5664742653795 10 185
+    Q 0 185 0 175
+    Q 0.6643645715025817 92.5 0 10
+    Q 0 0 10 0
+    Z
+    " fill="#f0fdf4" stroke="#16a34a" stroke-width="1.8" />
+      <rect x="12" y="10" width="180" height="24" rx="5" fill="#16a34a"/>
+      <text x="102" y="26" text-anchor="middle" class="hand-heading" font-size="11.5" fill="#ffffff">nexus-static-web (:8080)</text>
+      <text x="200" y="27" class="hand-code" font-size="10.5" fill="#15803d">scripts/serve-static-apps.mjs</text>
+
+      <text x="14" y="54" class="hand-subheading" fill="#166534">🎯 Phân phối Frontend SPA &amp; Reverse Proxy:</text>
+      <text x="14" y="74" class="hand-text">• Phục vụ file tĩnh production (dist/) của 4 SPA:</text>
+      <text x="24" y="92" class="hand-code" font-size="9.5" fill="#047857">apps/ops-web, merchant-web, admin-web, guest-web</text>
+      <text x="14" y="114" class="hand-subheading" fill="#b45309">🔑 Giải pháp chặn triệt để Mixed Content:</text>
+      <text x="14" y="132" class="hand-text">• Proxy trong suốt: <tspan class="hand-code" fill="#b45309">/ops/*, /merchant/*, /ws/*</tspan></text>
+      <text x="24" y="150" class="hand-text">chuyển tiếp trực tiếp nội bộ sang <tspan class="hand-code" fill="#4338ca">gateway-bff (:3000)</tspan></text>
+      <text x="14" y="170" class="hand-text" fill="#166534">→ Trình duyệt nhận request Same-Origin HTTPS 100%!</text>
+    </g>
+
+    <!-- Sub-container 3: API Gateway BFF (:3000) -->
+    <g transform="translate(18, 270)">
+      <path d="
+    M 10 0 
+    Q 170.0 0.5645514397090032 330 0
+    Q 340 0 340 10
+    Q 339.7220168211977 96.0 340 182
+    Q 340 192 330 192
+    Q 170.0 192.23315799794233 10 192
+    Q 0 192 0 182
+    Q -0.1565521484090036 96.0 0 10
+    Q 0 0 10 0
+    Z
+    " fill="#eff6ff" stroke="#2563eb" stroke-width="1.8" />
+      <rect x="12" y="10" width="150" height="24" rx="5" fill="#2563eb"/>
+      <text x="87" y="26" text-anchor="middle" class="hand-heading" font-size="12" fill="#ffffff">gateway-bff (:3000)</text>
+      <text x="170" y="27" class="hand-code" font-size="10" fill="#1d4ed8">Port 3000 · NestJS</text>
+
+      <text x="14" y="54" class="hand-subheading" fill="#1e40af">🛡️ Kiểm soát An ninh Chu vi (Perimeter):</text>
+      <text x="14" y="74" class="hand-text">• Xác thực Opaque Token (Access: 15p, Refresh: 30d)</text>
+      <text x="14" y="92" class="hand-text">• Rate Limiting (2.400 req/phút / IP), CORS whitelist</text>
+      <text x="14" y="110" class="hand-text">• Nâng cấp WebSocket: /ws/chat, /ws/tasks, /ws/locations</text>
+      <text x="14" y="132" class="hand-subheading" fill="#1e40af">🔀 Điều phối tới 12 Microservices nội bộ:</text>
+      <text x="14" y="152" class="hand-code" font-size="9" fill="#1e3a8a">auth(:3001), masterdata(:3002), pricing(:3003),</text>
+      <text x="14" y="168" class="hand-code" font-size="9" fill="#1e3a8a">shipment(:3004), pickup(:3005), dispatch(:3006),</text>
+      <text x="14" y="184" class="hand-code" font-size="9" fill="#1e3a8a">scan, delivery, tracking, reporting, payment, chatbot</text>
+    </g>
+
+    <!-- Sub-container 4: PM2 & Docker Infrastructure Containers -->
+    <g transform="translate(372, 270)">
+      <path d="
+    M 10 0 
+    Q 167.5 0.6218213846108153 325 0
+    Q 335 0 335 10
+    Q 334.9382777788811 96.0 335 182
+    Q 335 192 325 192
+    Q 167.5 191.64732024974708 10 192
+    Q 0 192 0 182
+    Q -0.3800587384590248 96.0 0 10
+    Q 0 0 10 0
+    Z
+    " fill="#fafaf9" stroke="#57534e" stroke-width="1.8" />
+      <rect x="12" y="10" width="180" height="24" rx="5" fill="#44403c"/>
+      <text x="102" y="26" text-anchor="middle" class="hand-heading" font-size="11.5" fill="#ffffff">PM2 + Docker Compose</text>
+      <text x="200" y="27" class="hand-code" font-size="10" fill="#78716c">15 Node + 4 Container</text>
+
+      <!-- Mini box: PM2 Processes -->
+      <g transform="translate(10, 42)">
+        <path d="
+    M 6 0 
+    Q 157.5 0.09205220124472618 309 0
+    Q 315 0 315 6
+    Q 314.6441124127844 33.0 315 60
+    Q 315 66 309 66
+    Q 157.5 66.12687898533531 6 66
+    Q 0 66 0 60
+    Q 0.5967343254037154 33.0 0 6
+    Q 0 0 6 0
+    Z
+    " fill="#ffffff" stroke="#10b981" stroke-width="1.2" />
+        <text x="10" y="18" class="hand-subheading" font-size="11" fill="#047857">⚡ PM2 Process Manager (RAM ~500MB)</text>
+        <text x="10" y="36" class="hand-text">• 14 NestJS Microservices + 1 Static Web Server</text>
+        <text x="10" y="52" class="hand-text">• Auto-restart khi crash, watch &amp; reload zero-downtime</text>
+      </g>
+
+      <!-- Mini box: Docker 4 Containers -->
+      <g transform="translate(10, 115)">
+        <path d="
+    M 6 0 
+    Q 157.5 -0.1508992422894041 309 0
+    Q 315 0 315 6
+    Q 314.5789811387359 34.0 315 62
+    Q 315 68 309 68
+    Q 157.5 68.74630640974267 6 68
+    Q 0 68 0 62
+    Q 0.014289440514696772 34.0 0 6
+    Q 0 0 6 0
+    Z
+    " fill="#ffffff" stroke="#0284c7" stroke-width="1.2" />
+        <text x="10" y="18" class="hand-subheading" font-size="11" fill="#0369a1">🐳 Docker Containers (Hạ tầng lưu trữ)</text>
+        <text x="10" y="34" class="hand-code" font-size="9" fill="#0f172a">• postgres:16 (12 DBs độc lập - :15432)</text>
+        <text x="10" y="48" class="hand-code" font-size="9" fill="#0f172a">• rabbitmq:3 (AMQP :5672) · redis:7 (:6379)</text>
+        <text x="10" y="62" class="hand-code" font-size="9" fill="#0f172a">• minio:s3 (:9000/9001 - nexus-pod-images)</text>
+      </g>
+    </g>
+  </g>
+
+  <!-- Numbered Step 4 Badge inside Mac Host -->
+  <g transform="translate(775, 175)">
+    <circle cx="18" cy="18" r="16" fill="#7c3aed" stroke="#ffffff" stroke-width="2" filter="url(#card-shadow)"/>
+    <text x="18" y="19" class="hand-badge">3</text>
+  </g>
+  <g transform="translate(1100, 175)">
+    <circle cx="18" cy="18" r="16" fill="#16a34a" stroke="#ffffff" stroke-width="2" filter="url(#card-shadow)"/>
+    <text x="18" y="19" class="hand-badge">4</text>
+  </g>
+  <g transform="translate(775, 345)">
+    <circle cx="18" cy="18" r="16" fill="#2563eb" stroke="#ffffff" stroke-width="2" filter="url(#card-shadow)"/>
+    <text x="18" y="19" class="hand-badge">5</text>
+  </g>
+
+  <!-- =================================================================== -->
+  <!-- BOTTOM SECTION: STEP-BY-STEP RECIPE CARDS (THE STORY) -->
+  <!-- =================================================================== -->
+  <g transform="translate(40, 630)">
+    <!-- Container Bar -->
+    <path d="
+    M 14 0 
+    Q 740.0 -0.6136358817393092 1466 0
+    Q 1480 0 1480 14
+    Q 1479.3206745631371 125.0 1480 236
+    Q 1480 250 1466 250
+    Q 740.0 249.414473695526 14 250
+    Q 0 250 0 236
+    Q 0.19116906255463506 125.0 0 14
+    Q 0 0 14 0
+    Z
+    " fill="#ffffff" stroke="#334155" stroke-width="2.2" filter="url(#sketch-shadow)" />
+    <!-- Header of bottom section -->
+    <text x="24" y="30" class="hand-heading" fill="#0f172a" font-size="15">📝 5 BƯỚC TRIỂN KHAI THỰC TẾ: TỪ LAPTOP CÁ NHÂN ĐẾN HỆ THỐNG CLOUD PRODUCTION</text>
+    <line x1="24" y1="40" x2="1456" y2="40" stroke="#e2e8f0" stroke-width="1.5" />
+
+    <!-- Step 1 Card -->
+    <g transform="translate(20, 52)">
+      <path d="
+    M 10 0 
+    Q 137.5 0.43811904654444617 265 0
+    Q 275 0 275 10
+    Q 274.88323995019954 90.0 275 170
+    Q 275 180 265 180
+    Q 137.5 179.34529155922795 10 180
+    Q 0 180 0 170
+    Q -0.17757107024019486 90.0 0 10
+    Q 0 0 10 0
+    Z
+    " fill="#f0f9ff" stroke="#0284c7" stroke-width="1.6" />
+      <circle cx="26" cy="24" r="14" fill="#0284c7" />
+      <text x="26" y="25" class="hand-badge" font-size="13">1</text>
+      <text x="48" y="28" class="hand-subheading" fill="#0369a1" font-size="13">Mua Domain &amp; NS</text>
+      
+      <text x="12" y="54" class="hand-text">• Mua tên miền: <tspan class="hand-code">nexus-ex.site</tspan></text>
+      <text x="12" y="72" class="hand-text">• Trỏ Nameserver về Cloudflare:</text>
+      <text x="18" y="90" class="hand-code" font-size="9" fill="#0369a1">ns1.cloudflare.com</text>
+      <text x="18" y="104" class="hand-code" font-size="9" fill="#0369a1">ns2.cloudflare.com</text>
+      <text x="12" y="124" class="hand-text">• Bật Cloudflare Proxy (Đám mây cam)</text>
+      <text x="12" y="142" class="hand-text">• Tự động nhận chứng chỉ SSL Universal</text>
+      <text x="12" y="160" class="hand-text" fill="#16a34a">✓ Không tốn tiền mua IP tĩnh</text>
+    </g>
+
+    <!-- Step 2 Card -->
+    <g transform="translate(310, 52)">
+      <path d="
+    M 10 0 
+    Q 137.5 0.7441820703601452 265 0
+    Q 275 0 275 10
+    Q 275.0436715176487 90.0 275 170
+    Q 275 180 265 180
+    Q 137.5 180.70661756642042 10 180
+    Q 0 180 0 170
+    Q 0.5411695533517471 90.0 0 10
+    Q 0 0 10 0
+    Z
+    " fill="#fff7ed" stroke="#ea580c" stroke-width="1.6" />
+      <circle cx="26" cy="24" r="14" fill="#ea580c" />
+      <text x="26" y="25" class="hand-badge" font-size="13">2</text>
+      <text x="48" y="28" class="hand-subheading" fill="#c2410c" font-size="13">Tạo Zero Trust Tunnel</text>
+      
+      <text x="12" y="54" class="hand-text">• Vào Cloudflare One (Zero Trust Dashboard)</text>
+      <text x="12" y="72" class="hand-text">• Tạo Tunnel đặt tên: <tspan class="hand-code">nexus-tunnel</tspan></text>
+      <text x="12" y="90" class="hand-text">• Hệ thống sinh Connector Token bí mật:</text>
+      <text x="18" y="110" class="hand-code" font-size="8.5" fill="#9a3412">eyJhIjoiNjQ5Z...eyJ0Ijoi...</text>
+      <text x="12" y="132" class="hand-text">• Tạo các Public Hostnames CNAME trỏ về</text>
+      <text x="12" y="150" class="hand-text">Tunnel UUID (ops, merchant, api,...)</text>
+      <text x="12" y="168" class="hand-text" fill="#16a34a">✓ Không cần mở Port 80/443</text>
+    </g>
+
+    <!-- Step 3 Card -->
+    <g transform="translate(600, 52)">
+      <path d="
+    M 10 0 
+    Q 137.5 -0.7327784670857705 265 0
+    Q 275 0 275 10
+    Q 275.3310827290403 90.0 275 170
+    Q 275 180 265 180
+    Q 137.5 180.27256555353986 10 180
+    Q 0 180 0 170
+    Q 0.05545549561319274 90.0 0 10
+    Q 0 0 10 0
+    Z
+    " fill="#f5f3ff" stroke="#7c3aed" stroke-width="1.6" />
+      <circle cx="26" cy="24" r="14" fill="#7c3aed" />
+      <text x="26" y="25" class="hand-badge" font-size="13">3</text>
+      <text x="48" y="28" class="hand-subheading" fill="#6d28d9" font-size="13">Cài cloudflared macOS</text>
+      
+      <text x="12" y="54" class="hand-text">• Cài đặt qua Homebrew:</text>
+      <text x="18" y="72" class="hand-code" font-size="9" fill="#6d28d9">brew install cloudflared</text>
+      <text x="12" y="92" class="hand-text">• Đăng ký LaunchDaemon hệ thống:</text>
+      <text x="18" y="110" class="hand-code" font-size="8" fill="#6d28d9">sudo cloudflared service install &lt;TOKEN&gt;</text>
+      <text x="12" y="132" class="hand-text">• Daemon chạy ngầm liên tục (PID 397)</text>
+      <text x="12" y="150" class="hand-text">• Tự động chạy khi Mac bật máy</text>
+      <text x="12" y="168" class="hand-text" fill="#16a34a">✓ Vận hành ổn định 24/7 như Server</text>
+    </g>
+
+    <!-- Step 4 Card -->
+    <g transform="translate(890, 52)">
+      <path d="
+    M 10 0 
+    Q 137.5 -0.3497622150711858 265 0
+    Q 275 0 275 10
+    Q 275.2114426978697 90.0 275 170
+    Q 275 180 265 180
+    Q 137.5 179.41732826039382 10 180
+    Q 0 180 0 170
+    Q -0.09785212399634252 90.0 0 10
+    Q 0 0 10 0
+    Z
+    " fill="#f0fdf4" stroke="#16a34a" stroke-width="1.6" />
+      <circle cx="26" cy="24" r="14" fill="#16a34a" />
+      <text x="26" y="25" class="hand-badge" font-size="13">4</text>
+      <text x="48" y="28" class="hand-subheading" fill="#15803d" font-size="13">Khởi chạy PM2 &amp; Docker</text>
+      
+      <text x="12" y="54" class="hand-text">• Chạy 4 container hạ tầng:</text>
+      <text x="18" y="72" class="hand-code" font-size="8.5" fill="#166534">docker compose -f infra/dev/... up -d</text>
+      <text x="12" y="92" class="hand-text">• Chạy 15 tiến trình Node.js:</text>
+      <text x="18" y="110" class="hand-code" font-size="8.5" fill="#166534">pm2 start ecosystem.config.cjs</text>
+      <text x="12" y="132" class="hand-text">• Cổng tĩnh 8080 phân phối 4 SPA</text>
+      <text x="12" y="150" class="hand-text">• Cổng Gateway 3000 đón API &amp; WS</text>
+      <text x="12" y="168" class="hand-text" fill="#16a34a">✓ Tiết kiệm RAM: chỉ tốn ~500MB</text>
+    </g>
+
+    <!-- Step 5 Card -->
+    <g transform="translate(1180, 52)">
+      <path d="
+    M 10 0 
+    Q 140.0 -0.06941444050619033 270 0
+    Q 280 0 280 10
+    Q 280.6807238912816 90.0 280 170
+    Q 280 180 270 180
+    Q 140.0 180.5637794105673 10 180
+    Q 0 180 0 170
+    Q -0.35491642387336386 90.0 0 10
+    Q 0 0 10 0
+    Z
+    " fill="#fdf4ff" stroke="#c026d3" stroke-width="1.6" />
+      <circle cx="26" cy="24" r="14" fill="#c026d3" />
+      <text x="26" y="25" class="hand-badge" font-size="13">5</text>
+      <text x="48" y="28" class="hand-subheading" fill="#a21caf" font-size="13">Xử lý Mixed Content</text>
+      
+      <text x="12" y="54" class="hand-text">• Trình duyệt chặn gọi HTTP từ HTTPS</text>
+      <text x="12" y="72" class="hand-text">• Giải pháp Reverse Proxy nội bộ:</text>
+      <text x="18" y="90" class="hand-code" font-size="8" fill="#a21caf">nexus-static-web (:8080)</text>
+      <text x="18" y="104" class="hand-text" font-size="10">chuyển tiếp transparent sang :3000</text>
+      <text x="12" y="124" class="hand-text">• Cho phép nâng cấp WebSocket WSS</text>
+      <text x="12" y="142" class="hand-text">• Mobile APK kết nối an toàn HTTPS</text>
+      <text x="12" y="160" class="hand-text" fill="#16a34a">✓ Trải nghiệm mượt mà không lỗi CORS</text>
+    </g>
+  </g>
+
+</svg>

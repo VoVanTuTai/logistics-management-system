@@ -10,11 +10,12 @@ Eliminates ALL 'Error! Bookmark not defined.' errors permanently.
 import copy
 import os
 import re
+import sys
 import docx
 from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
 
-DOC_PATH = "docs/BaoCaoKLTN_TranTanTai_VoVanTuTai_version4_final.docx"
+DOC_PATH = sys.argv[1] if len(sys.argv) > 1 else "docs/BaoCaoKLTN_TranTanTai_VoVanTuTai.docx"
 
 
 def get_next_bookmark_id(doc):
@@ -312,7 +313,7 @@ def main():
     for i in range(idx_ch1, len(paras)):
         p = paras[i]
         t = p.text.strip()
-        if re.match(r"^Bảng \d+\.\d+", t):
+        if re.match(r"^Bảng (?:\d+|A)\.\d+", t):
             tbl_num += 1
             bm = f"_TocTbl{tbl_num:03d}"
             attach_bookmark(p, next_bm_id, bm)
