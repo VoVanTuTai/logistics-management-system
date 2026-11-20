@@ -104,6 +104,9 @@ export class ShipmentsService {
   }
 
   async create(input: CreateShipmentInput): Promise<Shipment> {
+    const rawMeta = asJsonRecord(input.metadata);
+    validatePhysicalOperationalCeilings(rawMeta);
+
     const pricedInput = await this.pricingClientService.applyQuote(input);
     const normalizedCode = this.normalizeCode(pricedInput.code ?? null);
     const receiverPhone = extractReceiverPhoneFromMetadata(pricedInput.metadata);
@@ -120,7 +123,8 @@ export class ShipmentsService {
       pricedInput.currentStatus ??
       (isCounterOrder ? 'PICKUP_COMPLETED' : 'CREATED');
 
-    const metaRecord = asJsonRecord(enrichedMetadata);
+    const metaRecord = { ...asJsonRecord(enrichedMetadata) };
+    enrichCommodityAndValidateCeilings(metaRecord);
     const opCode =
       metaRecord.operatorCode ||
       (metaRecord.createdBy as Record<string, unknown> | undefined)?.username ||
@@ -144,7 +148,7 @@ export class ShipmentsService {
             metaRecord.statusNote ||
             `Đã tiếp nhận hàng trực tiếp tại quầy bưu cục bởi ${opName}`,
         } as unknown as JsonValue)
-      : (enrichedMetadata as JsonValue);
+      : (metaRecord as unknown as JsonValue);
 
     const inputWithOwnership: CreateShipmentInput = {
       ...pricedInput,
@@ -1310,4 +1314,93 @@ function enrichShipmentMetadataCoordinates(
   meta.deliveryCoordinate = deliveryCoords as unknown as JsonValue;
 
   return meta;
+}
+
+function validatePhysicalOperationalCeilings(meta: Record<string, unknown> | null): void {
+  if (!meta) return;
+  const pkg = asJsonRecord(meta.package);
+  if (!pkg) return;
+
+  const actualWeightKg = typeof pkg.weightKg === 'number' ? pkg.weightKg : 0;
+  const dims = asJsonRecord(pkg.dimensionsCm);
+  const length = typeof dims?.length === 'number' ? dims.length : 0;
+  const width = typeof dims?.width === 'number' ? dims.width : 0;
+  const height = typeof dims?.height === 'number' ? dims.height : 0;
+
+  if (actualWeightKg > 70) {
+    throw new BadRequestException(
+      'Vượt trần mạng lưới bưu cục: Khối lượng thực tế không được vượt quá 70 kg/kiện. Vui lòng tách kiện hoặc sử dụng dịch vụ Vận tải hàng nguyên chuyến (Truckload/FTL).',
+    );
+  }
+  const maxSide = Math.max(length, width, height);
+  if (maxSide > 150) {
+    throw new BadRequestException(
+      'Vượt trần mạng lưới bưu cục: Chiều dài một cạnh lớn nhất không được vượt quá 150 cm. Vui lòng tách kiện hoặc sử dụng dịch vụ Vận tải hàng nguyên chuyến (Truckload/FTL).',
+    );
+  }
+  if (length > 0 && width > 0 && height > 0 && (length + width + height) > 300) {
+    throw new BadRequestException(
+      'Vượt trần mạng lưới bưu cục: Tổng 3 chiều (Dài + Rộng + Cao) không được vượt quá 300 cm. Vui lòng tách kiện hoặc sử dụng dịch vụ Vận tải hàng nguyên chuyến (Truckload/FTL).',
+    );
+  }
+}
+
+function enrichCommodityAndValidateCeilings(meta: Record<string, JsonValue>): void {
+  const pkg = asJsonRecord(meta.package);
+  if (!pkg) return;
+
+  const actualWeightKg = typeof pkg.weightKg === 'number' ? pkg.weightKg : 0;
+  const dims = asJsonRecord(pkg.dimensionsCm);
+  const length = typeof dims?.length === 'number' ? dims.length : 0;
+  const width = typeof dims?.width === 'number' ? dims.width : 0;
+  const height = typeof dims?.height === 'number' ? dims.height : 0;
+
+  // 1. Kiểm tra 3 Tầng trần vật lý tối đa của mạng lưới bưu cục (Ceiling Boundaries)
+  if (actualWeightKg > 70) {
+    throw new BadRequestException(
+      'Vượt trần mạng lưới bưu cục: Khối lượng thực tế không được vượt quá 70 kg/kiện. Vui lòng tách kiện hoặc sử dụng dịch vụ Vận tải hàng nguyên chuyến (Truckload/FTL).',
+    );
+  }
+  const maxSide = Math.max(length, width, height);
+  if (maxSide > 150) {
+    throw new BadRequestException(
+      'Vượt trần mạng lưới bưu cục: Chiều dài một cạnh lớn nhất không được vượt quá 150 cm. Vui lòng tách kiện hoặc sử dụng dịch vụ Vận tải hàng nguyên chuyến (Truckload/FTL).',
+    );
+  }
+  if (length > 0 && width > 0 && height > 0 && (length + width + height) > 300) {
+    throw new BadRequestException(
+      'Vượt trần mạng lưới bưu cục: Tổng 3 chiều (Dài + Rộng + Cao) không được vượt quá 300 cm. Vui lòng tách kiện hoặc sử dụng dịch vụ Vận tải hàng nguyên chuyến (Truckload/FTL).',
+    );
+  }
+
+  // 2. Phân loại 5 nhóm mặt hàng chuẩn Carrier (Commodity Classification)
+  const itemType = (readString(pkg.itemType) || readString(pkg.category) || '').toUpperCase();
+  const isFragile = Boolean(pkg.isFragile || itemType.includes('FRAGILE') || itemType.includes('DỄ VỠ'));
+  const isDoc = itemType.includes('DOCUMENT') || itemType.includes('TÀI LIỆU') || itemType.includes('THƯ');
+  const isHighValue = Boolean(
+    itemType.includes('HIGH_VALUE') ||
+    itemType.includes('ELECTRONICS') ||
+    itemType.includes('ĐIỆN TỬ') ||
+    (typeof pkg.declaredValue === 'number' && pkg.declaredValue >= 5000000)
+  );
+
+  if (isDoc) {
+    meta.commodityGroup = 'DOCUMENT';
+    meta.inspectionPolicy = 'KHONG_DONG_KIEM_CHI_XEM_NGOAI_QUAN';
+  } else if (isHighValue) {
+    meta.commodityGroup = 'HIGH_VALUE';
+    meta.insuranceTier = 'COMPREHENSIVE_100';
+    meta.securitySealRequired = true;
+  } else if (isFragile) {
+    meta.commodityGroup = 'FRAGILE';
+    meta.warningLabel = 'HÀNG DỄ VỠ - XIN NHẸ TAY';
+    meta.packagingSop = 'Bubble wrap ≥ 3 lớp';
+  } else if (actualWeightKg > 20 || maxSide > 60) {
+    meta.commodityGroup = 'BULKY';
+    meta.dispatchTier = 'BULKY_TRUCK';
+    meta.handlingTag = 'CẦN XE TẢI / HÀNG CỒNG KỀNH';
+  } else {
+    meta.commodityGroup = 'GENERAL';
+    meta.dispatchTier = 'STANDARD_COURIER';
+  }
 }
