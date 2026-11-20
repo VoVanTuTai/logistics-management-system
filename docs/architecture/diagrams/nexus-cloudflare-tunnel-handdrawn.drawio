@@ -1,0 +1,120 @@
+<mxfile host="app.diagrams.net" modified="2026-11-19T21:00:00.000Z" agent="Antigravity" version="24.7.17" type="device">
+  <diagram id="nexus-cloudflare-tunnel" name="Cloudflare Zero Trust Tunnel Architecture">
+    <mxGraphModel dx="1420" dy="850" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="950" background="#F8FAFC" math="0" shadow="0">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+
+        <!-- MAIN TITLE BANNER -->
+        <mxCell id="title_banner" value="&lt;b&gt;&lt;font style='font-size: 20px;'&gt;🛠️ SƠ ĐỒ NGUYÊN LÝ: BIẾN MÁY MAC CỤC BỘ THÀNH SERVER INTERNET&lt;/font&gt;&lt;/b&gt;&lt;br/&gt;&lt;font style='font-size: 13px; color: #64748B;'&gt;Mô hình Cloudflare Zero Trust Tunnel (Bypass CGNAT · Không cần IP Tĩnh · Không mở Port Forwarding)&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;comic=1;sketch=1;fillColor=#FFFFFF;strokeColor=#1E293B;strokeWidth=2.5;align=left;spacingLeft=20;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="40" y="30" width="1020" height="70" as="geometry"/>
+        </mxCell>
+
+        <!-- STATUS BADGE -->
+        <mxCell id="status_badge" value="&lt;b&gt;&lt;font color='#15803D' style='font-size: 13px;'&gt;● TRẠNG THÁI: ONLINE 24/7 (SẴN SÀNG)&lt;/font&gt;&lt;/b&gt;&lt;br/&gt;&lt;font style='font-size: 11px; color: #166534;'&gt;macOS LaunchDaemon PID 397 · Zero Trust Tunnel Active&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;comic=1;sketch=1;fillColor=#F0FDF4;strokeColor=#16A34A;strokeWidth=2;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="1080" y="30" width="440" height="70" as="geometry"/>
+        </mxCell>
+
+        <!-- ZONE 1: CLIENTS & USERS -->
+        <mxCell id="zone_client" value="&lt;b&gt;👥 NGƯỜI DÙNG &amp; THIẾT BỊ&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;comic=1;sketch=1;fillColor=#FFFFFF;strokeColor=#0284C7;strokeWidth=2.2;verticalAlign=top;align=center;spacingTop=10;fontColor=#0369A1;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="40" y="130" width="260" height="480" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="c_web" value="&lt;b&gt;Trình duyệt Web (4 Portals)&lt;/b&gt;&lt;br/&gt;&lt;font style='font-size: 11px; color: #0284C7;'&gt;https://ops.nexus-ex.site&lt;/font&gt;&lt;br/&gt;&lt;font style='font-size: 11px;'&gt;• ops · merchant · admin · tracking&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;comic=1;sketch=1;fillColor=#F8FAFC;strokeColor=#64748B;strokeWidth=1.5;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="60" y="190" width="220" height="110" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="c_mobile" value="&lt;b&gt;Ứng dụng Mobile APK&lt;/b&gt;&lt;br/&gt;&lt;font style='font-size: 11px;'&gt;• Courier Mobile (Shipper)&lt;br/&gt;• Customer Mobile (Khách hàng)&lt;br/&gt;&lt;font color='#0284C7'&gt;API: https://ops.nexus-ex.site&lt;/font&gt;&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;comic=1;sketch=1;fillColor=#F8FAFC;strokeColor=#64748B;strokeWidth=1.5;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="60" y="325" width="220" height="115" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="c_webhook" value="&lt;b&gt;🔗 Đối tác &amp; Webhook&lt;/b&gt;&lt;br/&gt;&lt;font style='font-size: 10.5px;'&gt;• DT_COMMERCE (api.truongam.tech)&lt;br/&gt;• SePay (qr.sepay.vn - IPN)&lt;br/&gt;• External AI LLMs (Gemini, Cohere)&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;comic=1;sketch=1;fillColor=#FFF7ED;strokeColor=#EA580C;strokeWidth=1.5;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="60" y="465" width="220" height="120" as="geometry"/>
+        </mxCell>
+
+        <!-- ZONE 2: CLOUDFLARE EDGE -->
+        <mxCell id="zone_cf" value="&lt;b&gt;☁️ CLOUDFLARE EDGE&lt;/b&gt;&lt;br/&gt;&lt;font style='font-size: 11px; color: #EA580C;'&gt;Anycast DNS: *.nexus-ex.site&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;comic=1;sketch=1;fillColor=#FFFFFF;strokeColor=#EA580C;strokeWidth=2.2;verticalAlign=top;align=center;spacingTop=10;fontColor=#C2410C;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="370" y="130" width="280" height="480" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="cf_ssl" value="&lt;b&gt;🔒 Cấp SSL/TLS Miễn phí&lt;/b&gt;&lt;br/&gt;&lt;font style='font-size: 11px;'&gt;Tự động kích hoạt HTTPS/WSS cho mọi subdomain. Mã hóa Full Strict.&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;comic=1;sketch=1;fillColor=#FFFBEB;strokeColor=#F59E0B;strokeWidth=1.4;align=left;spacingLeft=10;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="390" y="200" width="240" height="70" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="cf_waf" value="&lt;b&gt;🛡️ Lá Chắn Bảo Vệ Chu Vi (WAF)&lt;/b&gt;&lt;br/&gt;&lt;font style='font-size: 11px;'&gt;Chống DDoS L3/L4/L7, Botnet, ẩn giấu 100% IP thật máy chủ Mac.&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;comic=1;sketch=1;fillColor=#FEF2F2;strokeColor=#EF4444;strokeWidth=1.4;align=left;spacingLeft=10;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="390" y="285" width="240" height="70" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="cf_endpoint" value="&lt;b&gt;⚡ Đầu Nhận Zero Trust Tunnel&lt;/b&gt;&lt;br/&gt;&lt;font style='font-size: 10px; color: #166534;'&gt;CNAME *.cfargotunnel.com&lt;/font&gt;&lt;br/&gt;&lt;font style='font-size: 10.5px;'&gt;Đẩy gói tin vào kênh hầm đã thiết lập sẵn từ máy Mac.&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;comic=1;sketch=1;fillColor=#F0FDF4;strokeColor=#16A34A;strokeWidth=1.4;align=left;spacingLeft=10;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="390" y="370" width="240" height="85" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="cf_note" value="&lt;b&gt;💡 Bí quyết công nghệ:&lt;/b&gt;&lt;br/&gt;&lt;font style='font-size: 10.5px;'&gt;Không trỏ IP vào máy Mac! Mọi subdomain trỏ CNAME về Tunnel, an toàn tuyệt đối.&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;comic=1;sketch=1;fillColor=#FEF9C3;strokeColor=#CA8A04;strokeWidth=1.6;align=left;spacingLeft=10;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="390" y="475" width="240" height="110" as="geometry"/>
+        </mxCell>
+
+        <!-- TUNNEL CONNECTION -->
+        <mxCell id="pipe_tunnel" value="&lt;b&gt;ENCRYPTED OUTBOUND TUNNEL&lt;/b&gt;&lt;br/&gt;&lt;font color='#15803D'&gt;◄ Outbound (Mac khởi tạo)&lt;/font&gt;&lt;br/&gt;&lt;font color='#C2410C'&gt;► Data Ingress (Đón Request)&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;comic=1;sketch=1;fillColor=#EFF6FF;strokeColor=#3B82F6;strokeWidth=2;strokeDasharray=6,4;align=center;verticalAlign=middle;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="660" y="280" width="125" height="100" as="geometry"/>
+        </mxCell>
+
+        <!-- ROUTER NAT BLOCK -->
+        <mxCell id="nat_block" value="&lt;b&gt;🚫 Router NAT / CGNAT&lt;/b&gt;&lt;br/&gt;&lt;font style='font-size: 9.5px; color: #991B1B;'&gt;• KHÔNG mở port router!&lt;br/&gt;• KHÔNG sợ ISP đổi IP!&lt;br/&gt;• Vượt mọi Firewall&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;comic=1;sketch=1;fillColor=#FEF2F2;strokeColor=#EF4444;strokeWidth=1.5;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="660" y="430" width="125" height="110" as="geometry"/>
+        </mxCell>
+
+        <!-- ZONE 3: APPLE SILICON MAC SERVER -->
+        <mxCell id="zone_mac" value="&lt;b&gt;🖥️ MÁY CHỦ CỤC BỘ APPLE SILICON (macOS · ARM64 · Apple M-Series · Host: localhost)&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;comic=1;sketch=1;fillColor=#FFFFFF;strokeColor=#4F46E5;strokeWidth=2.5;verticalAlign=top;align=left;spacingLeft=20;spacingTop=12;fontColor=#3730A3;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="800" y="130" width="720" height="480" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="mac_cloudflared" value="&lt;b&gt;cloudflared daemon (PID 397)&lt;/b&gt;&lt;br/&gt;&lt;font style='font-size: 10px; color: #5B21B6;'&gt;macOS LaunchDaemon · Ingress Rules:&lt;/font&gt;&lt;br/&gt;&lt;font style='font-size: 10px;'&gt;• api.nexus-ex.site → :3000&lt;br/&gt;• ops.nexus-ex.site → :8080&lt;br/&gt;• merchant.* / admin.* / tracking.* → :8080&lt;br/&gt;• minio.nexus-ex.site → :9000&lt;br/&gt;• - service: http_status:404&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;comic=1;sketch=1;fillColor=#F5F3FF;strokeColor=#7C3AED;strokeWidth=1.8;align=left;spacingLeft=10;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="820" y="190" width="280" height="170" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="mac_static" value="&lt;b&gt;nexus-static-web (:8080)&lt;/b&gt;&lt;br/&gt;&lt;font style='font-size: 10px; color: #166534;'&gt;serve-static-apps.mjs · Phân phối SPAs:&lt;/font&gt;&lt;br/&gt;&lt;font style='font-size: 10px;'&gt;• Phục vụ tĩnh 4 SPAs (ops, merchant, admin, tracking)&lt;br/&gt;&lt;b&gt;🔑 Giải pháp chống Mixed Content:&lt;/b&gt;&lt;br/&gt;Proxy /ops/*, /merchant/*, /ws/* trực tiếp sang gateway-bff (:3000) cùng gốc HTTPS!&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;comic=1;sketch=1;fillColor=#F0FDF4;strokeColor=#16A34A;strokeWidth=1.8;align=left;spacingLeft=10;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="1120" y="190" width="380" height="170" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="mac_gateway" value="&lt;b&gt;gateway-bff (:3000)&lt;/b&gt;&lt;br/&gt;&lt;font style='font-size: 10px;'&gt;• Opaque Token (15p / 30d) · Rate Limit 2400 req/m&lt;br/&gt;• WebSocket: /ws/chat, /ws/tasks, /ws/locations&lt;br/&gt;• Điều phối tới 12 Microservices: auth(:3001), masterdata(:3002), pricing(:3003), shipment(:3004), pickup, dispatch, scan, delivery, tracking, reporting, payment, chatbot&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;comic=1;sketch=1;fillColor=#EFF6FF;strokeColor=#2563EB;strokeWidth=1.8;align=left;spacingLeft=10;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="820" y="380" width="330" height="210" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="mac_pm2_docker" value="&lt;b&gt;PM2 (15 Node.js) + Docker (4 Containers)&lt;/b&gt;&lt;br/&gt;&lt;font style='font-size: 10px;'&gt;• &lt;b&gt;PM2 (RAM ~500MB):&lt;/b&gt; 14 NestJS services + 1 Static Web&lt;br/&gt;• &lt;b&gt;postgres:16 (:15432):&lt;/b&gt; 12 DBs độc lập (Prisma + pg)&lt;br/&gt;• &lt;b&gt;rabbitmq:3 (:5672):&lt;/b&gt; Outbox &amp; CQRS domain.events&lt;br/&gt;• &lt;b&gt;redis:7 (:6379):&lt;/b&gt; Pub/Sub chat &amp; tracking&lt;br/&gt;• &lt;b&gt;minio:s3 (:9000/9001):&lt;/b&gt; Ảnh POD &amp; Chữ ký&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;comic=1;sketch=1;fillColor=#FAFAF9;strokeColor=#57534E;strokeWidth=1.8;align=left;spacingLeft=10;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="1170" y="380" width="330" height="210" as="geometry"/>
+        </mxCell>
+
+        <!-- ARROWS -->
+        <mxCell id="edge1" value="HTTPS/WSS :443" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#0284C7;strokeWidth=3;comic=1;sketch=1;fontColor=#0369A1;fontSize=10;" edge="1" parent="1" source="zone_client" target="zone_cf">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- BOTTOM SECTION: 5 STEPS -->
+        <mxCell id="bottom_box" value="&lt;b&gt;&lt;font style='font-size: 14px;'&gt;📝 5 BƯỚC TRIỂN KHAI THỰC TẾ: TỪ LAPTOP CÁ NHÂN ĐẾN HỆ THỐNG CLOUD PRODUCTION&lt;/font&gt;&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;comic=1;sketch=1;fillColor=#FFFFFF;strokeColor=#334155;strokeWidth=2.2;verticalAlign=top;align=left;spacingLeft=20;spacingTop=10;" vertex="1" parent="1">
+          <mxGeometry x="40" y="635" width="1480" height="260" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="step1" value="&lt;b&gt;1. Mua Domain &amp; NS&lt;/b&gt;&lt;br/&gt;&lt;font style='font-size: 10px;'&gt;• Tên miền: nexus-ex.site&lt;br/&gt;• Trỏ NS về Cloudflare&lt;br/&gt;• Bật Proxy đám mây cam&lt;br/&gt;• Nhận SSL Universal tự động&lt;br/&gt;&lt;font color='#16A34A'&gt;✓ Không tốn tiền mua IP tĩnh&lt;/font&gt;&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;comic=1;sketch=1;fillColor=#F0F9FF;strokeColor=#0284C7;strokeWidth=1.6;align=left;spacingLeft=10;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="60" y="685" width="275" height="190" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="step2" value="&lt;b&gt;2. Tạo Zero Trust Tunnel&lt;/b&gt;&lt;br/&gt;&lt;font style='font-size: 10px;'&gt;• Cloudflare One Dashboard&lt;br/&gt;• Tạo Tunnel: nexus-tunnel&lt;br/&gt;• Lấy Connector Token bí mật&lt;br/&gt;• Tạo Public Hostname CNAME&lt;br/&gt;&lt;font color='#16A34A'&gt;✓ Không cần mở Port 80/443&lt;/font&gt;&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;comic=1;sketch=1;fillColor=#FFF7ED;strokeColor=#EA580C;strokeWidth=1.6;align=left;spacingLeft=10;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="355" y="685" width="275" height="190" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="step3" value="&lt;b&gt;3. Cài cloudflared macOS&lt;/b&gt;&lt;br/&gt;&lt;font style='font-size: 10px;'&gt;• brew install cloudflared&lt;br/&gt;• sudo cloudflared service install&lt;br/&gt;• Chạy LaunchDaemon (PID 397)&lt;br/&gt;• Tự chạy khi bật máy Mac&lt;br/&gt;&lt;font color='#16A34A'&gt;✓ Ổn định 24/7 như Server&lt;/font&gt;&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;comic=1;sketch=1;fillColor=#F5F3FF;strokeColor=#7C3AED;strokeWidth=1.6;align=left;spacingLeft=10;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="650" y="685" width="275" height="190" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="step4" value="&lt;b&gt;4. Khởi chạy PM2 &amp; Docker&lt;/b&gt;&lt;br/&gt;&lt;font style='font-size: 10px;'&gt;• docker compose up -d (4 containers)&lt;br/&gt;• pm2 start ecosystem.config.cjs&lt;br/&gt;• Static web (:8080) phân phối SPA&lt;br/&gt;• Gateway (:3000) đón API/WS&lt;br/&gt;&lt;font color='#16A34A'&gt;✓ Siêu nhẹ: chiếm RAM ~500MB&lt;/font&gt;&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;comic=1;sketch=1;fillColor=#F0FDF4;strokeColor=#16A34A;strokeWidth=1.6;align=left;spacingLeft=10;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="945" y="685" width="275" height="190" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="step5" value="&lt;b&gt;5. Xử lý Mixed Content&lt;/b&gt;&lt;br/&gt;&lt;font style='font-size: 10px;'&gt;• Trình duyệt chặn HTTP từ HTTPS&lt;br/&gt;• Reverse Proxy nội bộ transparent&lt;br/&gt;• /ops/*, /merchant/* sang :3000&lt;br/&gt;• Nâng cấp WebSocket WSS mượt mà&lt;br/&gt;&lt;font color='#16A34A'&gt;✓ Trải nghiệm mượt không lỗi CORS&lt;/font&gt;&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;comic=1;sketch=1;fillColor=#FDF4FF;strokeColor=#C026D3;strokeWidth=1.6;align=left;spacingLeft=10;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="1240" y="685" width="260" height="190" as="geometry"/>
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
