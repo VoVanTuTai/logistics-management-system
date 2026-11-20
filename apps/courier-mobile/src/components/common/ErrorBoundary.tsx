@@ -24,12 +24,12 @@ interface ErrorBoundaryState {
 
 /**
  * ===================================================================================
- * 🛡️ LƯỚI BẢO VỆ CHỐNG VĂNG ỨNG DỤNG & CƠ CHẾ TỰ PHỤC HỒI (ROOT ERROR BOUNDARY)
+ * LƯỚI BẢO VỆ CHỐNG VĂNG ỨNG DỤNG VÀ CƠ CHẾ TỰ PHỤC HỒI (ROOT ERROR BOUNDARY)
  * ===================================================================================
- * 📌 NGUYÊN LÝ BẢO VỆ:
+ * 1. NGUYÊN LÝ BẢO VỆ:
  *   - Bắt toàn bộ các ngoại lệ không mong muốn trong vòng đời render React (Uncaught Render Exceptions).
- *   - Thay vì để ứng dụng crash văng ra Springboard/Launcher của Android/iOS:
- *       + Hiển thị giao diện cảnh báo sang trọng, giải trình nguyên nhân lỗi.
+ *   - Thay vì để ứng dụng crash văng ra màn hình chính của hệ điều hành Android/iOS:
+ *       + Hiển thị giao diện cảnh báo chuẩn mực, giải trình nguyên nhân lỗi chi tiết.
  *       + Cung cấp nút "Tải lại & Khôi phục" (Self-Healing Reset Action) dọn dẹp state lỗi.
  *       + Tự động xóa bộ nhớ cache hỏng nếu phát hiện lỗi định dạng JSON.
  * ===================================================================================

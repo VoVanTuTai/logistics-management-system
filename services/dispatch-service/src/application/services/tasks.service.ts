@@ -674,9 +674,9 @@ export class TasksService {
           : null;
 
     // ===================================================================================
-    // 🎯 ĐỘNG CƠ ĐIỀU PHỐI TỰ ĐỘNG KHÔNG GIAN 3 TẦNG (3-TIER SPATIAL AUTO-DISPATCH ENGINE)
+    // ĐỘNG CƠ ĐIỀU PHỐI TỰ ĐỘNG KHÔNG GIAN 3 TẦNG (3-TIER SPATIAL AUTO-DISPATCH ENGINE)
     // ===================================================================================
-    // 📌 NGUYÊN LÝ HOẠT ĐỘNG:
+    // 1. NGUYÊN LÝ HOẠT ĐỘNG:
     //    Tự động so khớp tọa độ GPS (pickupLatitude, pickupLongitude) của đơn hàng với các tuyến
     //    để tự động phân công trực tiếp cho Shipper phụ trách theo 3 tầng ưu tiên giảm dần:
     //      [TẦNG 1] ƯU TIÊN TUYỆT ĐỐI - KHỐI ĐA GIÁC GEOFENCE (Ray-Casting Point-in-Polygon):
@@ -1422,16 +1422,16 @@ function isSameHubOrScopedLocation(
 
 /**
  * ===================================================================================
- * 📐 THUẬT TOÁN BẮN TIA RAY-CASTING (POINT-IN-POLYGON - PIP)
+ * THUẬT TOÁN BẮN TIA RAY-CASTING (POINT-IN-POLYGON - PIP)
  * ===================================================================================
- * 📌 NGUYÊN LÝ TOÁN HỌC:
+ * 1. NGUYÊN LÝ TOÁN HỌC:
  *   - Bắn một tia bán vô hạn (Ray) từ điểm cần kiểm tra (point) theo phương ngang sang phải.
  *   - Đếm số lần tia này cắt các cạnh của đa giác (polygon):
  *       + Số lần cắt LẺ (1, 3, 5, ...) -> Điểm NẰM BÊN TRONG đa giác (inside = true).
  *       + Số lần cắt CHẴN (0, 2, 4, ...) -> Điểm NẰM BÊN NGOÀI đa giác (inside = false).
  *   - Độ phức tạp thời gian: O(N) với N là số đỉnh đa giác (tốc độ xử lý cực nhanh < 0.05ms).
  *
- * 📌 ỨNG DỤNG THỰC TẾ:
+ * 2. ỨNG DỤNG THỰC TẾ:
  *   - Xác định chính xác đơn hàng thuộc tuyến đường của Shipper nào để gán tự động.
  *   - Đạt đặc tính Zero-Overlap: Triệt tiêu 100% lỗi chồng lấn tuyến giữa các Shipper.
  * ===================================================================================

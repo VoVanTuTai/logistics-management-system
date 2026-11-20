@@ -1,8 +1,8 @@
 /**
  * ===================================================================================
- * 🔊 HỆ THỐNG PHẢN HỒI ÂM THANH THÔNG BÁO & QUÉT MÃ (SINGLETON AUDIO LIFECYCLE)
+ * HỆ THỐNG PHẢN HỒI ÂM THANH THÔNG BÁO VÀ QUÉT MÃ (SINGLETON AUDIO LIFECYCLE)
  * ===================================================================================
- * 📌 NGUYÊN LÝ THIẾT KẾ:
+ * 1. NGUYÊN LÝ THIẾT KẾ:
  *   - Quản lý vòng đời Audio Player theo mô hình Singleton duy nhất.
  *   - Khi có sự kiện mới: Thực hiện "player.pause() -> seekTo(0) -> player.play()" để tái sử dụng.
  *   - Triệt tiêu 100% nguy cơ cạn kiệt Audio Track / Audio Session của hệ điều hành di động,
