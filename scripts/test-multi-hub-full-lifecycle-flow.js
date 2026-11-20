@@ -467,14 +467,22 @@ async function runDetailedMultiHubFlow() {
 
   // Chờ Dispatch Engine xử lý so khớp Geofence người nhận
   info('Đang chờ bộ máy điều phối tự động phân tích tọa độ người nhận...');
-  await new Promise((r) => setTimeout(r, 2000));
 
   // BƯỚC 11: HỆ THỐNG TỰ ĐỘNG ĐIỀU PHỐI SHIPPER PHÁT HÀNG (AUTO-DISPATCH DELIVERY)
   logStep('11', 'Bộ máy Tự động điều phối (Delivery Auto-Dispatch) gán Shipper giao hàng theo Geofence');
 
-  const { data: deliveryTasks } = await request(`/ops/dispatch/tasks?shipmentCode=${shipmentCode}&taskType=DELIVERY`, {
-    token: opsDestSession.token,
-  });
+  let deliveryTasks = [];
+  for (let attempt = 1; attempt <= 8; attempt++) {
+    await new Promise((r) => setTimeout(r, 1000));
+    const { data } = await request(`/ops/dispatch/tasks?shipmentCode=${shipmentCode}&taskType=DELIVERY`, {
+      token: opsDestSession.token,
+      allowError: true,
+    });
+    if (Array.isArray(data) && data.length > 0) {
+      deliveryTasks = data;
+      break;
+    }
+  }
 
   assert(Array.isArray(deliveryTasks) && deliveryTasks.length > 0, 'Không tìm thấy task DELIVERY tự động');
   const deliveryTask = deliveryTasks[0];
