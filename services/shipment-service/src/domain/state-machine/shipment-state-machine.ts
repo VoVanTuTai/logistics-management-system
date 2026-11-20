@@ -152,6 +152,29 @@ export class ShipmentStateMachine {
       return this.applyIfAllowed(currentStatus, 'INVENTORY_CHECK', eventType);
     }
 
+    if (eventType === 'task.assigned') {
+      const task = (eventData.task ?? eventData) as Record<string, unknown> | undefined;
+      const taskType = (task?.taskType ?? task?.task_type) as string | undefined;
+      if (taskType === 'PICKUP') {
+        if (['CREATED', 'UPDATED', 'TASK_ASSIGNED'].includes(currentStatus)) {
+          return this.applyIfAllowed(currentStatus, 'TASK_ASSIGNED', eventType);
+        }
+        this.logger.warn(
+          `Ignoring task.assigned (PICKUP) for shipment in status "${currentStatus}".`,
+        );
+        return currentStatus;
+      }
+    }
+
+    if (eventType === 'pickup.approved' || eventType === 'pickup.requested') {
+      if (!['CREATED', 'UPDATED', 'TASK_ASSIGNED'].includes(currentStatus)) {
+        this.logger.warn(
+          `Ignoring ${eventType} for shipment in status "${currentStatus}".`,
+        );
+        return currentStatus;
+      }
+    }
+
     const nextStatus = EVENT_TO_STATUS[eventType];
 
     if (!nextStatus) {

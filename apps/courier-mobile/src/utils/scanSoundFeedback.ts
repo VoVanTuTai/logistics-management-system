@@ -5,10 +5,12 @@ type AudioPlayer = ReturnType<AudioModule['createAudioPlayer']>;
 type FeedbackAudio = {
   success: AudioPlayer;
   warning: AudioPlayer;
+  chime: AudioPlayer;
 };
 
 const successSource = require('../assets/sounds/scan-success.wav');
 const warningSource = require('../assets/sounds/scan-warning.wav');
+const chimeSource = require('../assets/sounds/notification-chime.wav');
 
 let feedbackAudio: FeedbackAudio | null = null;
 let loadPromise: Promise<FeedbackAudio | null> | null = null;
@@ -39,6 +41,10 @@ async function loadFeedbackAudio() {
           keepAudioSessionActive: true,
           updateInterval: 1000,
         }),
+        chime: Audio.createAudioPlayer(chimeSource, {
+          keepAudioSessionActive: true,
+          updateInterval: 1000,
+        }),
       };
 
       return feedbackAudio;
@@ -52,7 +58,7 @@ async function loadFeedbackAudio() {
   return loadPromise;
 }
 
-async function playAudioFeedback(kind: 'success' | 'warning') {
+async function playAudioFeedback(kind: 'success' | 'warning' | 'chime') {
   const audio = await loadFeedbackAudio();
 
   if (!audio) {
@@ -65,7 +71,7 @@ async function playAudioFeedback(kind: 'success' | 'warning') {
     await player.seekTo(0);
     player.play();
   } catch (error) {
-    console.warn('[scan-feedback] Unable to play scan sound.', error);
+    console.warn('[scan-feedback] Unable to play sound.', error);
   }
 }
 
@@ -77,4 +83,9 @@ export function playScanSuccessSound() {
 export function playScanWarningSound() {
   Vibration.vibrate([0, 45, 70, 90]);
   void playAudioFeedback('warning');
+}
+
+export function playNotificationChimeSound() {
+  Vibration.vibrate([0, 80, 80, 160]);
+  void playAudioFeedback('chime');
 }

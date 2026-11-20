@@ -26,6 +26,7 @@ import { RecentOrdersSection } from './components/RecentOrdersSection';
 import { NewsAndHighlightsSection } from './components/NewsAndHighlightsSection';
 import { FloatingAiChatModal } from '../../components/FloatingAiChatModal';
 import { NotificationModal } from '../../components/NotificationModal';
+import { playCustomerNotificationSound } from '../../utils/notificationSound';
 
 type Props = CompositeScreenProps<
   BottomTabScreenProps<MainTabParamList, 'HomeTab'>,
@@ -192,7 +193,10 @@ export function HomeScreen({ navigation }: Props): React.JSX.Element {
         <HomeHeader
           userName={user?.displayName || user?.username || 'Khách hàng'}
           notificationCount={receivedShipments.length}
-          onPressNotification={() => setShowNotifModal(true)}
+          onPressNotification={() => {
+            playCustomerNotificationSound();
+            setShowNotifModal(true);
+          }}
           onPressSearch={handleTracking}
           onPressCreateOrder={handleCreateOrder}
         />

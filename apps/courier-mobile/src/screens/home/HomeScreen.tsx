@@ -32,6 +32,7 @@ import { resolveCourierDisplayName, resolveCourierId } from '../../utils/courier
 import { getQuickAppItems, navigateToQuickApp } from '../../features/quick-apps/quickApps';
 import { canAccessCourierFeature } from '../../features/permissions/courier-permissions';
 import { countSlaSummary } from '../../utils/pickupSla';
+import { playNotificationChimeSound } from '../../utils/scanSoundFeedback';
 
 const CASH_IN_HAND_LIMIT = 15_000_000;
 const WAITING_TASK_STATUSES: ReadonlySet<TaskStatus> = new Set(['CREATED', 'ASSIGNED']);
@@ -165,6 +166,35 @@ export function HomeScreen(): React.JSX.Element {
     return tasks.filter((task) => task.status === 'ASSIGNED');
   }, [tasks]);
 
+  const prevAssignedIdsRef = React.useRef<Set<string>>(new Set());
+  const isInitialLoadRef = React.useRef(true);
+
+  React.useEffect(() => {
+    if (!tasksQuery.data) return;
+    const currentAssignedIds = new Set(
+      tasksQuery.data
+        .filter((t) => t.status === 'ASSIGNED')
+        .map((t) => t.id),
+    );
+
+    if (!isInitialLoadRef.current) {
+      let hasNewAssigned = false;
+      for (const id of currentAssignedIds) {
+        if (!prevAssignedIdsRef.current.has(id)) {
+          hasNewAssigned = true;
+          break;
+        }
+      }
+      if (hasNewAssigned) {
+        playNotificationChimeSound();
+      }
+    } else {
+      isInitialLoadRef.current = false;
+    }
+
+    prevAssignedIdsRef.current = currentAssignedIds;
+  }, [tasksQuery.data]);
+
   const notificationCount = transferredTasks.length + newTasks.length;
 
   const todayTasksCount = useMemo(() => {
@@ -200,7 +230,10 @@ export function HomeScreen(): React.JSX.Element {
           hubName={hubLabel}
           notificationCount={notificationCount}
           onPressQr={() => navigation.navigate('MainTabs', { screen: 'Scan' })}
-          onPressNotification={() => setNotificationModalVisible(true)}
+          onPressNotification={() => {
+            playNotificationChimeSound();
+            setNotificationModalVisible(true);
+          }}
         />
 
         <ScrollView

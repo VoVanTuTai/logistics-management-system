@@ -51,17 +51,47 @@ const METRO_PROVINCES = new Set([
 @Injectable()
 export class PricingService {
   quote(input: PricingQuoteInput): PricingQuote {
-    const serviceType = this.resolveServiceType(input);
-    const customerTier = this.resolveCustomerTier(input);
-    const rates = SERVICE_RATES[serviceType];
+    if (input.package?.weightKg !== undefined && Number(input.package.weightKg) < 0) {
+      throw new BadRequestException('Khối lượng kiện hàng không được âm.');
+    }
+    if (input.codAmount !== undefined && Number(input.codAmount) < 0) {
+      throw new BadRequestException('Tiền thu hộ COD không được âm.');
+    }
+
     const actualWeightKg = this.normalizeNonNegativeNumber(input.package?.weightKg);
     const length = this.normalizeNonNegativeNumber(input.package?.dimensionsCm?.length);
     const width = this.normalizeNonNegativeNumber(input.package?.dimensionsCm?.width);
     const height = this.normalizeNonNegativeNumber(input.package?.dimensionsCm?.height);
-    const volumetricWeightKg = this.roundWeight((length * width * height) / 6000);
+
+    // Kiểm tra 3 Tầng trần vật lý tối đa (Carrier Operational Ceilings & Boundaries)
+    if (actualWeightKg > 70) {
+      throw new BadRequestException(
+        'Vượt trần mạng lưới bưu cục: Khối lượng thực tế không được vượt quá 70 kg/kiện. Vui lòng tách kiện hoặc sử dụng dịch vụ Vận tải hàng nguyên chuyến (Truckload/FTL).',
+      );
+    }
+    const maxSide = Math.max(length, width, height);
+    if (maxSide > 150) {
+      throw new BadRequestException(
+        'Vượt trần mạng lưới bưu cục: Chiều dài một cạnh không được vượt quá 150 cm. Vui lòng tách kiện hoặc sử dụng dịch vụ Vận tải hàng nguyên chuyến (Truckload/FTL).',
+      );
+    }
+    if (length > 0 && width > 0 && height > 0 && (length + width + height) > 300) {
+      throw new BadRequestException(
+        'Vượt trần mạng lưới bưu cục: Tổng 3 chiều (Dài + Rộng + Cao) không được vượt quá 300 cm. Vui lòng tách kiện hoặc sử dụng dịch vụ Vận tải hàng nguyên chuyến (Truckload/FTL).',
+      );
+    }
+
+    const itemTypeUpper = (input.package?.itemType || '').toUpperCase();
+    const isDocument = itemTypeUpper.includes('DOCUMENT') || itemTypeUpper.includes('TÀI LIỆU') || itemTypeUpper.includes('THƯ');
+
+    // Hàng DOCUMENT: miễn trừ tính cước thể tích
+    const volumetricWeightKg = isDocument ? 0 : this.roundWeight((length * width * height) / 6000);
     const chargeableWeightKg = this.roundWeight(Math.max(actualWeightKg, volumetricWeightKg));
     const declaredValue = this.normalizeNonNegativeNumber(input.package?.declaredValue);
     const codAmount = this.normalizeNonNegativeNumber(input.codAmount);
+    const serviceType = this.resolveServiceType(input);
+    const customerTier = this.resolveCustomerTier(input);
+    const rates = SERVICE_RATES[serviceType];
     const zone = this.resolveZone(input);
     const currency = this.resolveCurrency(input.currency);
     const breakdown: PricingBreakdownItem[] = [];

@@ -278,12 +278,10 @@ function getAuthenticatedOwnerContext(
 
   const metadata = asRecord(body.metadata);
   const createdBy = asRecord(metadata?.createdBy);
-  const operatorCode =
-    typeof metadata?.operatorCode === 'string'
+  const explicitOperatorCode =
+    typeof metadata?.operatorCode === 'string' && metadata.operatorCode.trim().length > 0
       ? metadata.operatorCode.trim()
-      : typeof createdBy?.username === 'string'
-        ? createdBy.username.trim()
-        : null;
+      : null;
 
   const isOps =
     Boolean(opsUserId) ||
@@ -296,11 +294,11 @@ function getAuthenticatedOwnerContext(
     metadata?.pickupClassification === 'COUNTER_DROP_OFF' ||
     String(metadata?.source || '').startsWith('ops-web') ||
     String(metadata?.platform || '').startsWith('OPS_') ||
-    Boolean(operatorCode);
+    Boolean(explicitOperatorCode);
 
   if (isOps) {
     return {
-      createdByUserId: userId || operatorCode || 'OPS',
+      createdByUserId: userId || explicitOperatorCode || (typeof createdBy?.username === 'string' ? createdBy.username.trim() : 'OPS'),
       createdByType: 'OPS',
     };
   }

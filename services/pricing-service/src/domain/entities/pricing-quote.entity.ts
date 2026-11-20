@@ -8,6 +8,8 @@ export interface PricingAddressInput {
 }
 
 export interface PricingPackageInput {
+  itemType?: string | null;
+  category?: string | null;
   weightKg?: number | string | null;
   dimensionsCm?: {
     length?: number | string | null;

@@ -11,6 +11,7 @@ import { Ionicons } from '@expo/vector-icons';
 
 import { theme } from '../../theme';
 import type { TaskDto } from '../../features/tasks/tasks.types';
+import { playScanSuccessSound } from '../../utils/scanSoundFeedback';
 
 export interface CourierNotificationItem {
   id: string;
@@ -213,6 +214,7 @@ export function NotificationModal({
                   <Pressable
                     key={item.id}
                     onPress={() => {
+                      playScanSuccessSound();
                       onClose();
                       onSelectTask(item.taskId);
                     }}
