@@ -14,12 +14,14 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 
-import { AddressSelectorModal, type StructuredAddress } from '../../components/AddressSelectorModal';
+import { type StructuredAddress } from '../../components/AddressSelectorModal';
+import { StandardLocationPickerModal } from '../../components/StandardLocationPickerModal';
 import type { RootStackParamList } from '../../navigation/types';
 import { pricingApi } from '../../services/api/pricing.api';
 import { computeFallbackPricing } from '../../utils/pricingCalculator';
 import { authStore } from '../../store/authStore';
 import { colors, shadows, spacing } from '../../theme';
+import type { HubRecord, VietnamProvince, VietnamWard } from '../../services/api/masterdata.api';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'PriceCalculator'>;
 
@@ -48,9 +50,15 @@ export function PriceCalculatorScreen({ navigation }: Props): React.JSX.Element 
   const [packageType, setPackageType] = useState<'PARCEL' | 'DOCUMENT'>('PARCEL');
 
   // ADDRESSES FROM DATABASE
+  const [senderProvince, setSenderProvince] = useState<VietnamProvince | null>(null);
+  const [senderWard, setSenderWard] = useState<VietnamWard | null>(null);
+  const [senderHub, setSenderHub] = useState<HubRecord | null>(null);
   const [senderAddress, setSenderAddress] = useState<StructuredAddress | null>(null);
   const [senderDetail, setSenderDetail] = useState<string>('');
 
+  const [receiverProvince, setReceiverProvince] = useState<VietnamProvince | null>(null);
+  const [receiverWard, setReceiverWard] = useState<VietnamWard | null>(null);
+  const [receiverHub, setReceiverHub] = useState<HubRecord | null>(null);
   const [receiverAddress, setReceiverAddress] = useState<StructuredAddress | null>(null);
   const [receiverDetail, setReceiverDetail] = useState<string>('');
 
@@ -58,9 +66,103 @@ export function PriceCalculatorScreen({ navigation }: Props): React.JSX.Element 
   const [receiverCountry, setReceiverCountry] = useState<string>('Hoa Kỳ (United States)');
 
   // ADDRESS SELECTOR MODALS
-  const [showSenderAddressModal, setShowSenderAddressModal] = useState<boolean>(false);
-  const [showReceiverAddressModal, setShowReceiverAddressModal] = useState<boolean>(false);
+  const [showSenderProvincePicker, setShowSenderProvincePicker] = useState<boolean>(false);
+  const [showSenderWardPicker, setShowSenderWardPicker] = useState<boolean>(false);
+  const [showReceiverProvincePicker, setShowReceiverProvincePicker] = useState<boolean>(false);
+  const [showReceiverWardPicker, setShowReceiverWardPicker] = useState<boolean>(false);
   const [showCountryModal, setShowCountryModal] = useState<boolean>(false);
+
+  const handleSelectSenderProvince = (p: VietnamProvince) => {
+    setSenderProvince(p);
+    setSenderWard(null);
+    setSenderHub(null);
+    setSenderAddress(null);
+  };
+
+  const handleSelectSenderWardAndHub = (w: VietnamWard, h: HubRecord) => {
+    setSenderWard(w);
+    setSenderHub(h);
+    const cleanWard = w.wardName || w.name;
+    const cleanDistrict = w.district || '';
+    const composed = [senderDetail.trim(), cleanWard, cleanDistrict, senderProvince?.name || h.province]
+      .filter(Boolean)
+      .join(', ');
+    setSenderAddress({
+      province: senderProvince?.name || h.province,
+      district: cleanDistrict,
+      ward: cleanWard,
+      addressDetail: senderDetail.trim(),
+      composedAddress: composed,
+      hubCode: h.code,
+      hubName: h.name,
+      latitude: h.latitude,
+      longitude: h.longitude,
+    });
+  };
+
+  const handleSenderDetailChange = (text: string) => {
+    setSenderDetail(text);
+    if (senderProvince && senderWard && senderHub) {
+      const cleanWard = senderWard.wardName || senderWard.name;
+      const cleanDistrict = senderWard.district || '';
+      const composed = [text.trim(), cleanWard, cleanDistrict, senderProvince.name].filter(Boolean).join(', ');
+      setSenderAddress((prev) =>
+        prev
+          ? {
+              ...prev,
+              addressDetail: text.trim(),
+              composedAddress: composed,
+            }
+          : null,
+      );
+    }
+  };
+
+  const handleSelectReceiverProvince = (p: VietnamProvince) => {
+    setReceiverProvince(p);
+    setReceiverWard(null);
+    setReceiverHub(null);
+    setReceiverAddress(null);
+  };
+
+  const handleSelectReceiverWardAndHub = (w: VietnamWard, h: HubRecord) => {
+    setReceiverWard(w);
+    setReceiverHub(h);
+    const cleanWard = w.wardName || w.name;
+    const cleanDistrict = w.district || '';
+    const composed = [receiverDetail.trim(), cleanWard, cleanDistrict, receiverProvince?.name || h.province]
+      .filter(Boolean)
+      .join(', ');
+    setReceiverAddress({
+      province: receiverProvince?.name || h.province,
+      district: cleanDistrict,
+      ward: cleanWard,
+      addressDetail: receiverDetail.trim(),
+      composedAddress: composed,
+      hubCode: h.code,
+      hubName: h.name,
+      latitude: h.latitude,
+      longitude: h.longitude,
+    });
+  };
+
+  const handleReceiverDetailChange = (text: string) => {
+    setReceiverDetail(text);
+    if (receiverProvince && receiverWard && receiverHub) {
+      const cleanWard = receiverWard.wardName || receiverWard.name;
+      const cleanDistrict = receiverWard.district || '';
+      const composed = [text.trim(), cleanWard, cleanDistrict, receiverProvince.name].filter(Boolean).join(', ');
+      setReceiverAddress((prev) =>
+        prev
+          ? {
+              ...prev,
+              addressDetail: text.trim(),
+              composedAddress: composed,
+            }
+          : null,
+      );
+    }
+  };
 
   // PACKAGE SPECS
   const [weightGrams, setWeightGrams] = useState<string>('500');
@@ -89,8 +191,10 @@ export function PriceCalculatorScreen({ navigation }: Props): React.JSX.Element 
       const weightNum = Number(weightGrams) / 1000 || 0.5;
       const codNum = isCodEnabled ? Number(codAmount) || 0 : 0;
 
-      const sProv = senderAddress?.province || 'Thành phố Hồ Chí Minh';
-      const rProv = receiverAddress?.province || 'Thành phố Hà Nội';
+      const sProv = senderProvince?.name || senderAddress?.province || 'Thành phố Hồ Chí Minh';
+      const rProv = receiverProvince?.name || receiverAddress?.province || 'Thành phố Hà Nội';
+      const sHubCode = senderHub?.code || senderAddress?.hubCode;
+      const rHubCode = receiverHub?.code || receiverAddress?.hubCode;
 
       if (shippingScope === 'INTERNATIONAL') {
         const baseFee = 350000 + weightNum * 120000;
@@ -117,8 +221,8 @@ export function PriceCalculatorScreen({ navigation }: Props): React.JSX.Element 
       try {
         const apiRes = await pricingApi.calculateQuote({
           serviceType: 'STANDARD',
-          sender: { province: sProv, hubCode: senderAddress?.hubCode },
-          receiver: { province: rProv, hubCode: receiverAddress?.hubCode },
+          sender: { province: sProv, hubCode: sHubCode },
+          receiver: { province: rProv, hubCode: rHubCode },
           package: {
             weightKg: weightNum,
             dimensionsCm: {
@@ -268,26 +372,51 @@ export function PriceCalculatorScreen({ navigation }: Props): React.JSX.Element 
           {/* 2. CARD ĐỊA ĐIỂM (NGƯỜI GỬI & NGƯỜI NHẬN) */}
           <View style={styles.card}>
             {/* NGƯỜI GỬI */}
-            <Text style={styles.subTitleLabel}>Địa chỉ Người gửi</Text>
+            <Text style={styles.cardSectionSubtitle}>Địa chỉ Người gửi</Text>
+
+            {/* Tỉnh / Thành phố gửi */}
+            <Text style={styles.fieldLabel}>Tỉnh / Thành phố gửi *</Text>
             <TouchableOpacity
-              style={styles.addressPickerBtn}
-              activeOpacity={0.8}
-              onPress={() => setShowSenderAddressModal(true)}
+              style={styles.locationSelectorBtn}
+              activeOpacity={0.7}
+              onPress={() => setShowSenderProvincePicker(true)}
             >
-              <Ionicons name="location-outline" size={20} color={colors.primary} />
-              <Text
-                style={[
-                  styles.addressPickerText,
-                  !senderAddress && styles.addressPlaceholderText,
-                ]}
-                numberOfLines={2}
-              >
-                {senderAddress
-                  ? `${senderAddress.composedAddress} (${senderAddress.hubName})`
-                  : 'Bấm để chọn Tỉnh/Thành & Phường/Xã... *'}
+              <Ionicons name="location-outline" size={18} color={colors.primary} />
+              <Text style={[styles.locationSelectorText, !senderProvince && styles.placeholderText]}>
+                {senderProvince?.name || 'Bấm để chọn Tỉnh / Thành phố gửi'}
               </Text>
               <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
             </TouchableOpacity>
+
+            {/* Phường / Xã & Bưu cục tiếp nhận */}
+            <Text style={styles.fieldLabel}>Phường / Xã & Bưu cục tiếp nhận *</Text>
+            <TouchableOpacity
+              style={[styles.locationSelectorBtn, !senderProvince && styles.locationSelectorBtnDisabled]}
+              activeOpacity={0.7}
+              disabled={!senderProvince}
+              onPress={() => {
+                if (senderProvince) setShowSenderWardPicker(true);
+              }}
+            >
+              <Ionicons name="business-outline" size={18} color={senderProvince ? colors.primary : colors.textMuted} />
+              <Text style={[styles.locationSelectorText, !senderWard && styles.placeholderText]}>
+                {senderWard
+                  ? `${senderWard.wardName || senderWard.name} - ${senderHub?.name || 'Bưu cục'} (${senderHub?.code || ''})`
+                  : senderProvince
+                  ? 'Bấm để chọn Phường / Xã & Bưu cục tiếp nhận'
+                  : 'Vui lòng chọn Tỉnh / Thành phố trước'}
+              </Text>
+              <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+            </TouchableOpacity>
+
+            {senderHub ? (
+              <View style={styles.hubBadgeRow}>
+                <Ionicons name="business" size={15} color={colors.primary} />
+                <Text style={styles.hubBadgeText}>
+                  Bưu cục tiếp nhận: <Text style={{ fontWeight: '700' }}>[{senderHub.code}] {senderHub.name}</Text>
+                </Text>
+              </View>
+            ) : null}
 
             {/* Ô NHẬP ĐỊA CHỈ CHI TIẾT NGƯỜI GỬI */}
             <Text style={styles.detailLabel}>Số nhà, tên đường chi tiết (Người gửi)</Text>
@@ -296,35 +425,59 @@ export function PriceCalculatorScreen({ navigation }: Props): React.JSX.Element 
               placeholder="Ví dụ: 123 Nguyễn Thị Minh Khai, Phường Bến Thành..."
               placeholderTextColor={colors.textMuted}
               value={senderDetail}
-              onChangeText={setSenderDetail}
+              onChangeText={handleSenderDetailChange}
             />
 
             {/* NGƯỜI NHẬN */}
-            <Text style={[styles.subTitleLabel, { marginTop: spacing.lg }]}>
+            <Text style={[styles.cardSectionSubtitle, { marginTop: spacing.lg }]}>
               Địa chỉ Người nhận {shippingScope === 'INTERNATIONAL' ? '(Quốc tế)' : ''}
             </Text>
 
             {shippingScope === 'DOMESTIC' ? (
               <React.Fragment>
+                {/* Tỉnh / Thành phố nhận */}
+                <Text style={styles.fieldLabel}>Tỉnh / Thành phố nhận *</Text>
                 <TouchableOpacity
-                  style={styles.addressPickerBtn}
-                  activeOpacity={0.8}
-                  onPress={() => setShowReceiverAddressModal(true)}
+                  style={styles.locationSelectorBtn}
+                  activeOpacity={0.7}
+                  onPress={() => setShowReceiverProvincePicker(true)}
                 >
-                  <Ionicons name="location-outline" size={20} color={colors.primary} />
-                  <Text
-                    style={[
-                      styles.addressPickerText,
-                      !receiverAddress && styles.addressPlaceholderText,
-                    ]}
-                    numberOfLines={2}
-                  >
-                    {receiverAddress
-                      ? `${receiverAddress.composedAddress} (${receiverAddress.hubName})`
-                      : 'Bấm để chọn Tỉnh/Thành & Phường/Xã... *'}
+                  <Ionicons name="location-outline" size={18} color={colors.primary} />
+                  <Text style={[styles.locationSelectorText, !receiverProvince && styles.placeholderText]}>
+                    {receiverProvince?.name || 'Bấm để chọn Tỉnh / Thành phố nhận'}
                   </Text>
                   <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
                 </TouchableOpacity>
+
+                {/* Phường / Xã & Bưu cục phát */}
+                <Text style={styles.fieldLabel}>Phường / Xã & Bưu cục phát *</Text>
+                <TouchableOpacity
+                  style={[styles.locationSelectorBtn, !receiverProvince && styles.locationSelectorBtnDisabled]}
+                  activeOpacity={0.7}
+                  disabled={!receiverProvince}
+                  onPress={() => {
+                    if (receiverProvince) setShowReceiverWardPicker(true);
+                  }}
+                >
+                  <Ionicons name="business-outline" size={18} color={receiverProvince ? colors.primary : colors.textMuted} />
+                  <Text style={[styles.locationSelectorText, !receiverWard && styles.placeholderText]}>
+                    {receiverWard
+                      ? `${receiverWard.wardName || receiverWard.name} - ${receiverHub?.name || 'Bưu cục'} (${receiverHub?.code || ''})`
+                      : receiverProvince
+                      ? 'Bấm để chọn Phường / Xã & Bưu cục phát'
+                      : 'Vui lòng chọn Tỉnh / Thành phố trước'}
+                  </Text>
+                  <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+                </TouchableOpacity>
+
+                {receiverHub ? (
+                  <View style={styles.hubBadgeRow}>
+                    <Ionicons name="business" size={15} color={colors.primary} />
+                    <Text style={styles.hubBadgeText}>
+                      Bưu cục phát tiếp nhận: <Text style={{ fontWeight: '700' }}>[{receiverHub.code}] {receiverHub.name}</Text>
+                    </Text>
+                  </View>
+                ) : null}
 
                 {/* Ô NHẬP ĐỊA CHỈ CHI TIẾT NGƯỜI NHẬN */}
                 <Text style={styles.detailLabel}>Số nhà, tên đường chi tiết (Người nhận)</Text>
@@ -333,18 +486,18 @@ export function PriceCalculatorScreen({ navigation }: Props): React.JSX.Element 
                   placeholder="Ví dụ: 456 Cầu Giấy, Phường Dịch Vọng..."
                   placeholderTextColor={colors.textMuted}
                   value={receiverDetail}
-                  onChangeText={setReceiverDetail}
+                  onChangeText={handleReceiverDetailChange}
                 />
               </React.Fragment>
             ) : (
               <React.Fragment>
                 <TouchableOpacity
-                  style={styles.addressPickerBtn}
+                  style={styles.locationSelectorBtn}
                   activeOpacity={0.8}
                   onPress={() => setShowCountryModal(true)}
                 >
                   <Ionicons name="globe-outline" size={20} color={colors.primary} />
-                  <Text style={styles.addressPickerText} numberOfLines={1}>
+                  <Text style={styles.locationSelectorText} numberOfLines={1}>
                     {receiverCountry}
                   </Text>
                   <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
@@ -356,7 +509,7 @@ export function PriceCalculatorScreen({ navigation }: Props): React.JSX.Element 
                   placeholder="Street address, City, Zipcode..."
                   placeholderTextColor={colors.textMuted}
                   value={receiverDetail}
-                  onChangeText={setReceiverDetail}
+                  onChangeText={handleReceiverDetailChange}
                 />
               </React.Fragment>
             )}
@@ -496,34 +649,48 @@ export function PriceCalculatorScreen({ navigation }: Props): React.JSX.Element 
         </View>
       </KeyboardAvoidingView>
 
-      {/* SENDER ADDRESS SELECTOR MODAL */}
-      <AddressSelectorModal
-        visible={showSenderAddressModal}
-        title="Chọn địa chỉ người gửi"
-        initialAddress={senderAddress}
+      {/* SENDER PROVINCE PICKER MODAL */}
+      <StandardLocationPickerModal
+        visible={showSenderProvincePicker}
+        type="PROVINCE"
+        selectedProvince={senderProvince}
+        onSelectProvince={handleSelectSenderProvince}
+        onClose={() => setShowSenderProvincePicker(false)}
         accessToken={token ?? undefined}
-        onConfirm={(addr) => {
-          setSenderAddress(addr);
-          if (addr.addressDetail && !senderDetail) {
-            setSenderDetail(addr.addressDetail);
-          }
-        }}
-        onClose={() => setShowSenderAddressModal(false)}
       />
 
-      {/* RECEIVER ADDRESS SELECTOR MODAL */}
-      <AddressSelectorModal
-        visible={showReceiverAddressModal}
-        title="Chọn địa chỉ người nhận"
-        initialAddress={receiverAddress}
+      {/* SENDER WARD & HUB PICKER MODAL */}
+      <StandardLocationPickerModal
+        visible={showSenderWardPicker}
+        type="WARD_HUB"
+        selectedProvince={senderProvince}
+        selectedWard={senderWard}
+        selectedHubCode={senderHub?.code}
+        onSelectWardAndHub={handleSelectSenderWardAndHub}
+        onClose={() => setShowSenderWardPicker(false)}
         accessToken={token ?? undefined}
-        onConfirm={(addr) => {
-          setReceiverAddress(addr);
-          if (addr.addressDetail && !receiverDetail) {
-            setReceiverDetail(addr.addressDetail);
-          }
-        }}
-        onClose={() => setShowReceiverAddressModal(false)}
+      />
+
+      {/* RECEIVER PROVINCE PICKER MODAL */}
+      <StandardLocationPickerModal
+        visible={showReceiverProvincePicker}
+        type="PROVINCE"
+        selectedProvince={receiverProvince}
+        onSelectProvince={handleSelectReceiverProvince}
+        onClose={() => setShowReceiverProvincePicker(false)}
+        accessToken={token ?? undefined}
+      />
+
+      {/* RECEIVER WARD & HUB PICKER MODAL */}
+      <StandardLocationPickerModal
+        visible={showReceiverWardPicker}
+        type="WARD_HUB"
+        selectedProvince={receiverProvince}
+        selectedWard={receiverWard}
+        selectedHubCode={receiverHub?.code}
+        onSelectWardAndHub={handleSelectReceiverWardAndHub}
+        onClose={() => setShowReceiverWardPicker(false)}
+        accessToken={token ?? undefined}
       />
 
       {/* COUNTRY SELECTOR MODAL */}
@@ -681,6 +848,62 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     color: colors.textPrimary,
+  },
+  cardSectionSubtitle: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: colors.primary,
+    marginBottom: spacing.xs,
+  },
+  fieldLabel: {
+    fontSize: 12.5,
+    fontWeight: '700',
+    color: colors.textPrimary,
+    marginTop: spacing.xs + 2,
+    marginBottom: 4,
+  },
+  locationSelectorBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.background,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    borderRadius: 14,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.md - 2,
+    gap: 8,
+  },
+  locationSelectorBtnDisabled: {
+    backgroundColor: '#F3F4F6',
+    opacity: 0.65,
+  },
+  locationSelectorText: {
+    flex: 1,
+    fontSize: 13,
+    fontWeight: '600',
+    color: colors.textPrimary,
+    lineHeight: 18,
+  },
+  placeholderText: {
+    color: colors.textMuted,
+    fontWeight: '400',
+  },
+  hubBadgeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#eff6ff',
+    borderWidth: 1,
+    borderColor: '#bfdbfe',
+    paddingHorizontal: spacing.md,
+    paddingVertical: 8,
+    borderRadius: 10,
+    marginTop: 6,
+  },
+  hubBadgeText: {
+    fontSize: 12,
+    color: colors.primary,
+    flex: 1,
   },
   subTitleLabel: {
     fontSize: 13,

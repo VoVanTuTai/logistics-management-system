@@ -461,7 +461,8 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
-    maxHeight: '90%',
+    height: '85%',
+    maxHeight: '92%',
     flexDirection: 'column',
     overflow: 'hidden',
   },
@@ -492,6 +493,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     paddingBottom: 40,
     paddingTop: spacing.md,
+    flexGrow: 1,
   },
   formBlock: {
     gap: 12,
