@@ -21,6 +21,7 @@ import { submitHubScanAction } from '../../features/scan/hub.api';
 import { parsePickupScannedCode } from '../../features/scan/pickup.scanner.adapter';
 import { resolveShipmentScanCode } from '../../features/scan/shipment-code';
 import {
+  parseLinehaulVehicleNote,
   parseVehicleLabel,
   type VehicleLabelInfo,
 } from '../../features/scan/vehicle-label';
@@ -90,17 +91,33 @@ function buildSyncedVehicleInfo(
   scannedVehicleInfo: VehicleLabelInfo,
   manifest: BagManifestDto,
 ): VehicleLabelInfo {
+  const noteInfo = parseLinehaulVehicleNote(manifest.note);
+  const sealRecordNote = (manifest as { sealRecord?: { note?: string } }).sealRecord?.note;
+  const sealNoteInfo = parseLinehaulVehicleNote(sealRecordNote);
+
+  const scannedPlate =
+    scannedVehicleInfo.licensePlate && scannedVehicleInfo.licensePlate !== 'UNKNOWN'
+      ? scannedVehicleInfo.licensePlate
+      : '';
+  const notePlate = noteInfo.licensePlate || sealNoteInfo.licensePlate || '';
+  const resolvedPlate = scannedPlate || notePlate || 'UNKNOWN';
+
   return {
     ...scannedVehicleInfo,
     vehicleCode: normalizeCode(manifest.manifestCode || scannedVehicleInfo.vehicleCode),
     originHubCode:
       manifest.originHubCode?.trim().toUpperCase() ||
+      noteInfo.originHubCode ||
+      sealNoteInfo.originHubCode ||
       scannedVehicleInfo.originHubCode ||
       'UNKNOWN',
     destinationHubCode:
       manifest.destinationHubCode?.trim().toUpperCase() ||
+      noteInfo.destinationHubCode ||
+      sealNoteInfo.destinationHubCode ||
       scannedVehicleInfo.destinationHubCode ||
       'UNKNOWN',
+    licensePlate: resolvedPlate,
   };
 }
 

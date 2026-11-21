@@ -9,7 +9,16 @@ import { CourierMapScreen } from '../screens/map/CourierMapScreen';
 import { ScanScreen } from '../screens/scan/ScanScreen';
 import { ChatScreen } from '../screens/chat/ChatScreen';
 import { ProfileScreen } from '../screens/profile/ProfileScreen';
+import { ErrorBoundary } from '../components/common/ErrorBoundary';
 import { theme } from '../theme';
+
+function SafeCourierMapScreen(): React.JSX.Element {
+  return (
+    <ErrorBoundary fallbackTitle="Bản đồ tuyến giao nhận">
+      <CourierMapScreen />
+    </ErrorBoundary>
+  );
+}
 
 const Tab = createBottomTabNavigator<AppTabsParamList>();
 
@@ -88,7 +97,7 @@ export function AppTabs(): React.JSX.Element {
       />
       <Tab.Screen
         name="Map"
-        component={CourierMapScreen}
+        component={SafeCourierMapScreen}
         options={{ tabBarLabel: 'Bản đồ' }}
       />
       <Tab.Screen

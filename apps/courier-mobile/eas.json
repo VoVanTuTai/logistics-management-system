@@ -6,8 +6,8 @@
     "preview": {
       "distribution": "internal",
       "env": {
-        "EXPO_PUBLIC_GATEWAY_BASE_URL": "http://10.10.103.101:3000",
-        "EXPO_PUBLIC_GATEWAY_FALLBACK_BASE_URLS": "http://localhost:3000,http://10.0.2.2:3000,http://127.0.0.1:3000,https://ops.nexus-ex.site,https://customer.nexus-ex.site",
+        "EXPO_PUBLIC_GATEWAY_BASE_URL": "https://ops.nexus-ex.site",
+        "EXPO_PUBLIC_GATEWAY_FALLBACK_BASE_URLS": "http://103.82.20.51:13000,https://api.nexus-ex.site,http://localhost:3000,http://10.0.2.2:3000,http://127.0.0.1:3000,https://ops.nexus-ex.site",
         "EXPO_PUBLIC_REQUEST_TIMEOUT_MS": "15000",
         "EXPO_PUBLIC_COURIER_ID": "30000000",
         "EXPO_PUBLIC_ALLOW_ALL_COURIER_MOBILE_PERMISSIONS_FOR_TESTING": "false"
@@ -19,8 +19,8 @@
     "production-apk": {
       "distribution": "internal",
       "env": {
-        "EXPO_PUBLIC_GATEWAY_BASE_URL": "http://10.10.103.101:3000",
-        "EXPO_PUBLIC_GATEWAY_FALLBACK_BASE_URLS": "http://localhost:3000,http://10.0.2.2:3000,http://127.0.0.1:3000,https://ops.nexus-ex.site,https://customer.nexus-ex.site",
+        "EXPO_PUBLIC_GATEWAY_BASE_URL": "https://ops.nexus-ex.site",
+        "EXPO_PUBLIC_GATEWAY_FALLBACK_BASE_URLS": "http://103.82.20.51:13000,https://api.nexus-ex.site,http://localhost:3000,http://10.0.2.2:3000,http://127.0.0.1:3000,https://ops.nexus-ex.site",
         "EXPO_PUBLIC_REQUEST_TIMEOUT_MS": "15000",
         "EXPO_PUBLIC_COURIER_ID": "30000000",
         "EXPO_PUBLIC_ALLOW_ALL_COURIER_MOBILE_PERMISSIONS_FOR_TESTING": "false"
@@ -31,8 +31,8 @@
     },
     "production": {
       "env": {
-        "EXPO_PUBLIC_GATEWAY_BASE_URL": "http://10.10.103.101:3000",
-        "EXPO_PUBLIC_GATEWAY_FALLBACK_BASE_URLS": "http://localhost:3000,http://10.0.2.2:3000,http://127.0.0.1:3000,https://ops.nexus-ex.site,https://customer.nexus-ex.site",
+        "EXPO_PUBLIC_GATEWAY_BASE_URL": "https://ops.nexus-ex.site",
+        "EXPO_PUBLIC_GATEWAY_FALLBACK_BASE_URLS": "http://103.82.20.51:13000,https://api.nexus-ex.site,http://localhost:3000,http://10.0.2.2:3000,http://127.0.0.1:3000,https://ops.nexus-ex.site",
         "EXPO_PUBLIC_REQUEST_TIMEOUT_MS": "15000",
         "EXPO_PUBLIC_COURIER_ID": "30000000",
         "EXPO_PUBLIC_ALLOW_ALL_COURIER_MOBILE_PERMISSIONS_FOR_TESTING": "false"
