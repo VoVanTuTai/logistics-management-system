@@ -20,6 +20,7 @@ import { TrackingTimeline } from '../../components/TrackingTimeline';
 import type { RootStackParamList } from '../../navigation/types';
 import { trackingApi } from '../../services/api/tracking.api';
 import { shipmentApi } from '../../services/api/shipment.api';
+import { ratingsApi } from '../../services/api/ratings.api';
 import { authStore } from '../../store/authStore';
 import { colors, shadows, spacing } from '../../theme';
 import type { ShipmentStatus, TrackingEvent } from '../../types';
@@ -124,6 +125,24 @@ export function OrderDetailScreen({ route, navigation }: Props): React.JSX.Eleme
 
     return () => clearInterval(interval);
   }, [order.code]);
+
+  useEffect(() => {
+    let mounted = true;
+    if (isReceiver && isDelivered) {
+      ratingsApi
+        .getRatingForShipment(order.code)
+        .then((existing) => {
+          if (mounted && existing) {
+            setHasRated(true);
+            setReceiptStatus('CONFIRMED');
+          }
+        })
+        .catch(() => {});
+    }
+    return () => {
+      mounted = false;
+    };
+  }, [order.code, isReceiver, isDelivered]);
 
   const onRefresh = () => {
     setRefreshing(true);
@@ -558,29 +577,16 @@ export function OrderDetailScreen({ route, navigation }: Props): React.JSX.Eleme
           <Text style={{ fontSize: 12, color: '#64748B', lineHeight: 18, marginBottom: 12 }}>
             Kiện hàng được bảo hiểm theo Quy chuẩn Nexus Logistics. Bạn có thể giục phát, khiếu nại bể vỡ hoặc theo dõi hồ sơ đền bù bất cứ lúc nào.
           </Text>
-          <View style={{ flexDirection: 'row', gap: 10 }}>
-            <TouchableOpacity
-              style={[styles.receiptBtn, { backgroundColor: '#0284C7', flex: 1, justifyContent: 'center' }]}
-              activeOpacity={0.8}
-              onPress={() => setShowComplaintsModal(true)}
-            >
-              <Ionicons name="chatbubbles-outline" size={16} color="#FFFFFF" />
-              <Text style={{ color: '#FFFFFF', fontWeight: '700', fontSize: 13 }}>
-                Khiếu nại bưu kiện
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[styles.receiptBtn, { backgroundColor: '#F8FAFC', borderWidth: 1, borderColor: '#CBD5E1', flex: 1, justifyContent: 'center' }]}
-              activeOpacity={0.8}
-              onPress={() => setShowRatingModal(true)}
-            >
-              <Ionicons name="star" size={16} color="#EAB308" />
-              <Text style={{ color: '#0F172A', fontWeight: '600', fontSize: 13 }}>
-                Đánh giá bưu tá
-              </Text>
-            </TouchableOpacity>
-          </View>
+          <TouchableOpacity
+            style={[styles.receiptBtn, { backgroundColor: '#0284C7', justifyContent: 'center' }]}
+            activeOpacity={0.8}
+            onPress={() => setShowComplaintsModal(true)}
+          >
+            <Ionicons name="chatbubbles-outline" size={16} color="#FFFFFF" />
+            <Text style={{ color: '#FFFFFF', fontWeight: '700', fontSize: 13 }}>
+              Khiếu nại bưu kiện
+            </Text>
+          </TouchableOpacity>
         </View>
 
         {/* 6. CANCEL ORDER (BEFORE COURIER HANDOVER) */}
