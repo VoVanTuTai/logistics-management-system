@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { Injectable } from '@nestjs/common';
 import type {
   Prisma,
@@ -169,8 +170,16 @@ export class TaskPrismaRepository extends TaskRepository {
   }
 
   async create(input: CreateTaskInput): Promise<Task> {
+    const taskCode =
+      input.taskCode?.trim() ||
+      (input.taskType === 'DELIVERY' && input.shipmentCode
+        ? `DLV-${input.shipmentCode}-${Date.now().toString().slice(-4)}`
+        : input.taskType === 'PICKUP' && input.pickupRequestId
+          ? `PU-${input.pickupRequestId}-${Date.now().toString().slice(-4)}`
+          : `TSK-${randomUUID()}`);
+
     const data: Prisma.TaskCreateInput = {
-      taskCode: input.taskCode,
+      taskCode,
       taskType: input.taskType,
       shipmentCode: input.shipmentCode ?? null,
       pickupRequestId: input.pickupRequestId ?? null,

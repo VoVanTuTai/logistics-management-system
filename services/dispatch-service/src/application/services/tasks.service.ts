@@ -115,7 +115,18 @@ export class TasksService {
   }
 
   async create(input: CreateTaskInput): Promise<Task> {
-    const task = await this.taskRepository.create(input);
+    const taskCode =
+      input.taskCode?.trim() ||
+      (input.taskType === 'DELIVERY' && input.shipmentCode
+        ? `DLV-${input.shipmentCode}-${Date.now().toString().slice(-4)}`
+        : input.taskType === 'PICKUP' && input.pickupRequestId
+          ? `PU-${input.pickupRequestId}-${Date.now().toString().slice(-4)}`
+          : `TSK-${randomUUID()}`);
+
+    const task = await this.taskRepository.create({
+      ...input,
+      taskCode,
+    });
     this.tasksRealtimeGateway.publishTaskChanged('created', task);
     return task;
   }

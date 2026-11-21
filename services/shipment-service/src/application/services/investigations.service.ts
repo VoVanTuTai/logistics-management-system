@@ -12,13 +12,13 @@ import type {
 } from '@prisma/client';
 
 export interface CreateDisputeInput {
-  submittedBy: string;
-  partyCode: string;
-  partyName: string;
+  submittedBy?: string;
+  partyCode?: string;
+  partyName?: string;
   cctvVideoUrl?: string;
   cctvTimestampRange?: string;
   handoverSlipUrl?: string;
-  notes: string;
+  notes?: string;
 }
 
 export interface ResolveFoundInput {
@@ -155,13 +155,23 @@ export class InvestigationsService {
     await this.prisma.investigationDispute.create({
       data: {
         investigationCaseId: item.id,
-        submittedBy: input.submittedBy,
-        partyCode: input.partyCode,
-        partyName: input.partyName,
-        cctvVideoUrl: input.cctvVideoUrl,
-        cctvTimestampRange: input.cctvTimestampRange,
-        handoverSlipUrl: input.handoverSlipUrl,
-        notes: input.notes,
+        submittedBy: input.submittedBy?.trim() || 'Người vận hành',
+        partyCode:
+          input.partyCode?.trim() ||
+          item.suspectPartyCode ||
+          item.destinationHubCode ||
+          item.originHubCode ||
+          'UNKNOWN',
+        partyName:
+          input.partyName?.trim() ||
+          item.suspectPartyName ||
+          item.destinationHubName ||
+          item.originHubName ||
+          'Đơn vị giải trình',
+        cctvVideoUrl: input.cctvVideoUrl ?? null,
+        cctvTimestampRange: input.cctvTimestampRange ?? null,
+        handoverSlipUrl: input.handoverSlipUrl ?? null,
+        notes: input.notes?.trim() || 'Nộp bằng chứng giải trình bổ sung',
         status: 'PENDING_REVIEW',
       },
     });

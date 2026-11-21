@@ -93,7 +93,13 @@ export class ShipmentOutboxRelayService implements OnModuleInit, OnModuleDestroy
           return;
         }
 
-        this.logger.error(`RabbitMQ connection error: ${this.toErrorMessage(error)}`);
+        const message = this.toErrorMessage(error);
+        if (message.includes('Heartbeat timeout')) {
+          this.logger.warn(`RabbitMQ heartbeat timeout: ${message} (reconnecting...)`);
+          return;
+        }
+
+        this.logger.error(`RabbitMQ connection error: ${message}`);
       });
 
       this.connection = connection;
