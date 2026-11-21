@@ -233,7 +233,7 @@ export function FloatingAiChatModal({ visible, onClose }: FloatingAiChatModalPro
     ]);
   }, [currentUserId]);
 
-  const scrollViewRef = useRef<ScrollView>(null);
+  const scrollViewRef = useRef<any>(null);
   const [conversationId, setConversationId] = useState<string | null>(null);
 
   const getLastTrackedShipmentCode = (): string | undefined => {

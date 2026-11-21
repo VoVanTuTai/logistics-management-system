@@ -45,7 +45,7 @@ export function LocationPickerMapModal({
   onConfirmLocation,
   accessToken,
 }: LocationPickerMapModalProps): React.JSX.Element {
-  const webViewRef = useRef<WebView | null>(null);
+  const webViewRef = useRef<any>(null);
   const pendingCoordsRef = useRef<LocationCoordinates | null>(null);
 
   const [coords, setCoords] = useState<LocationCoordinates>({
@@ -268,20 +268,20 @@ export function LocationPickerMapModal({
 
           {/* REAL INTERACTIVE MAP CANVAS */}
           <View style={styles.mapCanvasContainer}>
-            <WebView
-              ref={webViewRef}
-              originWhitelist={['*']}
-              source={{ html: mapHtml }}
-              onMessage={handleWebViewMessage}
-              onLoadEnd={() => {
+            {React.createElement(WebView as any, {
+              ref: webViewRef,
+              originWhitelist: ['*'],
+              source: { html: mapHtml },
+              onMessage: handleWebViewMessage,
+              onLoadEnd: () => {
                 if (pendingCoordsRef.current) {
                   sendCenterToMap(pendingCoordsRef.current.latitude, pendingCoordsRef.current.longitude);
                 }
-              }}
-              style={styles.webViewMap}
-              javaScriptEnabled
-              domStorageEnabled
-            />
+              },
+              style: styles.webViewMap,
+              javaScriptEnabled: true,
+              domStorageEnabled: true,
+            })}
 
             {/* FLOATING GPS RE-CENTER BUTTON */}
             <TouchableOpacity
