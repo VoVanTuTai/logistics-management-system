@@ -237,14 +237,17 @@ function getOpsShipmentScopeContext(
 ): OpsShipmentScopeContext | undefined {
   const roles = getHeaderList(request, 'x-ops-roles');
   const hubCodes = getHeaderList(request, 'x-ops-hub-codes');
+  const userId = (request.headers['x-ops-user-id'] || request.headers['x-user-id'] || '') as string;
+  const username = (request.headers['x-ops-username'] || request.headers['x-username'] || '') as string;
+  const isGlobalCourier = userId === '30000000' || username === '30000000';
 
-  if (roles.length === 0 && hubCodes.length === 0) {
+  if (roles.length === 0 && hubCodes.length === 0 && !isGlobalCourier) {
     return undefined;
   }
 
   return {
     hubCodes,
-    canAccessAllHubs: roles.includes('SYSTEM_ADMIN'),
+    canAccessAllHubs: roles.includes('SYSTEM_ADMIN') || isGlobalCourier,
   };
 }
 

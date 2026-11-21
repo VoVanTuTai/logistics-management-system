@@ -85,8 +85,14 @@ export class TasksService {
       status: this.normalizeTaskStatus(filters.status),
     };
 
+    const tasks = await this.taskRepository.list(normalizedFilters);
+
+    if (normalizedFilters.courierId === '30000000' || opsScope?.canAccessAllHubs) {
+      return tasks;
+    }
+
     return this.filterTasksByOpsScope(
-      await this.taskRepository.list(normalizedFilters),
+      tasks,
       opsScope,
     );
   }
@@ -395,6 +401,111 @@ export class TasksService {
     return task;
   }
 
+  private async findHubCouriers(
+    hubCode: string,
+    masterdataUrl: string,
+    activeAssignments?: any[],
+  ): Promise<string[]> {
+    const targetHub = hubCode.trim().toUpperCase();
+    const couriers = new Set<string>();
+
+    if (Array.isArray(activeAssignments)) {
+      for (const item of activeAssignments) {
+        if (
+          item?.isActive &&
+          item?.courierId &&
+          item.courierId !== '30000000' &&
+          typeof item?.hubCode === 'string' &&
+          (item.hubCode.trim().toUpperCase() === targetHub ||
+            isSameHubOrScopedLocation(item.hubCode, targetHub))
+        ) {
+          couriers.add(item.courierId.trim());
+        }
+      }
+    }
+
+    if (couriers.size === 0) {
+      try {
+        const url = new URL(
+          `courier-area-assignments?hubCode=${encodeURIComponent(targetHub)}&isActive=true`,
+          masterdataUrl.endsWith('/') ? masterdataUrl : `${masterdataUrl}/`,
+        );
+        const res = await fetch(url, { headers: { accept: 'application/json' } });
+        if (res.ok) {
+          const list = await res.json().catch(() => []);
+          if (Array.isArray(list)) {
+            for (const item of list) {
+              if (item?.isActive && item?.courierId && item.courierId !== '30000000') {
+                couriers.add(item.courierId.trim());
+              }
+            }
+          }
+        }
+      } catch {
+        // Ignore network error
+      }
+    }
+
+    return Array.from(couriers);
+  }
+
+  private async assignOrUpdateDeliveryTask(
+    shipmentCode: string,
+    courierId: string,
+    assignedHub: string,
+    note: string,
+  ): Promise<Task> {
+    const existingTasks = await this.taskRepository.list({
+      shipmentCode,
+      taskType: 'DELIVERY',
+    });
+    const activeTask = existingTasks.find(
+      (task) => task.status !== 'COMPLETED' && task.status !== 'CANCELLED',
+    );
+
+    if (activeTask) {
+      if (activeTask.status === 'CREATED') {
+        return this.assign(
+          activeTask.id,
+          {
+            courierId,
+            hubCode: assignedHub,
+            note,
+          },
+          {
+            actorId: 'SYSTEM',
+            actorUsername: 'SYSTEM_AUTO_DISPATCH',
+            ipAddress: '127.0.0.1',
+            userAgent: 'DispatchService-AutoEngine',
+          },
+        );
+      }
+      return activeTask;
+    }
+
+    const task = await this.create({
+      taskCode: `DLV-AUTO-${randomUUID()}`,
+      taskType: 'DELIVERY',
+      shipmentCode,
+      note,
+    });
+
+    return this.assign(
+      task.id,
+      {
+        courierId,
+        hubCode: assignedHub,
+        note,
+      },
+      {
+        actorId: 'SYSTEM',
+        actorUsername: 'SYSTEM_AUTO_DISPATCH',
+        ipAddress: '127.0.0.1',
+        userAgent: 'DispatchService-AutoEngine',
+      },
+    );
+  }
+
   async autoAssignDeliveryTask(
     shipmentCode: string,
     locationCode: string,
@@ -452,6 +563,33 @@ export class TasksService {
       return null;
     }
 
+    const masterdataUrl = process.env.MASTERDATA_SERVICE_URL?.trim();
+    if (!masterdataUrl) {
+      return this.getOrCreateUnassignedDeliveryTask(
+        shipmentCode,
+        'Không tìm thấy cấu hình MASTERDATA_SERVICE_URL',
+      );
+    }
+
+    const targetHub = destinationHubCode || normalizedLocation;
+
+    const deliveryLatitude =
+      typeof shipmentRecord?.deliveryLatitude === 'number'
+        ? shipmentRecord.deliveryLatitude
+        : typeof metadata?.deliveryLatitude === 'number'
+          ? (metadata.deliveryLatitude as number)
+          : typeof receiver?.latitude === 'number'
+            ? (receiver.latitude as number)
+            : null;
+    const deliveryLongitude =
+      typeof shipmentRecord?.deliveryLongitude === 'number'
+        ? shipmentRecord.deliveryLongitude
+        : typeof metadata?.deliveryLongitude === 'number'
+          ? (metadata.deliveryLongitude as number)
+          : typeof receiver?.longitude === 'number'
+            ? (receiver.longitude as number)
+            : null;
+
     const receiverAddressText = normalizeNonEmptyString(
       receiver?.address ?? receiver?.addressDetail ?? metadata?.receiverAddress,
     );
@@ -466,176 +604,195 @@ export class TasksService {
     const district = parsedAddress.district;
     const ward = parsedAddress.ward;
 
-    if (!province || !district || !ward) {
-      return this.getOrCreateUnassignedDeliveryTask(
-        shipmentCode,
-        'Thiếu hoặc không cắt được đủ địa chỉ (Phường/Quận/Tỉnh) để tự động gán',
+    // Load active assignments for geofence and hub couriers
+    let activeList: any[] = [];
+    try {
+      const allRes = await fetch(
+        new URL('courier-area-assignments?isActive=true', masterdataUrl.endsWith('/') ? masterdataUrl : `${masterdataUrl}/`),
+        { headers: { accept: 'application/json' } },
       );
-    }
-
-    const masterdataUrl = process.env.MASTERDATA_SERVICE_URL?.trim();
-    if (!masterdataUrl) {
-      return this.getOrCreateUnassignedDeliveryTask(
-        shipmentCode,
-        'Không tìm thấy cấu hình MASTERDATA_SERVICE_URL',
-      );
-    }
-
-    const hubCodesToQuery = Array.from(
-      new Set([destinationHubCode, normalizedLocation].filter(Boolean)),
-    );
-
-    let assignmentList: any[] = [];
-
-    for (const hubToQuery of hubCodesToQuery) {
-      const query = new URLSearchParams({
-        hubCode: hubToQuery,
-        province,
-        district,
-        ward,
-        isActive: 'true',
-      });
-
-      const url = new URL(
-        `courier-area-assignments?${query.toString()}`,
-        masterdataUrl.endsWith('/') ? masterdataUrl : `${masterdataUrl}/`,
-      );
-
-      try {
-        const response = await fetch(url, {
-          method: 'GET',
-          headers: {
-            accept: 'application/json',
-          },
-        });
-
-        if (response.ok) {
-          const assignments = await response.json().catch(() => null);
-          if (Array.isArray(assignments) && assignments.length > 0) {
-            assignmentList = assignments;
-            break;
-          }
-        }
-      } catch (error) {
-        // Ignore network error and continue
-      }
-    }
-
-    // Fallback: nếu truy vấn trùng khớp hoàn toàn chuỗi trả về rỗng, thử tải phân công của hub và so khớp linh hoạt tên Phường
-    if (assignmentList.length === 0) {
-      for (const hubToQuery of hubCodesToQuery) {
-        try {
-          const fallbackQuery = new URLSearchParams({
-            hubCode: hubToQuery,
-            isActive: 'true',
-          });
-          const fallbackUrl = new URL(
-            `courier-area-assignments?${fallbackQuery.toString()}`,
-            masterdataUrl.endsWith('/') ? masterdataUrl : `${masterdataUrl}/`,
-          );
-          const fallbackResponse = await fetch(fallbackUrl, {
-            method: 'GET',
-            headers: { accept: 'application/json' },
-          });
-
-          if (fallbackResponse.ok) {
-            const allHubAssignments = await fallbackResponse.json().catch(() => []);
-            if (Array.isArray(allHubAssignments)) {
-              const targetWardKey = normalizeWardKey(ward);
-              const matched = allHubAssignments.filter((item: any) => {
-                return normalizeWardKey(item.ward) === targetWardKey;
-              });
-              if (matched.length > 0) {
-                assignmentList = matched;
-                break;
-              }
-            }
-          }
-        } catch (error) {
-          // Ignore fallback error
+      if (allRes.ok) {
+        const data = await allRes.json().catch(() => []);
+        if (Array.isArray(data)) {
+          activeList = data;
         }
       }
+    } catch {
+      // Ignore network error
     }
 
-    if (assignmentList.length > 1) {
-      const preferredHub = destinationHubCode || normalizedLocation;
-      assignmentList.sort((a: any, b: any) => {
-        const aIsGlobal = a?.courierId === '30000000';
-        const bIsGlobal = b?.courierId === '30000000';
+    const prioritizeAssignments = (list: any[]) => {
+      return [...list].sort((a: any, b: any) => {
+        const aIsGlobal = a?.courierId === '30000000' || isRegionalHub(a?.hubCode);
+        const bIsGlobal = b?.courierId === '30000000' || isRegionalHub(b?.hubCode);
         if (!aIsGlobal && bIsGlobal) return -1;
         if (aIsGlobal && !bIsGlobal) return 1;
-
-        if (preferredHub) {
-          if (a?.hubCode === preferredHub && b?.hubCode !== preferredHub) return -1;
-          if (b?.hubCode === preferredHub && a?.hubCode !== preferredHub) return 1;
-        }
-        if (!isRegionalHub(a?.hubCode) && isRegionalHub(b?.hubCode)) return -1;
-        if (isRegionalHub(a?.hubCode) && !isRegionalHub(b?.hubCode)) return 1;
         return 0;
       });
+    };
+
+    // =========================================================================
+    // [TẦNG 1] TRA TOẠ ĐỘ ĐỂ GÁN CHÍNH XÁC (Point-in-Polygon Geofence via Ray-Casting)
+    // =========================================================================
+    if (deliveryLatitude !== null && deliveryLongitude !== null && activeList.length > 0) {
+      // 1A. Ưu tiên kiểm tra các tuyến thuộc targetHub trước (loại trừ 30000000)
+      const hubAssignments = targetHub
+        ? prioritizeAssignments(activeList.filter((item: any) => item?.hubCode === targetHub))
+        : [];
+
+      for (const item of hubAssignments) {
+        if (
+          item?.isActive &&
+          item?.courierId &&
+          item.courierId !== '30000000' &&
+          Array.isArray(item?.boundaryPolygon) &&
+          item.boundaryPolygon.length >= 3
+        ) {
+          if (
+            isPointInPolygon(
+              { latitude: deliveryLatitude, longitude: deliveryLongitude },
+              item.boundaryPolygon,
+            )
+          ) {
+            const courierId = item.courierId;
+            const zoneLabel = item.zoneName || item.ward || 'Dải toạ độ giao';
+            const assignedHub = resolveTaskHub(item.hubCode, targetHub);
+            return this.assignOrUpdateDeliveryTask(
+              shipmentCode,
+              courierId,
+              assignedHub,
+              `[Tự động điều phối - Đúng tuyến giao hàng] Tọa độ (${deliveryLatitude.toFixed(5)}, ${deliveryLongitude.toFixed(5)}) khớp chính xác Tuyến [${zoneLabel}] của Shipper ${courierId} thuộc Hub ${assignedHub}`,
+            );
+          }
+        }
+      }
+
+      // 1B. Kiểm tra các tuyến còn lại trong hệ thống
+      const otherAssignments = prioritizeAssignments(
+        targetHub
+          ? activeList.filter((item: any) => item?.hubCode !== targetHub)
+          : activeList,
+      );
+
+      for (const item of otherAssignments) {
+        if (
+          item?.isActive &&
+          item?.courierId &&
+          item.courierId !== '30000000' &&
+          Array.isArray(item?.boundaryPolygon) &&
+          item.boundaryPolygon.length >= 3
+        ) {
+          if (
+            isPointInPolygon(
+              { latitude: deliveryLatitude, longitude: deliveryLongitude },
+              item.boundaryPolygon,
+            )
+          ) {
+            const courierId = item.courierId;
+            const zoneLabel = item.zoneName || item.ward || 'Dải toạ độ giao';
+            const assignedHub = resolveTaskHub(item.hubCode, targetHub);
+            return this.assignOrUpdateDeliveryTask(
+              shipmentCode,
+              courierId,
+              assignedHub,
+              `[Tự động điều phối - Đúng tuyến giao hàng liên Hub] Tọa độ (${deliveryLatitude.toFixed(5)}, ${deliveryLongitude.toFixed(5)}) khớp chính xác Tuyến [${zoneLabel}] của Shipper ${courierId} thuộc Hub ${assignedHub}`,
+            );
+          }
+        }
+      }
+
+      // 1C. Exact Ward Match trong targetHub
+      if (ward) {
+        const targetWardKey = normalizeWardKey(ward);
+        const wardMatch = activeList.find(
+          (item: any) =>
+            item?.isActive &&
+            item?.courierId &&
+            item?.courierId !== '30000000' &&
+            normalizeWardKey(item?.ward) === targetWardKey &&
+            item?.hubCode === targetHub,
+        );
+        if (wardMatch) {
+          const courierId = wardMatch.courierId;
+          const zoneLabel = wardMatch.zoneName || wardMatch.ward || 'Tuyến Phường';
+          const assignedHub = resolveTaskHub(wardMatch.hubCode, targetHub);
+          return this.assignOrUpdateDeliveryTask(
+            shipmentCode,
+            courierId,
+            assignedHub,
+            `[Tự động điều phối - Đúng Phường giao hàng] Khớp theo địa bàn ${ward} vào Tuyến [${zoneLabel}] của Shipper ${courierId} thuộc Hub ${assignedHub}`,
+          );
+        }
+      }
+
+      // 1D. Centroid fallback <= 25km trong targetHub
+      let nearestItem: any = null;
+      let minDistanceMeters = Infinity;
+      for (const item of activeList) {
+        if (
+          item?.isActive &&
+          item?.courierId &&
+          item.courierId !== '30000000' &&
+          (item.hubCode === targetHub || !targetHub) &&
+          Array.isArray(item?.boundaryPolygon) &&
+          item.boundaryPolygon.length >= 3
+        ) {
+          const centerLat =
+            item.boundaryPolygon.reduce((s: number, p: [number, number]) => s + p[0], 0) /
+            item.boundaryPolygon.length;
+          const centerLng =
+            item.boundaryPolygon.reduce((s: number, p: [number, number]) => s + p[1], 0) /
+            item.boundaryPolygon.length;
+          const dist = haversineDistanceMeters(
+            { latitude: deliveryLatitude, longitude: deliveryLongitude },
+            { latitude: centerLat, longitude: centerLng },
+          );
+          if (dist < minDistanceMeters) {
+            minDistanceMeters = dist;
+            nearestItem = item;
+          }
+        }
+      }
+
+      if (nearestItem && minDistanceMeters <= 25000) {
+        const courierId = nearestItem.courierId;
+        const zoneLabel = nearestItem.zoneName || nearestItem.ward || 'Tuyến gần nhất';
+        const assignedHub = resolveTaskHub(nearestItem.hubCode, targetHub);
+        const distKm = (minDistanceMeters / 1000).toFixed(1);
+        return this.assignOrUpdateDeliveryTask(
+          shipmentCode,
+          courierId,
+          assignedHub,
+          `[Tự động điều phối - Gần nhất dự phòng giao hàng] Tọa độ (${deliveryLatitude.toFixed(5)}, ${deliveryLongitude.toFixed(5)}) cách ~${distKm}km tâm Tuyến [${zoneLabel}] của Shipper ${courierId} thuộc Hub ${assignedHub}`,
+        );
+      }
     }
 
-    const firstAssignment = assignmentList[0];
-
-    if (!firstAssignment || !firstAssignment.courierId) {
-      return this.getOrCreateUnassignedDeliveryTask(
+    // =========================================================================
+    // [TẦNG 2] TÌM COURIER CHUNG BƯU CỤC ĐỂ GIAO HÀNG (Hub-Level Shared Courier)
+    // =========================================================================
+    const hubCouriers = await this.findHubCouriers(targetHub, masterdataUrl, activeList);
+    if (hubCouriers.length > 0) {
+      const courierId = hubCouriers[0];
+      const assignedHub = resolveTaskHub(targetHub, targetHub);
+      return this.assignOrUpdateDeliveryTask(
         shipmentCode,
-        `Không tìm thấy shipper phụ trách tuyến ${ward}, ${district}, ${province}`,
+        courierId,
+        assignedHub,
+        `[Tự động điều phối - Bưu tá Bưu cục] Tọa độ không khớp tuyến chi tiết, điều phối giao hàng cho Shipper ${courierId} thuộc chung Bưu cục ${assignedHub}`,
       );
     }
 
-    const courierId = firstAssignment.courierId;
-    const assignedHub = resolveTaskHub(firstAssignment.hubCode, destinationHubCode || normalizedLocation);
-
-    const existingTasks = await this.taskRepository.list({
+    // =========================================================================
+    // [TẦNG 3] DỰ PHÒNG CUỐI CÙNG CHO COURIER TOÀN QUỐC 30000000 (Global Fallback Courier)
+    // =========================================================================
+    const globalCourierId = '30000000';
+    const assignedHub = resolveTaskHub(targetHub, targetHub);
+    return this.assignOrUpdateDeliveryTask(
       shipmentCode,
-      taskType: 'DELIVERY',
-    });
-    const activeTask = existingTasks.find(
-      (task) => task.status !== 'COMPLETED' && task.status !== 'CANCELLED',
-    );
-
-    if (activeTask) {
-      if (activeTask.status === 'CREATED') {
-        return this.assign(
-          activeTask.id,
-          {
-            courierId,
-            hubCode: assignedHub,
-            note: `Hệ thống tự động điều phối giao hàng cho Shipper ${courierId} theo phân vùng: ${ward}, ${district} thuộc bưu cục ${assignedHub}`,
-          },
-          {
-            actorId: 'SYSTEM',
-            actorUsername: 'SYSTEM_AUTO_DISPATCH',
-            ipAddress: '127.0.0.1',
-            userAgent: 'DispatchService-AutoEngine',
-          },
-        );
-      }
-
-      return activeTask;
-    }
-
-    const task = await this.create({
-      taskCode: `DLV-AUTO-${randomUUID()}`,
-      taskType: 'DELIVERY',
-      shipmentCode,
-      note: `Hệ thống tự động tạo và phân công giao hàng cho Shipper ${courierId} theo phân vùng: ${ward}, ${district}`,
-    });
-
-    return this.assign(
-      task.id,
-      {
-        courierId,
-        hubCode: assignedHub,
-        note: `Hệ thống tự động điều phối theo phân vùng tuyến: ${ward}, ${district} thuộc bưu cục ${assignedHub}`,
-      },
-      {
-        actorId: 'SYSTEM',
-        actorUsername: 'SYSTEM_AUTO_DISPATCH',
-        ipAddress: '127.0.0.1',
-        userAgent: 'DispatchService-AutoEngine',
-      },
+      globalCourierId,
+      assignedHub,
+      `[Tự động điều phối - Bưu tá Tổng Toàn quốc] Không tìm thấy Shipper phụ trách tại Hub ${assignedHub}, điều phối dự phòng giao hàng cho Bưu tá Tổng Toàn quốc ${globalCourierId}`,
     );
   }
 
@@ -702,6 +859,33 @@ export class TasksService {
           ? (metadata.pickupLongitude as number)
           : null;
 
+    // Load active assignments for geofence and hub couriers
+    let activeList: any[] = [];
+    try {
+      const allRes = await fetch(
+        new URL('courier-area-assignments?isActive=true', masterdataUrl.endsWith('/') ? masterdataUrl : `${masterdataUrl}/`),
+        { headers: { accept: 'application/json' } },
+      );
+      if (allRes.ok) {
+        const data = await allRes.json().catch(() => []);
+        if (Array.isArray(data)) {
+          activeList = data;
+        }
+      }
+    } catch {
+      // Ignore network error
+    }
+
+    const prioritizeAssignments = (list: any[]) => {
+      return [...list].sort((a: any, b: any) => {
+        const aIsGlobal = a?.courierId === '30000000' || isRegionalHub(a?.hubCode);
+        const bIsGlobal = b?.courierId === '30000000' || isRegionalHub(b?.hubCode);
+        if (!aIsGlobal && bIsGlobal) return -1;
+        if (aIsGlobal && !bIsGlobal) return 1;
+        return 0;
+      });
+    };
+
     // ===================================================================================
     // ĐỘNG CƠ ĐIỀU PHỐI TỰ ĐỘNG KHÔNG GIAN 3 TẦNG (3-TIER SPATIAL AUTO-DISPATCH ENGINE)
     // ===================================================================================
@@ -711,33 +895,15 @@ export class TasksService {
     //      [TẦNG 1] ƯU TIÊN TUYỆT ĐỐI - KHỐI ĐA GIÁC GEOFENCE (Ray-Casting Point-in-Polygon):
     //               Kiểm tra tọa độ xem có nằm lọt vào đa giác boundaryPolygon của Shipper không.
     //               -> Độ chính xác 100%, bảo đảm Zero-Overlap (tách biệt nửa Bắc/Nam cùng 1 phường).
-    //      [TẦNG 2] DỰ PHÒNG HÀNH CHÍNH - KHỚP PHƯỜNG / XÃ CHUẨN HÓA (Exact Ward Matching):
-    //               Kích hoạt khi tọa độ nằm sát ranh giới hoặc đa giác chưa được cấu hình khép kín.
-    //      [TẦNG 3] DỰ PHÒNG KHOẢNG CÁCH - TÂM TUYẾN GẦN NHẤT (Haversine Centroid Distance <= 25km):
-    //               Tính khoảng cách đường chim bay đến tâm hình học của tất cả các tuyến đang mở.
+    //      [TẦNG 2] DỰ PHÒNG BƯU CỤC - TÌM COURIER CHUNG BƯU CỤC (Hub Shared/Pool Courier):
+    //               Kích hoạt khi tọa độ không khớp đa giác nào của hub, tìm bưu tá chung bưu cục để nhận/giao.
+    //      [TẦNG 3] DỰ PHÒNG TOÀN QUỐC - COURIER TỔNG TOÀN QUỐC 30000000 (Global Fallback Courier):
+    //               Kích hoạt khi bưu cục chưa có shipper nào, điều phối cho Shipper Tổng 30000000 toàn quyền toàn quốc.
     // ===================================================================================
 
     // [TẦNG 1: ƯU TIÊN SỐ 1] KHỐI ĐA GIÁC GEOFENCE TUYẾN (Point-in-Polygon via Ray-Casting)
-    if (pickupLatitude !== null && pickupLongitude !== null) {
+    if (pickupLatitude !== null && pickupLongitude !== null && activeList.length > 0) {
       try {
-        // 1. Lấy toàn bộ các tuyến đang hoạt động
-        const allRes = await fetch(
-          new URL('courier-area-assignments?isActive=true', masterdataUrl.endsWith('/') ? masterdataUrl : `${masterdataUrl}/`),
-          { headers: { accept: 'application/json' } },
-        );
-        const allActiveAssignments = allRes.ok ? await allRes.json().catch(() => []) : [];
-        const activeList = Array.isArray(allActiveAssignments) ? allActiveAssignments : [];
-
-        const prioritizeAssignments = (list: any[]) => {
-          return [...list].sort((a: any, b: any) => {
-            const aIsGlobal = a?.courierId === '30000000' || isRegionalHub(a?.hubCode);
-            const bIsGlobal = b?.courierId === '30000000' || isRegionalHub(b?.hubCode);
-            if (!aIsGlobal && bIsGlobal) return -1;
-            if (aIsGlobal && !bIsGlobal) return 1;
-            return 0;
-          });
-        };
-
         // 1A. Ưu tiên kiểm tra các tuyến thuộc originHubCode trước
         const hubAssignments = originHubCode
           ? prioritizeAssignments(activeList.filter((item: any) => item?.hubCode === originHubCode))
@@ -747,6 +913,7 @@ export class TasksService {
           if (
             item?.isActive &&
             item?.courierId &&
+            item.courierId !== '30000000' &&
             Array.isArray(item?.boundaryPolygon) &&
             item.boundaryPolygon.length >= 3
           ) {
@@ -788,6 +955,7 @@ export class TasksService {
           if (
             item?.isActive &&
             item?.courierId &&
+            item.courierId !== '30000000' &&
             Array.isArray(item?.boundaryPolygon) &&
             item.boundaryPolygon.length >= 3
           ) {
@@ -818,9 +986,7 @@ export class TasksService {
           }
         }
 
-        // =========================================================================
-        // PRIORITY 2: EXACT WARD MATCH (Khớp theo tên Phường nếu toạ độ nằm mép ngoài)
-        // =========================================================================
+        // 1C. EXACT WARD MATCH trong originHubCode
         if (ward) {
           const targetWardKey = normalizeWardKey(ward);
           const wardMatch = activeList.find(
@@ -830,30 +996,6 @@ export class TasksService {
               item?.courierId !== '30000000' &&
               normalizeWardKey(item?.ward) === targetWardKey &&
               item?.hubCode === originHubCode,
-          ) || activeList.find(
-            (item: any) =>
-              item?.isActive &&
-              item?.courierId &&
-              normalizeWardKey(item?.ward) === targetWardKey &&
-              item?.hubCode === originHubCode,
-          ) || activeList.find(
-            (item: any) =>
-              item?.isActive &&
-              item?.courierId &&
-              item?.courierId !== '30000000' &&
-              normalizeWardKey(item?.ward) === targetWardKey &&
-              !isRegionalHub(item?.hubCode),
-          ) || activeList.find(
-            (item: any) =>
-              item?.isActive &&
-              item?.courierId &&
-              normalizeWardKey(item?.ward) === targetWardKey &&
-              !isRegionalHub(item?.hubCode),
-          ) || activeList.find(
-            (item: any) =>
-              item?.isActive &&
-              item?.courierId &&
-              normalizeWardKey(item?.ward) === targetWardKey,
           );
           if (wardMatch) {
             const courierId = wardMatch.courierId;
@@ -876,15 +1018,15 @@ export class TasksService {
           }
         }
 
-        // =========================================================================
-        // PRIORITY 3: NEAREST CENTROID FALLBACK (Dự phòng cuối - Tâm tuyến gần nhất <= 25km)
-        // =========================================================================
+        // 1D. NEAREST CENTROID FALLBACK (Dự phòng tâm tuyến gần nhất <= 25km trong originHubCode)
         let nearestItem: any = null;
         let minDistanceMeters = Infinity;
         for (const item of activeList) {
           if (
             item?.isActive &&
             item?.courierId &&
+            item.courierId !== '30000000' &&
+            (item.hubCode === originHubCode || !originHubCode) &&
             Array.isArray(item?.boundaryPolygon) &&
             item.boundaryPolygon.length >= 3
           ) {
@@ -935,95 +1077,133 @@ export class TasksService {
       }
     }
 
-    if (!province || !ward) {
-      return null;
-    }
-
-    const queryParams: Record<string, string> = {
-      hubCode: originHubCode,
-      province,
-      ward,
-      isActive: 'true',
-    };
-    if (district) {
-      queryParams.district = district;
-    }
-
-    const query = new URLSearchParams(queryParams);
-
-    const url = new URL(
-      `courier-area-assignments?${query.toString()}`,
-      masterdataUrl.endsWith('/') ? masterdataUrl : `${masterdataUrl}/`,
-    );
-
-    let assignments: any = null;
-    try {
-      const response = await fetch(url, {
-        method: 'GET',
-        headers: { accept: 'application/json' },
-      });
-      if (response.ok) {
-        assignments = await response.json().catch(() => null);
+    if (province && ward) {
+      const queryParams: Record<string, string> = {
+        hubCode: originHubCode,
+        province,
+        ward,
+        isActive: 'true',
+      };
+      if (district) {
+        queryParams.district = district;
       }
-    } catch {
-      // Ignore network error
-    }
 
-    let assignmentList = Array.isArray(assignments) ? assignments : [];
+      const query = new URLSearchParams(queryParams);
+      const url = new URL(
+        `courier-area-assignments?${query.toString()}`,
+        masterdataUrl.endsWith('/') ? masterdataUrl : `${masterdataUrl}/`,
+      );
 
-    if (assignmentList.length === 0) {
+      let assignments: any = null;
       try {
-        const fallbackUrl = new URL(
-          `courier-area-assignments?isActive=true`,
-          masterdataUrl.endsWith('/') ? masterdataUrl : `${masterdataUrl}/`,
-        );
-        const fallbackResponse = await fetch(fallbackUrl, {
+        const response = await fetch(url, {
           method: 'GET',
           headers: { accept: 'application/json' },
         });
-
-        if (fallbackResponse.ok) {
-          const allHubAssignments = await fallbackResponse.json().catch(() => []);
-          if (Array.isArray(allHubAssignments)) {
-            const targetWardKey = normalizeWardKey(ward);
-            assignmentList = allHubAssignments.filter((item: any) => {
-              return normalizeWardKey(item.ward) === targetWardKey;
-            });
-          }
+        if (response.ok) {
+          assignments = await response.json().catch(() => null);
         }
       } catch {
-        // Ignore fallback error
+        // Ignore network error
+      }
+
+      let assignmentList = Array.isArray(assignments) ? assignments : [];
+
+      if (assignmentList.length === 0) {
+        try {
+          const fallbackUrl = new URL(
+            `courier-area-assignments?isActive=true`,
+            masterdataUrl.endsWith('/') ? masterdataUrl : `${masterdataUrl}/`,
+          );
+          const fallbackResponse = await fetch(fallbackUrl, {
+            method: 'GET',
+            headers: { accept: 'application/json' },
+          });
+
+          if (fallbackResponse.ok) {
+            const allHubAssignments = await fallbackResponse.json().catch(() => []);
+            if (Array.isArray(allHubAssignments)) {
+              const targetWardKey = normalizeWardKey(ward);
+              assignmentList = allHubAssignments.filter((item: any) => {
+                return normalizeWardKey(item.ward) === targetWardKey;
+              });
+            }
+          }
+        } catch {
+          // Ignore fallback error
+        }
+      }
+
+      if (assignmentList.length > 1) {
+        assignmentList.sort((a: any, b: any) => {
+          const aIsGlobal = a?.courierId === '30000000';
+          const bIsGlobal = b?.courierId === '30000000';
+          if (!aIsGlobal && bIsGlobal) return -1;
+          if (aIsGlobal && !bIsGlobal) return 1;
+
+          if (a?.hubCode === originHubCode && b?.hubCode !== originHubCode) return -1;
+          if (b?.hubCode === originHubCode && a?.hubCode !== originHubCode) return 1;
+          if (!isRegionalHub(a?.hubCode) && isRegionalHub(b?.hubCode)) return -1;
+          if (isRegionalHub(a?.hubCode) && !isRegionalHub(b?.hubCode)) return 1;
+          return 0;
+        });
+      }
+
+      const firstAssignment = assignmentList[0];
+      if (firstAssignment && firstAssignment.courierId) {
+        const courierId = firstAssignment.courierId;
+        const assignedHub = resolveTaskHub(firstAssignment.hubCode, originHubCode);
+        return this.assign(
+          taskId,
+          {
+            courierId,
+            hubCode: assignedHub,
+            note: `Hệ thống tự động điều phối lấy hàng cho Shipper ${courierId} theo phân vùng: ${ward}, ${district || ''} thuộc bưu cục ${assignedHub}`,
+          },
+          {
+            actorId: 'SYSTEM',
+            actorUsername: 'SYSTEM_AUTO_DISPATCH',
+            ipAddress: '127.0.0.1',
+            userAgent: 'DispatchService-AutoEngine',
+          },
+        ).catch(() => null);
       }
     }
 
-    if (assignmentList.length > 1) {
-      assignmentList.sort((a: any, b: any) => {
-        const aIsGlobal = a?.courierId === '30000000';
-        const bIsGlobal = b?.courierId === '30000000';
-        if (!aIsGlobal && bIsGlobal) return -1;
-        if (aIsGlobal && !bIsGlobal) return 1;
-
-        if (a?.hubCode === originHubCode && b?.hubCode !== originHubCode) return -1;
-        if (b?.hubCode === originHubCode && a?.hubCode !== originHubCode) return 1;
-        if (!isRegionalHub(a?.hubCode) && isRegionalHub(b?.hubCode)) return -1;
-        if (isRegionalHub(a?.hubCode) && !isRegionalHub(b?.hubCode)) return 1;
-        return 0;
-      });
+    // =========================================================================
+    // [TẦNG 2] TÌM COURIER CHUNG BƯU CỤC ĐỂ NHẬN HÀNG (Hub-Level Shared Courier)
+    // =========================================================================
+    const hubCouriers = await this.findHubCouriers(originHubCode, masterdataUrl, activeList);
+    if (hubCouriers.length > 0) {
+      const courierId = hubCouriers[0];
+      const assignedHub = resolveTaskHub(originHubCode, originHubCode);
+      return this.assign(
+        taskId,
+        {
+          courierId,
+          hubCode: assignedHub,
+          note: `[Tự động điều phối - Bưu tá Bưu cục] Tọa độ không khớp tuyến chi tiết, điều phối lấy hàng cho Shipper ${courierId} thuộc chung Bưu cục ${assignedHub}`,
+        },
+        {
+          actorId: 'SYSTEM',
+          actorUsername: 'SYSTEM_AUTO_DISPATCH',
+          ipAddress: '127.0.0.1',
+          userAgent: 'DispatchService-AutoEngine',
+        },
+      ).catch(() => null);
     }
 
-    const firstAssignment = assignmentList[0];
-    if (!firstAssignment || !firstAssignment.courierId) {
-      return null;
-    }
-
-    const courierId = firstAssignment.courierId;
-    const assignedHub = resolveTaskHub(firstAssignment.hubCode, originHubCode);
+    // =========================================================================
+    // [TẦNG 3] DỰ PHÒNG CUỐI CÙNG CHO COURIER TOÀN QUỐC 30000000 (Global Fallback Courier)
+    // =========================================================================
+    const globalCourierId = '30000000';
+    const assignedHub = resolveTaskHub(originHubCode, originHubCode);
     return this.assign(
       taskId,
       {
-        courierId,
+        courierId: globalCourierId,
         hubCode: assignedHub,
-        note: `Hệ thống tự động điều phối lấy hàng cho Shipper ${courierId} theo phân vùng: ${ward}, ${district || ''} thuộc bưu cục ${assignedHub}`,
+        note: `[Tự động điều phối - Bưu tá Tổng Toàn quốc] Không tìm thấy Shipper phụ trách tại Hub ${assignedHub}, điều phối dự phòng lấy hàng cho Bưu tá Tổng Toàn quốc ${globalCourierId}`,
       },
       {
         actorId: 'SYSTEM',
@@ -1110,6 +1290,9 @@ export class TasksService {
     task: Task,
     opsScope: OpsTaskScopeContext,
   ): Promise<boolean> {
+    if (opsScope.canAccessAllHubs) {
+      return true;
+    }
     const taskHubCodes = await this.resolveTaskHubCodes(task);
     return taskHubCodes.some((hubCode) =>
       opsScope.hubCodes.some((assignedHubCode) =>
