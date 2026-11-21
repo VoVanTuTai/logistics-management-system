@@ -11,7 +11,7 @@ import {
   Platform,
   ActivityIndicator,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import Constants from 'expo-constants';
 import { customerApiClient } from '../services/api/client';
 import { authStore } from '../store/authStore';
@@ -429,7 +429,7 @@ export function FloatingAiChatModal({ visible, onClose }: FloatingAiChatModalPro
             <View style={styles.header}>
               <View style={styles.headerLeft}>
                 <View style={styles.botIconWrapper}>
-                  <Ionicons name="hardware-chip-outline" size={20} color="#38BDF8" />
+                  <MaterialCommunityIcons name="robot" size={22} color="#FFFFFF" />
                 </View>
                 <View>
                   <View style={styles.titleRow}>
@@ -504,7 +504,7 @@ export function FloatingAiChatModal({ visible, onClose }: FloatingAiChatModalPro
                 >
                   {msg.sender === 'bot' && (
                     <View style={styles.botAvatarMini}>
-                      <Ionicons name="bus" size={14} color="#38BDF8" />
+                      <MaterialCommunityIcons name="robot" size={16} color="#FFFFFF" />
                     </View>
                   )}
 
@@ -622,7 +622,7 @@ export function FloatingAiChatModal({ visible, onClose }: FloatingAiChatModalPro
               {isLoading && (
                 <View style={[styles.messageRow, styles.messageRowBot]}>
                   <View style={styles.botAvatarMini}>
-                    <Ionicons name="car-outline" size={14} color="#FFFFFF" />
+                    <MaterialCommunityIcons name="robot" size={16} color="#FFFFFF" />
                   </View>
                   <View style={[styles.messageBubble, styles.bubbleBot, styles.loadingBubble]}>
                     <ActivityIndicator size="small" color="#1D4ED8" />
@@ -701,9 +701,9 @@ const styles = StyleSheet.create({
     width: 38,
     height: 38,
     borderRadius: 12,
-    backgroundColor: '#1E293B',
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
     borderWidth: 1,
-    borderColor: '#334155',
+    borderColor: 'rgba(255, 255, 255, 0.25)',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -836,12 +836,13 @@ const styles = StyleSheet.create({
     width: 28,
     height: 28,
     borderRadius: 8,
-    backgroundColor: '#0F172A',
+    backgroundColor: '#1D4ED8',
     borderWidth: 1,
-    borderColor: '#334155',
+    borderColor: '#60A5FA',
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: 2,
+    marginRight: 8,
   },
   messageBubble: {
     maxWidth: '82%',
