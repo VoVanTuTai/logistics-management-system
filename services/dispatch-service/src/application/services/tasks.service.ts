@@ -560,6 +560,11 @@ export class TasksService {
     if (assignmentList.length > 1) {
       const preferredHub = destinationHubCode || normalizedLocation;
       assignmentList.sort((a: any, b: any) => {
+        const aIsGlobal = a?.courierId === '30000000';
+        const bIsGlobal = b?.courierId === '30000000';
+        if (!aIsGlobal && bIsGlobal) return -1;
+        if (aIsGlobal && !bIsGlobal) return 1;
+
         if (preferredHub) {
           if (a?.hubCode === preferredHub && b?.hubCode !== preferredHub) return -1;
           if (b?.hubCode === preferredHub && a?.hubCode !== preferredHub) return 1;
@@ -723,9 +728,19 @@ export class TasksService {
         const allActiveAssignments = allRes.ok ? await allRes.json().catch(() => []) : [];
         const activeList = Array.isArray(allActiveAssignments) ? allActiveAssignments : [];
 
+        const prioritizeAssignments = (list: any[]) => {
+          return [...list].sort((a: any, b: any) => {
+            const aIsGlobal = a?.courierId === '30000000' || isRegionalHub(a?.hubCode);
+            const bIsGlobal = b?.courierId === '30000000' || isRegionalHub(b?.hubCode);
+            if (!aIsGlobal && bIsGlobal) return -1;
+            if (aIsGlobal && !bIsGlobal) return 1;
+            return 0;
+          });
+        };
+
         // 1A. Ưu tiên kiểm tra các tuyến thuộc originHubCode trước
         const hubAssignments = originHubCode
-          ? activeList.filter((item: any) => item?.hubCode === originHubCode)
+          ? prioritizeAssignments(activeList.filter((item: any) => item?.hubCode === originHubCode))
           : [];
 
         for (const item of hubAssignments) {
@@ -763,9 +778,11 @@ export class TasksService {
         }
 
         // 1B. Kiểm tra Point-in-Polygon trên toàn bộ các tuyến còn lại trong hệ thống
-        const otherAssignments = originHubCode
-          ? activeList.filter((item: any) => item?.hubCode !== originHubCode)
-          : activeList;
+        const otherAssignments = prioritizeAssignments(
+          originHubCode
+            ? activeList.filter((item: any) => item?.hubCode !== originHubCode)
+            : activeList,
+        );
 
         for (const item of otherAssignments) {
           if (
@@ -810,8 +827,22 @@ export class TasksService {
             (item: any) =>
               item?.isActive &&
               item?.courierId &&
+              item?.courierId !== '30000000' &&
               normalizeWardKey(item?.ward) === targetWardKey &&
               item?.hubCode === originHubCode,
+          ) || activeList.find(
+            (item: any) =>
+              item?.isActive &&
+              item?.courierId &&
+              normalizeWardKey(item?.ward) === targetWardKey &&
+              item?.hubCode === originHubCode,
+          ) || activeList.find(
+            (item: any) =>
+              item?.isActive &&
+              item?.courierId &&
+              item?.courierId !== '30000000' &&
+              normalizeWardKey(item?.ward) === targetWardKey &&
+              !isRegionalHub(item?.hubCode),
           ) || activeList.find(
             (item: any) =>
               item?.isActive &&
@@ -967,6 +998,11 @@ export class TasksService {
 
     if (assignmentList.length > 1) {
       assignmentList.sort((a: any, b: any) => {
+        const aIsGlobal = a?.courierId === '30000000';
+        const bIsGlobal = b?.courierId === '30000000';
+        if (!aIsGlobal && bIsGlobal) return -1;
+        if (aIsGlobal && !bIsGlobal) return 1;
+
         if (a?.hubCode === originHubCode && b?.hubCode !== originHubCode) return -1;
         if (b?.hubCode === originHubCode && a?.hubCode !== originHubCode) return 1;
         if (!isRegionalHub(a?.hubCode) && isRegionalHub(b?.hubCode)) return -1;
