@@ -564,7 +564,7 @@ export class ShipmentsService {
     eventType: ShipmentConsumedEventType,
     eventData: Record<string, unknown>,
   ): JsonValue | null {
-    const currentHubCode = this.resolveMovementHubCode(eventType, eventData);
+    let currentHubCode = this.resolveMovementHubCode(eventType, eventData);
     if (!currentHubCode) {
       return null;
     }
@@ -573,6 +573,20 @@ export class ShipmentsService {
     const location = asJsonRecord(metadata.location);
     const hub = asJsonRecord(metadata.hub);
     const movement = asJsonRecord(metadata.movement);
+    const routing = asJsonRecord(metadata.routing);
+
+    // If task.assigned has a regional hub code but current shipment metadata already points to a specific branch hub,
+    // prevent downgrading currentHubCode to the regional hub
+    if (eventType === 'task.assigned' && isRegionalHub(currentHubCode)) {
+      const existingBranchHub =
+        normalizeString(metadata.currentHubCode) ??
+        normalizeString(routing.originHubCode) ??
+        normalizeString(metadata.senderHubCode) ??
+        normalizeString(location.hubCode);
+      if (existingBranchHub && !isRegionalHub(existingBranchHub)) {
+        currentHubCode = existingBranchHub;
+      }
+    }
     const touchedHubCodes = normalizeStringList([
       ...asUnknownArray(movement.hubCodes),
       currentHubCode,
@@ -778,6 +792,12 @@ function isSameHubOrScopedLocation(
     targetCode.startsWith(`${assignedHubCode}.`) ||
     hasCommonPrefix
   );
+}
+
+function isRegionalHub(code?: string | null): boolean {
+  if (!code) return false;
+  const normalized = code.trim().toUpperCase();
+  return ['001N001', '002C001', '003S001'].includes(normalized) || /^\d{3}[A-Z]\d{3}$/.test(normalized);
 }
 
 function getBranchHubProvinceScopePrefixes(hubCode: string): string[] {

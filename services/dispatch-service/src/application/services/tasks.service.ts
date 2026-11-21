@@ -557,6 +557,19 @@ export class TasksService {
       }
     }
 
+    if (assignmentList.length > 1) {
+      const preferredHub = destinationHubCode || normalizedLocation;
+      assignmentList.sort((a: any, b: any) => {
+        if (preferredHub) {
+          if (a?.hubCode === preferredHub && b?.hubCode !== preferredHub) return -1;
+          if (b?.hubCode === preferredHub && a?.hubCode !== preferredHub) return 1;
+        }
+        if (!isRegionalHub(a?.hubCode) && isRegionalHub(b?.hubCode)) return -1;
+        if (isRegionalHub(a?.hubCode) && !isRegionalHub(b?.hubCode)) return 1;
+        return 0;
+      });
+    }
+
     const firstAssignment = assignmentList[0];
 
     if (!firstAssignment || !firstAssignment.courierId) {
@@ -567,7 +580,7 @@ export class TasksService {
     }
 
     const courierId = firstAssignment.courierId;
-    const assignedHub = firstAssignment.hubCode || destinationHubCode || normalizedLocation;
+    const assignedHub = resolveTaskHub(firstAssignment.hubCode, destinationHubCode || normalizedLocation);
 
     const existingTasks = await this.taskRepository.list({
       shipmentCode,
@@ -730,7 +743,7 @@ export class TasksService {
             ) {
               const courierId = item.courierId;
               const zoneLabel = item.zoneName || item.ward || 'Dải toạ độ';
-              const assignedHub = item.hubCode || originHubCode;
+              const assignedHub = resolveTaskHub(item.hubCode, originHubCode);
               return this.assign(
                 taskId,
                 {
@@ -769,7 +782,7 @@ export class TasksService {
             ) {
               const courierId = item.courierId;
               const zoneLabel = item.zoneName || item.ward || 'Dải toạ độ';
-              const assignedHub = item.hubCode || originHubCode;
+              const assignedHub = resolveTaskHub(item.hubCode, originHubCode);
               return this.assign(
                 taskId,
                 {
@@ -797,12 +810,24 @@ export class TasksService {
             (item: any) =>
               item?.isActive &&
               item?.courierId &&
+              normalizeWardKey(item?.ward) === targetWardKey &&
+              item?.hubCode === originHubCode,
+          ) || activeList.find(
+            (item: any) =>
+              item?.isActive &&
+              item?.courierId &&
+              normalizeWardKey(item?.ward) === targetWardKey &&
+              !isRegionalHub(item?.hubCode),
+          ) || activeList.find(
+            (item: any) =>
+              item?.isActive &&
+              item?.courierId &&
               normalizeWardKey(item?.ward) === targetWardKey,
           );
           if (wardMatch) {
             const courierId = wardMatch.courierId;
             const zoneLabel = wardMatch.zoneName || wardMatch.ward || 'Tuyến Phường';
-            const assignedHub = wardMatch.hubCode || originHubCode;
+            const assignedHub = resolveTaskHub(wardMatch.hubCode, originHubCode);
             return this.assign(
               taskId,
               {
@@ -857,7 +882,7 @@ export class TasksService {
           const courierId = nearestItem.courierId;
           const zoneLabel =
             nearestItem.zoneName || nearestItem.ward || 'Tuyến gần nhất';
-          const assignedHub = nearestItem.hubCode || originHubCode;
+          const assignedHub = resolveTaskHub(nearestItem.hubCode, originHubCode);
           const distKm = (minDistanceMeters / 1000).toFixed(1);
           return this.assign(
             taskId,
@@ -940,13 +965,23 @@ export class TasksService {
       }
     }
 
+    if (assignmentList.length > 1) {
+      assignmentList.sort((a: any, b: any) => {
+        if (a?.hubCode === originHubCode && b?.hubCode !== originHubCode) return -1;
+        if (b?.hubCode === originHubCode && a?.hubCode !== originHubCode) return 1;
+        if (!isRegionalHub(a?.hubCode) && isRegionalHub(b?.hubCode)) return -1;
+        if (isRegionalHub(a?.hubCode) && !isRegionalHub(b?.hubCode)) return 1;
+        return 0;
+      });
+    }
+
     const firstAssignment = assignmentList[0];
     if (!firstAssignment || !firstAssignment.courierId) {
       return null;
     }
 
     const courierId = firstAssignment.courierId;
-    const assignedHub = firstAssignment.hubCode || originHubCode;
+    const assignedHub = resolveTaskHub(firstAssignment.hubCode, originHubCode);
     return this.assign(
       taskId,
       {
@@ -1496,5 +1531,28 @@ function isCounterOrderShipment(shipment: unknown): boolean {
     currentStatus === 'PICKUP_COMPLETED' ||
     source.startsWith('ops-web') ||
     platform.startsWith('OPS_')
+  );
+}
+
+function isRegionalHub(code?: string | null): boolean {
+  if (!code) return false;
+  const normalized = code.trim().toUpperCase();
+  return ['001N001', '002C001', '003S001'].includes(normalized) || /^\d{3}[A-Z]\d{3}$/.test(normalized);
+}
+
+function resolveTaskHub(
+  itemHubCode: string | null | undefined,
+  designatedHubCode: string | null | undefined,
+): string {
+  if (designatedHubCode && designatedHubCode.trim() && !isRegionalHub(designatedHubCode)) {
+    return designatedHubCode.trim().toUpperCase();
+  }
+  if (itemHubCode && itemHubCode.trim() && !isRegionalHub(itemHubCode)) {
+    return itemHubCode.trim().toUpperCase();
+  }
+  return (
+    designatedHubCode?.trim().toUpperCase() ||
+    itemHubCode?.trim().toUpperCase() ||
+    'HUB-DEFAULT'
   );
 }
