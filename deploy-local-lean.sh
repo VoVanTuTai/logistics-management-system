@@ -170,7 +170,7 @@ echo "├───────────────────┼───�
 echo "│ Merchant          │ 41100001                         │ password                     │"
 echo "│ Ops Staff         │ 20001001                         │ password                     │"
 echo "│ System Admin      │ 10000001                         │ password                     │"
-echo "│ Courier (Shipper) │ 30002015                         │ password                     │"
+echo "│ Courier (Shipper) │ 30000000                         │ password                     │"
 echo "└───────────────────┴──────────────────────────────────┴──────────────────────────────┘"
 echo ""
 echo "QUAN TRI VA THEO DOI HE THONG:"
