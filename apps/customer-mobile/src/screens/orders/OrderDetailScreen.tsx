@@ -53,6 +53,12 @@ export function OrderDetailScreen({ route, navigation }: Props): React.JSX.Eleme
       String(liveStatus).toUpperCase(),
     );
 
+  const isDelivered =
+    ['DELIVERED', 'COMPLETED', 'DELIVERY_SUCCESS'].includes(String(liveStatus).toUpperCase()) ||
+    ['DELIVERED', 'COMPLETED', 'DELIVERY_SUCCESS'].includes(String(order.status).toUpperCase());
+
+  const isReceiver = order.category === 'RECEIVED';
+
   const handleCancelOrder = () => {
     Alert.alert(
       'Xác nhận hủy đơn hàng',
@@ -152,6 +158,13 @@ export function OrderDetailScreen({ route, navigation }: Props): React.JSX.Eleme
   };
 
   const handleConfirmReceived = () => {
+    if (!isDelivered) {
+      Alert.alert(
+        'Chưa thể xác nhận',
+        'Kiện hàng đang trong hành trình vận chuyển. Bạn chỉ có thể xác nhận nhận hàng và đánh giá bưu tá sau khi đơn hàng được giao đến nơi.',
+      );
+      return;
+    }
     Alert.alert(
       'Xác nhận nhận hàng',
       'Bạn xác nhận đã nhận được kiện hàng này nguyên vẹn từ bưu tá?',
@@ -356,9 +369,10 @@ export function OrderDetailScreen({ route, navigation }: Props): React.JSX.Eleme
           </View>
         </View>
 
-        {/* RECEIPT CONFIRMATION SECTION (FOR RECEIVER) */}
-        {order.category === 'RECEIVED' ? (
-          <View style={styles.receiptCard}>
+        {/* RECEIPT CONFIRMATION & RATING SECTION (CHỈ DÀNH CHO NGƯỜI NHẬN SAU KHI GIAO HÀNG THÀNH CÔNG) */}
+        {isReceiver ? (
+          isDelivered ? (
+            <View style={styles.receiptCard}>
             <View style={styles.receiptHeader}>
               <Ionicons
                 name={
@@ -475,7 +489,19 @@ export function OrderDetailScreen({ route, navigation }: Props): React.JSX.Eleme
               </View>
             )}
           </View>
-        ) : null}
+        ) : (
+          <View style={[styles.receiptCard, { backgroundColor: '#F8FAFC', borderColor: '#E2E8F0' }]}>
+            <View style={styles.receiptHeader}>
+              <Ionicons name="information-circle-outline" size={20} color="#64748B" />
+              <Text style={[styles.receiptTitle, { color: '#475569' }]}>
+                ĐANG VẬN CHUYỂN ĐẾN NGƯỜI NHẬN
+              </Text>
+            </View>
+            <Text style={{ fontSize: 13, color: '#64748B', lineHeight: 18, marginTop: 4 }}>
+              Kiện hàng đang trong hành trình luân chuyển đến bạn. Bạn sẽ có thể xác nhận nhận hàng và đánh giá thái độ bưu tá ngay sau khi kiện hàng được giao thành công.
+            </Text>
+          </View>
+        )) : null}
 
         {/* 4. ITEM & PACKAGE INFO */}
         <View style={styles.card}>
