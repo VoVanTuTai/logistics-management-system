@@ -22,6 +22,33 @@ import {
 } from '../services/locationService';
 import { colors, shadows, spacing } from '../theme';
 
+function calculateHaversineDistanceKm(
+  lat1: number,
+  lon1: number,
+  lat2: number,
+  lon2: number,
+): number {
+  const R = 6371;
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLon = ((lon2 - lon1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos((lat1 * Math.PI) / 180) *
+      Math.cos((lat2 * Math.PI) / 180) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+}
+
+function removeAccents(str: string): string {
+  return (str || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim();
+}
+
 interface LocationPickerMapModalProps {
   visible: boolean;
   onClose: () => void;
@@ -49,8 +76,8 @@ export function LocationPickerMapModal({
   const pendingCoordsRef = useRef<LocationCoordinates | null>(null);
 
   const [coords, setCoords] = useState<LocationCoordinates>({
-    latitude: 10.867, // An Phú Đông Default
-    longitude: 106.696,
+    latitude: 10.840,
+    longitude: 106.680,
   });
   const [geocoded, setGeocoded] = useState<GeocodedAddressResult | null>(null);
   const [hubList, setHubList] = useState<HubRecord[]>(DEFAULT_HUB_RECORDS);
@@ -99,19 +126,64 @@ export function LocationPickerMapModal({
     };
   }, [visible]);
 
-  // Reverse geocode & match Hub
+  // Reverse geocode & match Hub intelligently (ward/district match -> haversine distance -> province fallback)
   const updateAddressForCoords = async (lat: number, lng: number) => {
     setResolvingAddress(true);
     try {
       const res = await locationService.reverseGeocode(lat, lng);
       setGeocoded(res);
 
-      const normProv = (res.province || '').toLowerCase().replace(/^(tỉnh|thành phố)\s+/, '');
-      const foundHub = hubList.find((h) => {
-        const normH = (h.province || '').toLowerCase();
-        return normH.includes(normProv) || normProv.includes(normH);
-      });
-      setSelectedHub(foundHub || hubList[0] || DEFAULT_HUB_RECORDS[0]);
+      const normProv = removeAccents(res.province || '').replace(/^(tinh|thanh pho|tp)\s+/, '');
+      const normWard = removeAccents(res.ward || '').replace(/^(phuong|xa|thi tran)\s+/, '');
+      const normDistrict = removeAccents(res.district || '').replace(/^(quan|huyen|thanh pho|tp|thi xa)\s+/, '');
+
+      // 1. Direct text match with Hub ward or district
+      let bestHub: HubRecord | null = null;
+      if (normWard || normDistrict) {
+        bestHub = hubList.find((h) => {
+          const hWard = removeAccents(h.ward || '').replace(/^(phuong|xa|thi tran)\s+/, '');
+          const hDistrict = removeAccents(h.district || '').replace(/^(quan|huyen|thanh pho|tp|thi xa)\s+/, '');
+          const hName = removeAccents(h.name || '');
+
+          if (normWard && (hWard.includes(normWard) || normWard.includes(hWard) || hName.includes(normWard))) {
+            return true;
+          }
+          if (normDistrict && (hDistrict.includes(normDistrict) || normDistrict.includes(hDistrict) || hName.includes(normDistrict))) {
+            return true;
+          }
+          return false;
+        }) || null;
+      }
+
+      // 2. Spatial proximity match: nearest hub by geographical coordinates
+      if (!bestHub) {
+        let minDistance = Infinity;
+        let nearestHub: HubRecord | null = null;
+
+        for (const h of hubList) {
+          if (typeof h.latitude === 'number' && typeof h.longitude === 'number') {
+            const dist = calculateHaversineDistanceKm(lat, lng, h.latitude, h.longitude);
+            if (dist < minDistance) {
+              minDistance = dist;
+              nearestHub = h;
+            }
+          }
+        }
+
+        if (nearestHub && minDistance <= 25) {
+          bestHub = nearestHub;
+        }
+      }
+
+      // 3. Fallback: Hub matching province
+      if (!bestHub) {
+        bestHub = hubList.find((h) => {
+          const normH = removeAccents(h.province || '');
+          return normH.includes(normProv) || normProv.includes(normH);
+        }) || null;
+      }
+
+      setSelectedHub(bestHub || hubList[0] || DEFAULT_HUB_RECORDS[0]);
     } catch {
       // Ignore errors
     } finally {

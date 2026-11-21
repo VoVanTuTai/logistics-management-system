@@ -99,6 +99,11 @@ const HUB_DATABASE_DICT: Record<string, HubDatabaseRecord> = {
     name: 'Bưu cục Phường 1 (Quận 5)',
     fullAddress: 'Bưu cục Phường 1, Quận 5, TP. Hồ Chí Minh',
   },
+  '07904W001': {
+    code: '07904W001',
+    name: 'Bưu cục Phường An Nhơn (Gò Vấp)',
+    fullAddress: 'Bưu cục Phường An Nhơn, 246 Nguyễn Oanh, Phường An Nhơn, Quận Gò Vấp, TP. Hồ Chí Minh',
+  },
   '07912W001': {
     code: '07912W001',
     name: 'Bưu cục Phường An Phú Đông (Quận 12)',

@@ -65,6 +65,9 @@ function normalizeProvinceName(name: string): string {
 
 const COMMON_WARDS_BY_PROVINCE: Record<string, string[]> = {
   'hồ chí minh': [
+    'Phường An Nhơn (Quận Gò Vấp)',
+    'Phường 15 (Quận Gò Vấp)',
+    'Phường 10 (Quận Gò Vấp)',
     'Phường An Phú Đông (Quận 12)',
     'Phường Thạnh Lộc (Quận 12)',
     'Phường Tân Chánh Hiệp (Quận 12)',
@@ -435,7 +438,14 @@ export function AddressSelectorModal({
       setCoords({ latitude: res.latitude, longitude: res.longitude });
     }
 
-    const foundHub = hubList.find((h) => h.code === res.hubCode) || hubList[0];
+    const foundHub = hubList.find((h) => h.code === res.hubCode) || {
+      code: res.hubCode,
+      name: res.hubName,
+      province: res.province,
+      district: res.district,
+      ward: res.ward,
+      addressDetail: res.street,
+    };
     setSelectedHub(foundHub);
   };
 
@@ -455,7 +465,7 @@ export function AddressSelectorModal({
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
       <View style={styles.overlay}>
         <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
           style={styles.sheetContainer}
         >
           {/* HEADER */}

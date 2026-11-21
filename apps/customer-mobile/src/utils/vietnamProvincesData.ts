@@ -44,6 +44,7 @@ export const FALLBACK_VIETNAM_PROVINCES: FallbackProvince[] = [
       { code: 7919, name: 'Phường 12 (Quận Tân Bình)', wardName: 'Phường 12', district: 'Quận Tân Bình', codename: 'phuong_12_quan_tan_binh', provinceCode: 79 },
       { code: 7920, name: 'Phường 15 (Quận Gò Vấp)', wardName: 'Phường 15', district: 'Quận Gò Vấp', codename: 'phuong_15_quan_go_vap', provinceCode: 79 },
       { code: 7921, name: 'Phường 10 (Quận Gò Vấp)', wardName: 'Phường 10', district: 'Quận Gò Vấp', codename: 'phuong_10_quan_go_vap', provinceCode: 79 },
+      { code: 7929, name: 'Phường An Nhơn (Quận Gò Vấp)', wardName: 'Phường An Nhơn', district: 'Quận Gò Vấp', codename: 'phuong_an_nhon_quan_go_vap', provinceCode: 79 },
       { code: 7922, name: 'Phường An Phú Đông (Quận 12)', wardName: 'Phường An Phú Đông', district: 'Quận 12', codename: 'phuong_an_phu_dong_quan_12', provinceCode: 79 },
       { code: 7923, name: 'Phường Thạnh Lộc (Quận 12)', wardName: 'Phường Thạnh Lộc', district: 'Quận 12', codename: 'phuong_thanh_loc_quan_12', provinceCode: 79 },
       { code: 7924, name: 'Phường Tân Chánh Hiệp (Quận 12)', wardName: 'Phường Tân Chánh Hiệp', district: 'Quận 12', codename: 'phuong_tan_chanh_hiep_quan_12', provinceCode: 79 },

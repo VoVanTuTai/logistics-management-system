@@ -1048,6 +1048,20 @@ const SPATIAL_WARD_HUBS: SpatialWardHub[] = [
     ],
   },
   {
+    code: '07904W001',
+    name: 'Bưu cục Phường An Nhơn - Gò Vấp',
+    parentHubCode: '003079B001',
+    latitude: 10.840,
+    longitude: 106.680,
+    boundaryPolygon: [
+      [10.825, 106.668],
+      [10.855, 106.670],
+      [10.856, 106.692],
+      [10.828, 106.690],
+      [10.825, 106.668],
+    ],
+  },
+  {
     code: '07912W001',
     name: 'Bưu cục Phường An Phú Đông - Quận 12',
     parentHubCode: '003079B001',
@@ -1206,6 +1220,8 @@ function resolveResponsibleHubByCoords(
     if (matchedWard) {
       return { hubCode: matchedWard.code, hubName: matchedWard.name, level: 3 };
     }
+    // Respect explicit hub code passed from saved address or client selection
+    return { hubCode: norm, hubName: explicitHubCode.trim(), level: 2 };
   }
 
   // 1. Exact Boundary Polygon matching (Ray Casting)

@@ -228,12 +228,12 @@ export function HomeScreen({ navigation }: Props): React.JSX.Element {
         <NewsAndHighlightsSection onPressCreateOrder={handleCreateOrder} />
       </ScrollView>
 
-      {/* FLOATING LOGISTICS DISPATCH CTA BUTTON */}
+      {/* FLOATING LOGISTICS AI CHATBOT CTA BUTTON (SYNC WITH WEB TRACKING) */}
       <View style={styles.floatingContainer}>
         {!isChatOpen && (
           <View style={styles.floatingTag}>
             <View style={styles.pulsingDot} />
-            <Text style={styles.floatingTagText}>Tổng Đài Bưu Cục</Text>
+            <Text style={styles.floatingTagText}>AI BOT • Hỗ trợ tra cứu 24/7</Text>
           </View>
         )}
         <TouchableOpacity
@@ -241,8 +241,8 @@ export function HomeScreen({ navigation }: Props): React.JSX.Element {
           style={styles.floatingBtn}
           onPress={() => setIsChatOpen(true)}
         >
-          <Ionicons name="headset" size={18} color="#FFFFFF" />
-          <Text style={styles.floatingBtnText}>Điều Phối Bưu Cục</Text>
+          <Ionicons name="hardware-chip-outline" size={18} color="#FFFFFF" />
+          <Text style={styles.floatingBtnText}>Nexus AI Robot</Text>
         </TouchableOpacity>
       </View>
 

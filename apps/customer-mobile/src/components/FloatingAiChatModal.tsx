@@ -425,22 +425,22 @@ export function FloatingAiChatModal({ visible, onClose }: FloatingAiChatModalPro
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         >
           <View style={styles.chatSheet}>
-            {/* 1. Header */}
+            {/* 1. Header (Synchronized with Web Tracking Nexus AI Robot) */}
             <View style={styles.header}>
               <View style={styles.headerLeft}>
                 <View style={styles.botIconWrapper}>
-                  <Ionicons name="bus" size={20} color="#38BDF8" />
+                  <Ionicons name="hardware-chip-outline" size={20} color="#38BDF8" />
                 </View>
                 <View>
                   <View style={styles.titleRow}>
-                    <Text style={styles.headerTitle}>Trung Tâm Điều Phối Nexus</Text>
+                    <Text style={styles.headerTitle}>Nexus AI Robot</Text>
                     <View style={styles.ragBadge}>
-                      <Text style={styles.ragBadgeText}>Bưu cục 24/7</Text>
+                      <Text style={styles.ragBadgeText}>AI BOT</Text>
                     </View>
                   </View>
                   <View style={styles.statusRow}>
                     <View style={styles.statusDot} />
-                    <Text style={styles.headerSubtitle}>Trực tuyến 24/7 • Hotline 1900 6868</Text>
+                    <Text style={styles.headerSubtitle}>Trợ lý robot bưu chính trực tuyến 24/7</Text>
                   </View>
                 </View>
               </View>

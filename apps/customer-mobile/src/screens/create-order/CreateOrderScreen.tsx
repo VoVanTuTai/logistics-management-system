@@ -137,14 +137,17 @@ export function CreateOrderScreen({ navigation, route }: Props): React.JSX.Eleme
       if (def) {
         setSenderName(def.name);
         setSenderPhone(def.phone);
+        const resolvedHubCode = def.hubCode || (def.province?.includes('Hồ Chí Minh') ? '07904W001' : 'HUB-DEFAULT');
+        const resolvedHubName = def.hubName || (def.province?.includes('Hồ Chí Minh') ? 'Bưu cục Phường An Nhơn - Gò Vấp' : 'Bưu cục tiếp nhận');
+
         setSenderAddress({
           province: def.province || '',
           district: def.district || '',
           ward: def.ward || '',
           addressDetail: def.addressDetail || '',
           composedAddress: def.composedAddress || '',
-          hubCode: def.hubCode || '',
-          hubName: def.hubName || '',
+          hubCode: resolvedHubCode,
+          hubName: resolvedHubName,
           latitude: def.latitude,
           longitude: def.longitude,
         });
@@ -191,14 +194,17 @@ export function CreateOrderScreen({ navigation, route }: Props): React.JSX.Eleme
       if (def && isMounted && !route.params?.prefilledSenderAddress) {
         setSenderName(def.name);
         setSenderPhone(def.phone);
+        const resolvedHubCode = def.hubCode || (def.province?.includes('Hồ Chí Minh') ? '07904W001' : 'HUB-DEFAULT');
+        const resolvedHubName = def.hubName || (def.province?.includes('Hồ Chí Minh') ? 'Bưu cục Phường An Nhơn - Gò Vấp' : 'Bưu cục tiếp nhận');
+
         setSenderAddress({
           province: def.province || '',
           district: def.district || '',
           ward: def.ward || '',
           addressDetail: def.addressDetail || '',
           composedAddress: def.composedAddress || '',
-          hubCode: def.hubCode || '',
-          hubName: def.hubName || '',
+          hubCode: resolvedHubCode,
+          hubName: resolvedHubName,
           latitude: def.latitude,
           longitude: def.longitude,
         });
@@ -487,8 +493,8 @@ export function CreateOrderScreen({ navigation, route }: Props): React.JSX.Eleme
   return (
     <KeyboardAvoidingView
       style={styles.flex}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      keyboardVerticalOffset={Platform.OS === 'ios' ? 64 : 20}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 64 : 0}
     >
       <AppHeader title="Tạo đơn hàng mới" onBackPress={handlePrevStep} />
       <StepIndicator currentStep={step} />
@@ -1082,14 +1088,19 @@ export function CreateOrderScreen({ navigation, route }: Props): React.JSX.Eleme
         onSelectAddress={(picked) => {
           setSenderName(picked.name);
           setSenderPhone(picked.phone);
+          const resolvedHubCode = picked.hubCode || (picked.province?.includes('Hồ Chí Minh') ? '07904W001' : 'HUB-DEFAULT');
+          const resolvedHubName = picked.hubName || (picked.province?.includes('Hồ Chí Minh') ? 'Bưu cục Phường An Nhơn - Gò Vấp' : 'Bưu cục tiếp nhận');
+
           setSenderAddress({
             province: picked.province || '',
             district: picked.district || '',
             ward: picked.ward || '',
             addressDetail: picked.addressDetail || '',
             composedAddress: picked.composedAddress || '',
-            hubCode: picked.hubCode || '',
-            hubName: picked.hubName || '',
+            hubCode: resolvedHubCode,
+            hubName: resolvedHubName,
+            latitude: picked.latitude,
+            longitude: picked.longitude,
           });
         }}
         onManageAddresses={() => navigation.navigate('AddressManagement')}
@@ -1115,7 +1126,7 @@ export function CreateOrderScreen({ navigation, route }: Props): React.JSX.Eleme
         onRequestClose={() => setShowHubPickerModal(false)}
       >
         <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
           style={styles.hubModalOverlay}
         >
           <View style={styles.hubModalContent}>

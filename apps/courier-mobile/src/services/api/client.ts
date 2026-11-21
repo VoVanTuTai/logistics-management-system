@@ -60,12 +60,18 @@ export class CourierApiClient {
       ? [this.activeBaseUrl, ...this.gatewayCandidates.filter((c) => c !== this.activeBaseUrl)]
       : this.gatewayCandidates;
 
-    for (const candidateBaseUrl of candidates) {
+    for (let i = 0; i < candidates.length; i++) {
+      const candidateBaseUrl = candidates[i];
+      const isCandidateActive = candidateBaseUrl === this.activeBaseUrl;
+      const isLastCandidate = i === candidates.length - 1;
+      const probeTimeout = isCandidateActive || isLastCandidate ? (this.timeoutMs || 8000) : 2500;
+
       try {
         const result = await this.requestWithCandidateBaseUrl<T>(
           candidateBaseUrl,
           path,
           options,
+          probeTimeout,
         );
         // Cache working candidate for instant subsequent requests (< 50ms)
         this.activeBaseUrl = candidateBaseUrl;
@@ -98,9 +104,10 @@ export class CourierApiClient {
     candidateBaseUrl: string,
     path: string,
     options: RequestOptions,
+    customTimeout?: number,
   ): Promise<T> {
     const controller = new AbortController();
-    const effectiveTimeout = this.timeoutMs || 15000;
+    const effectiveTimeout = customTimeout ?? (this.timeoutMs || 8000);
     const timeoutId = setTimeout(() => controller.abort(), effectiveTimeout);
 
     try {
