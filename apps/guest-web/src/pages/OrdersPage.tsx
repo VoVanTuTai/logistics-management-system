@@ -33,7 +33,11 @@ import {
 import { useAuthStore } from '../store/useAuthStore';
 import { shipmentApi, type ShipmentResponse } from '../services/api/shipment.api';
 import { printShippingLabel } from '../utils/shippingLabelService';
-import { resolveCourierForOrder, formatCourierPhone } from '../utils/courierResolver';
+import {
+  resolveCourierForOrder,
+  resolveCourierContextForOrder,
+  formatCourierPhone,
+} from '../utils/courierResolver';
 import qrcode from 'qrcode-generator';
 
 function formatVnd(val?: number): string {
@@ -953,10 +957,21 @@ function OrderDetailModal({
   const service = meta.service || {};
   const badge = getStatusBadgeDetails(shipment.currentStatus);
 
-  const courier = resolveCourierForOrder({
-    courierId: meta.courierId,
-    courierName: meta.courierName,
-    courierPhone: meta.courierPhone,
+  const courierResolution = resolveCourierContextForOrder({
+    status: shipment.currentStatus,
+    courierId: meta.courierId || meta.assignedCourier,
+    courierName: meta.courierName || meta.deliveryCourierName,
+    courierPhone: meta.courierPhone || meta.deliveryCourierPhone,
+    pickupCourierId: meta.pickupCourierId,
+    deliveryCourierId: meta.deliveryCourierId,
+    currentTaskType: meta.currentTaskType,
+    senderHubCode: sender.hubCode || meta.senderHubCode || meta.originHubCode,
+    receiverHubCode: receiver.hubCode || meta.receiverHubCode || meta.destinationHubCode,
+    currentHubCode: meta.currentHubCode || meta.currentLocation,
+  });
+
+  const courier = courierResolution.courier;
+  const activeOrFallbackCourier = courier || resolveCourierForOrder({
     receiverHubCode: receiver.hubCode || meta.receiverHubCode,
   });
 
@@ -1105,49 +1120,78 @@ function OrderDetailModal({
             </div>
           </div>
 
-          {/* Courier Info Card */}
-          <div className="p-4 bg-blue-50/70 border border-blue-200 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <div className="flex items-center gap-3">
-              <div className="flex h-11 w-11 items-center justify-center bg-blue-600 text-white font-bold rounded-xl shadow-md">
+          {/* Courier / In-Transit Info Card */}
+          {courierResolution.isInTransit ? (
+            <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl flex items-center gap-3">
+              <div className="flex h-11 w-11 items-center justify-center bg-blue-100 text-blue-700 font-bold rounded-xl shadow-sm shrink-0">
                 <Truck className="h-5 w-5" />
               </div>
               <div className="space-y-0.5">
                 <div className="flex items-center gap-2">
-                  <span className="font-extrabold text-slate-900 text-sm">{courier.name}</span>
-                  <span className="px-2 py-0.5 bg-emerald-100 text-emerald-800 text-[10px] font-bold border border-emerald-200 rounded-full">
-                    Bưu tá phát hàng
+                  <span className="font-extrabold text-slate-900 text-sm">{courierResolution.cardTitle}</span>
+                  <span className="px-2 py-0.5 bg-blue-100 text-blue-800 text-[10px] font-bold border border-blue-200 rounded-full">
+                    {courierResolution.badgeLabel}
                   </span>
                 </div>
-                <p className="text-[11px] text-slate-500 font-medium">
-                  {courier.hubName} • Tuyến phát trọng điểm
+                <p className="text-xs text-slate-600 leading-relaxed">
+                  {courierResolution.statusDescription}
                 </p>
-                <p className="text-xs font-mono font-bold text-blue-700">
-                  {formatCourierPhone(courier.phone)}
+                <p className="text-[11px] text-blue-700 font-semibold pt-0.5">
+                  Bưu cục kế tiếp: {courierResolution.hubLabel}
                 </p>
               </div>
             </div>
+          ) : courier ? (
+            <div className="p-4 bg-blue-50/70 border border-blue-200 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <div className="flex h-11 w-11 items-center justify-center bg-blue-600 text-white font-bold rounded-xl shadow-md">
+                  <Truck className="h-5 w-5" />
+                </div>
+                <div className="space-y-0.5">
+                  <div className="flex items-center gap-2">
+                    <span className="font-extrabold text-slate-900 text-sm">{courier.name}</span>
+                    <span
+                      className="px-2 py-0.5 text-[10px] font-bold border rounded-full"
+                      style={{
+                        backgroundColor: courierResolution.badgeBg,
+                        color: courierResolution.badgeTextColor,
+                        borderColor: courierResolution.badgeBorder,
+                      }}
+                    >
+                      {courierResolution.badgeLabel}
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-slate-500 font-medium">
+                    {courierResolution.hubLabel} • {courierResolution.isPickup ? 'Bưu cục nhận gửi' : 'Tuyến phát trọng điểm'}
+                  </p>
+                  <p className="text-xs font-mono font-bold text-blue-700">
+                    {formatCourierPhone(courier.phone)}
+                  </p>
+                </div>
+              </div>
 
-            <div className="flex items-center gap-2 self-end sm:self-center">
-              <a
-                href={`tel:${courier.phone}`}
-                className="inline-flex items-center gap-1.5 px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-lg shadow-sm transition"
-              >
-                <Phone className="h-3.5 w-3.5" />
-                <span>Gọi bưu tá</span>
-              </a>
-              <button
-                type="button"
-                onClick={() => {
-                  navigator.clipboard.writeText(courier.phone);
-                  alert(`Đã sao chép SĐT bưu tá: ${courier.phone}`);
-                }}
-                className="p-2 border border-slate-300 bg-white hover:bg-slate-50 text-slate-600 rounded-lg transition"
-                title="Sao chép SĐT bưu tá"
-              >
-                <Copy className="h-3.5 w-3.5" />
-              </button>
+              <div className="flex items-center gap-2 self-end sm:self-center">
+                <a
+                  href={`tel:${courier.phone}`}
+                  className="inline-flex items-center gap-1.5 px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-lg shadow-sm transition"
+                >
+                  <Phone className="h-3.5 w-3.5" />
+                  <span>Gọi bưu tá</span>
+                </a>
+                <button
+                  type="button"
+                  onClick={() => {
+                    navigator.clipboard.writeText(courier.phone);
+                    alert(`Đã sao chép SĐT bưu tá: ${courier.phone}`);
+                  }}
+                  className="p-2 border border-slate-300 bg-white hover:bg-slate-50 text-slate-600 rounded-lg transition"
+                  title="Sao chép SĐT bưu tá"
+                >
+                  <Copy className="h-3.5 w-3.5" />
+                </button>
+              </div>
             </div>
-          </div>
+          ) : null}
 
           {/* Receiver Confirmation Section */}
           {isReceiver ? (
@@ -1191,14 +1235,14 @@ function OrderDetailModal({
                 <div className="p-3 bg-rose-50 border border-rose-200 text-rose-900 text-xs rounded-lg space-y-1.5">
                   <div className="font-semibold flex items-center gap-2">
                     <AlertTriangle className="h-4 w-4 text-rose-600 shrink-0" />
-                    <span>Nexus đã ghi nhận phản ánh của bạn. Bưu cục phát sẽ trực tiếp đối soát hành trình với bưu tá {courier.name}.</span>
+                    <span>Nexus đã ghi nhận phản ánh của bạn. Bưu cục phát sẽ trực tiếp đối soát hành trình với bưu tá {activeOrFallbackCourier.name}.</span>
                   </div>
                   <a
-                    href={`tel:${courier.phone}`}
+                    href={`tel:${activeOrFallbackCourier.phone}`}
                     className="inline-flex items-center gap-1 text-xs font-bold text-rose-700 underline"
                   >
                     <Phone className="h-3 w-3" />
-                    Bấm để gọi ngay cho shipper: {courier.phone}
+                    Bấm để gọi ngay cho shipper: {activeOrFallbackCourier.phone}
                   </a>
                 </div>
               ) : (

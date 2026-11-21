@@ -173,6 +173,10 @@ export function toTimelineTextVi(
       return 'Đơn hàng đang được giao';
     }
 
+    if (taskType === 'PICKUP') {
+      return 'Điều phối bưu tá lấy hàng';
+    }
+
     return EVENT_LABELS_VI['task.assigned'];
   }
 
@@ -312,8 +316,8 @@ export function extractTimelineNote(event: TrackingEventEnvelope): string | null
       (taskNote && taskNote.toLowerCase().includes('tự động'));
 
     const dispatchTag = isSystem
-      ? '🤖 [Hệ thống tự động điều phối]'
-      : `👤 [Điều hành viên ${actorName} điều phối]`;
+      ? '[Hệ thống tự động điều phối]'
+      : `[Điều hành viên ${actorName} điều phối]`;
 
     const assignments = readNestedValue(event.data, ['task', 'assignments']);
     let courierId: string | null = null;
@@ -330,6 +334,11 @@ export function extractTimelineNote(event: TrackingEventEnvelope): string | null
       ?? null;
 
     let infoParts: string[] = [dispatchTag];
+    if (taskType === 'PICKUP') {
+      infoParts.push('Nhiệm vụ: Lấy hàng tại kho');
+    } else if (taskType === 'DELIVERY') {
+      infoParts.push('Nhiệm vụ: Giao hàng cho khách');
+    }
     if (courierId) infoParts.push(`Shipper: ${courierId}`);
     if (hubCode) infoParts.push(`Hub: ${hubCode}`);
     const infoText = infoParts.join(' - ');

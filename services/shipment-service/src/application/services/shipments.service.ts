@@ -606,15 +606,21 @@ export class ShipmentsService {
       }
     }
 
+    const isPickupConfirmed = eventType === 'scan.pickup_confirmed';
+    const isScanInbound = eventType === 'scan.inbound';
+
     return {
       ...metadata,
       currentHubCode,
       currentLocation: currentHubCode,
+      ...(isPickupConfirmed || isScanInbound ? { currentTaskType: null } : {}),
       ...(assignedCourierId
         ? {
             assignedCourier: assignedCourierId,
             assignedCourierId: assignedCourierId,
             courierId: assignedCourierId,
+            currentTaskType: taskType,
+            lastAssignedTaskType: taskType,
             ...(taskType === 'DELIVERY' ? { deliveryCourierId: assignedCourierId } : {}),
             ...(taskType === 'PICKUP' ? { pickupCourierId: assignedCourierId } : {}),
           }

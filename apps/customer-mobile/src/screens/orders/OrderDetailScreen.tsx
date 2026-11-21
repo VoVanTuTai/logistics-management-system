@@ -26,7 +26,11 @@ import { colors, shadows, spacing } from '../../theme';
 import type { ShipmentStatus, TrackingEvent } from '../../types';
 import { copyToClipboard } from '../../utils/clipboard';
 import { mapTimelineEventsForCustomer } from '../../utils/customerTrackingMapper';
-import { resolveCourierForOrder, formatCourierPhone } from '../../utils/courierResolver';
+import {
+  resolveCourierForOrder,
+  resolveCourierContextForOrder,
+  formatCourierPhone,
+} from '../../utils/courierResolver';
 
 import { printOrShareShippingLabel } from '../../services/shippingLabelPrinter';
 
@@ -160,23 +164,39 @@ export function OrderDetailScreen({ route, navigation }: Props): React.JSX.Eleme
     }
   };
 
-  const courier = resolveCourierForOrder({
+  const courierResolution = resolveCourierContextForOrder({
+    status: liveStatus,
+    courierId: order.courierId || (order as any).metadata?.assignedCourier || (order as any).metadata?.courierId,
+    courierName: (order as any).metadata?.courierName || (order as any).metadata?.deliveryCourierName,
+    courierPhone: (order as any).metadata?.courierPhone || (order as any).metadata?.deliveryCourierPhone,
+    pickupCourierId: (order as any).metadata?.pickupCourierId,
+    deliveryCourierId: (order as any).metadata?.deliveryCourierId,
+    currentTaskType: (order as any).metadata?.currentTaskType,
+    senderHubCode: order.sender.hubCode,
+    receiverHubCode: order.receiver.hubCode,
+    currentHubCode: (order as any).metadata?.currentHubCode,
+    timelineNotes: liveTimeline.map((t) => [t.noteText, t.title, t.actorText, t.boldPrefix, t.addressSuffix].filter(Boolean).join(' ')),
+  });
+
+  const courier = courierResolution.courier;
+  const activeOrFallbackCourier = courier || resolveCourierForOrder({
     courierId: order.courierId || (order as any).metadata?.assignedCourier || (order as any).metadata?.courierId,
     courierName: (order as any).metadata?.courierName || (order as any).metadata?.deliveryCourierName,
     courierPhone: (order as any).metadata?.courierPhone || (order as any).metadata?.deliveryCourierPhone,
     receiverHubCode: order.receiver.hubCode,
-    timelineNotes: liveTimeline.map((t) => [t.noteText, t.title, t.actorText, t.boldPrefix, t.addressSuffix].filter(Boolean).join(' ')),
   });
 
   const handleCallCourier = () => {
-    Linking.openURL(`tel:${courier.phone}`).catch(() => {
-      Alert.alert('Thông tin bưu tá', `Bưu tá: ${courier.name}\nSố điện thoại: ${courier.phone}`);
+    const target = courier || activeOrFallbackCourier;
+    Linking.openURL(`tel:${target.phone}`).catch(() => {
+      Alert.alert('Thông tin bưu tá', `Bưu tá: ${target.name}\nSố điện thoại: ${target.phone}`);
     });
   };
 
   const handleCopyCourierPhone = () => {
-    copyToClipboard(courier.phone);
-    Alert.alert('Đã sao chép', `Đã sao chép số điện thoại ${courier.phone} vào bộ nhớ tạm.`);
+    const target = courier || activeOrFallbackCourier;
+    copyToClipboard(target.phone);
+    Alert.alert('Đã sao chép', `Đã sao chép số điện thoại ${target.phone} vào bộ nhớ tạm.`);
   };
 
   const handleConfirmReceived = () => {
@@ -220,7 +240,7 @@ export function OrderDetailScreen({ route, navigation }: Props): React.JSX.Eleme
       [
         { text: 'Đóng', style: 'cancel' },
         {
-          text: `Gọi bưu tá (${courier.phone})`,
+          text: `Gọi bưu tá (${activeOrFallbackCourier.phone})`,
           onPress: handleCallCourier,
         },
         {
@@ -336,9 +356,14 @@ export function OrderDetailScreen({ route, navigation }: Props): React.JSX.Eleme
         {/* RECEIVER COD & DELIVERY NOTICE BANNER */}
         {order.category === 'RECEIVED' ? (
           <View style={styles.receiverNoticeCard}>
-            <Text style={styles.receiverNoticeTitle}>THÔNG BÁO NHẬN HÀNG</Text>
+            <View style={styles.receiverNoticeHeader}>
+              <Ionicons name="information-circle-outline" size={18} color={colors.primary} />
+              <Text style={styles.receiverNoticeTitle}>THÔNG BÁO NHẬN HÀNG</Text>
+            </View>
             <Text style={styles.receiverNoticeDesc}>
-              Bưu phẩm đang được điều phối giao. Quý khách chỉ thanh toán số tiền COD bên dưới cho bưu tá khi nhận kiện:
+              {courierResolution.isDelivery
+                ? 'Bưu phẩm đang được điều phối giao. Quý khách chỉ thanh toán số tiền COD bên dưới cho bưu tá khi nhận kiện:'
+                : 'Đơn hàng đang trong quy trình gom lấy & trung chuyển. Quý khách vui lòng chuẩn bị số tiền COD dự kiến khi nhận kiện:'}
             </Text>
             <View style={styles.receiverNoticeAmountRow}>
               <Text style={styles.receiverNoticeAmountLabel}>Số tiền cần thanh toán (COD):</Text>
@@ -349,47 +374,82 @@ export function OrderDetailScreen({ route, navigation }: Props): React.JSX.Eleme
           </View>
         ) : null}
 
-        {/* COURIER INFO CARD */}
-        <View style={styles.card}>
-          <View style={styles.cardHeader}>
-            <Ionicons name="bicycle-outline" size={20} color={colors.primary} />
-            <Text style={styles.cardTitle}>Bưu tá phát hàng phụ trách</Text>
-          </View>
-
-          <View style={styles.courierCardContent}>
-            <View style={styles.courierAvatarCircle}>
-              <Ionicons name="person" size={22} color={colors.primary} />
+        {/* COURIER / TRANSIT INFO CARD */}
+        {courierResolution.isInTransit ? (
+          <View style={styles.card}>
+            <View style={styles.cardHeader}>
+              <Ionicons name="swap-horizontal-outline" size={20} color={colors.primary} />
+              <Text style={styles.cardTitle}>{courierResolution.cardTitle}</Text>
             </View>
-            <View style={styles.courierInfoBlock}>
-              <View style={styles.courierNameBadgeRow}>
-                <Text style={styles.courierNameText}>{courier.name}</Text>
-                <View style={styles.activeShipperBadge}>
-                  <Text style={styles.activeShipperBadgeText}>Shipper Tuyến</Text>
-                </View>
+            <View style={styles.inTransitCardContent}>
+              <Text style={styles.inTransitDesc}>{courierResolution.statusDescription}</Text>
+              <View style={styles.inTransitHubRow}>
+                <Text style={styles.inTransitHubLabel}>Bưu cục kế tiếp: </Text>
+                <Text style={styles.inTransitHubVal}>{courierResolution.hubLabel}</Text>
               </View>
-              <Text style={styles.courierPhoneText}>SĐT: {formatCourierPhone(courier.phone)}</Text>
-              <Text style={styles.courierHubText}>{courier.hubName}</Text>
-            </View>
-
-            <View style={styles.courierActionsCol}>
-              <TouchableOpacity
-                style={styles.callBtn}
-                activeOpacity={0.8}
-                onPress={handleCallCourier}
-              >
-                <Ionicons name="call" size={16} color="#FFFFFF" />
-                <Text style={styles.callBtnText}>Gọi</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.copyPhoneBtn}
-                activeOpacity={0.7}
-                onPress={handleCopyCourierPhone}
-              >
-                <Ionicons name="copy-outline" size={14} color={colors.textSecondary} />
-              </TouchableOpacity>
             </View>
           </View>
-        </View>
+        ) : courier ? (
+          <View style={styles.card}>
+            <View style={styles.cardHeader}>
+              <Ionicons
+                name={courierResolution.isPickup ? 'cube-outline' : 'bicycle-outline'}
+                size={20}
+                color={colors.primary}
+              />
+              <Text style={styles.cardTitle}>{courierResolution.cardTitle}</Text>
+            </View>
+
+            <View style={styles.courierCardContent}>
+              <View style={styles.courierAvatarCircle}>
+                <Ionicons name="person" size={22} color={colors.primary} />
+              </View>
+              <View style={styles.courierInfoBlock}>
+                <View style={styles.courierNameBadgeRow}>
+                  <Text style={styles.courierNameText}>{courier.name}</Text>
+                  <View
+                    style={[
+                      styles.activeShipperBadge,
+                      {
+                        backgroundColor: courierResolution.badgeBg,
+                        borderColor: courierResolution.badgeBorder,
+                      },
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.activeShipperBadgeText,
+                        { color: courierResolution.badgeTextColor },
+                      ]}
+                    >
+                      {courierResolution.badgeLabel}
+                    </Text>
+                  </View>
+                </View>
+                <Text style={styles.courierPhoneText}>SĐT: {formatCourierPhone(courier.phone)}</Text>
+                <Text style={styles.courierHubText}>{courierResolution.hubLabel}</Text>
+              </View>
+
+              <View style={styles.courierActionsCol}>
+                <TouchableOpacity
+                  style={styles.callBtn}
+                  activeOpacity={0.8}
+                  onPress={handleCallCourier}
+                >
+                  <Ionicons name="call" size={16} color="#FFFFFF" />
+                  <Text style={styles.callBtnText}>Gọi</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.copyPhoneBtn}
+                  activeOpacity={0.7}
+                  onPress={handleCopyCourierPhone}
+                >
+                  <Ionicons name="copy-outline" size={14} color={colors.textSecondary} />
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        ) : null}
 
         {/* RECEIPT CONFIRMATION & RATING SECTION (CHỈ DÀNH CHO NGƯỜI NHẬN SAU KHI GIAO HÀNG THÀNH CÔNG) */}
         {isReceiver ? (
@@ -460,7 +520,7 @@ export function OrderDetailScreen({ route, navigation }: Props): React.JSX.Eleme
             ) : receiptStatus === 'REPORTED_NOT_RECEIVED' ? (
               <View style={styles.reportedBox}>
                 <Text style={styles.reportedText}>
-                  Hệ thống đã ghi nhận phản ánh của bạn. Bưu cục đang kiểm tra lại với bưu tá {courier.name}.
+                  Hệ thống đã ghi nhận phản ánh của bạn. Bưu cục đang kiểm tra lại với bưu tá {activeOrFallbackCourier.name}.
                 </Text>
                 <TouchableOpacity
                   style={styles.callShipperLink}
@@ -469,7 +529,7 @@ export function OrderDetailScreen({ route, navigation }: Props): React.JSX.Eleme
                 >
                   <Ionicons name="call-outline" size={14} color="#DC2626" />
                   <Text style={styles.callShipperLinkText}>
-                    Bấm để gọi trực tiếp cho shipper ({formatCourierPhone(courier.phone)})
+                    Bấm để gọi trực tiếp cho shipper ({formatCourierPhone(activeOrFallbackCourier.phone)})
                   </Text>
                 </TouchableOpacity>
 
@@ -622,8 +682,8 @@ export function OrderDetailScreen({ route, navigation }: Props): React.JSX.Eleme
         visible={showRatingModal}
         onClose={() => setShowRatingModal(false)}
         shipmentCode={order.code}
-        courierName={courier.name}
-        courierPhone={courier.phone}
+        courierName={activeOrFallbackCourier.name}
+        courierPhone={activeOrFallbackCourier.phone}
         customerPhone={order.receiver.phone}
         onRatingSubmitted={() => setHasRated(true)}
       />
@@ -855,6 +915,35 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     flex: 1,
     lineHeight: 15,
+  },
+  inTransitCardContent: {
+    paddingVertical: 4,
+  },
+  inTransitDesc: {
+    fontSize: 12.5,
+    color: colors.textSecondary,
+    lineHeight: 18,
+    marginBottom: 8,
+  },
+  inTransitHubRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#EFF6FF',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#DBEAFE',
+  },
+  inTransitHubLabel: {
+    fontSize: 11.5,
+    fontWeight: '700',
+    color: '#1E40AF',
+  },
+  inTransitHubVal: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#1D4ED8',
   },
   courierCardContent: {
     flexDirection: 'row',
