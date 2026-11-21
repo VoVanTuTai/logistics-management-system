@@ -578,10 +578,33 @@ export class ShipmentsService {
       currentHubCode,
     ]);
 
+    let assignedCourierId: string | null = null;
+    let taskType: string | null = null;
+    if (eventType === 'task.assigned') {
+      const task = asJsonRecord(eventData.task);
+      taskType = readString(task.taskType);
+      const assignments = asUnknownArray(task.assignments);
+      if (assignments.length > 0) {
+        const activeAssignment = asJsonRecord(
+          assignments.find((a: any) => !a?.unassignedAt) || assignments[assignments.length - 1],
+        );
+        assignedCourierId = readString(activeAssignment.courierId);
+      }
+    }
+
     return {
       ...metadata,
       currentHubCode,
       currentLocation: currentHubCode,
+      ...(assignedCourierId
+        ? {
+            assignedCourier: assignedCourierId,
+            assignedCourierId: assignedCourierId,
+            courierId: assignedCourierId,
+            ...(taskType === 'DELIVERY' ? { deliveryCourierId: assignedCourierId } : {}),
+            ...(taskType === 'PICKUP' ? { pickupCourierId: assignedCourierId } : {}),
+          }
+        : {}),
       location: {
         ...location,
         hubCode: currentHubCode,
@@ -1321,6 +1344,8 @@ function enrichShipmentMetadataCoordinates(
   meta.destinationHubCode = destHub.hubCode;
   meta.senderHubCode = originHub.hubCode;
   meta.receiverHubCode = destHub.hubCode;
+  meta.currentHubCode = originHub.hubCode;
+  meta.currentLocation = originHub.hubCode;
 
   meta.pickupLatitude = pickupCoords.latitude;
   meta.pickupLongitude = pickupCoords.longitude;

@@ -449,6 +449,8 @@ export function CreateOrderScreen({ navigation, route }: Props): React.JSX.Eleme
           estimatedFee: liveFee,
           originHubCode: senderAddress.hubCode,
           destinationHubCode: receiverAddress.hubCode,
+          currentHubCode: senderAddress.hubCode,
+          currentLocation: senderAddress.hubCode,
           senderHubCode: senderAddress.hubCode,
           receiverHubCode: receiverAddress.hubCode,
           routing: {

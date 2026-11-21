@@ -89,6 +89,8 @@ function mapShipmentToOrderModel(s: ShipmentResponse, targetCategory: 'SENT' | '
     createdAt: s.createdAt,
     updatedAt: s.updatedAt,
     timeline: [],
+    courierId: meta.assignedCourier || meta.assignedCourierId || meta.courierId || meta.courier?.id || undefined,
+    metadata: meta,
   };
 }
 

@@ -63,6 +63,115 @@ function normalizeProvinceName(name: string): string {
     .trim();
 }
 
+function cleanName(s?: string | null): string {
+  return (s || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/đ/g, 'd')
+    .replace(/Đ/g, 'D')
+    .toLowerCase()
+    .replace(/^(phuong|xa|thi tran|quan|huyen|thanh pho|tp|tinh|thi xa)\s+/, '')
+    .trim();
+}
+
+function matchStrict(target?: string | null, candidate?: string | null): boolean {
+  const t = cleanName(target);
+  const c = cleanName(candidate);
+  if (!t || !c) return false;
+  if (t === c) return true;
+  const tNum = t.match(/\d+/);
+  const cNum = c.match(/\d+/);
+  if (tNum || cNum) {
+    return tNum?.[0] === cNum?.[0];
+  }
+  return t.includes(c) || c.includes(t);
+}
+
+function matchDistrict(d1?: string | null, d2?: string | null): boolean {
+  if (!d1 || !d2) return true;
+  return matchStrict(d1, d2);
+}
+
+function calculateDistanceKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const R = 6371;
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLon = ((lon2 - lon1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos((lat1 * Math.PI) / 180) *
+      Math.cos((lat2 * Math.PI) / 180) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+}
+
+export function findBestHubForWard(
+  cleanWard: string,
+  cleanDistrict: string,
+  coords: { latitude?: number; longitude?: number } | null,
+  hubs: HubRecord[],
+): HubRecord | null {
+  if (!hubs || hubs.length === 0) return null;
+
+  const targetWard = cleanName(cleanWard);
+  const targetDistrict = cleanName(cleanDistrict);
+
+  // 1. Exact Ward AND District match
+  if (targetWard && targetDistrict) {
+    const exactBoth = hubs.find(
+      (h) => cleanName(h.ward) === targetWard && matchStrict(cleanDistrict, h.district || h.name),
+    );
+    if (exactBoth) return exactBoth;
+  }
+
+  // 2. Exact Ward match (district compatible or empty)
+  if (targetWard) {
+    const exactWard = hubs.find(
+      (h) => cleanName(h.ward) === targetWard && matchDistrict(cleanDistrict, h.district),
+    );
+    if (exactWard) return exactWard;
+  }
+
+  // 3. Strict District match
+  if (targetDistrict) {
+    const distMatch = hubs.find(
+      (h) => matchStrict(cleanDistrict, h.district) || matchStrict(cleanDistrict, h.name),
+    );
+    if (distMatch) return distMatch;
+  }
+
+  // 4. Spatial proximity match if GPS coords available
+  if (coords?.latitude && coords?.longitude) {
+    let nearest: HubRecord | null = null;
+    let minDist = Infinity;
+    for (const h of hubs) {
+      if (typeof h.latitude === 'number' && typeof h.longitude === 'number') {
+        const d = calculateDistanceKm(coords.latitude, coords.longitude, h.latitude, h.longitude);
+        if (d < minDist) {
+          minDist = d;
+          nearest = h;
+        }
+      }
+    }
+    if (nearest && minDist <= 25) {
+      return nearest;
+    }
+  }
+
+  // 5. Central provincial hub or first available hub
+  const centralHub = hubs.find(
+    (h) =>
+      h.code.includes('001B001') ||
+      h.code.includes('079B001') ||
+      h.code.includes('048B001') ||
+      h.name.includes('Bưu cục Hồ Chí Minh') ||
+      h.name.includes('Bưu cục Hà Nội') ||
+      h.name.includes('Bưu cục Đà Nẵng'),
+  );
+  return centralHub || hubs[0];
+}
+
 const COMMON_WARDS_BY_PROVINCE: Record<string, string[]> = {
   'hồ chí minh': [
     'Phường An Nhơn (Quận Gò Vấp)',
@@ -258,21 +367,42 @@ export function AddressSelectorModal({
 
           // If initialAddress exists, match existing province and ward safely
           if (initialAddress?.province && validProvinces.length > 0) {
-            const initNorm = normalizeProvinceName(initialAddress.province);
+            const initNorm = cleanName(initialAddress.province);
             const foundProv = validProvinces.find(
-              (p) => normalizeProvinceName(p.name) === initNorm || normalizeProvinceName(p.name).includes(initNorm),
+              (p) =>
+                cleanName(p.name) === initNorm ||
+                cleanName(p.name).includes(initNorm) ||
+                initNorm.includes(cleanName(p.name)),
             );
             if (foundProv) {
               setSelectedProvince(foundProv);
               if (initialAddress?.ward) {
-                const initWardName = (initialAddress.ward ?? '').toLowerCase();
+                const targetW = cleanName(initialAddress.ward);
+                const targetD = cleanName(initialAddress.district || '');
                 const foundWards = getWardsForProvince(foundProv);
-                const foundWard = foundWards.find(
-                  (w) => (w?.name ?? '').toLowerCase() === initWardName,
-                );
+                const foundWard = foundWards.find((w) => {
+                  const wName = cleanName(w?.name);
+                  if (targetD && wName.includes(targetW) && wName.includes(targetD)) return true;
+                  return wName.includes(targetW) || targetW.includes(wName);
+                });
                 if (foundWard) setSelectedWard(foundWard);
               }
             }
+            if (initialAddress.hubCode) {
+              const matchedH = validHubs.find((h) => h.code === initialAddress.hubCode);
+              if (matchedH) setSelectedHub(matchedH);
+            }
+            setAddressDetail(initialAddress.addressDetail || '');
+            if (initialAddress.latitude && initialAddress.longitude) {
+              setCoords({ latitude: initialAddress.latitude, longitude: initialAddress.longitude });
+            }
+          } else {
+            // When initialAddress is null/empty (e.g. fresh receiver address selection):
+            setSelectedProvince(null);
+            setSelectedWard(null);
+            setAddressDetail('');
+            setSelectedHub(null);
+            setCoords(null);
           }
         }
       } catch {
@@ -288,15 +418,15 @@ export function AddressSelectorModal({
     return () => {
       isMounted = false;
     };
-  }, [visible]);
+  }, [visible, initialAddress]);
 
   // Find all hubs matching current selected province
-  const normSelectedProv = selectedProvince ? normalizeProvinceName(selectedProvince.name) : '';
+  const normSelectedProv = selectedProvince ? cleanName(selectedProvince.name) : '';
 
   const matchedDirectHubs = hubList.filter((h) => {
     if (!normSelectedProv) return true;
-    const normHubProv = normalizeProvinceName(h.province);
-    const normHubName = normalizeProvinceName(h.name);
+    const normHubProv = cleanName(h.province);
+    const normHubName = cleanName(h.name);
     return (
       normHubProv.includes(normSelectedProv) ||
       normSelectedProv.includes(normHubProv) ||
@@ -320,42 +450,21 @@ export function AddressSelectorModal({
             cleanDistrict = match[2].trim();
           }
         }
-        const normWard = removeAccents(cleanWard);
-        const normDistrict = removeAccents(cleanDistrict);
 
-        // Find hub matching ward or district
-        const bestHub = matchingHubs.find((h) => {
-          const hWard = removeAccents(h.ward || '');
-          const hDistrict = removeAccents(h.district || '');
-          const hName = removeAccents(h.name || '');
-          if (hWard && normWard && (hWard.includes(normWard) || normWard.includes(hWard))) {
-            return true;
-          }
-          if (hDistrict && normDistrict && (hDistrict.includes(normDistrict) || normDistrict.includes(hDistrict))) {
-            return true;
-          }
-          if (normWard && (hName.includes(normWard) || normWard.includes(hName))) {
-            return true;
-          }
-          if (normDistrict && (hName.includes(normDistrict) || normDistrict.includes(hName))) {
-            return true;
-          }
-          return false;
-        });
-
+        const bestHub = findBestHubForWard(cleanWard, cleanDistrict, coords, matchingHubs);
         if (bestHub) {
           setSelectedHub(bestHub);
           return;
         }
       }
 
-      // Prioritize existing hub if it already matches
+      // Prioritize existing hub if it already matches current province
       const currentMatches = selectedHub && matchingHubs.some((h) => h.code === selectedHub.code);
       if (!currentMatches) {
         setSelectedHub(matchingHubs[0]);
       }
     }
-  }, [selectedProvince, selectedWard, hubList]);
+  }, [selectedProvince, selectedWard, coords, hubList]);
 
   const rawAvailableWards = selectedProvince ? getWardsForProvince(selectedProvince) : [];
   const availableWards = selectedWard && !rawAvailableWards.some((w) => w.code === selectedWard.code)

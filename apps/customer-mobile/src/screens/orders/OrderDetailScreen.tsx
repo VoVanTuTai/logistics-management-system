@@ -161,8 +161,11 @@ export function OrderDetailScreen({ route, navigation }: Props): React.JSX.Eleme
   };
 
   const courier = resolveCourierForOrder({
+    courierId: order.courierId || (order as any).metadata?.assignedCourier || (order as any).metadata?.courierId,
+    courierName: (order as any).metadata?.courierName || (order as any).metadata?.deliveryCourierName,
+    courierPhone: (order as any).metadata?.courierPhone || (order as any).metadata?.deliveryCourierPhone,
     receiverHubCode: order.receiver.hubCode,
-    timelineNotes: liveTimeline.map((t) => t.noteText || t.title || ''),
+    timelineNotes: liveTimeline.map((t) => [t.noteText, t.title, t.actorText, t.boldPrefix, t.addressSuffix].filter(Boolean).join(' ')),
   });
 
   const handleCallCourier = () => {

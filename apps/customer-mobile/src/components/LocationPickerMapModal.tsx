@@ -21,6 +21,7 @@ import {
   type LocationCoordinates,
 } from '../services/locationService';
 import { colors, shadows, spacing } from '../theme';
+import { findBestHubForWard } from './AddressSelectorModal';
 
 function calculateHaversineDistanceKm(
   lat1: number,
@@ -133,57 +134,19 @@ export function LocationPickerMapModal({
       const res = await locationService.reverseGeocode(lat, lng);
       setGeocoded(res);
 
+      const ward = res.ward || '';
+      const district = res.district || '';
       const normProv = removeAccents(res.province || '').replace(/^(tinh|thanh pho|tp)\s+/, '');
-      const normWard = removeAccents(res.ward || '').replace(/^(phuong|xa|thi tran)\s+/, '');
-      const normDistrict = removeAccents(res.district || '').replace(/^(quan|huyen|thanh pho|tp|thi xa)\s+/, '');
 
-      // 1. Direct text match with Hub ward or district
-      let bestHub: HubRecord | null = null;
-      if (normWard || normDistrict) {
-        bestHub = hubList.find((h) => {
-          const hWard = removeAccents(h.ward || '').replace(/^(phuong|xa|thi tran)\s+/, '');
-          const hDistrict = removeAccents(h.district || '').replace(/^(quan|huyen|thanh pho|tp|thi xa)\s+/, '');
-          const hName = removeAccents(h.name || '');
+      // Filter hubList by current province if matched
+      const provinceHubs = hubList.filter((h) => {
+        const normH = removeAccents(h.province || '');
+        return normH.includes(normProv) || normProv.includes(normH);
+      });
+      const candidates = provinceHubs.length > 0 ? provinceHubs : hubList;
 
-          if (normWard && (hWard.includes(normWard) || normWard.includes(hWard) || hName.includes(normWard))) {
-            return true;
-          }
-          if (normDistrict && (hDistrict.includes(normDistrict) || normDistrict.includes(hDistrict) || hName.includes(normDistrict))) {
-            return true;
-          }
-          return false;
-        }) || null;
-      }
-
-      // 2. Spatial proximity match: nearest hub by geographical coordinates
-      if (!bestHub) {
-        let minDistance = Infinity;
-        let nearestHub: HubRecord | null = null;
-
-        for (const h of hubList) {
-          if (typeof h.latitude === 'number' && typeof h.longitude === 'number') {
-            const dist = calculateHaversineDistanceKm(lat, lng, h.latitude, h.longitude);
-            if (dist < minDistance) {
-              minDistance = dist;
-              nearestHub = h;
-            }
-          }
-        }
-
-        if (nearestHub && minDistance <= 25) {
-          bestHub = nearestHub;
-        }
-      }
-
-      // 3. Fallback: Hub matching province
-      if (!bestHub) {
-        bestHub = hubList.find((h) => {
-          const normH = removeAccents(h.province || '');
-          return normH.includes(normProv) || normProv.includes(normH);
-        }) || null;
-      }
-
-      setSelectedHub(bestHub || hubList[0] || DEFAULT_HUB_RECORDS[0]);
+      const bestHub = findBestHubForWard(ward, district, { latitude: lat, longitude: lng }, candidates);
+      setSelectedHub(bestHub || candidates[0] || DEFAULT_HUB_RECORDS[0]);
     } catch {
       // Ignore errors
     } finally {
