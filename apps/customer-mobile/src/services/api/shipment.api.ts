@@ -124,6 +124,10 @@ export const shipmentApi = {
     if (filters.limit) params.append('limit', String(filters.limit));
     if (filters.offset) params.append('offset', String(filters.offset));
     if (filters.userId) params.append('userId', filters.userId);
+    if (filters.phone) {
+      params.append('phone', filters.phone);
+      params.append('senderPhone', filters.phone);
+    }
 
     const queryString = params.toString();
     const url = `/customer/shipment/shipments/sent${queryString ? `?${queryString}` : ''}`;

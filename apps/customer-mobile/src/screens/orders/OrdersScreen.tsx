@@ -130,7 +130,7 @@ export function OrdersScreen({ route, navigation }: Props): React.JSX.Element {
     if (showLoading) setLoading(true);
     try {
       const [sentRes, receivedRes] = await Promise.allSettled([
-        shipmentApi.getShipments(accessToken, { limit: 100, userId: user?.id }),
+        shipmentApi.getShipments(accessToken, { limit: 100, userId: user?.id, phone: user?.phone }),
         shipmentApi.getReceivedShipments(accessToken, { limit: 100, phone: user?.phone }),
       ]);
 

@@ -1663,6 +1663,7 @@ export function FloatingAiChatModal({ visible, onClose }: FloatingAiChatModalPro
       visible={visible}
       animationType="slide"
       transparent={true}
+      statusBarTranslucent={true}
       onRequestClose={onClose}
     >
       <View style={styles.modalOverlay}>

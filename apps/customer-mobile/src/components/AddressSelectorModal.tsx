@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
+  Keyboard,
   KeyboardAvoidingView,
   Modal,
   Platform,
@@ -13,6 +14,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
+import { LocationPickerMapModal } from './LocationPickerMapModal';
 import {
   DEFAULT_HUB_RECORDS,
   masterdataApi,
@@ -21,7 +23,10 @@ import {
   type VietnamWard,
 } from '../services/api/masterdata.api';
 import { colors, shadows, spacing } from '../theme';
-import { FALLBACK_VIETNAM_PROVINCES } from '../utils/vietnamProvincesData';
+import {
+  FALLBACK_VIETNAM_PROVINCES,
+  getWardsForProvinceName,
+} from '../utils/vietnamProvincesData';
 
 export interface StructuredAddress {
   province: string;
@@ -257,12 +262,25 @@ const COMMON_WARDS_BY_PROVINCE: Record<string, string[]> = {
 function getWardsForProvince(province?: VietnamProvince | null): VietnamWard[] {
   if (!province) return [];
 
-  // If province already has populated wards from API, use them
+  // 1. If province already has populated wards from API or FALLBACK_VIETNAM_PROVINCES, use them
   if (Array.isArray(province.wards) && province.wards.length > 0) {
     return province.wards;
   }
 
-  // Fallback to rich ward dictionary
+  // 2. Resolve via rich centralized catalog
+  const resolved = getWardsForProvinceName(province.name);
+  if (resolved && resolved.length > 0) {
+    return resolved.map((w, idx) => ({
+      code: w.code || (province.code || 1) * 1000 + idx + 1,
+      name: w.name,
+      wardName: w.wardName,
+      district: w.district,
+      codename: `ward_${idx + 1}`,
+      provinceCode: province.code,
+    }));
+  }
+
+  // 3. Fallback to rich ward dictionary
   const normName = normalizeProvinceName(province.name);
   const matchedCustom = Object.entries(COMMON_WARDS_BY_PROVINCE).find(([key]) =>
     key.includes(normName) || normName.includes(key),
@@ -298,27 +316,6 @@ function getWardsForProvince(province?: VietnamProvince | null): VietnamWard[] {
   }));
 }
 
-import { LocationPickerMapModal } from './LocationPickerMapModal';
-
-export interface StructuredAddress {
-  province: string;
-  district: string;
-  ward: string;
-  addressDetail: string;
-  composedAddress: string;
-  hubCode: string;
-  hubName: string;
-}
-
-interface Props {
-  visible: boolean;
-  title: string;
-  initialAddress?: StructuredAddress | null;
-  onConfirm: (address: StructuredAddress) => void;
-  onClose: () => void;
-  accessToken?: string;
-}
-
 export function AddressSelectorModal({
   visible,
   title,
@@ -344,6 +341,24 @@ export function AddressSelectorModal({
   const [stepView, setStepView] = useState<'FORM' | 'SELECT_PROVINCE' | 'SELECT_WARD' | 'SELECT_HUB'>('FORM');
   const [searchQuery, setSearchQuery] = useState('');
   const [showMapPickerModal, setShowMapPickerModal] = useState(false);
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
+
+  useEffect(() => {
+    const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+
+    const showSub = Keyboard.addListener(showEvent, (e) => {
+      setKeyboardHeight(e.endCoordinates.height);
+    });
+    const hideSub = Keyboard.addListener(hideEvent, () => {
+      setKeyboardHeight(0);
+    });
+
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
 
   // Load provinces & hubs from masterdata-service DB
   useEffect(() => {
@@ -571,277 +586,404 @@ export function AddressSelectorModal({
   );
 
   return (
-    <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
-      <View style={styles.overlay}>
-        <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-          style={styles.sheetContainer}
-        >
-          {/* HEADER */}
-          <View style={styles.header}>
-            <Text style={styles.headerTitle}>{title}</Text>
-            <TouchableOpacity style={styles.closeBtn} onPress={onClose}>
-              <Ionicons name="close" size={24} color={colors.textSecondary} />
-            </TouchableOpacity>
-          </View>
-
-          <ScrollView
-            contentContainerStyle={styles.scrollContent}
-            keyboardShouldPersistTaps="handled"
-            showsVerticalScrollIndicator={false}
+    <Modal visible={visible} animationType="slide" transparent statusBarTranslucent={true} onRequestClose={onClose}>
+      <View style={stepView === 'FORM' ? styles.overlay : styles.overlaySelection}>
+        {stepView === 'FORM' ? (
+          <KeyboardAvoidingView
+            behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+            style={[
+              styles.sheetContainer,
+              Platform.OS === 'android' && keyboardHeight > 0 && { paddingBottom: keyboardHeight },
+            ]}
           >
-            {stepView === 'FORM' ? (
-              <View style={styles.formBlock}>
-                {/* 0. GPS MAP PICKER ACTION BUTTON */}
-                <TouchableOpacity
-                  activeOpacity={0.8}
-                  style={styles.gpsMapPickerBtn}
-                  onPress={() => setShowMapPickerModal(true)}
-                >
-                  <Ionicons name="location" size={18} color={colors.primary} />
-                  <Text style={styles.gpsMapPickerBtnText}>Định vị vị trí GPS / Chọn trên bản đồ</Text>
-                  <Ionicons name="chevron-forward" size={16} color={colors.primary} />
-                </TouchableOpacity>
+            {/* HEADER */}
+            <View style={styles.header}>
+              <Text style={styles.headerTitle}>{title}</Text>
+              <TouchableOpacity style={styles.closeBtn} onPress={onClose}>
+                <Ionicons name="close" size={24} color={colors.textSecondary} />
+              </TouchableOpacity>
+            </View>
 
-                <View style={styles.orDividerRow}>
-                  <View style={styles.orDividerLine} />
-                  <Text style={styles.orDividerText}>hoặc chọn bên dưới</Text>
-                  <View style={styles.orDividerLine} />
-                </View>
-                {/* 1. SELECT PROVINCE */}
-                <Text style={styles.fieldLabel}>1. Chọn Tỉnh / Thành phố *</Text>
-                <TouchableOpacity
-                  style={styles.pickerBtn}
-                  onPress={() => {
-                    setSearchQuery('');
-                    setStepView('SELECT_PROVINCE');
-                  }}
-                >
-                  <Text style={[styles.pickerBtnText, !selectedProvince && styles.placeholderText]}>
-                    {selectedProvince?.name || 'Bấm để chọn Tỉnh / Thành phố'}
-                  </Text>
-                  <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
-                </TouchableOpacity>
+              <ScrollView
+                style={{ flex: 1 }}
+                contentContainerStyle={styles.scrollContent}
+                keyboardShouldPersistTaps="handled"
+                showsVerticalScrollIndicator={false}
+              >
+                <View style={styles.formBlock}>
+                  {/* 0. GPS MAP PICKER ACTION BUTTON */}
+                  <TouchableOpacity
+                    activeOpacity={0.8}
+                    style={styles.gpsMapPickerBtn}
+                    onPress={() => setShowMapPickerModal(true)}
+                  >
+                    <Ionicons name="location" size={18} color={colors.primary} />
+                    <Text style={styles.gpsMapPickerBtnText}>Định vị vị trí GPS / Chọn trên bản đồ</Text>
+                    <Ionicons name="chevron-forward" size={16} color={colors.primary} />
+                  </TouchableOpacity>
 
-                {/* 2. SELECT WARD (Requires Province selected first) */}
-                <Text style={styles.fieldLabel}>2. Chọn Phường / Xã *</Text>
-                <TouchableOpacity
-                  style={[styles.pickerBtn, !selectedProvince && styles.pickerBtnDisabled]}
-                  disabled={!selectedProvince}
-                  onPress={() => {
-                    if (!selectedProvince) return;
-                    setSearchQuery('');
-                    setStepView('SELECT_WARD');
-                  }}
-                >
-                  <Text style={[styles.pickerBtnText, !selectedWard && styles.placeholderText]}>
-                    {selectedWard?.name ||
-                      (selectedProvince
-                        ? 'Bấm để chọn Phường / Xã'
-                        : 'Vui lòng chọn Tỉnh / Thành phố trước')}
-                  </Text>
-                  <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
-                </TouchableOpacity>
-
-                {/* 3. DETAIL ADDRESS */}
-                <Text style={styles.fieldLabel}>3. Địa chỉ chi tiết (Số nhà, Tên đường) *</Text>
-                <TextInput
-                  style={styles.detailInput}
-                  placeholder="Ví dụ: 123 Nguyễn Trãi..."
-                  placeholderTextColor={colors.textMuted}
-                  value={addressDetail}
-                  onChangeText={setAddressDetail}
-                />
-
-                {/* 4. LINKED HUB CARD WITH SELECTOR */}
-                <Text style={styles.fieldLabel}>4. Bưu cục phục vụ khu vực này (Hub Database)</Text>
-                <View style={styles.hubBanner}>
-                  <View style={styles.hubHeaderRow}>
-                    <Ionicons name="business" size={18} color={colors.primary} />
-                    <Text style={styles.hubTitle}>
-                      {matchingHubs.length > 1
-                        ? `Có ${matchingHubs.length} bưu cục khả dụng (Bấm để thay đổi)`
-                        : 'Bưu cục liên kết'}
-                    </Text>
+                  <View style={styles.orDividerRow}>
+                    <View style={styles.orDividerLine} />
+                    <Text style={styles.orDividerText}>hoặc chọn bên dưới</Text>
+                    <View style={styles.orDividerLine} />
                   </View>
-                  {loadingData ? (
-                    <ActivityIndicator size="small" color={colors.primary} style={{ marginVertical: 8 }} />
-                  ) : selectedHub ? (
-                    <TouchableOpacity
-                      activeOpacity={matchingHubs.length > 1 ? 0.7 : 1}
-                      style={styles.hubSelectRow}
-                      onPress={() => {
-                        if (matchingHubs.length > 1) {
-                          setSearchQuery('');
-                          setStepView('SELECT_HUB');
-                        }
-                      }}
-                    >
-                      <View style={styles.hubTextCol}>
-                        <Text style={styles.hubNameText}>
-                          [{selectedHub.code}] {selectedHub.name}
-                        </Text>
-                        <Text style={styles.hubDetailText}>
-                          Khu vực: {selectedHub.province ?? ''} {selectedHub.addressDetail ? `- ${selectedHub.addressDetail}` : ''}
-                        </Text>
-                      </View>
-                      {matchingHubs.length > 1 ? (
-                        <View style={styles.changeHubChip}>
-                          <Text style={styles.changeHubText}>Đổi bưu cục</Text>
-                          <Ionicons name="swap-horizontal" size={14} color={colors.primary} />
-                        </View>
-                      ) : null}
-                    </TouchableOpacity>
-                  ) : (
-                    <Text style={styles.noHubText}>Tự động chọn Hub theo khu vực</Text>
-                  )}
-                </View>
+                  {/* 1. SELECT PROVINCE */}
+                  <Text style={styles.fieldLabel}>1. Chọn Tỉnh / Thành phố *</Text>
+                  <TouchableOpacity
+                    style={styles.pickerBtn}
+                    onPress={() => {
+                      setSearchQuery('');
+                      setStepView('SELECT_PROVINCE');
+                    }}
+                  >
+                    <Text style={[styles.pickerBtnText, !selectedProvince && styles.placeholderText]}>
+                      {selectedProvince?.name || 'Bấm để chọn Tỉnh / Thành phố'}
+                    </Text>
+                    <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+                  </TouchableOpacity>
 
-                {/* CONFIRM BUTTON */}
-                <TouchableOpacity
-                  activeOpacity={0.8}
-                  style={[
-                    styles.saveBtn,
-                    (!selectedProvince || !selectedWard || !addressDetail.trim()) && styles.saveBtnDisabled,
-                  ]}
-                  onPress={handleSave}
-                  disabled={!selectedProvince || !selectedWard || !addressDetail.trim()}
-                >
-                  <Text style={styles.saveBtnText}>Xác nhận địa chỉ này</Text>
-                </TouchableOpacity>
-              </View>
-            ) : null}
+                  {/* 2. SELECT WARD (Requires Province selected first) */}
+                  <Text style={styles.fieldLabel}>2. Chọn Phường / Xã *</Text>
+                  <TouchableOpacity
+                    style={[styles.pickerBtn, !selectedProvince && styles.pickerBtnDisabled]}
+                    disabled={!selectedProvince}
+                    onPress={() => {
+                      if (!selectedProvince) return;
+                      setSearchQuery('');
+                      setStepView('SELECT_WARD');
+                    }}
+                  >
+                    <Text style={[styles.pickerBtnText, !selectedWard && styles.placeholderText]}>
+                      {selectedWard?.name ||
+                        (selectedProvince
+                          ? 'Bấm để chọn Phường / Xã'
+                          : 'Vui lòng chọn Tỉnh / Thành phố trước')}
+                    </Text>
+                    <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+                  </TouchableOpacity>
 
-            {/* STEP: SELECT PROVINCE */}
-            {stepView === 'SELECT_PROVINCE' ? (
-              <View style={styles.listBlock}>
-                <TouchableOpacity style={styles.backLink} onPress={() => setStepView('FORM')}>
-                  <Ionicons name="arrow-back" size={18} color={colors.primary} />
-                  <Text style={styles.backLinkText}>Quay lại</Text>
-                </TouchableOpacity>
+                  {/* 3. DETAIL ADDRESS */}
+                  <Text style={styles.fieldLabel}>3. Địa chỉ chi tiết (Số nhà, Tên đường) *</Text>
+                  <TextInput
+                    style={styles.detailInput}
+                    placeholder="Ví dụ: 123 Nguyễn Trãi..."
+                    placeholderTextColor={colors.textMuted}
+                    value={addressDetail}
+                    onChangeText={setAddressDetail}
+                  />
 
-                <TextInput
-                  style={styles.searchInput}
-                  placeholder="Tìm Tỉnh / Thành phố trong Database..."
-                  placeholderTextColor={colors.textMuted}
-                  value={searchQuery}
-                  onChangeText={setSearchQuery}
-                />
-
-                {loadingData ? (
-                  <ActivityIndicator size="large" color={colors.primary} style={{ marginVertical: 20 }} />
-                ) : (
-                  filteredProvinces.map((item) => {
-                    const isSelected = selectedProvince?.code === item.code;
-                    return (
+                  {/* 4. LINKED HUB CARD WITH SELECTOR */}
+                  <Text style={styles.fieldLabel}>4. Bưu cục phục vụ khu vực này (Hub Database)</Text>
+                  <View style={styles.hubBanner}>
+                    <View style={styles.hubHeaderRow}>
+                      <Ionicons name="business" size={18} color={colors.primary} />
+                      <Text style={styles.hubTitle}>
+                        {matchingHubs.length > 1
+                          ? `Có ${matchingHubs.length} bưu cục khả dụng (Bấm để thay đổi)`
+                          : 'Bưu cục liên kết'}
+                      </Text>
+                    </View>
+                    {loadingData ? (
+                      <ActivityIndicator size="small" color={colors.primary} style={{ marginVertical: 8 }} />
+                    ) : selectedHub ? (
                       <TouchableOpacity
-                        key={item.code}
-                        style={styles.optionRow}
+                        activeOpacity={matchingHubs.length > 1 ? 0.7 : 1}
+                        style={styles.hubSelectRow}
                         onPress={() => {
-                          setSelectedProvince(item);
-                          setSelectedWard(null); // reset ward when province changes
-                          setStepView('FORM');
+                          if (matchingHubs.length > 1) {
+                            setSearchQuery('');
+                            setStepView('SELECT_HUB');
+                          }
                         }}
                       >
-                        <Text style={[styles.optionText, isSelected && styles.optionTextActive]}>
-                          {item.name}
-                        </Text>
-                        {isSelected ? <Ionicons name="checkmark" size={18} color={colors.primary} /> : null}
+                        <View style={styles.hubTextCol}>
+                          <Text style={styles.hubNameText}>
+                            [{selectedHub.code}] {selectedHub.name}
+                          </Text>
+                          <Text style={styles.hubDetailText}>
+                            Khu vực: {selectedHub.province ?? ''} {selectedHub.addressDetail ? `- ${selectedHub.addressDetail}` : ''}
+                          </Text>
+                        </View>
+                        {matchingHubs.length > 1 ? (
+                          <View style={styles.changeHubChip}>
+                            <Text style={styles.changeHubText}>Đổi bưu cục</Text>
+                            <Ionicons name="swap-horizontal" size={14} color={colors.primary} />
+                          </View>
+                        ) : null}
                       </TouchableOpacity>
-                    );
-                  })
+                    ) : (
+                      <Text style={styles.noHubText}>Tự động chọn Hub theo khu vực</Text>
+                    )}
+                  </View>
+
+                  {/* CONFIRM BUTTON */}
+                  <TouchableOpacity
+                    activeOpacity={0.8}
+                    style={[
+                      styles.saveBtn,
+                      (!selectedProvince || !selectedWard || !addressDetail.trim()) && styles.saveBtnDisabled,
+                    ]}
+                    onPress={handleSave}
+                    disabled={!selectedProvince || !selectedWard || !addressDetail.trim()}
+                  >
+                    <Text style={styles.saveBtnText}>Xác nhận địa chỉ này</Text>
+                  </TouchableOpacity>
+                </View>
+              </ScrollView>
+          </KeyboardAvoidingView>
+        ) : (
+          <View
+            style={[
+              styles.sheetContainerSelection,
+              Platform.OS === 'android' && keyboardHeight > 0 && { paddingBottom: keyboardHeight },
+            ]}
+          >
+            <View style={styles.selectionContainer}>
+              {/* PINNED HEADER (CỐ ĐỊNH Ở TRÊN, KHÔNG BỊ TRÔI HOẶC ẨN) */}
+              <View style={styles.selectionHeader}>
+                <TouchableOpacity
+                  style={styles.selectionBackBtn}
+                  onPress={() => {
+                    setSearchQuery('');
+                    setStepView('FORM');
+                  }}
+                >
+                  <Ionicons name="arrow-back" size={20} color={colors.primary} />
+                  <Text style={styles.selectionBackText}>Quay lại</Text>
+                </TouchableOpacity>
+
+                <View style={styles.selectionTitleContainer}>
+                  <Text style={styles.selectionTitle} numberOfLines={1}>
+                    {stepView === 'SELECT_PROVINCE'
+                      ? 'Chọn Tỉnh / Thành phố'
+                      : stepView === 'SELECT_WARD'
+                      ? `Phường / Xã (${selectedProvince?.name || ''})`
+                      : `Bưu cục phục vụ (${selectedProvince?.name || 'khu vực'})`}
+                  </Text>
+                </View>
+
+                <View style={styles.selectionCountBadge}>
+                  <Text style={styles.selectionCountText}>
+                    {stepView === 'SELECT_PROVINCE'
+                      ? `${filteredProvinces.length} Tỉnh/TP`
+                      : stepView === 'SELECT_WARD'
+                      ? `${filteredWards.length} xã/phường`
+                      : `${filteredMatchingHubs.length} bưu cục`}
+                  </Text>
+                </View>
+              </View>
+
+              {/* PINNED SEARCH BAR (CỐ ĐỊNH, KHÔNG BỊ BÀN PHÍM CHE HOẶC CUỘN MẤT) */}
+              <View style={styles.searchBarWrapper}>
+                <Ionicons name="search" size={18} color={colors.textMuted} style={styles.searchIcon} />
+                <TextInput
+                  style={styles.pinnedSearchInput}
+                  placeholder={
+                    stepView === 'SELECT_PROVINCE'
+                      ? 'Tìm Tỉnh / Thành phố (ví dụ: Hà Nội, Hồ Chí Minh)...'
+                      : stepView === 'SELECT_WARD'
+                      ? 'Tìm Phường / Xã (ví dụ: An Nhơn, Bến Nghé)...'
+                      : 'Tìm bưu cục theo tên hoặc mã...'
+                  }
+                  placeholderTextColor={colors.textMuted}
+                  value={searchQuery}
+                  onChangeText={setSearchQuery}
+                  autoCorrect={false}
+                  returnKeyType="search"
+                />
+                {searchQuery.length > 0 && (
+                  <TouchableOpacity onPress={() => setSearchQuery('')} style={styles.searchClearBtn}>
+                    <Ionicons name="close-circle" size={18} color={colors.textMuted} />
+                  </TouchableOpacity>
                 )}
               </View>
-            ) : null}
 
-            {/* STEP: SELECT WARD */}
-            {stepView === 'SELECT_WARD' ? (
-              <View style={styles.listBlock}>
-                <TouchableOpacity style={styles.backLink} onPress={() => setStepView('FORM')}>
-                  <Ionicons name="arrow-back" size={18} color={colors.primary} />
-                  <Text style={styles.backLinkText}>Quay lại form</Text>
-                </TouchableOpacity>
-
-                <Text style={styles.listHeaderTitle}>
-                  Phường / Xã thuộc {selectedProvince?.name}
-                </Text>
-
-                <TextInput
-                  style={styles.searchInput}
-                  placeholder="Tìm Phường / Xã..."
-                  placeholderTextColor={colors.textMuted}
-                  value={searchQuery}
-                  onChangeText={setSearchQuery}
-                />
-
-                {filteredWards.map((item) => {
-                  const isSelected = selectedWard?.code === item.code;
-                  return (
-                    <TouchableOpacity
-                      key={item.code}
-                      style={styles.optionRow}
-                      onPress={() => {
-                        setSelectedWard(item);
-                        setStepView('FORM');
-                      }}
-                    >
-                      <Text style={[styles.optionText, isSelected && styles.optionTextActive]}>
-                        {item.name}
+              {/* SCROLLABLE LIST OF LOCATIONS (CUỘN ĐỘC LẬP TRÊN BÀN PHÍM) */}
+              <ScrollView
+                style={styles.selectionScroll}
+                contentContainerStyle={styles.selectionScrollContent}
+                keyboardShouldPersistTaps="always"
+                showsVerticalScrollIndicator={true}
+              >
+                {/* 1. SELECT PROVINCE */}
+                {stepView === 'SELECT_PROVINCE' && (
+                  loadingData ? (
+                    <ActivityIndicator size="large" color={colors.primary} style={{ marginVertical: 32 }} />
+                  ) : filteredProvinces.length === 0 ? (
+                    <View style={styles.emptyState}>
+                      <Ionicons name="search-outline" size={40} color={colors.textMuted} />
+                      <Text style={styles.emptyStateTitle}>Không tìm thấy Tỉnh / Thành phố</Text>
+                      <Text style={styles.emptyStateSub}>
+                        Không có kết quả khớp với "{searchQuery}". Vui lòng thử từ khóa không dấu.
                       </Text>
-                      {isSelected ? <Ionicons name="checkmark" size={18} color={colors.primary} /> : null}
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
-            ) : null}
+                    </View>
+                  ) : (
+                    filteredProvinces.map((item) => {
+                      const isSelected = selectedProvince?.code === item.code;
+                      const wardCount = Array.isArray(item.wards) && item.wards.length > 0
+                        ? item.wards.length
+                        : getWardsForProvince(item).length;
 
-            {/* STEP: SELECT HUB IN PROVINCE */}
-            {stepView === 'SELECT_HUB' ? (
-              <View style={styles.listBlock}>
-                <TouchableOpacity style={styles.backLink} onPress={() => setStepView('FORM')}>
-                  <Ionicons name="arrow-back" size={18} color={colors.primary} />
-                  <Text style={styles.backLinkText}>Quay lại form</Text>
-                </TouchableOpacity>
+                      return (
+                        <TouchableOpacity
+                          key={item.code}
+                          style={[styles.provinceOptionRow, isSelected && styles.provinceOptionRowSelected]}
+                          activeOpacity={0.7}
+                          onPress={() => {
+                            setSelectedProvince(item);
+                            setSelectedWard(null);
+                            setSearchQuery('');
+                            setStepView('FORM');
+                          }}
+                        >
+                          <View style={{ flex: 1, paddingRight: 8 }}>
+                            <View style={styles.provinceNameRow}>
+                              <Text style={[styles.provinceNameText, isSelected && styles.provinceNameTextSelected]}>
+                                {item.name}
+                              </Text>
+                              <View style={styles.provinceActiveBadge}>
+                                <Text style={styles.provinceActiveBadgeText}>Toàn quốc</Text>
+                              </View>
+                            </View>
+                            <Text style={styles.provinceSubText}>
+                              {wardCount} Phường / Xã khả dụng kết nối mạng lưới bưu cục
+                            </Text>
+                          </View>
+                          {isSelected ? (
+                            <Ionicons name="checkmark-circle" size={22} color={colors.primary} />
+                          ) : (
+                            <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+                          )}
+                        </TouchableOpacity>
+                      );
+                    })
+                  )
+                )}
 
-                <Text style={styles.listHeaderTitle}>
-                  Bưu cục thuộc {selectedProvince?.name || 'khu vực này'} ({matchingHubs.length} bưu cục)
-                </Text>
+                {/* 2. SELECT WARD */}
+                {stepView === 'SELECT_WARD' && (
+                  filteredWards.length === 0 ? (
+                    <View style={styles.emptyState}>
+                      <Ionicons name="search-outline" size={40} color={colors.textMuted} />
+                      <Text style={styles.emptyStateTitle}>Không tìm thấy Phường / Xã</Text>
+                      <Text style={styles.emptyStateSub}>
+                        Không có phường/xã nào khớp với "{searchQuery}". Vui lòng kiểm tra lại chính tả hoặc chọn tỉnh thành khác.
+                      </Text>
+                    </View>
+                  ) : (
+                    filteredWards.map((item) => {
+                      const isSelected = selectedWard?.code === item.code || selectedWard?.name === item.name;
 
-                <TextInput
-                  style={styles.searchInput}
-                  placeholder="Tìm bưu cục theo tên hoặc mã..."
-                  placeholderTextColor={colors.textMuted}
-                  value={searchQuery}
-                  onChangeText={setSearchQuery}
-                />
+                      // Phân giải bưu cục phục vụ trực tiếp chuẩn Ops
+                      let cleanWard = item.wardName || item.name;
+                      let cleanDistrict = item.district || '';
+                      if (!cleanDistrict) {
+                        const match = item.name.match(/^(.*?)\s*\((.*?)\)$/);
+                        if (match) {
+                          cleanWard = match[1].trim();
+                          cleanDistrict = match[2].trim();
+                        }
+                      }
+                      const designatedHub = findBestHubForWard(cleanWard, cleanDistrict, coords, matchingHubs);
 
-                {filteredMatchingHubs.map((item) => {
-                  const isSelected = selectedHub?.code === item.code;
-                  return (
-                    <TouchableOpacity
-                      key={item.code}
-                      style={styles.optionRow}
-                      onPress={() => {
-                        setSelectedHub(item);
-                        setStepView('FORM');
-                      }}
-                    >
-                      <View style={{ flex: 1 }}>
-                        <Text style={[styles.optionText, isSelected && styles.optionTextActive]}>
-                          [{item.code}] {item.name}
-                        </Text>
-                        <Text style={styles.optionSubText}>
-                          Khu vực: {item.province} {item.addressDetail ? `- ${item.addressDetail}` : ''}
-                        </Text>
-                      </View>
-                      {isSelected ? <Ionicons name="checkmark" size={18} color={colors.primary} /> : null}
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
-            ) : null}
-          </ScrollView>
-        </KeyboardAvoidingView>
+                      return (
+                        <TouchableOpacity
+                          key={item.code}
+                          style={[styles.wardOptionRow, isSelected && styles.wardOptionRowSelected]}
+                          activeOpacity={0.7}
+                          onPress={() => {
+                            setSelectedWard(item);
+                            if (designatedHub) {
+                              setSelectedHub(designatedHub);
+                            }
+                            setSearchQuery('');
+                            setStepView('FORM');
+                          }}
+                        >
+                          <View style={{ flex: 1, paddingRight: 8 }}>
+                            <View style={styles.wardNameRow}>
+                              <Text style={[styles.wardNameText, isSelected && styles.wardNameTextSelected]}>
+                                {item.name}
+                              </Text>
+                              <View style={styles.wardActiveBadge}>
+                                <Text style={styles.wardActiveBadgeText}>Khả dụng</Text>
+                              </View>
+                            </View>
+                            {designatedHub && (
+                              <View style={styles.wardHubRow}>
+                                <Ionicons name="business" size={13} color={colors.primary} />
+                                <Text style={styles.wardHubText} numberOfLines={1}>
+                                  Bưu cục phục vụ: <Text style={styles.wardHubCode}>[{designatedHub.code}]</Text> {designatedHub.name}
+                                </Text>
+                              </View>
+                            )}
+                          </View>
+                          {isSelected ? (
+                            <Ionicons name="checkmark-circle" size={22} color={colors.primary} />
+                          ) : (
+                            <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+                          )}
+                        </TouchableOpacity>
+                      );
+                    })
+                  )
+                )}
+
+                {/* 3. SELECT HUB */}
+                {stepView === 'SELECT_HUB' && (
+                  filteredMatchingHubs.length === 0 ? (
+                    <View style={styles.emptyState}>
+                      <Ionicons name="search-outline" size={40} color={colors.textMuted} />
+                      <Text style={styles.emptyStateTitle}>Không tìm thấy bưu cục</Text>
+                      <Text style={styles.emptyStateSub}>
+                        Không có bưu cục nào khớp với "{searchQuery}".
+                      </Text>
+                    </View>
+                  ) : (
+                    filteredMatchingHubs.map((item) => {
+                      const isSelected = selectedHub?.code === item.code;
+                      return (
+                        <TouchableOpacity
+                          key={item.code}
+                          style={[styles.hubOptionRow, isSelected && styles.hubOptionRowSelected]}
+                          activeOpacity={0.7}
+                          onPress={() => {
+                            setSelectedHub(item);
+                            setSearchQuery('');
+                            setStepView('FORM');
+                          }}
+                        >
+                          <View style={{ flex: 1, paddingRight: 8 }}>
+                            <View style={styles.hubOptionNameRow}>
+                              <Text style={[styles.hubOptionCodeText, isSelected && styles.hubOptionCodeTextSelected]}>
+                                [{item.code}]
+                              </Text>
+                              <Text style={[styles.hubOptionNameText, isSelected && styles.hubOptionNameTextSelected]} numberOfLines={1}>
+                                {item.name}
+                              </Text>
+                            </View>
+                            <Text style={styles.hubOptionAddressText} numberOfLines={2}>
+                              {item.addressDetail ? `${item.addressDetail}, ` : ''}{item.district ? `${item.district}, ` : ''}{item.province}
+                            </Text>
+                            <View style={styles.hubActiveChip}>
+                              <Ionicons name="checkmark-done" size={12} color="#15803d" />
+                              <Text style={styles.hubActiveChipText}>Bưu cục đang hoạt động</Text>
+                            </View>
+                          </View>
+                          {isSelected ? (
+                            <Ionicons name="checkmark-circle" size={22} color={colors.primary} />
+                          ) : (
+                            <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+                          )}
+                        </TouchableOpacity>
+                      );
+                    })
+                  )
+                )}
+              </ScrollView>
+            </View>
+          </View>
+        )}
       </View>
 
       {/* GPS MAP PICKER MODAL */}
@@ -861,11 +1003,274 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
     justifyContent: 'flex-end',
   },
+  overlaySelection: {
+    flex: 1,
+    backgroundColor: colors.surface,
+    justifyContent: 'flex-start',
+  },
   sheetContainer: {
     backgroundColor: colors.surface,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
-    maxHeight: '85%',
+    height: Platform.OS === 'ios' ? '88%' : '90%',
+    flexDirection: 'column',
+    overflow: 'hidden',
+  },
+  sheetContainerSelection: {
+    flex: 1,
+    width: '100%',
+    height: '100%',
+    backgroundColor: colors.surface,
+    paddingTop: Platform.OS === 'android' ? 36 : 48,
+    flexDirection: 'column',
+    overflow: 'hidden',
+  },
+  selectionContainer: {
+    flex: 1,
+    flexDirection: 'column',
+  },
+  selectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: spacing.md,
+    paddingTop: spacing.xs,
+    paddingBottom: spacing.sm,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.borderSubtle,
+    backgroundColor: colors.surface,
+  },
+  selectionBackBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingVertical: 4,
+    paddingRight: 8,
+  },
+  selectionBackText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: colors.primary,
+  },
+  selectionTitleContainer: {
+    flex: 1,
+    paddingHorizontal: 8,
+  },
+  selectionTitle: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: colors.textPrimary,
+    textAlign: 'center',
+  },
+  selectionCountBadge: {
+    backgroundColor: colors.primaryLight,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 12,
+  },
+  selectionCountText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: colors.primary,
+  },
+  searchBarWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.background,
+    marginHorizontal: spacing.md,
+    marginTop: spacing.sm,
+    marginBottom: spacing.xs,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.border,
+    paddingHorizontal: spacing.sm,
+  },
+  searchIcon: {
+    marginRight: 6,
+  },
+  pinnedSearchInput: {
+    flex: 1,
+    paddingVertical: 10,
+    fontSize: 13.5,
+    color: colors.textPrimary,
+  },
+  searchClearBtn: {
+    padding: 4,
+  },
+  selectionScroll: {
+    flex: 1,
+  },
+  selectionScrollContent: {
+    paddingHorizontal: spacing.md,
+    paddingBottom: spacing.xl,
+  },
+  provinceOptionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 12,
+    paddingHorizontal: 4,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.borderSubtle,
+  },
+  provinceOptionRowSelected: {
+    backgroundColor: colors.primaryLight + '55',
+  },
+  provinceNameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  provinceNameText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: colors.textPrimary,
+  },
+  provinceNameTextSelected: {
+    color: colors.primary,
+    fontWeight: '800',
+  },
+  provinceActiveBadge: {
+    backgroundColor: '#eff6ff',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#bfdbfe',
+  },
+  provinceActiveBadgeText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#1d4ed8',
+  },
+  provinceSubText: {
+    fontSize: 12,
+    color: colors.textSecondary,
+    marginTop: 3,
+  },
+  wardOptionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 11,
+    paddingHorizontal: 4,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.borderSubtle,
+  },
+  wardOptionRowSelected: {
+    backgroundColor: colors.primaryLight + '55',
+  },
+  wardNameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  wardNameText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: colors.textPrimary,
+  },
+  wardNameTextSelected: {
+    color: colors.primary,
+    fontWeight: '800',
+  },
+  wardActiveBadge: {
+    backgroundColor: '#f0fdf4',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#bbf7d0',
+  },
+  wardActiveBadgeText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#15803d',
+  },
+  wardHubRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: 4,
+  },
+  wardHubText: {
+    fontSize: 11.5,
+    color: colors.textSecondary,
+    flex: 1,
+  },
+  wardHubCode: {
+    fontWeight: '700',
+    color: colors.primary,
+  },
+  hubOptionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 12,
+    paddingHorizontal: 4,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.borderSubtle,
+  },
+  hubOptionRowSelected: {
+    backgroundColor: colors.primaryLight + '55',
+  },
+  hubOptionNameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  hubOptionCodeText: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: colors.primary,
+  },
+  hubOptionCodeTextSelected: {
+    color: colors.primary,
+  },
+  hubOptionNameText: {
+    fontSize: 13.5,
+    fontWeight: '700',
+    color: colors.textPrimary,
+    flex: 1,
+  },
+  hubOptionNameTextSelected: {
+    color: colors.primary,
+    fontWeight: '800',
+  },
+  hubOptionAddressText: {
+    fontSize: 11.5,
+    color: colors.textSecondary,
+    marginTop: 3,
+  },
+  hubActiveChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: 4,
+  },
+  hubActiveChipText: {
+    fontSize: 10.5,
+    fontWeight: '600',
+    color: '#15803d',
+  },
+  emptyState: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 40,
+    paddingHorizontal: spacing.lg,
+  },
+  emptyStateTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: colors.textPrimary,
+    marginTop: 12,
+    marginBottom: 6,
+  },
+  emptyStateSub: {
+    fontSize: 12,
+    color: colors.textMuted,
+    textAlign: 'center',
+    lineHeight: 18,
   },
   gpsMapPickerBtn: {
     flexDirection: 'row',
