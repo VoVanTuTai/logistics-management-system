@@ -45,6 +45,12 @@
     "web": {
       "bundler": "metro",
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "extra": {
+      "eas": {
+        "projectId": "30f346d3-bda9-43ea-b949-be331b6de541"
+      }
+    },
+    "owner": "vovantutai"
   }
 }
