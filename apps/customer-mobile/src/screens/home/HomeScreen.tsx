@@ -201,6 +201,7 @@ export function HomeScreen({ navigation }: Props): React.JSX.Element {
           }}
           onPressSearch={handleTracking}
           onPressCreateOrder={handleCreateOrder}
+          onPressChat={() => setIsChatOpen(true)}
         />
 
         {/* B. KHU VỰC THAO TÁC NHANH (TÍNH NĂNG) */}

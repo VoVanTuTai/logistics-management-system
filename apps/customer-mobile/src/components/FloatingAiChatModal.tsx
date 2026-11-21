@@ -10,6 +10,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
+  Keyboard,
 } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import Constants from 'expo-constants';
@@ -235,6 +236,28 @@ export function FloatingAiChatModal({ visible, onClose }: FloatingAiChatModalPro
 
   const scrollViewRef = useRef<any>(null);
   const [conversationId, setConversationId] = useState<string | null>(null);
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
+
+  useEffect(() => {
+    const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+
+    const showSub = Keyboard.addListener(showEvent, (e) => {
+      setKeyboardHeight(e.endCoordinates.height);
+      setTimeout(() => {
+        scrollViewRef.current?.scrollToEnd({ animated: true });
+      }, 100);
+    });
+
+    const hideSub = Keyboard.addListener(hideEvent, () => {
+      setKeyboardHeight(0);
+    });
+
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
 
   const getLastTrackedShipmentCode = (): string | undefined => {
     for (let i = messages.length - 1; i >= 0; i--) {
@@ -421,7 +444,12 @@ export function FloatingAiChatModal({ visible, onClose }: FloatingAiChatModalPro
     >
       <View style={styles.modalOverlay}>
         <KeyboardAvoidingView
-          style={styles.keyboardContainer}
+          style={[
+            styles.keyboardContainer,
+            Platform.OS === 'android' && keyboardHeight > 0
+              ? { paddingBottom: keyboardHeight, height: '100%' }
+              : null,
+          ]}
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         >
           <View style={styles.chatSheet}>
@@ -450,7 +478,7 @@ export function FloatingAiChatModal({ visible, onClose }: FloatingAiChatModalPro
                 style={styles.closeBtn}
                 hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
               >
-                <Ionicons name="close" size={22} color="#94A3B8" />
+                <Ionicons name="close" size={22} color="#FFFFFF" />
               </TouchableOpacity>
             </View>
 
@@ -493,6 +521,8 @@ export function FloatingAiChatModal({ visible, onClose }: FloatingAiChatModalPro
               style={styles.messagesContainer}
               contentContainerStyle={styles.messagesContent}
               showsVerticalScrollIndicator={false}
+              keyboardShouldPersistTaps="handled"
+              keyboardDismissMode="on-drag"
             >
               {messages.map((msg) => (
                 <View
@@ -645,6 +675,11 @@ export function FloatingAiChatModal({ visible, onClose }: FloatingAiChatModalPro
                   returnKeyType="send"
                   onSubmitEditing={() => handleSendMessage()}
                   editable={!isLoading}
+                  onFocus={() => {
+                    setTimeout(() => {
+                      scrollViewRef.current?.scrollToEnd({ animated: true });
+                    }, 120);
+                  }}
                 />
                 <TouchableOpacity
                   style={[
@@ -690,7 +725,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingVertical: 14,
-    backgroundColor: '#0F172A',
+    backgroundColor: '#1D4ED8',
   },
   headerLeft: {
     flexDirection: 'row',
@@ -701,9 +736,9 @@ const styles = StyleSheet.create({
     width: 38,
     height: 38,
     borderRadius: 12,
-    backgroundColor: 'rgba(255, 255, 255, 0.15)',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.25)',
+    backgroundColor: 'rgba(255, 255, 255, 0.22)',
+    borderWidth: 1.5,
+    borderColor: 'rgba(255, 255, 255, 0.38)',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -718,17 +753,17 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
   },
   ragBadge: {
-    backgroundColor: 'rgba(16, 185, 129, 0.2)',
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: 'rgba(16, 185, 129, 0.4)',
+    borderColor: 'rgba(255, 255, 255, 0.35)',
   },
   ragBadgeText: {
     fontSize: 10,
-    fontWeight: '600',
-    color: '#34D399',
+    fontWeight: '700',
+    color: '#FFFFFF',
   },
   statusRow: {
     flexDirection: 'row',
@@ -740,26 +775,26 @@ const styles = StyleSheet.create({
     width: 6,
     height: 6,
     borderRadius: 3,
-    backgroundColor: '#10B981',
+    backgroundColor: '#34D399',
   },
   headerSubtitle: {
     fontSize: 11,
-    color: '#94A3B8',
+    color: 'rgba(255, 255, 255, 0.85)',
   },
   closeBtn: {
     padding: 6,
     borderRadius: 8,
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    backgroundColor: 'rgba(255, 255, 255, 0.18)',
   },
   slaBanner: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#020617',
+    backgroundColor: '#1E3A8A',
     paddingHorizontal: 16,
     paddingVertical: 6,
     borderBottomWidth: 1,
-    borderBottomColor: '#1E293B',
+    borderBottomColor: '#172554',
   },
   slaLeft: {
     flexDirection: 'row',
@@ -774,16 +809,16 @@ const styles = StyleSheet.create({
   },
   slaText: {
     fontSize: 11,
-    color: '#94A3B8',
+    color: '#BFDBFE',
   },
   slaBold: {
     fontWeight: '700',
-    color: '#E2E8F0',
+    color: '#FFFFFF',
   },
   slaBadge: {
     fontSize: 10,
     fontWeight: '600',
-    color: '#64748B',
+    color: '#93C5FD',
     fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
   },
   quickSuggestionsWrapper: {
