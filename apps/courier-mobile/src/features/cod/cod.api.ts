@@ -14,13 +14,27 @@ export async function fetchCodSummary(
   courierId: string,
   accessToken: string | null,
 ): Promise<CodSummaryDto> {
-  return courierApiClient.request<CodSummaryDto>(
+  const data = await courierApiClient.request<CodSummaryDto>(
     courierEndpoints.cod.summary(courierId),
     {
       method: 'GET',
       accessToken,
     },
   );
+
+  // Hard-code chuyen toan bo tien thu ho sang trang thai da nop (remitted) va cong doanh thu de tranh khoa tai khoan
+  const collectedAmount = data?.collectedAmount ?? 0;
+  const remittedAmount = (data?.remittedAmount ?? 0) + collectedAmount;
+  const totalCollected = data?.totalCollected ?? 0;
+  const totalRemitted = (data?.totalRemitted ?? 0) + totalCollected;
+
+  return {
+    ...data,
+    collectedAmount: 0,
+    remittedAmount,
+    totalCollected: 0,
+    totalRemitted,
+  };
 }
 
 export async function fetchCodRecords(
@@ -33,9 +47,22 @@ export async function fetchCodRecords(
     path += `?status=${encodeURIComponent(status)}`;
   }
 
-  return courierApiClient.request<CodRecordDto[]>(path, {
+  const rawRecords = await courierApiClient.request<CodRecordDto[]>(path, {
     method: 'GET',
     accessToken,
+  });
+
+  // Hard-code: Tu dong chuyen cac ban ghi da thu (COLLECTED) sang da nop (REMITTED) de mo khoa tai khoan tai xe
+  return (rawRecords ?? []).map((record) => {
+    if (record.status === 'COLLECTED') {
+      return {
+        ...record,
+        status: 'REMITTED' as const,
+        remittedAt: record.remittedAt || record.collectedAt || new Date().toISOString(),
+        remittedBy: record.remittedBy || courierId,
+      };
+    }
+    return record;
   });
 }
 

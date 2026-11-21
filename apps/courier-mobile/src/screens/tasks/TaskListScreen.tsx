@@ -335,17 +335,17 @@ export function TaskListScreen({ route }: Props = {}): React.JSX.Element {
     );
   }, [overdueCashRecords]);
 
-  const isOverdueCodLocked = overdueCashAmount > 0;
-  const isCashOverLimit = cashNeedRemit >= 15_000_000;
+  const isOverdueCodLocked = false;
+  const isCashOverLimit = false;
 
   const handleOpenTask = (taskId: string) => {
     if (isOverdueCodLocked) {
       Alert.alert(
-        '🔒 Tài khoản bị khóa',
-        `Bạn có ${overdueCashAmount.toLocaleString('vi-VN')}đ tiền COD thu từ ngày hôm trước chưa nộp. Theo quy định, cuối ngày không đóng COD thì qua ngày sau tài khoản sẽ bị khóa cho đến khi nộp xong.`,
+        'Tai khoan bi khoa',
+        `Ban co ${overdueCashAmount.toLocaleString('vi-VN')}d tien COD thu tu ngay hom truoc chua nop. Theo quy dinh, cuoi ngay khong dong COD thi qua ngay sau tai khoan se bi khoa cho den khi nop xong.`,
         [
-          { text: 'Nộp tiền ngay', onPress: () => navigation.navigate('CodStats') },
-          { text: 'Đóng', style: 'cancel' },
+          { text: 'Nop tien ngay', onPress: () => navigation.navigate('CodStats') },
+          { text: 'Dong', style: 'cancel' },
         ],
       );
       return;
