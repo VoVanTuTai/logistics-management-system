@@ -295,7 +295,6 @@ export function AddressSelectorModal({
           <View style={styles.header}>
             <View>
               <Text style={styles.headerTitle}>{title}</Text>
-              <Text style={styles.headerSubtitle}>Chuẩn danh mục Hub Admin quản lý</Text>
             </View>
             <TouchableOpacity style={styles.closeBtn} onPress={onClose} activeOpacity={0.7}>
               <Ionicons name="close" size={24} color={colors.textSecondary} />
@@ -369,15 +368,12 @@ export function AddressSelectorModal({
                 onChangeText={setAddressDetail}
               />
 
-              {/* 4. LINKED HUB CARD (KHỚP 100% DATABASE ADMIN) */}
-              <Text style={styles.fieldLabel}>4. Bưu cục phục vụ khu vực này (Hub Database)</Text>
+              {/* 4. LINKED HUB CARD */}
+              <Text style={styles.fieldLabel}>4. Bưu cục phục vụ khu vực này</Text>
               <View style={styles.hubBanner}>
                 <View style={styles.hubHeaderRow}>
                   <Ionicons name="business" size={18} color={colors.primary} />
                   <Text style={styles.hubTitle}>Bưu cục liên kết trực tiếp</Text>
-                  <View style={styles.hubKhopChip}>
-                    <Text style={styles.hubKhopChipText}>• Khớp 100% Hub Admin</Text>
-                  </View>
                 </View>
 
                 {loadingData ? (

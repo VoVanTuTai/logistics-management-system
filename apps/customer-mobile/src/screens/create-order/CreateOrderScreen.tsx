@@ -1047,7 +1047,7 @@ export function CreateOrderScreen({ navigation, route }: Props): React.JSX.Eleme
                         required
                       />
 
-                      {/* TỈNH / THÀNH PHỐ GỬI (Chuẩn 100% Database Hub Admin) */}
+                      {/* TỈNH / THÀNH PHỐ GỬI */}
                       <Text style={styles.fieldLabel}>Tỉnh / Thành phố lấy hàng *</Text>
                       <TouchableOpacity
                         activeOpacity={0.7}
@@ -1060,7 +1060,7 @@ export function CreateOrderScreen({ navigation, route }: Props): React.JSX.Eleme
                         <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
                       </TouchableOpacity>
 
-                      {/* PHƯỜNG / XÃ & BƯU CỤC LẤY HÀNG (Chuẩn 100% Database Hub Admin) */}
+                      {/* PHƯỜNG / XÃ & BƯU CỤC LẤY HÀNG */}
                       <Text style={styles.fieldLabel}>Phường / Xã & Bưu cục tiếp nhận *</Text>
                       <TouchableOpacity
                         activeOpacity={0.7}
@@ -1089,15 +1089,12 @@ export function CreateOrderScreen({ navigation, route }: Props): React.JSX.Eleme
                         required
                       />
 
-                      {/* BƯU CỤC TIẾP NHẬN GỬI (HUB DATABASE ADMIN) */}
+                      {/* BƯU CỤC TIẾP NHẬN GỬI */}
                       {senderHub ? (
                         <View style={styles.hubResolvedBanner}>
                           <View style={styles.hubResolvedBannerHeader}>
                             <Ionicons name="business" size={16} color={colors.primary} />
                             <Text style={styles.hubResolvedBannerTitle}>Bưu cục tiếp nhận lấy hàng</Text>
-                            <View style={styles.hubKhopBadge}>
-                              <Text style={styles.hubKhopBadgeText}>• Khớp 100% Hub Admin</Text>
-                            </View>
                           </View>
                           <Text style={styles.hubResolvedBannerName}>
                             [{senderHub.code}] {senderHub.name}
@@ -1187,15 +1184,12 @@ export function CreateOrderScreen({ navigation, route }: Props): React.JSX.Eleme
                 required
               />
 
-              {/* BƯU CỤC PHÁT TIẾP NHẬN (HUB DATABASE ADMIN) */}
+              {/* BƯU CỤC PHÁT TIẾP NHẬN */}
               {receiverHub ? (
                 <View style={styles.hubResolvedBanner}>
                   <View style={styles.hubResolvedBannerHeader}>
                     <Ionicons name="business" size={16} color={colors.primary} />
-                    <Text style={styles.hubResolvedBannerTitle}>Bưu cục phát tiếp nhận (Hub Database)</Text>
-                    <View style={styles.hubKhopBadge}>
-                      <Text style={styles.hubKhopBadgeText}>• Khớp 100% Hub Admin</Text>
-                    </View>
+                    <Text style={styles.hubResolvedBannerTitle}>Bưu cục phát tiếp nhận</Text>
                   </View>
                   <Text style={styles.hubResolvedBannerName}>
                     [{receiverHub.code}] {receiverHub.name}

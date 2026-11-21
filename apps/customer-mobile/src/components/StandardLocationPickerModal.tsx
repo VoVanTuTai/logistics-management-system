@@ -314,7 +314,7 @@ export function StandardLocationPickerModal({
 
   const headerSubtitle =
     type === 'PROVINCE'
-      ? '34 Tỉnh / Thành phố kết nối mạng lưới Hub Admin'
+      ? '34 Tỉnh / Thành phố trên toàn quốc'
       : selectedProvince
       ? `${selectedProvince.name} • ${wardsWithHubs.length} địa bàn khả dụng`
       : 'Vui lòng chọn Tỉnh / Thành trước';
@@ -391,7 +391,7 @@ export function StandardLocationPickerModal({
           {loadingData ? (
             <View style={styles.loadingContainer}>
               <ActivityIndicator size="large" color={colors.primary} />
-              <Text style={styles.loadingText}>Đang tải danh mục bưu cục từ Database Admin...</Text>
+              <Text style={styles.loadingText}>Đang tải danh mục bưu cục...</Text>
             </View>
           ) : type === 'PROVINCE' ? (
             filteredProvinces.length === 0 ? (
@@ -429,7 +429,7 @@ export function StandardLocationPickerModal({
                         </View>
                       </View>
                       <Text style={styles.itemSubText}>
-                        {wardCount} Phường / Xã khả dụng kết nối mạng lưới Hub Admin
+                        {wardCount} Phường / Xã khả dụng
                       </Text>
                     </View>
                     {isSelected ? (
