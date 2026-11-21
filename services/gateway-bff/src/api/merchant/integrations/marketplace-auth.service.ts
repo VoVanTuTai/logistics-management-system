@@ -47,7 +47,12 @@ export class MarketplaceAuthService {
       this.fail(HttpStatus.UNAUTHORIZED, 'UNAUTHORIZED', 'Missing Nexus auth headers.');
     }
 
-    if (partnerCode !== this.expectedPartnerCode || apiKey !== expectedApiKey) {
+    const isPartnerCodeValid =
+      partnerCode === this.expectedPartnerCode ||
+      (this.expectedPartnerCode === 'DT_COMMERCE' && partnerCode.toUpperCase() === 'EMALL') ||
+      (this.expectedPartnerCode.toUpperCase() === 'EMALL' && partnerCode.toUpperCase() === 'DT_COMMERCE');
+
+    if (!isPartnerCodeValid || apiKey !== expectedApiKey) {
       this.fail(HttpStatus.UNAUTHORIZED, 'UNAUTHORIZED', 'Invalid partner code or API key.');
     }
 

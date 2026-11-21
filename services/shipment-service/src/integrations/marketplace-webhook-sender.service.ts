@@ -161,6 +161,9 @@ export class MarketplaceWebhookSenderService {
     const webhookPath =
       process.env.NEXUS_INTEGRATION_WEBHOOK_PATH?.trim() ||
       '/api/v1/shipments/webhooks/nexus';
+    const effectiveWebhookUrl = webhookUrl.includes(webhookPath)
+      ? webhookUrl
+      : `${webhookUrl.replace(/\/+$/, '')}${webhookPath.startsWith('/') ? webhookPath : `/${webhookPath}`}`;
     const signature = this.sign(rawBody, timestamp, nonce, webhookSecret, webhookPath);
     const maxAttempts = this.parsePositiveInt(
       process.env.NEXUS_INTEGRATION_WEBHOOK_MAX_ATTEMPTS,
@@ -169,7 +172,7 @@ export class MarketplaceWebhookSenderService {
 
     for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
       try {
-        const response = await fetch(webhookUrl, {
+        const response = await fetch(effectiveWebhookUrl, {
           method: 'POST',
           headers: {
             Accept: 'application/json',
