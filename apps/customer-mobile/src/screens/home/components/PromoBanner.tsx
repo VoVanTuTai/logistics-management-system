@@ -44,7 +44,7 @@ const PROMO_SLIDES = [
 
 export function PromoBanner({ onPressPromo }: PromoBannerProps): React.JSX.Element {
   const [activeIndex, setActiveIndex] = useState<number>(0);
-  const scrollRef = useRef<ScrollView>(null);
+  const scrollRef = useRef<any>(null);
 
   // AUTO PLAY CAROUSEL TIMER (EVERY 4 SECONDS)
   useEffect(() => {

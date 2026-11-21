@@ -10,7 +10,7 @@ export default function App(): React.JSX.Element {
   return (
     <SafeAreaProvider>
       <ErrorBoundary fallbackTitle="Đã bảo vệ ứng dụng Khách hàng">
-        <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
+        <StatusBar barStyle="dark-content" />
         <NavigationContainer>
           <RootNavigator />
         </NavigationContainer>

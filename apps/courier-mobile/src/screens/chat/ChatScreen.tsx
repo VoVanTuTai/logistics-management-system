@@ -42,7 +42,7 @@ export function ChatScreen(): React.JSX.Element {
     username: session?.user.username,
     courierId,
   });
-  const scrollRef = React.useRef<ScrollView | null>(null);
+  const scrollRef = React.useRef<any>(null);
   const [conversation, setConversation] = React.useState<ChatConversationDto | null>(null);
   const [messages, setMessages] = React.useState<ChatMessageDto[]>([]);
   const [messagesNextCursor, setMessagesNextCursor] = React.useState<string | null>(null);

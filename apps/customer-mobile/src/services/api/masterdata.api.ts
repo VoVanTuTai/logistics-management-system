@@ -10,6 +10,8 @@ export interface HubRecord {
   ward?: string;
   addressDetail?: string;
   isActive?: boolean;
+  latitude?: number;
+  longitude?: number;
 }
 
 export interface VietnamWard {
@@ -50,12 +52,25 @@ export const DEFAULT_HUB_RECORDS: HubRecord[] = [
     isActive: true,
   },
   {
+    code: '07904W001',
+    name: 'Bưu cục Phường An Nhơn - Gò Vấp',
+    province: 'Thành phố Hồ Chí Minh',
+    district: 'Quận Gò Vấp',
+    ward: 'Phường An Nhơn',
+    addressDetail: '246 Nguyễn Oanh, Phường An Nhơn, Quận Gò Vấp, TP. Hồ Chí Minh',
+    latitude: 10.840,
+    longitude: 106.680,
+    isActive: true,
+  },
+  {
     code: 'HUB-HCM-001',
     name: 'Bưu cục Khai thác TP. Hồ Chí Minh',
     province: 'Thành phố Hồ Chí Minh',
     district: 'Quận 1',
     ward: 'Phường Bến Nghé',
     addressDetail: '100 Nguyễn Huệ, Quận 1, TP. Hồ Chí Minh',
+    latitude: 10.7758,
+    longitude: 106.7012,
     isActive: true,
   },
   {
@@ -98,6 +113,8 @@ export function parseHubRecord(raw: any): HubRecord {
   const ward = addrObj.ward || raw.ward || '';
   const district = addrObj.district || raw.district || '';
   const addressDetail = addrObj.addressLine || addrObj.addressDetail || raw.addressDetail || '';
+  const latitude = typeof raw.latitude === 'number' ? raw.latitude : typeof addrObj.latitude === 'number' ? addrObj.latitude : undefined;
+  const longitude = typeof raw.longitude === 'number' ? raw.longitude : typeof addrObj.longitude === 'number' ? addrObj.longitude : undefined;
 
   return {
     id: raw.id,
@@ -107,6 +124,8 @@ export function parseHubRecord(raw: any): HubRecord {
     district,
     ward,
     addressDetail,
+    latitude,
+    longitude,
     isActive: raw.isActive ?? true,
   };
 }

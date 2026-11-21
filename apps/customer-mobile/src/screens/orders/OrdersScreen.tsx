@@ -101,6 +101,8 @@ function mapShipmentToOrderModel(s: ShipmentResponse, targetCategory: OrderCateg
     createdAt: s.createdAt,
     updatedAt: s.updatedAt,
     timeline: [],
+    courierId: meta.assignedCourier || meta.assignedCourierId || meta.courierId || meta.courier?.id || undefined,
+    metadata: meta,
   };
 }
 
@@ -115,7 +117,8 @@ export function OrdersScreen({ route, navigation }: Props): React.JSX.Element {
   const [showTimeSheet, setShowTimeSheet] = useState(false);
   const [showStatusSheet, setShowStatusSheet] = useState(false);
 
-  const [liveOrders, setLiveOrders] = useState<OrderModel[]>([]);
+  const [sentOrders, setSentOrders] = useState<OrderModel[]>([]);
+  const [receivedOrders, setReceivedOrders] = useState<OrderModel[]>([]);
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -126,19 +129,26 @@ export function OrdersScreen({ route, navigation }: Props): React.JSX.Element {
 
     if (showLoading) setLoading(true);
     try {
-      // Don't send strict status query param to backend so status alias variants (SCAN_INBOUND, ARRIVED_HUB, etc.) are fetched
-      const response =
-        category === 'RECEIVED'
-          ? await shipmentApi.getReceivedShipments(accessToken, { limit: 50, phone: user?.phone })
-          : await shipmentApi.getShipments(accessToken, { limit: 50, userId: user?.id });
+      const [sentRes, receivedRes] = await Promise.allSettled([
+        shipmentApi.getShipments(accessToken, { limit: 100, userId: user?.id }),
+        shipmentApi.getReceivedShipments(accessToken, { limit: 100, phone: user?.phone }),
+      ]);
 
-      const rawItems: ShipmentResponse[] = Array.isArray(response)
-        ? response
-        : response.items || [];
+      if (sentRes.status === 'fulfilled') {
+        const rawSent: ShipmentResponse[] = Array.isArray(sentRes.value)
+          ? sentRes.value
+          : (sentRes.value as any)?.items || [];
+        setSentOrders(rawSent.map((s) => mapShipmentToOrderModel(s, 'SENT')));
+      }
 
-      setLiveOrders(rawItems.map((s) => mapShipmentToOrderModel(s, category)));
+      if (receivedRes.status === 'fulfilled') {
+        const rawReceived: ShipmentResponse[] = Array.isArray(receivedRes.value)
+          ? receivedRes.value
+          : (receivedRes.value as any)?.items || [];
+        setReceivedOrders(rawReceived.map((s) => mapShipmentToOrderModel(s, 'RECEIVED')));
+      }
     } catch {
-      setLiveOrders([]);
+      // Keep existing data on error
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -152,12 +162,12 @@ export function OrdersScreen({ route, navigation }: Props): React.JSX.Element {
     }, 10000);
 
     return () => clearInterval(interval);
-  }, [statusFilter, timeFilter, category]);
+  }, []);
 
   useFocusEffect(
     React.useCallback(() => {
       fetchLiveShipments(false);
-    }, [statusFilter, timeFilter, category])
+    }, [])
   );
 
   const handleRefresh = () => {
@@ -195,8 +205,56 @@ export function OrdersScreen({ route, navigation }: Props): React.JSX.Element {
   };
 
   const filteredOrders = useMemo(() => {
-    return liveOrders.filter((ord) => {
-      if (category === 'SENT' && ord.category !== 'SENT') return false;
+    const activeList = category === 'SENT' ? sentOrders : receivedOrders;
+
+    return activeList.filter((ord) => {
+      // 1. Filter by Time
+      if (timeFilter !== 'custom' && ord.createdAt) {
+        const orderDate = new Date(ord.createdAt);
+        const now = new Date();
+        const diffMs = now.getTime() - orderDate.getTime();
+        const diffDays = diffMs / (1000 * 60 * 60 * 24);
+
+        if (timeFilter === 'today') {
+          const isToday =
+            orderDate.getDate() === now.getDate() &&
+            orderDate.getMonth() === now.getMonth() &&
+            orderDate.getFullYear() === now.getFullYear();
+          if (!isToday) return false;
+        } else if (timeFilter === 'yesterday') {
+          const yest = new Date(now);
+          yest.setDate(yest.getDate() - 1);
+          const isYesterday =
+            orderDate.getDate() === yest.getDate() &&
+            orderDate.getMonth() === yest.getMonth() &&
+            orderDate.getFullYear() === yest.getFullYear();
+          if (!isYesterday) return false;
+        } else if (timeFilter === '7days') {
+          if (diffDays > 7) return false;
+        } else if (timeFilter === '14days') {
+          if (diffDays > 14) return false;
+        } else if (timeFilter === '30days') {
+          if (diffDays > 30) return false;
+        } else if (timeFilter === 'this_month') {
+          if (
+            orderDate.getMonth() !== now.getMonth() ||
+            orderDate.getFullYear() !== now.getFullYear()
+          ) {
+            return false;
+          }
+        } else if (timeFilter === 'last_month') {
+          const prevMonth = now.getMonth() === 0 ? 11 : now.getMonth() - 1;
+          const prevYear = now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear();
+          if (
+            orderDate.getMonth() !== prevMonth ||
+            orderDate.getFullYear() !== prevYear
+          ) {
+            return false;
+          }
+        }
+      }
+
+      // 2. Filter by Status
       if (statusFilter !== 'ALL') {
         const s = (ord.status || '').toUpperCase();
         if (statusFilter === 'ARRIVED_HUB') {
@@ -211,7 +269,7 @@ export function OrdersScreen({ route, navigation }: Props): React.JSX.Element {
       }
       return true;
     });
-  }, [liveOrders, category, statusFilter]);
+  }, [sentOrders, receivedOrders, category, statusFilter, timeFilter]);
 
   const getTimeLabel = () => {
     const found = TIME_FILTER_OPTIONS.find((t) => t.value === timeFilter);
@@ -233,7 +291,7 @@ export function OrdersScreen({ route, navigation }: Props): React.JSX.Element {
           onPress={() => setCategory('SENT')}
         >
           <Text style={[styles.topTabText, category === 'SENT' && styles.topTabTextActive]}>
-            Đơn gửi ({liveOrders.length})
+            Đơn gửi ({sentOrders.length})
           </Text>
         </TouchableOpacity>
 
@@ -243,7 +301,7 @@ export function OrdersScreen({ route, navigation }: Props): React.JSX.Element {
           onPress={() => setCategory('RECEIVED')}
         >
           <Text style={[styles.topTabText, category === 'RECEIVED' && styles.topTabTextActive]}>
-            Đơn nhận (0)
+            Đơn nhận ({receivedOrders.length})
           </Text>
         </TouchableOpacity>
       </View>

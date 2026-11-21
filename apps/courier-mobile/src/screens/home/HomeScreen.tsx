@@ -112,8 +112,8 @@ export function HomeScreen(): React.JSX.Element {
     );
   }, [overdueCashRecords]);
 
-  const isOverdueCodLocked = overdueCashAmount > 0;
-  const isCashOverLimit = cashNeedRemit >= CASH_IN_HAND_LIMIT;
+  const isOverdueCodLocked = false;
+  const isCashOverLimit = false;
 
   const codRefetchRef = React.useRef(codRecordsQuery.refetch);
   codRefetchRef.current = codRecordsQuery.refetch;

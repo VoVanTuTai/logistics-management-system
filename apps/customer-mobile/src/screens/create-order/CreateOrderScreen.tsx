@@ -137,14 +137,17 @@ export function CreateOrderScreen({ navigation, route }: Props): React.JSX.Eleme
       if (def) {
         setSenderName(def.name);
         setSenderPhone(def.phone);
+        const resolvedHubCode = def.hubCode || (def.province?.includes('Hồ Chí Minh') ? '07904W001' : 'HUB-DEFAULT');
+        const resolvedHubName = def.hubName || (def.province?.includes('Hồ Chí Minh') ? 'Bưu cục Phường An Nhơn - Gò Vấp' : 'Bưu cục tiếp nhận');
+
         setSenderAddress({
           province: def.province || '',
           district: def.district || '',
           ward: def.ward || '',
           addressDetail: def.addressDetail || '',
           composedAddress: def.composedAddress || '',
-          hubCode: def.hubCode || '',
-          hubName: def.hubName || '',
+          hubCode: resolvedHubCode,
+          hubName: resolvedHubName,
           latitude: def.latitude,
           longitude: def.longitude,
         });
@@ -191,14 +194,17 @@ export function CreateOrderScreen({ navigation, route }: Props): React.JSX.Eleme
       if (def && isMounted && !route.params?.prefilledSenderAddress) {
         setSenderName(def.name);
         setSenderPhone(def.phone);
+        const resolvedHubCode = def.hubCode || (def.province?.includes('Hồ Chí Minh') ? '07904W001' : 'HUB-DEFAULT');
+        const resolvedHubName = def.hubName || (def.province?.includes('Hồ Chí Minh') ? 'Bưu cục Phường An Nhơn - Gò Vấp' : 'Bưu cục tiếp nhận');
+
         setSenderAddress({
           province: def.province || '',
           district: def.district || '',
           ward: def.ward || '',
           addressDetail: def.addressDetail || '',
           composedAddress: def.composedAddress || '',
-          hubCode: def.hubCode || '',
-          hubName: def.hubName || '',
+          hubCode: resolvedHubCode,
+          hubName: resolvedHubName,
           latitude: def.latitude,
           longitude: def.longitude,
         });
@@ -443,6 +449,8 @@ export function CreateOrderScreen({ navigation, route }: Props): React.JSX.Eleme
           estimatedFee: liveFee,
           originHubCode: senderAddress.hubCode,
           destinationHubCode: receiverAddress.hubCode,
+          currentHubCode: senderAddress.hubCode,
+          currentLocation: senderAddress.hubCode,
           senderHubCode: senderAddress.hubCode,
           receiverHubCode: receiverAddress.hubCode,
           routing: {
@@ -484,14 +492,59 @@ export function CreateOrderScreen({ navigation, route }: Props): React.JSX.Eleme
     }
   };
 
+  const handleGoToStep = (targetStep: number) => {
+    if (targetStep === step) return;
+    if (targetStep < step) {
+      // Cho phép ấn quay lại xem các bước trước tự do
+      setStep(targetStep);
+      return;
+    }
+    // Khi ấn tới bước tiếp theo, xác thực dữ liệu bước trước
+    if (targetStep === 2 && step === 1) {
+      if (!senderName.trim() || !senderPhone.trim()) {
+        showModal('Thiếu thông tin', 'Vui lòng nhập tên và số điện thoại người gửi.');
+        return;
+      }
+      if (!senderAddress) {
+        showModal('Thiếu thông tin', 'Vui lòng chọn địa chỉ / bưu cục gửi hàng.');
+        return;
+      }
+      if (!receiverName.trim() || !receiverPhone.trim()) {
+        showModal('Thiếu thông tin', 'Vui lòng nhập tên và số điện thoại người nhận.');
+        return;
+      }
+      if (!receiverAddress) {
+        showModal('Thiếu thông tin', 'Vui lòng chọn địa chỉ người nhận.');
+        return;
+      }
+      setStep(2);
+    } else if (targetStep === 3) {
+      if (step === 1) {
+        if (!senderName.trim() || !senderPhone.trim() || !senderAddress) {
+          showModal('Thiếu thông tin', 'Vui lòng điền đầy đủ thông tin gửi ở Bước 1.');
+          return;
+        }
+        if (!receiverName.trim() || !receiverPhone.trim() || !receiverAddress) {
+          showModal('Thiếu thông tin', 'Vui lòng điền đầy đủ thông tin nhận ở Bước 1.');
+          return;
+        }
+      }
+      if (!itemName.trim() || !weightKg.trim()) {
+        showModal('Thiếu thông tin', 'Vui lòng nhập tên hàng hóa và khối lượng ở Bước 2.');
+        return;
+      }
+      setStep(3);
+    }
+  };
+
   return (
     <KeyboardAvoidingView
       style={styles.flex}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      keyboardVerticalOffset={Platform.OS === 'ios' ? 64 : 20}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 64 : 0}
     >
       <AppHeader title="Tạo đơn hàng mới" onBackPress={handlePrevStep} />
-      <StepIndicator currentStep={step} />
+      <StepIndicator currentStep={step} onStepPress={handleGoToStep} />
 
       <ScrollView
         contentContainerStyle={styles.container}
@@ -1082,14 +1135,19 @@ export function CreateOrderScreen({ navigation, route }: Props): React.JSX.Eleme
         onSelectAddress={(picked) => {
           setSenderName(picked.name);
           setSenderPhone(picked.phone);
+          const resolvedHubCode = picked.hubCode || (picked.province?.includes('Hồ Chí Minh') ? '07904W001' : 'HUB-DEFAULT');
+          const resolvedHubName = picked.hubName || (picked.province?.includes('Hồ Chí Minh') ? 'Bưu cục Phường An Nhơn - Gò Vấp' : 'Bưu cục tiếp nhận');
+
           setSenderAddress({
             province: picked.province || '',
             district: picked.district || '',
             ward: picked.ward || '',
             addressDetail: picked.addressDetail || '',
             composedAddress: picked.composedAddress || '',
-            hubCode: picked.hubCode || '',
-            hubName: picked.hubName || '',
+            hubCode: resolvedHubCode,
+            hubName: resolvedHubName,
+            latitude: picked.latitude,
+            longitude: picked.longitude,
           });
         }}
         onManageAddresses={() => navigation.navigate('AddressManagement')}
@@ -1115,7 +1173,7 @@ export function CreateOrderScreen({ navigation, route }: Props): React.JSX.Eleme
         onRequestClose={() => setShowHubPickerModal(false)}
       >
         <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
           style={styles.hubModalOverlay}
         >
           <View style={styles.hubModalContent}>

@@ -58,10 +58,10 @@ export const locationService = {
       // Bỏ qua lỗi định vị
     }
 
-    // Default Fallback: TP.HCM (An Phú Đông, Q12: 10.867, 106.696)
+    // Default Fallback: TP.HCM (Phường An Nhơn, Gò Vấp: 10.840, 106.680)
     return {
-      latitude: 10.867,
-      longitude: 106.696,
+      latitude: 10.840,
+      longitude: 106.680,
     };
   },
 
@@ -109,11 +109,11 @@ export const locationService = {
           province = `Tỉnh ${province}`;
         }
 
-        if (!ward || ward.toLowerCase().includes('trung tâm')) {
-          ward = 'Phường An Phú Đông';
+        if (!ward) {
+          ward = district ? `Khu vực ${district}` : 'Phường An Nhơn';
         }
 
-        const composed = [street, ward, province].filter(Boolean).join(', ');
+        const composed = [street, ward, district, province].filter(Boolean).join(', ');
         return {
           street,
           ward,
@@ -136,15 +136,15 @@ export const locationService = {
       if (results && results.length > 0) {
         const item = results[0];
         const street = [item.streetNumber, item.street || item.name].filter(Boolean).join(' ') || 'Vị trí trên bản đồ';
-        const ward = item.subregion || item.district || 'Phường An Phú Đông';
-        const district = item.district || '';
+        const district = item.district || item.subregion || '';
+        const ward = item.subregion || (district ? `Khu vực ${district}` : 'Phường An Nhơn');
         let province = item.region || item.city || 'Thành phố Hồ Chí Minh';
 
         if (province.toLowerCase().includes('hồ chí minh')) province = 'Thành phố Hồ Chí Minh';
         else if (province.toLowerCase().includes('hà nội')) province = 'Thành phố Hà Nội';
         else if (province.toLowerCase().includes('đà nẵng')) province = 'Thành phố Đà Nẵng';
 
-        const composed = [street, ward, province].filter(Boolean).join(', ');
+        const composed = [street, ward, district, province].filter(Boolean).join(', ');
         return {
           street,
           ward,
@@ -158,11 +158,11 @@ export const locationService = {
     }
 
     return {
-      street: '1013A Hà Huy Giáp',
-      ward: 'Phường An Phú Đông',
-      district: 'Quận 12',
+      street: '246 Nguyễn Oanh',
+      ward: 'Phường An Nhơn',
+      district: 'Quận Gò Vấp',
       province: 'Thành phố Hồ Chí Minh',
-      composedAddress: '1013A Hà Huy Giáp, Phường An Phú Đông, Thành phố Hồ Chí Minh',
+      composedAddress: '246 Nguyễn Oanh, Phường An Nhơn, Quận Gò Vấp, Thành phố Hồ Chí Minh',
     };
   },
 };

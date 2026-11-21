@@ -564,7 +564,7 @@ export class ShipmentsService {
     eventType: ShipmentConsumedEventType,
     eventData: Record<string, unknown>,
   ): JsonValue | null {
-    const currentHubCode = this.resolveMovementHubCode(eventType, eventData);
+    let currentHubCode = this.resolveMovementHubCode(eventType, eventData);
     if (!currentHubCode) {
       return null;
     }
@@ -573,15 +573,58 @@ export class ShipmentsService {
     const location = asJsonRecord(metadata.location);
     const hub = asJsonRecord(metadata.hub);
     const movement = asJsonRecord(metadata.movement);
+    const routing = asJsonRecord(metadata.routing);
+
+    // If task.assigned has a regional hub code but current shipment metadata already points to a specific branch hub,
+    // prevent downgrading currentHubCode to the regional hub
+    if (eventType === 'task.assigned' && isRegionalHub(currentHubCode)) {
+      const existingBranchHub =
+        normalizeString(metadata.currentHubCode) ??
+        normalizeString(routing.originHubCode) ??
+        normalizeString(metadata.senderHubCode) ??
+        normalizeString(location.hubCode);
+      if (existingBranchHub && !isRegionalHub(existingBranchHub)) {
+        currentHubCode = existingBranchHub;
+      }
+    }
     const touchedHubCodes = normalizeStringList([
       ...asUnknownArray(movement.hubCodes),
       currentHubCode,
     ]);
 
+    let assignedCourierId: string | null = null;
+    let taskType: string | null = null;
+    if (eventType === 'task.assigned') {
+      const task = asJsonRecord(eventData.task);
+      taskType = readString(task.taskType);
+      const assignments = asUnknownArray(task.assignments);
+      if (assignments.length > 0) {
+        const activeAssignment = asJsonRecord(
+          assignments.find((a: any) => !a?.unassignedAt) || assignments[assignments.length - 1],
+        );
+        assignedCourierId = readString(activeAssignment.courierId);
+      }
+    }
+
+    const isPickupConfirmed = eventType === 'scan.pickup_confirmed';
+    const isScanInbound = eventType === 'scan.inbound';
+
     return {
       ...metadata,
       currentHubCode,
       currentLocation: currentHubCode,
+      ...(isPickupConfirmed || isScanInbound ? { currentTaskType: null } : {}),
+      ...(assignedCourierId
+        ? {
+            assignedCourier: assignedCourierId,
+            assignedCourierId: assignedCourierId,
+            courierId: assignedCourierId,
+            currentTaskType: taskType,
+            lastAssignedTaskType: taskType,
+            ...(taskType === 'DELIVERY' ? { deliveryCourierId: assignedCourierId } : {}),
+            ...(taskType === 'PICKUP' ? { pickupCourierId: assignedCourierId } : {}),
+          }
+        : {}),
       location: {
         ...location,
         hubCode: currentHubCode,
@@ -755,6 +798,12 @@ function isSameHubOrScopedLocation(
     targetCode.startsWith(`${assignedHubCode}.`) ||
     hasCommonPrefix
   );
+}
+
+function isRegionalHub(code?: string | null): boolean {
+  if (!code) return false;
+  const normalized = code.trim().toUpperCase();
+  return ['001N001', '002C001', '003S001'].includes(normalized) || /^\d{3}[A-Z]\d{3}$/.test(normalized);
 }
 
 function getBranchHubProvinceScopePrefixes(hubCode: string): string[] {
@@ -1048,6 +1097,20 @@ const SPATIAL_WARD_HUBS: SpatialWardHub[] = [
     ],
   },
   {
+    code: '07904W001',
+    name: 'Bưu cục Phường An Nhơn - Gò Vấp',
+    parentHubCode: '003079B001',
+    latitude: 10.840,
+    longitude: 106.680,
+    boundaryPolygon: [
+      [10.825, 106.668],
+      [10.855, 106.670],
+      [10.856, 106.692],
+      [10.828, 106.690],
+      [10.825, 106.668],
+    ],
+  },
+  {
     code: '07912W001',
     name: 'Bưu cục Phường An Phú Đông - Quận 12',
     parentHubCode: '003079B001',
@@ -1206,6 +1269,8 @@ function resolveResponsibleHubByCoords(
     if (matchedWard) {
       return { hubCode: matchedWard.code, hubName: matchedWard.name, level: 3 };
     }
+    // Respect explicit hub code passed from saved address or client selection
+    return { hubCode: norm, hubName: explicitHubCode.trim(), level: 2 };
   }
 
   // 1. Exact Boundary Polygon matching (Ray Casting)
@@ -1305,6 +1370,8 @@ function enrichShipmentMetadataCoordinates(
   meta.destinationHubCode = destHub.hubCode;
   meta.senderHubCode = originHub.hubCode;
   meta.receiverHubCode = destHub.hubCode;
+  meta.currentHubCode = originHub.hubCode;
+  meta.currentLocation = originHub.hubCode;
 
   meta.pickupLatitude = pickupCoords.latitude;
   meta.pickupLongitude = pickupCoords.longitude;
@@ -1345,6 +1412,24 @@ function validatePhysicalOperationalCeilings(meta: Record<string, unknown> | nul
   }
 }
 
+/**
+ * ===================================================================================
+ * QUY CHUẨN CARRIER: PHÂN LOẠI 5 NHÓM HÀNG VÀ 3 TẦNG TRẦN VẬT LÝ BƯU CỤC
+ * ===================================================================================
+ * 1. KIỂM THỬ GIÁ TRỊ BIÊN (BVA) - 3 TẦNG TRẦN VẬT LÝ MẠNG LƯỚI:
+ *   - Khối lượng tối đa: <= 70 kg / kiện.
+ *   - Chiều dài 1 cạnh lớn nhất: <= 150 cm.
+ *   - Tổng kích thước 3 chiều: D + R + C <= 300 cm.
+ *   -> Vượt bất kỳ chỉ số nào: Chặn cứng Validation (HTTP 400), bảo vệ an toàn Hub.
+ *
+ * 2. PHÂN LOẠI 5 NHÓM MẶT HÀNG CHUẨN CARRIER:
+ *   - GENERAL: Hàng thông thường, tính cước theo cân nặng thực tế.
+ *   - FRAGILE: Hàng dễ vỡ, tự động gắn nhãn "XIN NHẸ TAY", kích hoạt SOP bọc Bubble wrap >= 3 lớp.
+ *   - HIGH_VALUE: Giá trị cao, bắt buộc khai giá, tự động kích hoạt bảo hiểm 100% (cước 0.5%) + tem seal niêm phong.
+ *   - BULKY: Hàng cồng kềnh, tính cước IATA max(W, D*R*C/6000), tự động gán nhãn [CẦN XE TẢI].
+ *   - DOCUMENT: Hồ sơ thư từ, miễn trừ cước thể tích, khóa đồng kiểm nội dung theo Luật Bưu chính.
+ * ===================================================================================
+ */
 function enrichCommodityAndValidateCeilings(meta: Record<string, JsonValue>): void {
   const pkg = asJsonRecord(meta.package);
   if (!pkg) return;

@@ -42,9 +42,29 @@ export function TrackingDetailPage(): React.JSX.Element {
   return (
     <section>
       <h2>Chi tiết hành trình vận đơn</h2>
-      <p>
-        <Link to={routePaths.tracking}>Quay lại tra cứu hành trình</Link>
-      </p>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', margin: '12px 0 16px 0' }}>
+        <Link
+          to={`${routePaths.serviceQualityIntegratedLookup}?shipmentCode=${encodeURIComponent(shipmentCode)}`}
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '6px',
+            fontSize: '13px',
+            fontWeight: 700,
+            color: '#1d4ed8',
+            background: '#eff6ff',
+            border: '1px solid #bfdbfe',
+            borderRadius: '6px',
+            padding: '6px 12px',
+            textDecoration: 'none',
+          }}
+        >
+          <span>Mở Tra cứu tích hợp 360° (Xem PII SĐT, Ảnh POD & Sự cố)</span>
+        </Link>
+        <Link to={routePaths.tracking} style={{ fontSize: '13px', color: '#475569' }}>
+          Quay lại tra cứu hành trình
+        </Link>
+      </div>
 
       <article style={styles.currentCard}>
         <h3>Trạng thái hiện tại</h3>

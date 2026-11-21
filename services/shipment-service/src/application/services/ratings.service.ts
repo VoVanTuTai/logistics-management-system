@@ -1,10 +1,10 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { PrismaService } from '../../infrastructure/prisma/prisma.service';
 import type { CourierRating } from '@prisma/client';
 
 export interface SubmitRatingInput {
   shipmentCode: string;
-  courierId: string;
+  courierId?: string;
   courierName?: string;
   customerPhone?: string;
   rating: number; // 1 to 5
@@ -28,20 +28,28 @@ export class RatingsService {
   async submitRating(input: SubmitRatingInput): Promise<CourierRating> {
     const clampedRating = Math.max(1, Math.min(5, Math.round(input.rating)));
 
-    // Ensure shipment exists
-    await this.prisma.shipment.upsert({
+    // Verify shipment exists
+    const shipment = await this.prisma.shipment.findUnique({
       where: { code: input.shipmentCode },
-      update: {},
-      create: {
-        code: input.shipmentCode,
-        currentStatus: 'DELIVERED',
-      },
     });
+
+    if (!shipment) {
+      throw new BadRequestException(`Vận đơn ${input.shipmentCode} không tồn tại trên hệ thống.`);
+    }
+
+    // Only allow rating after shipment is DELIVERED
+    if (shipment.currentStatus !== 'DELIVERED') {
+      throw new BadRequestException(
+        `Chỉ có thể đánh giá bưu tá sau khi đơn hàng đã được giao thành công đến người nhận (Trạng thái hiện tại: ${shipment.currentStatus}). Không thể đánh giá ngay sau khi tạo đơn.`
+      );
+    }
+
+    const courierId = input.courierId || '30000000';
 
     return this.prisma.courierRating.upsert({
       where: { shipmentCode: input.shipmentCode },
       update: {
-        courierId: input.courierId,
+        courierId,
         courierName: input.courierName,
         customerPhone: input.customerPhone,
         rating: clampedRating,
@@ -51,7 +59,7 @@ export class RatingsService {
       },
       create: {
         shipmentCode: input.shipmentCode,
-        courierId: input.courierId,
+        courierId,
         courierName: input.courierName,
         customerPhone: input.customerPhone,
         rating: clampedRating,

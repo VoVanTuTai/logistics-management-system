@@ -14,7 +14,7 @@
     },
     "android": {
       "package": "com.nexuslogistics.customermobile",
-      "versionCode": 1,
+      "versionCode": 3,
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#1D4ED8"
@@ -37,7 +37,8 @@
         "expo-build-properties",
         {
           "android": {
-            "usesCleartextTraffic": true
+            "usesCleartextTraffic": true,
+            "enableMinifyInReleaseBuilds": false
           }
         }
       ]
@@ -45,6 +46,12 @@
     "web": {
       "bundler": "metro",
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "extra": {
+      "eas": {
+        "projectId": "30f346d3-bda9-43ea-b949-be331b6de541"
+      }
+    },
+    "owner": "vovantutai"
   }
 }

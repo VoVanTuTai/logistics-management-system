@@ -79,6 +79,12 @@ export function ShipmentDetailPage(): React.JSX.Element {
         <strong>Điểm vào nghiệp vụ liên quan</strong>
         <div style={styles.entryLinks}>
           <Link
+            to={`${routePaths.serviceQualityIntegratedLookup}?shipmentCode=${encodeURIComponent(detailQuery.data.shipmentCode)}`}
+            style={{ fontWeight: 700, color: '#1d4ed8' }}
+          >
+            Tra cứu tích hợp 360° (PII & Ảnh POD)
+          </Link>
+          <Link
             to={`${routePaths.operationsPlatformPickupDispatch}?shipmentCode=${encodeURIComponent(detailQuery.data.shipmentCode)}`}
           >
             Mở điều phối vận đơn

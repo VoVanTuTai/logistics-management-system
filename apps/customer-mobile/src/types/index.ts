@@ -95,6 +95,8 @@ export interface OrderModel {
   timeline: TrackingEvent[];
   notes?: string;
   isPayerReceiver?: boolean;
+  courierId?: string;
+  metadata?: Record<string, unknown> | null;
 }
 
 export interface CustomerProfile {

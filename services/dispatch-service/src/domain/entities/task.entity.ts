@@ -28,7 +28,7 @@ export interface TaskAssignment {
 }
 
 export interface CreateTaskInput {
-  taskCode: string;
+  taskCode?: string | null;
   taskType: TaskType;
   shipmentCode?: string | null;
   pickupRequestId?: string | null;

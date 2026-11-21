@@ -10,7 +10,7 @@ import {
 import { useFocusEffect, type CompositeScreenProps } from '@react-navigation/native';
 import type { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 
 import type { MainTabParamList, RootStackParamList } from '../../navigation/types';
 import { shipmentApi, type ShipmentResponse } from '../../services/api/shipment.api';
@@ -89,6 +89,8 @@ function mapShipmentToOrderModel(s: ShipmentResponse, targetCategory: 'SENT' | '
     createdAt: s.createdAt,
     updatedAt: s.updatedAt,
     timeline: [],
+    courierId: meta.assignedCourier || meta.assignedCourierId || meta.courierId || meta.courier?.id || undefined,
+    metadata: meta,
   };
 }
 
@@ -228,21 +230,33 @@ export function HomeScreen({ navigation }: Props): React.JSX.Element {
         <NewsAndHighlightsSection onPressCreateOrder={handleCreateOrder} />
       </ScrollView>
 
-      {/* FLOATING LOGISTICS DISPATCH CTA BUTTON */}
+      {/* FLOATING LOGISTICS AI CHATBOT CTA BUTTON (SYNC WITH WEB TRACKING) */}
       <View style={styles.floatingContainer}>
         {!isChatOpen && (
-          <View style={styles.floatingTag}>
-            <View style={styles.pulsingDot} />
-            <Text style={styles.floatingTagText}>Tổng Đài Bưu Cục</Text>
-          </View>
+          <TouchableOpacity
+            activeOpacity={0.85}
+            style={styles.floatingTag}
+            onPress={() => setIsChatOpen(true)}
+          >
+            <View style={styles.tagBadge}>
+              <MaterialCommunityIcons name="robot" size={12} color="#1D4ED8" />
+              <Text style={styles.tagBadgeText}>AI BOT</Text>
+            </View>
+            <Text style={styles.floatingTagText}>Hỗ trợ tra cứu vận đơn 24/7</Text>
+          </TouchableOpacity>
         )}
         <TouchableOpacity
           activeOpacity={0.88}
           style={styles.floatingBtn}
           onPress={() => setIsChatOpen(true)}
         >
-          <Ionicons name="headset" size={18} color="#FFFFFF" />
-          <Text style={styles.floatingBtnText}>Điều Phối Bưu Cục</Text>
+          <View style={styles.botIconWrapper}>
+            <MaterialCommunityIcons name="robot" size={20} color="#FFFFFF" />
+          </View>
+          <Text style={styles.floatingBtnText}>Nexus AI Robot</Text>
+          <View style={styles.onlineBadge}>
+            <View style={styles.onlineDot} />
+          </View>
         </TouchableOpacity>
       </View>
 
@@ -285,35 +299,73 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#FFFFFF',
-    paddingHorizontal: 9,
-    paddingVertical: 4,
-    borderRadius: 12,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 20,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
-    gap: 5,
-    ...shadows.sm,
+    borderColor: '#DBEAFE',
+    gap: 6,
+    ...shadows.md,
   },
-  pulsingDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: '#10B981',
+  tagBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#EFF6FF',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#BFDBFE',
+    gap: 3,
+  },
+  tagBadgeText: {
+    fontSize: 9.5,
+    fontWeight: '800',
+    color: '#1D4ED8',
+    letterSpacing: 0.5,
   },
   floatingTagText: {
-    fontSize: 10,
-    fontWeight: '700',
+    fontSize: 11,
+    fontWeight: '600',
     color: '#334155',
   },
   floatingBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#1D4ED8',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
+    paddingLeft: 8,
+    paddingRight: 16,
+    paddingVertical: 8,
     borderRadius: 28,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.35)',
+    borderWidth: 1.5,
+    borderColor: 'rgba(255, 255, 255, 0.4)',
     ...shadows.lg,
+    position: 'relative',
+  },
+  botIconWrapper: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  onlineBadge: {
+    position: 'absolute',
+    top: -2,
+    right: -2,
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  onlineDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#10B981',
   },
   sparkleBadge: {
     position: 'absolute',
@@ -333,6 +385,6 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '800',
     color: '#FFFFFF',
-    marginLeft: 6,
+    marginLeft: 8,
   },
 });

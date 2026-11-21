@@ -432,7 +432,7 @@ fi
 
 set_env_value "$ROOT_DIR/apps/courier-mobile/.env" EXPO_PUBLIC_GATEWAY_BASE_URL "$MOBILE_GATEWAY_URL"
 set_env_value "$ROOT_DIR/apps/courier-mobile/.env" EXPO_PUBLIC_GATEWAY_FALLBACK_BASE_URLS "http://$LAN_IP:3000,http://10.0.2.2:3000,http://localhost:3000,http://127.0.0.1:3000"
-set_env_value "$ROOT_DIR/apps/courier-mobile/.env" EXPO_PUBLIC_COURIER_ID "30002015"
+set_env_value "$ROOT_DIR/apps/courier-mobile/.env" EXPO_PUBLIC_COURIER_ID "30000000"
 set_env_value "$ROOT_DIR/apps/customer-mobile/.env" EXPO_PUBLIC_GATEWAY_BASE_URL "$MOBILE_GATEWAY_URL"
 set_env_value "$ROOT_DIR/apps/customer-mobile/.env" EXPO_PUBLIC_GATEWAY_FALLBACK_BASE_URLS "$MOBILE_GATEWAY_URL,http://10.0.2.2:3000,http://localhost:3000,http://127.0.0.1:3000"
 set_env_value "$ROOT_DIR/services/gateway-bff/.env" S3_ENDPOINT "$S3_ENDPOINT"
