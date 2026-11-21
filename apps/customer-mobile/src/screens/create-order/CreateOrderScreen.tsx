@@ -490,6 +490,51 @@ export function CreateOrderScreen({ navigation, route }: Props): React.JSX.Eleme
     }
   };
 
+  const handleGoToStep = (targetStep: number) => {
+    if (targetStep === step) return;
+    if (targetStep < step) {
+      // Cho phép ấn quay lại xem các bước trước tự do
+      setStep(targetStep);
+      return;
+    }
+    // Khi ấn tới bước tiếp theo, xác thực dữ liệu bước trước
+    if (targetStep === 2 && step === 1) {
+      if (!senderName.trim() || !senderPhone.trim()) {
+        showModal('Thiếu thông tin', 'Vui lòng nhập tên và số điện thoại người gửi.');
+        return;
+      }
+      if (!senderAddress) {
+        showModal('Thiếu thông tin', 'Vui lòng chọn địa chỉ / bưu cục gửi hàng.');
+        return;
+      }
+      if (!receiverName.trim() || !receiverPhone.trim()) {
+        showModal('Thiếu thông tin', 'Vui lòng nhập tên và số điện thoại người nhận.');
+        return;
+      }
+      if (!receiverAddress) {
+        showModal('Thiếu thông tin', 'Vui lòng chọn địa chỉ người nhận.');
+        return;
+      }
+      setStep(2);
+    } else if (targetStep === 3) {
+      if (step === 1) {
+        if (!senderName.trim() || !senderPhone.trim() || !senderAddress) {
+          showModal('Thiếu thông tin', 'Vui lòng điền đầy đủ thông tin gửi ở Bước 1.');
+          return;
+        }
+        if (!receiverName.trim() || !receiverPhone.trim() || !receiverAddress) {
+          showModal('Thiếu thông tin', 'Vui lòng điền đầy đủ thông tin nhận ở Bước 1.');
+          return;
+        }
+      }
+      if (!itemName.trim() || !weightKg.trim()) {
+        showModal('Thiếu thông tin', 'Vui lòng nhập tên hàng hóa và khối lượng ở Bước 2.');
+        return;
+      }
+      setStep(3);
+    }
+  };
+
   return (
     <KeyboardAvoidingView
       style={styles.flex}
@@ -497,7 +542,7 @@ export function CreateOrderScreen({ navigation, route }: Props): React.JSX.Eleme
       keyboardVerticalOffset={Platform.OS === 'ios' ? 64 : 0}
     >
       <AppHeader title="Tạo đơn hàng mới" onBackPress={handlePrevStep} />
-      <StepIndicator currentStep={step} />
+      <StepIndicator currentStep={step} onStepPress={handleGoToStep} />
 
       <ScrollView
         contentContainerStyle={styles.container}
