@@ -33,3 +33,4 @@ docs/graduation-thesis/
 ~$*
 
 *.bak*
+build-apks/
