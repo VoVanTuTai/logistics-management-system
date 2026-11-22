@@ -456,6 +456,99 @@ function normalizeUrl(value: unknown): string | null {
   return normalized;
 }
 
+export function normalizeMediaPublicUrl(url?: string | null): string | null {
+  if (!url || typeof url !== 'string') return null;
+  const trimmed = url.trim();
+  if (!trimmed) return null;
+
+  if (trimmed.startsWith('https://minio.nexus-ex.site')) {
+    return trimmed;
+  }
+
+  return trimmed
+    .replace(/^http:\/\/minio:9000\/?/i, 'https://minio.nexus-ex.site/')
+    .replace(/^http:\/\/localhost:9000\/?/i, 'https://minio.nexus-ex.site/')
+    .replace(/^http:\/\/127\.0\.0\.1:9000\/?/i, 'https://minio.nexus-ex.site/')
+    .replace(/^http:\/\/103\.82\.20\.51:19000\/?/i, 'https://minio.nexus-ex.site/')
+    .replace(/^http:\/\/103\.82\.20\.51:9000\/?/i, 'https://minio.nexus-ex.site/')
+    .replace(/^http:\/\/minio\.nexus-ex\.site\/?/i, 'https://minio.nexus-ex.site/');
+}
+
+export function extractTimelineProofImage(payload: unknown): string | null {
+  if (!payload || typeof payload !== 'object') return null;
+  const raw = payload as any;
+  const data = raw.data || {};
+
+  // 1. Delivery POD imageUrl / podImageUrl
+  const podImage =
+    readNestedString(data, ['pod', 'imageUrl']) ||
+    readNestedString(data, ['pod', 'url']) ||
+    readNestedString(data, ['pod', 'photoUrl']) ||
+    readNestedString(data, ['pod', 'podImageUrl']) ||
+    readNestedString(data, ['deliveryAttempt', 'podImageUrl']) ||
+    readNestedString(data, ['deliveryAttempt', 'imageUrl']) ||
+    readNestedString(data, ['deliveryAttempt', 'photoUrl']) ||
+    readNestedString(data, ['podImageUrl']) ||
+    readNestedString(data, ['deliveryPhotoUrl']);
+
+  if (podImage) return normalizeMediaPublicUrl(podImage);
+
+  // 2. Pickup proof
+  const pickupImage =
+    readNestedString(data, ['scanEvent', 'photoUrl']) ||
+    readNestedString(data, ['scanEvent', 'imageUrl']) ||
+    readNestedString(data, ['scanEvent', 'proofPhotoUri']) ||
+    readNestedString(data, ['pickup', 'photoUrl']) ||
+    readNestedString(data, ['pickup', 'imageUrl']) ||
+    readNestedString(data, ['pickup', 'proofPhotoUri']) ||
+    readNestedString(data, ['pickupPhotoUrl']) ||
+    readNestedString(data, ['pickupProofUrl']);
+
+  if (pickupImage) return normalizeMediaPublicUrl(pickupImage);
+
+  // 3. General photoUrl / proofImageUrl / evidence
+  const generalPhoto =
+    readNestedString(data, ['photoUrl']) ||
+    readNestedString(data, ['proofImageUrl']) ||
+    readNestedString(data, ['imageUrl']) ||
+    readNestedString(data, ['evidenceUrl']) ||
+    readNestedString(data, ['task', 'metadata', 'photoUrl']) ||
+    readNestedString(data, ['task', 'metadata', 'proofPhotoUri']);
+
+  if (generalPhoto) return normalizeMediaPublicUrl(generalPhoto);
+
+  // 4. Attachments (e.g. NDR case)
+  const attachments =
+    readNestedValue(data, ['ndrCase', 'attachments']) ||
+    readNestedValue(data, ['attachments']);
+  if (Array.isArray(attachments) && attachments.length > 0) {
+    for (const att of attachments) {
+      const attUrl = typeof att === 'string' ? att : (att?.url || att?.thumbnailUrl || att?.uri);
+      if (typeof attUrl === 'string' && attUrl.trim()) {
+        return normalizeMediaPublicUrl(attUrl.trim());
+      }
+    }
+  }
+
+  // 5. URL inside note text
+  const rawNote =
+    readNestedString(data, ['scanEvent', 'note']) ||
+    readNestedString(data, ['deliveryAttempt', 'note']) ||
+    readNestedString(data, ['pod', 'note']) ||
+    readNestedString(data, ['receiveRecord', 'note']) ||
+    readNestedString(data, ['note']) ||
+    (typeof raw.note === 'string' ? raw.note : null);
+
+  if (rawNote) {
+    const urlMatches = rawNote.match(/(?:https?:\/\/[^\s"'<>()|]+|data:image\/[a-zA-Z]+;base64,[^\s"'<>()|]+)/i);
+    if (urlMatches) {
+      return normalizeMediaPublicUrl(urlMatches[0]);
+    }
+  }
+
+  return null;
+}
+
 function normalizeValue(value: unknown): string | null {
   if (typeof value !== 'string') {
     return null;

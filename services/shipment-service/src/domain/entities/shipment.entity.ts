@@ -59,6 +59,7 @@ export interface ShipmentListFilters {
   hubCodes?: string | string[] | null;
   opsArrivedUnsigned?: string | boolean | null;
   createdByUserId?: string | null;
+  senderPhone?: string | null;
   receiverPhone?: string | null;
   createdFrom?: string | null;
   createdTo?: string | null;

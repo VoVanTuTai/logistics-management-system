@@ -54,21 +54,23 @@ export class ShipmentController {
 
   @Get('sent')
   listSent(
-    @Query() filters: ShipmentListFilters & { userId?: string },
+    @Query() filters: ShipmentListFilters & { userId?: string; phone?: string; senderPhone?: string },
     @Req() request: ScopedRequest,
   ): Promise<Shipment[] | ShipmentListPage> {
     const ownerContext = getAuthenticatedOwnerContext(request, {});
+    const userPhone = getSingleHeader(request, 'x-user-phone') || filters.senderPhone || filters.phone;
     const { createdByUserId: _ignored1, userId: queryUserId, ...cleanFilters } = filters;
 
     const targetUserId = ownerContext.createdByUserId || queryUserId;
 
-    if (!targetUserId) {
+    if (!targetUserId && !userPhone) {
       return Promise.resolve([]);
     }
 
     const effectiveFilters: ShipmentListFilters = {
       ...cleanFilters,
-      createdByUserId: targetUserId,
+      createdByUserId: targetUserId || undefined,
+      senderPhone: userPhone || undefined,
     };
 
     return this.shipmentsService.list(effectiveFilters);
@@ -129,16 +131,26 @@ export class ShipmentController {
     const ownerContext = getAuthenticatedOwnerContext(request, body);
 
     const {
-      createdByUserId: _ignored1,
-      createdByType: _ignored2,
+      createdByUserId: bodyCreatedByUserId,
+      createdByType: bodyCreatedByType,
       receiverPhone: _ignored3,
       ...cleanBody
     } = body;
 
+    const metadata = asRecord(body.metadata);
+    const sender = asRecord(metadata?.sender);
+    const resolvedUserId =
+      ownerContext.createdByUserId ||
+      (typeof metadata?.createdByUserId === 'string' ? metadata.createdByUserId.trim() : null) ||
+      (typeof (metadata as any)?.senderPhone === 'string' ? (metadata as any).senderPhone.trim() : null) ||
+      (typeof sender?.phone === 'string' ? sender.phone.trim() : null) ||
+      (typeof bodyCreatedByUserId === 'string' && bodyCreatedByUserId.trim().length > 0 ? bodyCreatedByUserId.trim() : null) ||
+      null;
+
     return this.shipmentsService.create({
       ...cleanBody,
-      createdByUserId: ownerContext.createdByUserId,
-      createdByType: ownerContext.createdByType,
+      createdByUserId: resolvedUserId,
+      createdByType: ownerContext.createdByType || bodyCreatedByType || 'CUSTOMER',
     });
   }
 
@@ -323,16 +335,22 @@ function getAuthenticatedOwnerContext(
       ? metadata.createdByUserId.trim()
       : typeof createdBy?.userId === 'string'
         ? createdBy.userId.trim()
-        : typeof sender?.phone === 'string'
-          ? sender.phone.trim()
-          : typeof merchant?.username === 'string'
-            ? merchant.username.trim()
-            : null;
+        : typeof (metadata as any)?.senderPhone === 'string'
+          ? (metadata as any).senderPhone.trim()
+          : typeof sender?.phone === 'string'
+            ? sender.phone.trim()
+            : typeof (body as any)?.createdByUserId === 'string'
+              ? (body as any).createdByUserId.trim()
+              : typeof merchant?.username === 'string'
+                ? merchant.username.trim()
+                : null;
 
   const isCustomer =
     allRoles.includes('CUSTOMER') ||
     metadata?.source === 'customer-mobile' ||
+    metadata?.source === 'chatbot-service' ||
     typeof metadata?.createdByUserId === 'string' ||
+    typeof (metadata as any)?.senderPhone === 'string' ||
     typeof createdBy?.userId === 'string';
 
   return {

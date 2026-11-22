@@ -21,6 +21,144 @@ export function normalizeMediaPublicUrl(url?: string | null): string | undefined
 }
 
 /**
+ * Robust proof image extractor from any timeline event representation.
+ */
+export function extractProofImageFromEvent(ev: any): string | undefined {
+  if (!ev || typeof ev !== 'object') return undefined;
+
+  // 1. Direct fields
+  if (ev.proofImageUrl && typeof ev.proofImageUrl === 'string' && ev.proofImageUrl.trim()) {
+    return normalizeMediaPublicUrl(ev.proofImageUrl);
+  }
+  if (ev.photoUrl && typeof ev.photoUrl === 'string' && ev.photoUrl.trim()) {
+    return normalizeMediaPublicUrl(ev.photoUrl);
+  }
+
+  // 2. ev.metadata (if present)
+  const meta = ev.metadata || {};
+  const metaProof =
+    meta.podImageUrl ||
+    meta.proofImageUrl ||
+    meta.photoUrl ||
+    meta.imageUrl ||
+    meta.deliveryPhotoUrl ||
+    meta.pickupPhotoUrl ||
+    meta.pickupProofUrl;
+  if (typeof metaProof === 'string' && metaProof.trim()) {
+    return normalizeMediaPublicUrl(metaProof);
+  }
+
+  // 3. ev.payload.data (Standard backend envelope from tracking-service)
+  const payloadData = ev.payload?.data || {};
+  const dataProof =
+    payloadData.pod?.imageUrl ||
+    payloadData.pod?.url ||
+    payloadData.pod?.photoUrl ||
+    payloadData.pod?.podImageUrl ||
+    payloadData.deliveryAttempt?.podImageUrl ||
+    payloadData.deliveryAttempt?.imageUrl ||
+    payloadData.deliveryAttempt?.photoUrl ||
+    payloadData.scanEvent?.photoUrl ||
+    payloadData.scanEvent?.imageUrl ||
+    payloadData.pickup?.photoUrl ||
+    payloadData.pickup?.imageUrl ||
+    payloadData.pickupProofUrl ||
+    payloadData.pickupPhotoUrl ||
+    payloadData.photoUrl ||
+    payloadData.proofImageUrl ||
+    payloadData.podImageUrl ||
+    payloadData.imageUrl;
+
+  if (typeof dataProof === 'string' && dataProof.trim()) {
+    return normalizeMediaPublicUrl(dataProof);
+  }
+
+  // 4. Attachments (e.g. NDR case attachments)
+  const attachments = payloadData.ndrCase?.attachments || payloadData.attachments;
+  if (Array.isArray(attachments) && attachments.length > 0) {
+    for (const att of attachments) {
+      const attUrl = typeof att === 'string' ? att : (att?.url || att?.thumbnailUrl || att?.uri);
+      if (typeof attUrl === 'string' && attUrl.trim()) {
+        return normalizeMediaPublicUrl(attUrl.trim());
+      }
+    }
+  }
+
+  // 5. URL in notes
+  const candidateNotes = [
+    payloadData.scanEvent?.note,
+    payloadData.deliveryAttempt?.note,
+    payloadData.pod?.note,
+    payloadData.receiveRecord?.note,
+    ev.note,
+    ev.actor,
+  ];
+
+  for (const n of candidateNotes) {
+    if (typeof n === 'string' && n.trim()) {
+      const match = n.match(/(?:https?:\/\/[^\s"'<>()|]+|data:image\/[a-zA-Z]+;base64,[^\s"'<>()|]+)/i);
+      if (match) {
+        return normalizeMediaPublicUrl(match[0]);
+      }
+    }
+  }
+
+  return undefined;
+}
+
+export function isPickupTimelineEvent(ev?: {
+  eventTypeCode?: string | null;
+  eventType?: string | null;
+  statusAfterEventCode?: string | null;
+  statusAfterEvent?: string | null;
+} | null): boolean {
+  if (!ev) return false;
+  const code = (ev.eventTypeCode || '').toLowerCase();
+  const statusCode = (ev.statusAfterEventCode || '').toUpperCase();
+  const typeText = (ev.eventType || '').toLowerCase();
+  const statusText = (ev.statusAfterEvent || '').toLowerCase();
+
+  return (
+    code.includes('pickup') ||
+    code === 'scan.pickup_confirmed' ||
+    statusCode === 'PICKED_UP' ||
+    statusCode === 'PICKUP_COMPLETED' ||
+    statusCode === 'PICKUP_ASSIGNED' ||
+    typeText.includes('lấy hàng') ||
+    typeText.includes('nhận hàng') ||
+    statusText.includes('lấy hàng') ||
+    statusText.includes('nhận hàng')
+  );
+}
+
+export function isDeliveryTimelineEvent(ev?: {
+  eventTypeCode?: string | null;
+  eventType?: string | null;
+  statusAfterEventCode?: string | null;
+  statusAfterEvent?: string | null;
+} | null): boolean {
+  if (!ev) return false;
+  const code = (ev.eventTypeCode || '').toLowerCase();
+  const statusCode = (ev.statusAfterEventCode || '').toUpperCase();
+  const typeText = (ev.eventType || '').toLowerCase();
+  const statusText = (ev.statusAfterEvent || '').toLowerCase();
+
+  return (
+    code.includes('delivery') ||
+    code.includes('delivered') ||
+    statusCode === 'DELIVERED' ||
+    statusCode === 'DELIVERING' ||
+    statusCode === 'DELIVERY_ASSIGNED' ||
+    typeText.includes('giao hàng') ||
+    typeText.includes('ký nhận') ||
+    typeText.includes('phát hàng') ||
+    statusText.includes('giao hàng') ||
+    statusText.includes('ký nhận') ||
+    statusText.includes('thành công')
+  );
+}
+
+/**
  * Clean internal noise from notes so customers see only relevant, public-safe delivery notes:
  * - Strips operator & staff names (Điều hành viên..., Người thao tác..., Mã NV...)
  * - Strips courier/shipper internal usernames/IDs (Shipper: courier-..., Courier...)

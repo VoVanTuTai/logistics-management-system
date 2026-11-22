@@ -9,6 +9,8 @@ export interface TrackingTimelineEventDto {
   locationText?: string | null;
   occurredAt: string;
   note?: string | null;
+  proofImageUrl?: string | null;
+  photoUrl?: string | null;
 }
 
 export interface TrackingCurrentDto {

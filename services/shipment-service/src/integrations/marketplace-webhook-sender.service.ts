@@ -243,7 +243,8 @@ export class MarketplaceWebhookSenderService {
       sourceEventType,
     );
     const partnerStatus = this.toPartnerStatus(webhookCurrentStatus);
-    const trackingUrl = this.buildTrackingUrl(shipment.code);
+    const receiverPhone = this.resolveTrackingPhone(shipment, eventType);
+    const trackingUrl = this.buildTrackingUrl(shipment.code, receiverPhone);
     const deliveredAt =
       eventType === 'shipment.delivered' ? this.nowRfc3339Utc() : undefined;
 
@@ -324,11 +325,76 @@ export class MarketplaceWebhookSenderService {
       .digest('hex');
   }
 
-  private buildTrackingUrl(shipmentCode: string): string {
+  private buildTrackingUrl(shipmentCode: string, receiverPhone?: string | null): string {
     const baseUrl =
       process.env.PUBLIC_TRACKING_PUBLIC_URL ?? 'https://tracking.nexus-ex.site';
+    const cleanBaseUrl = baseUrl.replace(/\/$/, '');
+    const cleanCode = encodeURIComponent(shipmentCode.trim());
 
-    return `${baseUrl.replace(/\/$/, '')}/${encodeURIComponent(shipmentCode)}`;
+    if (receiverPhone && receiverPhone.trim()) {
+      return `${cleanBaseUrl}/track/${cleanCode}?phone=${encodeURIComponent(receiverPhone.trim())}`;
+    }
+
+    return `${cleanBaseUrl}/track/${cleanCode}`;
+  }
+
+  private resolveTrackingPhone(
+    shipment: Shipment,
+    eventType: MarketplaceWebhookEventType,
+  ): string | null {
+    const metadata = this.asObject(shipment.metadata);
+    const sender = this.asObject(metadata?.sender);
+    const receiver = this.asObject(metadata?.receiver);
+    const merchant = this.asObject(metadata?.merchant);
+    const external = this.asObject(metadata?.external);
+
+    const isReturn =
+      eventType === 'shipment.returned' ||
+      shipment.currentStatus === 'RETURN_STARTED' ||
+      shipment.currentStatus === 'RETURN_COMPLETED' ||
+      metadata?.isReturn === true ||
+      external?.isReturn === true ||
+      String(external?.orderType ?? '').toUpperCase() === 'RETURN' ||
+      String(external?.type ?? '').toUpperCase() === 'RETURN' ||
+      String(external?.orderStatus ?? '').toUpperCase().includes('RETURN') ||
+      String(metadata?.orderType ?? '').toUpperCase() === 'RETURN';
+
+    if (isReturn) {
+      // Đơn hoàn: người nhận là shop nên lấy SĐT của shop
+      // 1. Nếu là đơn giao chuyển sang hoàn (RETURN_STARTED, RETURN_COMPLETED, shipment.returned):
+      //    Shop là bên gửi ban đầu (sender) nên lấy sender.phone hoặc merchant.phone
+      if (
+        eventType === 'shipment.returned' ||
+        shipment.currentStatus === 'RETURN_STARTED' ||
+        shipment.currentStatus === 'RETURN_COMPLETED'
+      ) {
+        return (
+          this.readString(sender?.phone) ??
+          this.readString(merchant?.phone) ??
+          this.readString(merchant?.hotline) ??
+          this.readString(receiver?.phone) ??
+          this.readString(shipment.receiverPhone) ??
+          null
+        );
+      }
+
+      // 2. Nếu là đơn hoàn do partner tạo: người nhận là shop (receiver.phone)
+      return (
+        this.readString(receiver?.phone) ??
+        this.readString(shipment.receiverPhone) ??
+        this.readString(sender?.phone) ??
+        this.readString(merchant?.phone) ??
+        null
+      );
+    }
+
+    // Đơn giao bình thường: người nhận là người mua (receiver.phone)
+    return (
+      this.readString(receiver?.phone) ??
+      this.readString(shipment.receiverPhone) ??
+      this.readString(sender?.phone) ??
+      null
+    );
   }
 
   private nowRfc3339Utc(): string {

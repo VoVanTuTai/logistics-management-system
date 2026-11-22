@@ -32,6 +32,7 @@ const LOG_DIR = path.join(ROOT_DIR, '.tmp/pm2-logs');
 const rootEnv = loadEnvFile(path.join(ROOT_DIR, '.env'));
 const gatewayEnv = loadEnvFile(path.join(ROOT_DIR, 'services/gateway-bff/.env'));
 const shipmentEnv = loadEnvFile(path.join(ROOT_DIR, 'services/shipment-service/.env'));
+const paymentEnv = loadEnvFile(path.join(ROOT_DIR, 'services/payment-service/.env'));
 
 const DB_BASE = process.env.DATABASE_URL_BASE || 'postgresql://postgres:postgres@localhost:15432';
 const dbUrl = (dbName, connectionLimit = 10, poolTimeout = 30) =>
@@ -248,6 +249,9 @@ module.exports = {
         PORT: 3011,
         DATABASE_URL: dbUrl('payment_db', 3),
         SHIPMENT_SERVICE_URL: 'http://localhost:3002',
+        ...paymentEnv,
+        SEPAY_WEBHOOK_SECRET: process.env.SEPAY_WEBHOOK_SECRET || paymentEnv.SEPAY_WEBHOOK_SECRET || 'whsec_OhvIusk0txX6Uf0KWe3VYzcvo9A6DQFK',
+        SEPAY_WEBHOOK_API_KEY: process.env.SEPAY_WEBHOOK_API_KEY || paymentEnv.SEPAY_WEBHOOK_API_KEY || 'whsec_OhvIusk0txX6Uf0KWe3VYzcvo9A6DQFK',
       },
       max_memory_restart: '500M',
       autorestart: true,
@@ -327,12 +331,12 @@ module.exports = {
         PAYMENT_SERVICE_URL: 'http://localhost:3011',
         PRICING_SERVICE_URL: 'http://localhost:3012',
         CHATBOT_SERVICE_URL: 'http://localhost:3013',
-        S3_ENDPOINT: 'http://localhost:9000',
-        S3_REGION: 'us-east-1',
-        S3_ACCESS_KEY: 'minioadmin',
-        S3_SECRET_KEY: 'minioadmin123',
-        S3_BUCKET_NAME: 'nexus-pod-images',
-        S3_FORCE_PATH_STYLE: 'true',
+        S3_ENDPOINT: process.env.S3_ENDPOINT || gatewayEnv.S3_ENDPOINT || rootEnv.S3_ENDPOINT || 'https://minio.nexus-ex.site',
+        S3_REGION: process.env.S3_REGION || gatewayEnv.S3_REGION || rootEnv.S3_REGION || 'us-east-1',
+        S3_ACCESS_KEY: process.env.S3_ACCESS_KEY || gatewayEnv.S3_ACCESS_KEY || rootEnv.S3_ACCESS_KEY || 'minioadmin',
+        S3_SECRET_KEY: process.env.S3_SECRET_KEY || gatewayEnv.S3_SECRET_KEY || rootEnv.S3_SECRET_KEY || 'minioadmin123',
+        S3_BUCKET_NAME: process.env.S3_BUCKET_NAME || gatewayEnv.S3_BUCKET_NAME || rootEnv.S3_BUCKET_NAME || 'nexus-pod-images',
+        S3_FORCE_PATH_STYLE: process.env.S3_FORCE_PATH_STYLE || gatewayEnv.S3_FORCE_PATH_STYLE || rootEnv.S3_FORCE_PATH_STYLE || 'true',
         NEXUS_INTEGRATION_AUTH_ENABLED: process.env.NEXUS_INTEGRATION_AUTH_ENABLED || gatewayEnv.NEXUS_INTEGRATION_AUTH_ENABLED || rootEnv.NEXUS_INTEGRATION_AUTH_ENABLED || 'true',
         NEXUS_INTEGRATION_PARTNER_CODE: process.env.NEXUS_INTEGRATION_PARTNER_CODE || gatewayEnv.NEXUS_INTEGRATION_PARTNER_CODE || rootEnv.NEXUS_INTEGRATION_PARTNER_CODE || 'DT_COMMERCE',
         NEXUS_INTEGRATION_API_KEY: process.env.NEXUS_INTEGRATION_API_KEY || gatewayEnv.NEXUS_INTEGRATION_API_KEY || rootEnv.NEXUS_INTEGRATION_API_KEY || 'nx_live_2a52ba7928173fc9fd5cf5ffceee2342',

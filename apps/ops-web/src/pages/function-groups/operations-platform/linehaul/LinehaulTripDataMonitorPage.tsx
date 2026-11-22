@@ -62,6 +62,16 @@ function resolveVehicleStatusLabel(trip: LinehaulTrip, hasSeal: boolean): string
     return 'Sẵn sàng xuất bến (Đã in tem)';
   }
 
+  if (trip.driverName?.trim() && trip.vehiclePlate?.trim()) {
+    return 'Đã có tài xế/xe (Chờ in tem)';
+  }
+  if (trip.driverName?.trim()) {
+    return 'Đã có tài xế (Chờ bổ sung xe)';
+  }
+  if (trip.vehiclePlate?.trim()) {
+    return 'Đã có xe (Chờ bổ sung tài xế)';
+  }
+
   return 'Chờ bổ sung tài xế/xe';
 }
 

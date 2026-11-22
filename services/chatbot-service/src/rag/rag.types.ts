@@ -55,4 +55,18 @@ export interface ChatResponseDto {
   latencyMs: number;
   shipmentCards?: ShipmentCardDto[];
   actionChips?: ActionChipDto[];
+  orderFormRequested?: boolean;
+  orderConfirmation?: {
+    senderName?: string;
+    senderPhone?: string;
+    senderAddress?: string;
+    receiverName?: string;
+    receiverPhone?: string;
+    receiverAddress?: string;
+    itemName?: string;
+    weightKg?: number;
+    codAmount?: number;
+    payer?: 'SENDER' | 'RECEIVER';
+    shippingFee?: number;
+  };
 }

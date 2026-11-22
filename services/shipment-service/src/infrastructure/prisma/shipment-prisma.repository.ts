@@ -344,6 +344,7 @@ export class ShipmentPrismaRepository extends ShipmentRepository {
     const createdTo = normalizeDate(filters.createdTo);
     const opsArrivedUnsigned = normalizeBoolean(filters.opsArrivedUnsigned);
     const createdByUserId = normalizeString(filters.createdByUserId);
+    const senderPhone = normalizeString(filters.senderPhone);
     const receiverPhone = normalizeString(filters.receiverPhone);
     const externalOrderId = normalizeString(filters.externalOrderId);
     const externalOrderCode = normalizeString(filters.externalOrderCode);
@@ -355,8 +356,25 @@ export class ShipmentPrismaRepository extends ShipmentRepository {
       where.code = '__NO_MATCHING_STATUS__';
     }
 
-    if (createdByUserId) {
-      where.createdByUserId = createdByUserId;
+    if (createdByUserId || senderPhone) {
+      const orConditions: Prisma.ShipmentWhereInput[] = [];
+      if (createdByUserId) {
+        orConditions.push(
+          { createdByUserId },
+          { metadata: { path: ['createdByUserId'], equals: createdByUserId } },
+          { metadata: { path: ['sender', 'phone'], equals: createdByUserId } },
+          { metadata: { path: ['senderPhone'], equals: createdByUserId } },
+        );
+      }
+      if (senderPhone) {
+        orConditions.push(
+          { createdByUserId: senderPhone },
+          { metadata: { path: ['createdByUserId'], equals: senderPhone } },
+          { metadata: { path: ['sender', 'phone'], equals: senderPhone } },
+          { metadata: { path: ['senderPhone'], equals: senderPhone } },
+        );
+      }
+      andFilters.push({ OR: orConditions });
     }
 
     if (receiverPhone) {
@@ -583,14 +601,32 @@ function buildHubJsonPathScopeFilters(
 function getBranchHubProvinceScopePrefixes(hubCode: string): string[] {
   const normalizedHubCode = hubCode.trim().toUpperCase();
 
+  if (normalizedHubCode === 'HCM-001' || normalizedHubCode === 'HUB_HCM' || normalizedHubCode === 'HUB-HCM-001') {
+    return ['003079', '079', '003'];
+  }
+  if (normalizedHubCode === 'HN-001' || normalizedHubCode === 'HUB_HN' || normalizedHubCode === 'HUB-HN-001' || normalizedHubCode === 'HUB_HANOI') {
+    return ['001001', '001'];
+  }
+  if (normalizedHubCode === 'DN-001' || normalizedHubCode === 'HUB_DN' || normalizedHubCode === 'HUB-DN-001' || normalizedHubCode === 'HUB_DANANG') {
+    return ['002048', '048', '002'];
+  }
+
   // Regional Hubs (e.g. 001N001, 002C001, 003S001) -> Match 3-digit region prefix (001, 002, 003)
   if (/^\d{3}[A-Z]\d{3}$/.test(normalizedHubCode)) {
     return [normalizedHubCode.slice(0, 3)];
   }
 
-  // Branch Hubs (e.g. 003079B001) -> Match 6-digit province prefix (003079)
+  // Branch Hubs (e.g. 003079B001) -> Match 6-digit province prefix (003079) and 3-digit province code (079)
   if (/^\d{6}[A-Z][A-Z0-9]*$/.test(normalizedHubCode)) {
-    return [normalizedHubCode.slice(0, 6)];
+    return [
+      normalizedHubCode.slice(0, 6),
+      normalizedHubCode.slice(3, 6),
+    ];
+  }
+
+  // Ward Hubs (e.g. 07912W001) -> Match 3-digit province prefix (079)
+  if (/^\d{5,}[A-Z][A-Z0-9]*$/.test(normalizedHubCode)) {
+    return [normalizedHubCode.slice(0, 3)];
   }
 
   return [];

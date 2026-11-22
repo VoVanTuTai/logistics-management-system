@@ -13,9 +13,15 @@ import {
   Package,
   Bot,
   Sparkles,
+  Truck,
 } from 'lucide-react';
 import { useAuthStore } from '../store/useAuthStore';
 import { ZaloIcon } from './ZaloIcon';
+import {
+  getWardsForProvinceName,
+  resolveHubForAddress,
+  parseWardAndDistrict,
+} from '../utils/vietnamAdministrativeData';
 
 export interface ShipmentCard {
   code: string;
@@ -34,6 +40,99 @@ export interface ActionChip {
   icon?: string;
 }
 
+export interface OrderFormData {
+  senderName: string;
+  senderPhone: string;
+  senderAddress: string;
+  senderCity: string;
+  senderWard?: string;
+  senderDistrict?: string;
+  senderHubCode?: string;
+  senderHubName?: string;
+  receiverName: string;
+  receiverPhone: string;
+  receiverAddress: string;
+  receiverCity: string;
+  receiverWard?: string;
+  receiverDistrict?: string;
+  receiverHubCode?: string;
+  receiverHubName?: string;
+  itemName: string;
+  weightKg: number;
+  lengthCm?: number;
+  widthCm?: number;
+  heightCm?: number;
+  codAmount: number;
+  payer: 'SENDER' | 'RECEIVER';
+  notes?: string;
+}
+
+export const VIETNAM_63_PROVINCES: string[] = [
+  'An Giang',
+  'Bà Rịa - Vũng Tàu',
+  'Bắc Giang',
+  'Bắc Kạn',
+  'Bạc Liêu',
+  'Bắc Ninh',
+  'Bến Tre',
+  'Bình Định',
+  'Bình Dương',
+  'Bình Phước',
+  'Bình Thuận',
+  'Cà Mau',
+  'Cần Thơ',
+  'Cao Bằng',
+  'Đà Nẵng',
+  'Đắk Lắk',
+  'Đắk Nông',
+  'Điện Biên',
+  'Đồng Nai',
+  'Đồng Tháp',
+  'Gia Lai',
+  'Hà Giang',
+  'Hà Nam',
+  'Hà Nội',
+  'Hà Tĩnh',
+  'Hải Dương',
+  'Hải Phòng',
+  'Hậu Giang',
+  'Hòa Bình',
+  'Hưng Yên',
+  'Khánh Hòa',
+  'Kiên Giang',
+  'Kon Tum',
+  'Lai Châu',
+  'Lâm Đồng',
+  'Lạng Sơn',
+  'Lào Cai',
+  'Long An',
+  'Nam Định',
+  'Nghệ An',
+  'Ninh Bình',
+  'Ninh Thuận',
+  'Phú Thọ',
+  'Phú Yên',
+  'Quảng Bình',
+  'Quảng Nam',
+  'Quảng Ngãi',
+  'Quảng Ninh',
+  'Quảng Trị',
+  'Sóc Trăng',
+  'Sơn La',
+  'Tây Ninh',
+  'Thái Bình',
+  'Thái Nguyên',
+  'Thanh Hóa',
+  'Thừa Thiên Huế',
+  'Tiền Giang',
+  'TP. Hồ Chí Minh',
+  'Trà Vinh',
+  'Tuyên Quang',
+  'Vĩnh Long',
+  'Vĩnh Phúc',
+  'Yên Bái',
+];
+
 interface ChatMessage {
   id: string;
   sender: 'user' | 'bot';
@@ -43,14 +142,16 @@ interface ChatMessage {
   citations?: { file: string; title: string; score: number }[];
   shipmentCards?: ShipmentCard[];
   actionChips?: ActionChip[];
+  orderFormRequested?: boolean;
+  orderConfirmation?: any;
 }
 
 const QUICK_SUGGESTIONS = [
-  { label: 'Tra cứu vận đơn', query: 'Tra cứu hành trình đơn hàng gần nhất của tôi' },
+  { label: 'Tạo đơn ngay', query: 'Tôi muốn tạo đơn hàng' },
   { label: 'Dự toán cước', query: 'Dự toán cước bưu kiện tiêu chuẩn 2kg từ TP.HCM đi Hà Nội' },
-  { label: 'Bồi thường bể vỡ', query: 'Chính sách đồng kiểm và bồi thường hàng dễ vỡ khi bể vỡ' },
+  { label: 'Tra cứu vận đơn', query: 'Tra cứu hành trình đơn hàng gần nhất của tôi' },
+  { label: 'Bồi thường bể vỡ', query: 'Chính sách bồi thường hàng dễ vỡ khi bể vỡ' },
   { label: 'Quy định hoàn hàng', query: 'Quy định thu cước chuyển hoàn khi người nhận từ chối nhận hàng' },
-  { label: 'Hỗ trợ Zalo', query: 'Tôi muốn liên hệ hỗ trợ bưu phẩm qua Zalo trực tuyến' },
 ];
 
 const FormattedChatMessage: React.FC<{ text: string; isUser: boolean }> = ({ text, isUser }) => {
@@ -78,7 +179,8 @@ const FormattedChatMessage: React.FC<{ text: string; isUser: boolean }> = ({ tex
     .replace(/`([^`]+)`/g, '$1')
     .replace(/`/g, '')
     .replace(/\*{3,}/g, '**')
-    .replace(/[📦📍🏷️👤💰🏢⏰🚚📋💡✅❌⚠️👋🚨💬]/g, '')
+    .replace(/[\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{1F100}-\u{1F1FF}\u{1F200}-\u{1F2FF}\u{1F680}-\u{1F6FF}\u{1F600}-\u{1F64F}\u{1FA00}-\u{1FAFF}\u{200D}\u{FE0F}]/gu, '')
+    .replace(/[📦📍🏷️👤💰🏢⏰🚚📋💡✅❌⚠️👋🚨💬💳🎁✈️⚖️📐🔄✏️🔑📱🔍🎉👉📌ℹ️📖]/g, '')
     .replace(/(^|\n)\s*([•\-\*])\s*\n+(\s*)/g, '$1• ');
 
   const rawLines = cleanText.split('\n');
@@ -246,6 +348,465 @@ const InteractiveShipmentCards: React.FC<{
   );
 };
 
+const OrderCreationForm: React.FC<{
+  defaultSenderName?: string;
+  defaultSenderPhone?: string;
+  onSubmit: (data: OrderFormData) => void;
+  onCancel: () => void;
+  disabled?: boolean;
+}> = ({ defaultSenderName = '', defaultSenderPhone = '', onSubmit, onCancel, disabled = false }) => {
+  const [senderName, setSenderName] = useState(defaultSenderName);
+  const [senderPhone, setSenderPhone] = useState(defaultSenderPhone);
+  const [senderCity, setSenderCity] = useState('TP. Hồ Chí Minh');
+  const [senderWard, setSenderWard] = useState('Phường 10 (Quận Gò Vấp)');
+  const [senderAddress, setSenderAddress] = useState('');
+
+  const [receiverName, setReceiverName] = useState('');
+  const [receiverPhone, setReceiverPhone] = useState('');
+  const [receiverCity, setReceiverCity] = useState('Hà Nội');
+  const [receiverWard, setReceiverWard] = useState('Phường Tràng Tiền (Quận Hoàn Kiếm)');
+  const [receiverAddress, setReceiverAddress] = useState('');
+
+  const [itemName, setItemName] = useState('');
+  const [weightKg, setWeightKg] = useState('1');
+  const [lengthCm, setLengthCm] = useState('10');
+  const [widthCm, setWidthCm] = useState('10');
+  const [heightCm, setHeightCm] = useState('10');
+  const [codAmount, setCodAmount] = useState('0');
+  const [notes, setNotes] = useState('');
+  const [payer, setPayer] = useState<'SENDER' | 'RECEIVER'>('RECEIVER');
+  const [errorMsg, setErrorMsg] = useState('');
+  const [submitted, setSubmitted] = useState(false);
+
+  // Tính toán thể tích IATA và trần vận hành Carrier
+  const numWeight = Math.max(0.1, parseFloat(weightKg) || 1);
+  const numL = Math.max(1, parseInt(lengthCm, 10) || 10);
+  const numW = Math.max(1, parseInt(widthCm, 10) || 10);
+  const numH = Math.max(1, parseInt(heightCm, 10) || 10);
+  const volW = Number(((numL * numW * numH) / 6000).toFixed(2));
+  const chargeableW = Math.max(numWeight, volW);
+  const isVolApplied = volW > numWeight;
+  const maxEdge = Math.max(numL, numW, numH);
+  const sumDims = numL + numW + numH;
+  const isBulky = numWeight > 20 || maxEdge > 60;
+  const isOverLimit = numWeight > 70 || maxEdge > 150 || sumDims > 300;
+
+  // Danh sách Phường/Xã người gửi tương ứng Tỉnh/Thành đã chọn (Chọn tỉnh trước, hiện phường/xã sau)
+  const senderWardList = React.useMemo(() => {
+    return getWardsForProvinceName(senderCity);
+  }, [senderCity]);
+
+  // Danh sách Phường/Xã người nhận tương ứng Tỉnh/Thành đã chọn
+  const receiverWardList = React.useMemo(() => {
+    return getWardsForProvinceName(receiverCity);
+  }, [receiverCity]);
+
+  // Tự động chuyển phường/xã khi đổi Tỉnh/Thành người gửi
+  useEffect(() => {
+    if (senderWardList.length > 0) {
+      const match = senderWardList.find((w) => (w.displayName || w.name) === senderWard);
+      if (!match) {
+        setSenderWard(senderWardList[0].displayName || senderWardList[0].name);
+      }
+    }
+  }, [senderCity, senderWardList]);
+
+  // Tự động chuyển phường/xã khi đổi Tỉnh/Thành người nhận
+  useEffect(() => {
+    if (receiverWardList.length > 0) {
+      const match = receiverWardList.find((w) => (w.displayName || w.name) === receiverWard);
+      if (!match) {
+        setReceiverWard(receiverWardList[0].displayName || receiverWardList[0].name);
+      }
+    }
+  }, [receiverCity, receiverWardList]);
+
+  // Phân giải bưu cục điều phối lấy hàng (Origin Hub) & bưu cục phát tuyến (Destination Hub)
+  const senderParsed = parseWardAndDistrict(senderWard);
+  const cleanSenderWard = senderParsed.ward || senderWard;
+  const senderDistrict = senderParsed.district || '';
+  const senderHub = resolveHubForAddress(senderCity, cleanSenderWard, senderDistrict);
+
+  const receiverParsed = parseWardAndDistrict(receiverWard);
+  const cleanReceiverWard = receiverParsed.ward || receiverWard;
+  const receiverDistrict = receiverParsed.district || '';
+  const receiverHub = resolveHubForAddress(receiverCity, cleanReceiverWard, receiverDistrict);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!senderName.trim() || !senderPhone.trim() || !senderAddress.trim()) {
+      setErrorMsg('Vui lòng điền đủ thông tin người gửi (Họ tên, SĐT, Số nhà/tên đường).');
+      return;
+    }
+    if (!senderCity || !senderWard) {
+      setErrorMsg('Vui lòng chọn Tỉnh/Thành và Phường/Xã lấy hàng.');
+      return;
+    }
+    if (!receiverName.trim() || !receiverPhone.trim() || !receiverAddress.trim()) {
+      setErrorMsg('Vui lòng điền đủ thông tin người nhận (Họ tên, SĐT, Số nhà/tên đường).');
+      return;
+    }
+    if (!receiverCity || !receiverWard) {
+      setErrorMsg('Vui lòng chọn Tỉnh/Thành và Phường/Xã nhận hàng.');
+      return;
+    }
+    if (!itemName.trim()) {
+      setErrorMsg('Vui lòng nhập tên bưu phẩm / hàng hóa.');
+      return;
+    }
+    if (isOverLimit) {
+      setErrorMsg('Vượt trần mạng lưới bưu cục (Tối đa 70kg, 1 cạnh ≤ 150cm, tổng 3 cạnh ≤ 300cm). Vui lòng tách kiện hoặc đổi dịch vụ vận tải.');
+      return;
+    }
+    setErrorMsg('');
+    setSubmitted(true);
+
+    onSubmit({
+      senderName: senderName.trim(),
+      senderPhone: senderPhone.trim(),
+      senderAddress: senderAddress.trim(),
+      senderCity,
+      senderWard: cleanSenderWard,
+      senderDistrict,
+      senderHubCode: senderHub.hubCode,
+      senderHubName: senderHub.hubName,
+      receiverName: receiverName.trim(),
+      receiverPhone: receiverPhone.trim(),
+      receiverAddress: receiverAddress.trim(),
+      receiverCity,
+      receiverWard: cleanReceiverWard,
+      receiverDistrict,
+      receiverHubCode: receiverHub.hubCode,
+      receiverHubName: receiverHub.hubName,
+      itemName: itemName.trim(),
+      weightKg: numWeight,
+      lengthCm: numL,
+      widthCm: numW,
+      heightCm: numH,
+      codAmount: Math.max(0, parseInt(codAmount.replace(/\D/g, ''), 10) || 0),
+      payer,
+      notes: notes.trim(),
+    });
+  };
+
+  if (submitted || disabled) {
+    return (
+      <div className="mt-3 p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-800 text-xs flex items-center justify-between">
+        <span className="font-medium">Đã gửi thông tin đơn hàng - Đang chờ xác nhận</span>
+        <Check className="h-4 w-4 text-emerald-600" />
+      </div>
+    );
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="mt-3 p-3.5 bg-slate-50 border border-slate-200/90 rounded-2xl text-xs space-y-3 shadow-xs">
+      <div className="flex items-center justify-between pb-2 border-b border-slate-200 font-semibold text-slate-800">
+        <div>
+          <span className="text-[13px] font-bold text-slate-900 block">Biểu mẫu tạo đơn hàng</span>
+          <span className="text-[10px] text-blue-600 font-normal">Lấy hàng tận nơi • Gán bưu cục điều phối tự động</span>
+        </div>
+        <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200 font-medium">
+          63 Tỉnh Thành
+        </span>
+      </div>
+
+      {/* Thông tin người gửi & Địa chỉ lấy hàng */}
+      <div className="space-y-1.5">
+        <div className="font-semibold text-slate-700 text-[11px] uppercase tracking-wide flex items-center justify-between">
+          <span>1. Người gửi & Địa chỉ lấy hàng</span>
+          <span className="text-[10px] text-blue-600 font-medium lowercase">bưu tá lấy tận nhà</span>
+        </div>
+        <div className="grid grid-cols-2 gap-1.5">
+          <input
+            type="text"
+            placeholder="Họ tên người gửi *"
+            value={senderName}
+            onChange={(e) => setSenderName(e.target.value)}
+            className="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg outline-none focus:border-blue-500 text-xs"
+          />
+          <input
+            type="tel"
+            placeholder="SĐT người gửi *"
+            value={senderPhone}
+            onChange={(e) => setSenderPhone(e.target.value)}
+            className="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg outline-none focus:border-blue-500 text-xs"
+          />
+        </div>
+        {/* Phân cấp Tỉnh/Thành -> Phường/Xã -> Số nhà/Tên đường */}
+        <div className="grid grid-cols-2 gap-1.5">
+          <div>
+            <label className="text-[10px] text-slate-500 block mb-0.5">Tỉnh / Thành phố lấy hàng *</label>
+            <select
+              value={senderCity}
+              onChange={(e) => setSenderCity(e.target.value)}
+              className="w-full px-2 py-1.5 bg-white border border-slate-200 rounded-lg outline-none focus:border-blue-500 text-[11px] font-medium text-slate-700"
+            >
+              {VIETNAM_63_PROVINCES.map((p) => (
+                <option key={p} value={p}>
+                  {p}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="text-[10px] text-slate-500 block mb-0.5">Phường / Xã lấy hàng *</label>
+            <select
+              value={senderWard}
+              onChange={(e) => setSenderWard(e.target.value)}
+              className="w-full px-2 py-1.5 bg-white border border-slate-200 rounded-lg outline-none focus:border-blue-500 text-[11px] font-medium text-slate-700"
+            >
+              {senderWardList.map((w, idx) => (
+                <option key={idx} value={w.displayName || w.name}>
+                  {w.displayName || w.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+        <input
+          type="text"
+          placeholder="Số nhà, tên đường (Địa chỉ nhà lấy hàng) *"
+          value={senderAddress}
+          onChange={(e) => setSenderAddress(e.target.value)}
+          className="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg outline-none focus:border-blue-500 text-xs"
+        />
+        {/* Hub điều phối badge */}
+        <div className="px-2 py-1 bg-blue-50/70 border border-blue-200/60 rounded-md text-[10px] text-blue-800 flex items-center justify-between">
+          <span className="truncate">
+            <span className="font-semibold">Bưu cục điều phối lấy hàng:</span> [{senderHub.hubCode}] {senderHub.hubName}
+          </span>
+          <span className="shrink-0 ml-1 inline-block w-1.5 h-1.5 rounded-full bg-emerald-500" />
+        </div>
+      </div>
+
+      {/* Thông tin người nhận & Địa chỉ giao hàng */}
+      <div className="space-y-1.5 pt-1 border-t border-slate-100">
+        <div className="font-semibold text-slate-700 text-[11px] uppercase tracking-wide flex items-center justify-between">
+          <span>2. Người nhận & Địa chỉ giao hàng</span>
+          <span className="text-[10px] text-emerald-600 font-medium lowercase">giao tận tay</span>
+        </div>
+        <div className="grid grid-cols-2 gap-1.5">
+          <input
+            type="text"
+            placeholder="Họ tên người nhận *"
+            value={receiverName}
+            onChange={(e) => setReceiverName(e.target.value)}
+            className="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg outline-none focus:border-blue-500 text-xs"
+          />
+          <input
+            type="tel"
+            placeholder="SĐT người nhận *"
+            value={receiverPhone}
+            onChange={(e) => setReceiverPhone(e.target.value)}
+            className="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg outline-none focus:border-blue-500 text-xs"
+          />
+        </div>
+        {/* Phân cấp Tỉnh/Thành -> Phường/Xã -> Số nhà/Tên đường */}
+        <div className="grid grid-cols-2 gap-1.5">
+          <div>
+            <label className="text-[10px] text-slate-500 block mb-0.5">Tỉnh / Thành phố giao đến *</label>
+            <select
+              value={receiverCity}
+              onChange={(e) => setReceiverCity(e.target.value)}
+              className="w-full px-2 py-1.5 bg-white border border-slate-200 rounded-lg outline-none focus:border-blue-500 text-[11px] font-medium text-slate-700"
+            >
+              {VIETNAM_63_PROVINCES.map((p) => (
+                <option key={p} value={p}>
+                  {p}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="text-[10px] text-slate-500 block mb-0.5">Phường / Xã giao đến *</label>
+            <select
+              value={receiverWard}
+              onChange={(e) => setReceiverWard(e.target.value)}
+              className="w-full px-2 py-1.5 bg-white border border-slate-200 rounded-lg outline-none focus:border-blue-500 text-[11px] font-medium text-slate-700"
+            >
+              {receiverWardList.map((w, idx) => (
+                <option key={idx} value={w.displayName || w.name}>
+                  {w.displayName || w.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+        <input
+          type="text"
+          placeholder="Số nhà, tên đường (Địa chỉ nhà giao hàng) *"
+          value={receiverAddress}
+          onChange={(e) => setReceiverAddress(e.target.value)}
+          className="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg outline-none focus:border-blue-500 text-xs"
+        />
+        {/* Hub phát tuyến badge */}
+        <div className="px-2 py-1 bg-indigo-50/70 border border-indigo-200/60 rounded-md text-[10px] text-indigo-800 flex items-center justify-between">
+          <span className="truncate">
+            <span className="font-semibold">Bưu cục phát tuyến:</span> [{receiverHub.hubCode}] {receiverHub.hubName}
+          </span>
+          <span className="shrink-0 ml-1 inline-block w-1.5 h-1.5 rounded-full bg-blue-500" />
+        </div>
+      </div>
+
+      {/* Thông tin hàng hóa */}
+      <div className="space-y-1.5 pt-1 border-t border-slate-100">
+        <div className="font-semibold text-slate-700 text-[11px] uppercase tracking-wide">3. Hàng hóa & Cước phí</div>
+        <input
+          type="text"
+          placeholder="Tên hàng hóa (ví dụ: Quần áo, tài liệu, đồ gia dụng...) *"
+          value={itemName}
+          onChange={(e) => setItemName(e.target.value)}
+          className="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg outline-none focus:border-blue-500 text-xs"
+        />
+        <div className="grid grid-cols-2 gap-1.5">
+          <div>
+            <label className="text-[10px] text-slate-500 block mb-0.5">Khối lượng (kg) *</label>
+            <input
+              type="number"
+              step="0.1"
+              min="0.1"
+              value={weightKg}
+              onChange={(e) => setWeightKg(e.target.value)}
+              className="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg outline-none focus:border-blue-500 text-xs"
+            />
+          </div>
+          <div>
+            <label className="text-[10px] text-slate-500 block mb-0.5">Tiền thu hộ COD (VNĐ)</label>
+            <input
+              type="number"
+              step="1000"
+              min="0"
+              value={codAmount}
+              onChange={(e) => setCodAmount(e.target.value)}
+              className="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg outline-none focus:border-blue-500 text-xs"
+            />
+          </div>
+        </div>
+
+        {/* Kích thước Dài x Rộng x Cao (cm) & Quy đổi thể tích IATA */}
+        <div>
+          <div className="flex items-center justify-between mb-0.5">
+            <label className="text-[10px] text-slate-500">Kích thước (Dài x Rộng x Cao cm) *</label>
+            <span className="text-[9px] text-slate-400 font-mono">IATA: D x R x C / 6000</span>
+          </div>
+          <div className="grid grid-cols-3 gap-1.5">
+            <input
+              type="number"
+              min="1"
+              max="150"
+              placeholder="Dài (cm)"
+              value={lengthCm}
+              onChange={(e) => setLengthCm(e.target.value)}
+              className="w-full px-2 py-1.5 bg-white border border-slate-200 rounded-lg outline-none focus:border-blue-500 text-xs text-center font-mono"
+            />
+            <input
+              type="number"
+              min="1"
+              max="150"
+              placeholder="Rộng (cm)"
+              value={widthCm}
+              onChange={(e) => setWidthCm(e.target.value)}
+              className="w-full px-2 py-1.5 bg-white border border-slate-200 rounded-lg outline-none focus:border-blue-500 text-xs text-center font-mono"
+            />
+            <input
+              type="number"
+              min="1"
+              max="150"
+              placeholder="Cao (cm)"
+              value={heightCm}
+              onChange={(e) => setHeightCm(e.target.value)}
+              className="w-full px-2 py-1.5 bg-white border border-slate-200 rounded-lg outline-none focus:border-blue-500 text-xs text-center font-mono"
+            />
+          </div>
+          {/* Volumetric Weight & Bulky / Ceiling status */}
+          <div className="mt-1 flex items-center justify-between px-2 py-1 bg-slate-100/90 border border-slate-200 rounded-md text-[10px]">
+            <span className="text-slate-600">
+              Quy đổi IATA: <strong className="text-slate-800">{volW} kg</strong>
+              {isVolApplied && <span className="text-blue-700 ml-1 font-semibold">(Áp dụng cước)</span>}
+            </span>
+            <span className="font-semibold text-blue-700">
+              Tính cước: {chargeableW} kg
+            </span>
+          </div>
+          {isBulky && !isOverLimit && (
+            <div className="mt-1 px-2 py-0.5 bg-amber-50 border border-amber-200 rounded text-[10px] text-amber-800 font-medium flex items-center gap-1">
+              <span>Hàng cồng kềnh - Tự động điều phối xe tải</span>
+            </div>
+          )}
+          {isOverLimit && (
+            <div className="mt-1 px-2 py-0.5 bg-rose-50 border border-rose-200 rounded text-[10px] text-rose-700 font-semibold flex items-center gap-1">
+              <span>Vượt trần mạng lưới bưu cục (&gt;70kg hoặc cạnh &gt;150cm)</span>
+            </div>
+          )}
+        </div>
+
+        {/* Ghi chú giao hàng */}
+        <div>
+          <label className="text-[10px] text-slate-500 block mb-0.5">Ghi chú giao hàng</label>
+          <input
+            type="text"
+            placeholder="Ví dụ: Cho xem hàng, gọi trước khi giao..."
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            className="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg outline-none focus:border-blue-500 text-xs"
+          />
+        </div>
+
+        <div className="pt-1">
+          <label className="text-[10px] text-slate-500 block mb-1">Người trả cước vận chuyển:</label>
+          <div className="grid grid-cols-2 gap-1.5">
+            <button
+              type="button"
+              onClick={() => setPayer('RECEIVER')}
+              className={`py-1 px-2 rounded-lg border text-center transition ${
+                payer === 'RECEIVER'
+                  ? 'bg-blue-50 border-blue-500 text-blue-700 font-semibold'
+                  : 'bg-white border-slate-200 text-slate-600'
+              }`}
+            >
+              Người nhận trả
+            </button>
+            <button
+              type="button"
+              onClick={() => setPayer('SENDER')}
+              className={`py-1 px-2 rounded-lg border text-center transition ${
+                payer === 'SENDER'
+                  ? 'bg-blue-50 border-blue-500 text-blue-700 font-semibold'
+                  : 'bg-white border-slate-200 text-slate-600'
+              }`}
+            >
+              Người gửi trả
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {errorMsg && (
+        <div className="text-rose-600 text-[11px] font-medium pt-1">
+          {errorMsg}
+        </div>
+      )}
+
+      {/* Nút hành động */}
+      <div className="flex items-center gap-2 pt-2 border-t border-slate-200">
+        <button
+          type="submit"
+          className="flex-1 py-1.5 px-3 bg-blue-600 hover:bg-blue-700 active:scale-95 text-white font-semibold rounded-lg shadow-sm transition cursor-pointer text-center"
+        >
+          Xác nhận gửi thông tin
+        </button>
+        <button
+          type="button"
+          onClick={onCancel}
+          className="py-1.5 px-3 bg-white hover:bg-slate-100 text-slate-600 border border-slate-200 rounded-lg font-medium transition cursor-pointer"
+        >
+          Hủy
+        </button>
+      </div>
+    </form>
+  );
+};
+
 export const FloatingAiChatWidget: React.FC = () => {
   const { phone, user } = useAuthStore();
   const currentUserId = user?.id || phone || null;
@@ -270,8 +831,8 @@ export const FloatingAiChatWidget: React.FC = () => {
     id: 'welcome_' + (uid || 'guest'),
     sender: 'bot',
     text: uid
-      ? `Dạ em chào anh/chị ${name || ''} ạ! Em là Trợ lý AI Bưu cục Nexus Logistics. Em có thể hỗ trợ anh/chị kiểm tra hành trình bưu gửi, dự toán cước phí hoặc tạo đơn hàng mới. Anh/chị gửi mã vận đơn hoặc chọn các chủ đề gợi ý bên dưới nhé ạ!`
-      : 'Dạ em chào anh/chị ạ! Em là Trợ lý AI Bưu cục Nexus Logistics. Em có thể hỗ trợ anh/chị tra cứu hành trình bưu gửi, dự toán cước phí hoặc hướng dẫn gửi hàng. Anh/chị cần em hỗ trợ gì cứ gửi tin nhắn cho em nhé ạ!',
+      ? `Xin chào ${name || ''}. Tôi là Trợ lý AI của Nexus Logistics. Tôi có thể hỗ trợ tạo đơn gửi hàng, dự toán cước hoặc tra cứu dịch vụ. Quý khách cần hỗ trợ thông tin gì ạ?`
+      : 'Xin chào quý khách. Tôi là Trợ lý AI của Nexus Logistics. Tôi có thể hỗ trợ tạo đơn gửi hàng, tính giá cước hoặc giải đáp dịch vụ bưu chính. Quý khách cần hỗ trợ thông tin gì ạ?',
     time: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
   });
 
@@ -381,7 +942,13 @@ export const FloatingAiChatWidget: React.FC = () => {
     }
   }, [isOpen, messages]);
 
-  const handleSendMessage = async (textToSend?: string) => {
+  const handleSendMessage = async (
+    textToSend?: string,
+    options?: {
+      action?: 'OPEN_ORDER_FORM' | 'SUBMIT_ORDER_FORM' | 'CONFIRM_ORDER' | 'CANCEL_ORDER';
+      orderData?: OrderFormData;
+    }
+  ) => {
     const query = (textToSend || inputMessage).trim();
     if (!query || isLoading) return;
 
@@ -403,7 +970,10 @@ export const FloatingAiChatWidget: React.FC = () => {
         conversationId: conversationId || undefined,
         selectedShipmentCode: lastShipmentCode,
         message: query,
+        action: options?.action,
+        orderData: options?.orderData,
         userId: currentUserId || undefined,
+        userPhone: user?.phone || phone || undefined,
         userName: userDisplayName || undefined,
         senderRole: currentUserId ? 'CUSTOMER' : 'GUEST',
       };
@@ -466,38 +1036,40 @@ export const FloatingAiChatWidget: React.FC = () => {
         citations: responseData.citations,
         shipmentCards: responseData.shipmentCards,
         actionChips: responseData.actionChips,
+        orderFormRequested: responseData.orderFormRequested,
+        orderConfirmation: responseData.orderConfirmation,
       };
       setMessages((prev) => [...prev, botMsg]);
     } catch {
-      const isZaloQuery = /zalo|tác giả|xin việc|tuyển dụng|liên hệ|tú tài|developer|contact|cv/i.test(query);
+      const isZaloQuery = /zalo|tác giả|xin việc|tuyển dụng|liên hệ|developer|contact|cv/i.test(query);
       const isClaimQuery = /CLM|khiếu nại|bồi thường|đền bù/i.test(query);
       const isDamageQuery = /hỏng|hư|bể|vỡ|móp|thiệt hại/i.test(query);
       const isReturnQuery = /hoàn|bom|phí hoàn/i.test(query);
+      const isOrderQuery = /đơn|hàng|tra cứu|mã|gửi|vận đơn|cod|bưu/i.test(query);
 
       let fallbackText = '';
 
       if (isZaloQuery) {
         fallbackText =
-          `Bạn có thể nhắn tin trực tiếp với chuyên viên hỗ trợ qua Zalo [tại đây](https://zalo.me/0869500573) để được xử lý nhanh nhé. ` +
-          `Đội ngũ luôn sẵn sàng hỗ trợ kiểm tra lộ trình bưu gửi, giục phát hoặc giải quyết khiếu nại phát sinh.`;
+          `Quý khách có thể nhắn tin trực tiếp với chuyên viên hỗ trợ qua Zalo [tại đây](https://zalo.me/0869500573) để được xử lý nhanh nhất.`;
       } else if (isDamageQuery) {
         fallbackText =
-          `Với đơn hàng có dấu hiệu hư hỏng hoặc bể vỡ, bạn lưu ý đồng kiểm cùng bưu tá và yêu cầu lập biên bản bất thường ngay lúc nhận nhé.\n\n` +
-          `• Gói Tiêu chuẩn: Bồi thường tối đa 4 lần cước vận chuyển (không quá 1.000.000 đ/đơn).\n` +
-          `• Gói Bảo hiểm khai giá: Đền bù 100% giá trị tổn thất theo hóa đơn chứng từ.\n` +
-          `Hồ sơ thường được thẩm định trong 24 đến 48 giờ. Bạn có mã vận đơn thì gửi luôn để mình kiểm tra tình trạng xử lý giúp bạn.`;
+          `Với hàng hóa có dấu hiệu hư hỏng hoặc bể vỡ, quý khách lưu ý đồng kiểm cùng bưu tá và yêu cầu lập biên bản bất thường ngay lúc nhận.\n\n` +
+          `- Gói Tiêu chuẩn: Bồi thường tối đa 4 lần cước vận chuyển (không quá 1.000.000 đ/đơn).\n` +
+          `- Gói Bảo hiểm khai giá: Đền bù 100% giá trị tổn thất theo hóa đơn chứng từ.\n\n` +
+          `Thời gian thẩm định hồ sơ trong vòng 24 đến 48 giờ làm việc.`;
       } else if (isClaimQuery) {
         fallbackText =
-          `Để tra cứu tiến độ hồ sơ bồi thường, bạn gửi giúp mình mã hồ sơ (ví dụ CLM-...) hoặc mã vận đơn nhé. ` +
-          `Các yêu cầu thường được thẩm định trong vòng 24 đến 48 giờ làm việc. Nếu cần xử lý khẩn, bạn có thể gọi hotline 1900 6868.`;
+          `Hồ sơ khiếu nại bồi thường được thẩm định trong vòng 24 đến 48 giờ làm việc. Nếu cần xử lý khẩn, quý khách vui lòng liên hệ hotline 1900 1234.`;
       } else if (isReturnQuery) {
         fallbackText =
-          `Về quy định chuyển hoàn bưu gửi: với khách gửi thông thường, cước hoàn là 50% cước chiều đi; còn khách hàng doanh nghiệp theo hợp đồng sẽ được miễn phí hoàn 100%. ` +
-          `Bạn gửi mã đơn để mình kiểm tra trạng thái chuyển hoàn cụ thể nhé.`;
+          `Về quy định chuyển hoàn bưu gửi: cước hoàn tiêu chuẩn là 50% cước chiều đi; khách hàng doanh nghiệp theo hợp đồng được miễn phí hoàn 100%.`;
+      } else if (isOrderQuery) {
+        fallbackText =
+          `Hệ thống đang xử lý nhiều lượt tra cứu cùng lúc. Quý khách vui lòng thử lại sau giây lát hoặc gửi lại mã vận đơn.`;
       } else {
         fallbackText =
-          `Hệ thống đang xử lý nhiều lượt tra cứu cùng lúc. ` +
-          `Bạn gửi lại mã vận đơn hoặc liên hệ tổng đài 1900 6868 để bên mình hỗ trợ bạn ngay nhé.`;
+          `Hệ thống chưa có thông tin chi tiết cho câu hỏi này. Quý khách vui lòng liên hệ tổng đài 1900 1234 để được hỗ trợ giải đáp trực tiếp.`;
       }
 
       const botMsg: ChatMessage = {
@@ -694,6 +1266,94 @@ export const FloatingAiChatWidget: React.FC = () => {
 
                       <FormattedChatMessage text={msg.text} isUser={false} />
 
+                      {/* Interactive Order Creation Form */}
+                      {msg.orderFormRequested && (
+                        <OrderCreationForm
+                          defaultSenderName={userDisplayName || ''}
+                          defaultSenderPhone={phone || ''}
+                          onSubmit={(formData) => {
+                            handleSendMessage(
+                              `Tạo đơn hàng từ ${formData.senderCity} đi ${formData.receiverCity}: ${formData.itemName}`,
+                              {
+                                action: 'SUBMIT_ORDER_FORM',
+                                orderData: formData,
+                              }
+                            );
+                          }}
+                          onCancel={() => {
+                            handleSendMessage('Hủy tạo đơn', { action: 'CANCEL_ORDER' });
+                          }}
+                        />
+                      )}
+
+                      {/* Order Confirmation Card */}
+                      {msg.orderConfirmation && (
+                        <div className="mt-3 p-3 bg-blue-50/70 border border-blue-200/90 rounded-2xl space-y-2 text-xs shadow-xs">
+                          <div className="font-semibold text-blue-900 flex items-center justify-between pb-1.5 border-b border-blue-200/60">
+                            <span className="flex items-center gap-1.5">
+                              <Package className="h-4 w-4 text-blue-600" />
+                              Đơn hàng chờ xác nhận
+                            </span>
+                            <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 font-medium">Chưa tạo đơn</span>
+                          </div>
+                          <div className="text-slate-600 space-y-1.5">
+                            <div>
+                              <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide block">Người gửi:</span>
+                              <span className="font-medium text-slate-800">{msg.orderConfirmation.senderName} ({msg.orderConfirmation.senderPhone})</span>
+                              <div className="text-[11px] text-slate-700">
+                                {msg.orderConfirmation.senderAddress}
+                                {msg.orderConfirmation.senderWard ? `, ${msg.orderConfirmation.senderWard}` : ''}
+                                {msg.orderConfirmation.senderCity ? `, ${msg.orderConfirmation.senderCity}` : ''}
+                              </div>
+                              <div className="text-[10px] text-blue-700 font-medium mt-0.5">
+                                Điều phối bưu tá: [{msg.orderConfirmation.senderHubCode || '07904W001'}] {msg.orderConfirmation.senderHubName || 'Bưu cục Phường An Nhơn'}
+                              </div>
+                            </div>
+                            <div className="pt-1.5 border-t border-blue-100">
+                              <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide block">Người nhận:</span>
+                              <span className="font-medium text-slate-800">{msg.orderConfirmation.receiverName} ({msg.orderConfirmation.receiverPhone})</span>
+                              <div className="text-[11px] text-slate-700">
+                                {msg.orderConfirmation.receiverAddress}
+                                {msg.orderConfirmation.receiverWard ? `, ${msg.orderConfirmation.receiverWard}` : ''}
+                                {msg.orderConfirmation.receiverCity ? `, ${msg.orderConfirmation.receiverCity}` : ''}
+                              </div>
+                              <div className="text-[10px] text-indigo-700 font-medium mt-0.5">
+                                Bưu cục phát tuyến: [{msg.orderConfirmation.receiverHubCode || 'HUB-HN-001'}] {msg.orderConfirmation.receiverHubName || 'Bưu cục Khai thác'}
+                              </div>
+                            </div>
+                            <div className="pt-1.5 border-t border-blue-100">
+                              <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide block">Hàng hóa:</span>
+                              <div className="font-medium text-slate-800">
+                                {msg.orderConfirmation.itemName} ({msg.orderConfirmation.weightKg} kg • {msg.orderConfirmation.lengthCm || 10}x{msg.orderConfirmation.widthCm || 10}x{msg.orderConfirmation.heightCm || 10} cm)
+                              </div>
+                              <div className="text-[10px] text-slate-500 mt-0.5">
+                                Quy đổi thể tích IATA: {Number((((msg.orderConfirmation.lengthCm || 10) * (msg.orderConfirmation.widthCm || 10) * (msg.orderConfirmation.heightCm || 10)) / 6000).toFixed(2))} kg
+                              </div>
+                              <div className="flex justify-between pt-1 font-semibold text-slate-800">
+                                <span>Thu hộ COD: {Number(msg.orderConfirmation.codAmount || 0).toLocaleString('vi-VN')} đ</span>
+                                <span className="text-blue-700">Cước tạm tính: {Number(msg.orderConfirmation.shippingFee || 21500).toLocaleString('vi-VN')} đ</span>
+                              </div>
+                            </div>
+                          </div>
+                          <div className="pt-2 flex gap-2">
+                            <button
+                              type="button"
+                              onClick={() => handleSendMessage('Xác nhận tạo đơn', { action: 'CONFIRM_ORDER' })}
+                              className="flex-1 py-1.5 px-3 bg-blue-600 hover:bg-blue-700 active:scale-95 text-white rounded-lg font-semibold text-center shadow-xs transition cursor-pointer"
+                            >
+                              Xác nhận tạo đơn
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleSendMessage('Hủy tạo đơn', { action: 'CANCEL_ORDER' })}
+                              className="py-1.5 px-3 border border-slate-300 hover:bg-slate-100 active:scale-95 text-slate-700 rounded-lg font-medium text-center transition cursor-pointer"
+                            >
+                              Hủy
+                            </button>
+                          </div>
+                        </div>
+                      )}
+
                       {/* Interactive Shipment Cards */}
                       {msg.shipmentCards && msg.shipmentCards.length > 0 && (
                         <InteractiveShipmentCards
@@ -714,11 +1374,27 @@ export const FloatingAiChatWidget: React.FC = () => {
                                   setInputMessage(chip.query);
                                 } else if (chip.label.includes('Đăng nhập')) {
                                   window.location.href = '/login';
+                                } else if (chip.label === 'Tạo đơn ngay' || chip.query === 'Tạo đơn ngay') {
+                                  handleSendMessage('Tạo đơn ngay', { action: 'OPEN_ORDER_FORM' });
+                                } else if (chip.label === 'Xác nhận tạo đơn' || chip.query === 'Xác nhận tạo đơn') {
+                                  handleSendMessage('Xác nhận tạo đơn', { action: 'CONFIRM_ORDER' });
+                                } else if (chip.label === 'Chỉnh sửa thông tin') {
+                                  handleSendMessage('Tạo đơn ngay', { action: 'OPEN_ORDER_FORM' });
+                                } else if (chip.label === 'Hủy tạo đơn' || chip.query === 'Hủy tạo đơn') {
+                                  handleSendMessage('Hủy tạo đơn', { action: 'CANCEL_ORDER' });
                                 } else {
                                   handleSendMessage(chip.query);
                                 }
                               }}
-                              className="px-3 py-1 bg-blue-50/70 hover:bg-blue-100/90 text-blue-700 border border-blue-200/80 text-xs font-semibold transition rounded-full cursor-pointer shadow-xs active:scale-95 whitespace-nowrap"
+                              className={`px-3 py-1 text-xs font-semibold transition rounded-full cursor-pointer shadow-xs active:scale-95 whitespace-nowrap ${
+                                chip.label === 'Xác nhận tạo đơn'
+                                  ? 'bg-emerald-600 hover:bg-emerald-700 text-white'
+                                  : chip.label === 'Tạo đơn ngay'
+                                  ? 'bg-blue-600 hover:bg-blue-700 text-white'
+                                  : chip.label === 'Hủy tạo đơn'
+                                  ? 'bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200'
+                                  : 'bg-blue-50/70 hover:bg-blue-100/90 text-blue-700 border border-blue-200/80'
+                              }`}
                             >
                               {chip.label}
                             </button>

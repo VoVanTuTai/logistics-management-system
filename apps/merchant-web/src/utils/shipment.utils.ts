@@ -235,9 +235,17 @@ export function filterPickupRequestsByUser(
     .filter((pickup) => pickup.items.length > 0);
 }
 
-export function resolveShipmentStatusLabel(shipment: ShipmentResponse): string {
+export function resolveShipmentStatusLabel(
+  shipment: ShipmentResponse,
+  pickupByShipmentCode?: Map<string, PickupRequest>,
+): string {
   const status = shipment.currentStatus;
-  if (status === 'WAITING_PICKUP') return 'Chờ lấy hàng';
+  const normalizedCode = normalizeCode(shipment.code);
+  const pickup = pickupByShipmentCode?.get(normalizedCode);
+  const isPickupActive =
+    pickup && pickup.status !== 'CANCELLED' && pickup.status !== 'COMPLETED';
+
+  if (status === 'WAITING_PICKUP' || isPickupActive) return 'Chờ lấy hàng';
   if (status === 'CREATED' || status === 'UPDATED') return 'Đã tạo';
   if (status === 'PICKUP_COMPLETED' || status === 'PICKED_UP') return 'Đã nhận hàng';
 
@@ -256,7 +264,29 @@ export function resolveShipmentStatusLabel(shipment: ShipmentResponse): string {
       return 'Gửi hàng';
     case 'INVENTORY_CHECK':
       return 'Kiểm tồn kho';
-    case 'TASK_ASSIGNED':
+    case 'TASK_ASSIGNED': {
+      const metadata = asRecord(shipment.metadata) ?? {};
+      const currentTaskType = String(
+        metadata.currentTaskType ?? metadata.lastAssignedTaskType ?? '',
+      ).toUpperCase();
+      if (currentTaskType === 'PICKUP' || metadata.pickupCourierId) {
+        return 'Chờ lấy hàng';
+      }
+      if (currentTaskType === 'DELIVERY' || metadata.deliveryCourierId) {
+        return 'Phát hàng';
+      }
+      const movement = asRecord(metadata.movement);
+      const hubCodes = Array.isArray(movement?.hubCodes) ? movement.hubCodes : [];
+      if (
+        hubCodes.length === 0 &&
+        !metadata.pickupCompletedAt &&
+        !metadata.pickedUpAt &&
+        !metadata.destinationHubInboundAt
+      ) {
+        return 'Chờ lấy hàng';
+      }
+      return 'Phát hàng';
+    }
     case 'OUT_FOR_DELIVERY':
       return 'Phát hàng';
     case 'DELIVERED':
