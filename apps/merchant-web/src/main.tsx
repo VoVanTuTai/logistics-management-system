@@ -753,11 +753,39 @@ function MerchantApp(): React.JSX.Element {
 
   function resolveShipmentStatusCode(shipment: ShipmentResponse): string {
     const normalizedCode = normalizeCode(shipment.code);
+    const pickup = pickupByShipmentCode.get(normalizedCode);
+    const isPickupActive =
+      pickup && pickup.status !== 'CANCELLED' && pickup.status !== 'COMPLETED';
+
     if (
-      pickupByShipmentCode.has(normalizedCode) &&
-      (shipment.currentStatus === 'CREATED' || shipment.currentStatus === 'UPDATED')
+      isPickupActive &&
+      (shipment.currentStatus === 'CREATED' ||
+        shipment.currentStatus === 'UPDATED' ||
+        shipment.currentStatus === 'TASK_ASSIGNED')
     ) {
       return 'WAITING_PICKUP';
+    }
+
+    if (shipment.currentStatus === 'TASK_ASSIGNED') {
+      const metadata = asRecord(shipment.metadata) ?? {};
+      const currentTaskType = String(
+        metadata.currentTaskType ?? metadata.lastAssignedTaskType ?? '',
+      ).toUpperCase();
+      if (currentTaskType === 'PICKUP' || metadata.pickupCourierId) {
+        return 'WAITING_PICKUP';
+      }
+      if (currentTaskType !== 'DELIVERY' && !metadata.deliveryCourierId) {
+        const movement = asRecord(metadata.movement);
+        const hubCodes = Array.isArray(movement?.hubCodes) ? movement.hubCodes : [];
+        if (
+          hubCodes.length === 0 &&
+          !metadata.pickupCompletedAt &&
+          !metadata.pickedUpAt &&
+          !metadata.destinationHubInboundAt
+        ) {
+          return 'WAITING_PICKUP';
+        }
+      }
     }
 
     return shipment.currentStatus;
@@ -808,7 +836,16 @@ function MerchantApp(): React.JSX.Element {
         return 'Gửi hàng';
       case 'INVENTORY_CHECK':
         return 'Kiểm tồn kho';
-      case 'TASK_ASSIGNED':
+      case 'TASK_ASSIGNED': {
+        const metadata = asRecord(shipment.metadata) ?? {};
+        const currentTaskType = String(
+          metadata.currentTaskType ?? metadata.lastAssignedTaskType ?? '',
+        ).toUpperCase();
+        if (currentTaskType === 'PICKUP' || metadata.pickupCourierId) {
+          return 'Chờ lấy hàng';
+        }
+        return 'Phát hàng';
+      }
       case 'OUT_FOR_DELIVERY':
         return 'Phát hàng';
       case 'DELIVERED':
@@ -831,13 +868,23 @@ function MerchantApp(): React.JSX.Element {
   }
 
   function resolveShipmentStatusClass(shipment: ShipmentResponse): string {
-    return resolveShipmentStatusCode(shipment) === 'WAITING_PICKUP'
-      ? statusClass('UPDATED')
-      : statusClass(shipment.currentStatus);
+    const resolved = resolveShipmentStatusCode(shipment);
+    return resolved === 'WAITING_PICKUP'
+      ? statusClass('WAITING_PICKUP')
+      : statusClass(resolved);
   }
 
   function resolveDeliveryInfoChangeBlockReason(row: ShipmentRow | null): string | null {
     if (!row) {
+      return null;
+    }
+
+    const resolvedStatus = resolveShipmentStatusCode(row.shipment);
+    if (
+      resolvedStatus === 'WAITING_PICKUP' ||
+      resolvedStatus === 'CREATED' ||
+      resolvedStatus === 'UPDATED'
+    ) {
       return null;
     }
 
@@ -925,8 +972,10 @@ function MerchantApp(): React.JSX.Element {
 
     const pickup = pickupByShipmentCode.get(normalizedCode);
     if (pickup) {
-      const pickupEventTypeByStatus: Record<PickupRequest['status'], string> = {
+      const pickupEventTypeByStatus: Record<string, string> = {
         REQUESTED: 'Đã yêu cầu lấy hàng',
+        ASSIGNED: 'Đã phân công shipper lấy hàng',
+        IN_PROGRESS: 'Shipper đang đến lấy hàng',
         COMPLETED: 'Đã lấy hàng',
         CANCELLED: 'Yêu cầu lấy hàng đã hủy',
       };
@@ -934,7 +983,7 @@ function MerchantApp(): React.JSX.Element {
       timeline.push({
         id: `${pickup.id}-pickup`,
         eventTypeCode: `pickup.${pickup.status.toLowerCase()}`,
-        eventType: pickupEventTypeByStatus[pickup.status],
+        eventType: pickupEventTypeByStatus[pickup.status] || 'Yêu cầu lấy hàng',
         shipmentCode: normalizedCode,
         actor: pickup.requesterName ?? null,
         locationCode: normalizedSenderHubCode,
@@ -1047,9 +1096,36 @@ function MerchantApp(): React.JSX.Element {
     () => ({
       totalToday: shipments.filter((s) => isToday(s.createdAt)).length,
       waitingPickup: shipments.filter((s) => resolveShipmentStatusCode(s) === 'WAITING_PICKUP').length,
-      inTransit: shipments.filter((s) => ['PICKUP_COMPLETED', 'TASK_ASSIGNED', 'MANIFEST_SEALED', 'MANIFEST_RECEIVED', 'MANIFEST_UNSEALED', 'SEND_GOODS', 'SCAN_INBOUND', 'SCAN_OUTBOUND', 'IN_TRANSIT', 'INVENTORY_CHECK'].includes(s.currentStatus)).length,
-      delivered: shipments.filter((s) => s.currentStatus === 'DELIVERED').length,
-      failedOrReturn: shipments.filter((s) => ['DELIVERY_FAILED', 'NDR_CREATED', 'EXCEPTION', 'RETURN_STARTED', 'RETURN_COMPLETED', 'CANCELLED'].includes(s.currentStatus)).length,
+      inTransit: shipments.filter((s) => {
+        const code = resolveShipmentStatusCode(s);
+        return (
+          code !== 'WAITING_PICKUP' &&
+          [
+            'PICKUP_COMPLETED',
+            'TASK_ASSIGNED',
+            'MANIFEST_SEALED',
+            'MANIFEST_RECEIVED',
+            'MANIFEST_UNSEALED',
+            'SEND_GOODS',
+            'SCAN_INBOUND',
+            'SCAN_OUTBOUND',
+            'IN_TRANSIT',
+            'INVENTORY_CHECK',
+            'OUT_FOR_DELIVERY',
+          ].includes(code)
+        );
+      }).length,
+      delivered: shipments.filter((s) => resolveShipmentStatusCode(s) === 'DELIVERED').length,
+      failedOrReturn: shipments.filter((s) =>
+        [
+          'DELIVERY_FAILED',
+          'NDR_CREATED',
+          'EXCEPTION',
+          'RETURN_STARTED',
+          'RETURN_COMPLETED',
+          'CANCELLED',
+        ].includes(resolveShipmentStatusCode(s)),
+      ).length,
     }),
     [shipments, pickupByShipmentCode],
   );

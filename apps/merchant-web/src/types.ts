@@ -114,6 +114,10 @@ export interface TimelineEvent {
   locationCode: string | null;
   locationText?: string | null;
   occurredAt: string;
+  note?: string | null;
+  proofImageUrl?: string | null;
+  photoUrl?: string | null;
+  metadata?: Record<string, any> | null;
 }
 
 export interface ShipmentRow {

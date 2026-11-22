@@ -395,7 +395,7 @@ export function LinehaulVehicleSealPage(): React.JSX.Element {
                         {trip.vehiclePlate && trip.driverName ? 'Đã gán xe' : 'Kế hoạch'}
                       </span>
                     </td>
-                    <td>{getLinehaulTripStatusLabel(getLinehaulTripStatus(trip))}</td>
+                    <td>{getLinehaulTripStatusLabel(getLinehaulTripStatus(trip), trip)}</td>
                     <td>{trip.originHubCode} ➔ {trip.destinationHubCode}</td>
                     <td>
                       {trip.vehiclePlate || trip.driverName ? (

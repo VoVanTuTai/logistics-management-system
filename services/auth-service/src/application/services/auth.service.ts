@@ -1,6 +1,8 @@
 import {
   BadRequestException,
   ConflictException,
+  HttpException,
+  HttpStatus,
   Inject,
   Injectable,
   NotFoundException,
@@ -70,8 +72,29 @@ const COURIER_ROLE_SET = new Set(['COURIER', 'SHIPPER']);
 const MERCHANT_ROLE_SET = new Set(['MERCHANT']);
 const CUSTOMER_ROLE_SET = new Set(['CUSTOMER']);
 
+interface FailedLoginRecord {
+  attempts: number;
+  firstAttemptAt: number;
+  lockedUntil: number | null;
+}
+
+const DEFAULT_MAX_FAILED_LOGIN_ATTEMPTS = 5;
+const DEFAULT_LOCKOUT_DURATION_MS = 15 * 60 * 1000; // 15 minutes
+
 @Injectable()
 export class AuthService {
+  private readonly failedLoginTracker = new Map<string, FailedLoginRecord>();
+  private readonly maxFailedLoginAttempts = Math.max(
+    1,
+    Number.parseInt(process.env.AUTH_MAX_FAILED_ATTEMPTS ?? '', 10) ||
+      DEFAULT_MAX_FAILED_LOGIN_ATTEMPTS,
+  );
+  private readonly lockoutDurationMs = Math.max(
+    1000,
+    Number.parseInt(process.env.AUTH_LOCKOUT_DURATION_MS ?? '', 10) ||
+      DEFAULT_LOCKOUT_DURATION_MS,
+  );
+
   constructor(
     @Inject(UserAccountRepository)
     private readonly userAccountRepository: UserAccountRepository,
@@ -83,18 +106,120 @@ export class AuthService {
     private readonly adminAuditService: AdminAuditService,
   ) {}
 
+  getLoginLockoutStatus(username: string): {
+    isLocked: boolean;
+    attempts: number;
+    maxAttempts: number;
+    retryAfterSeconds: number;
+  } {
+    const key = username.trim().toLowerCase();
+    const record = this.failedLoginTracker.get(key);
+    const now = Date.now();
+
+    if (!record) {
+      return {
+        isLocked: false,
+        attempts: 0,
+        maxAttempts: this.maxFailedLoginAttempts,
+        retryAfterSeconds: 0,
+      };
+    }
+
+    if (record.lockedUntil && record.lockedUntil > now) {
+      return {
+        isLocked: true,
+        attempts: record.attempts,
+        maxAttempts: this.maxFailedLoginAttempts,
+        retryAfterSeconds: Math.ceil((record.lockedUntil - now) / 1000),
+      };
+    }
+
+    if (record.lockedUntil && record.lockedUntil <= now) {
+      this.failedLoginTracker.delete(key);
+    }
+
+    return {
+      isLocked: false,
+      attempts: record.lockedUntil ? 0 : record.attempts,
+      maxAttempts: this.maxFailedLoginAttempts,
+      retryAfterSeconds: 0,
+    };
+  }
+
+  clearLoginLockout(username: string): void {
+    this.failedLoginTracker.delete(username.trim().toLowerCase());
+  }
+
+  private assertAccountNotLocked(username: string): void {
+    const status = this.getLoginLockoutStatus(username);
+    if (status.isLocked) {
+      const minutesLeft = Math.max(1, Math.ceil(status.retryAfterSeconds / 60));
+      throw new HttpException(
+        {
+          statusCode: HttpStatus.TOO_MANY_REQUESTS,
+          code: 'ACCOUNT_LOCKED',
+          message: `Tài khoản tạm khóa ${minutesLeft} phút do nhập sai mật khẩu quá ${status.maxAttempts} lần liên tiếp.`,
+          retryAfterSeconds: status.retryAfterSeconds,
+        },
+        HttpStatus.TOO_MANY_REQUESTS,
+      );
+    }
+  }
+
+  private async recordFailedLoginAttempt(
+    username: string,
+    user: UserAccount | null,
+  ): Promise<void> {
+    const key = username.trim().toLowerCase();
+    const now = Date.now();
+    const current = this.failedLoginTracker.get(key);
+    const isWindowExpired =
+      !current || now - current.firstAttemptAt > this.lockoutDurationMs;
+
+    const nextAttempts = isWindowExpired ? 1 : current.attempts + 1;
+    const lockedUntil =
+      nextAttempts >= this.maxFailedLoginAttempts
+        ? now + this.lockoutDurationMs
+        : null;
+
+    this.failedLoginTracker.set(key, {
+      attempts: nextAttempts,
+      firstAttemptAt: isWindowExpired ? now : current.firstAttemptAt,
+      lockedUntil,
+    });
+
+    if (lockedUntil) {
+      await this.adminAuditService.record({
+        action: 'AUTH_ACCOUNT_LOCKED',
+        targetType: 'USER',
+        targetId: user?.id ?? key,
+        before: { attempts: nextAttempts - 1 },
+        after: {
+          username: key,
+          attempts: nextAttempts,
+          lockedUntil: new Date(lockedUntil).toISOString(),
+        },
+      });
+      this.assertAccountNotLocked(username);
+    }
+  }
+
   async login(input: LoginInput): Promise<LoginResult> {
     if (!input.username || !input.password) {
       throw new BadRequestException('username and password are required.');
     }
 
+    this.assertAccountNotLocked(input.username);
+
     const user = await this.userAccountRepository.findByUsername(input.username);
 
     if (!user || user.status !== 'ACTIVE') {
+      await this.recordFailedLoginAttempt(input.username, user);
       throw new UnauthorizedException('Sai tên đăng nhập hoặc mật khẩu.');
     }
 
     if (!this.hashService.verify(input.password, user.passwordHash)) {
+      await this.recordFailedLoginAttempt(input.username, user);
       throw new UnauthorizedException('Sai tên đăng nhập hoặc mật khẩu.');
     }
 
@@ -102,6 +227,8 @@ export class AuthService {
       user,
       this.normalizeLoginRoleGroup(input.roleGroup),
     );
+
+    this.clearLoginLockout(input.username);
 
     const issuedAt = new Date();
     const tokens = this.opaqueTokenService.issueTokens(issuedAt);

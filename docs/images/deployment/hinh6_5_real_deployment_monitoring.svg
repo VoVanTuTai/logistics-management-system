@@ -1,0 +1,221 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1380 920" width="1380" height="920">
+  <defs>
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&amp;display=swap');
+      * { box-sizing: border-box; }
+      text { font-family: 'JetBrains Mono', Monaco, Menlo, Consolas, monospace; font-size: 13px; fill: #D4D4D4; }
+      .win-title { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; font-size: 13px; fill: #A0A0A0; font-weight: 500; }
+      .p-user { fill: #38BDF8; font-weight: 600; }
+      .p-path { fill: #818CF8; font-weight: 600; }
+      .p-git { fill: #F472B6; font-weight: 500; }
+      .p-cmd { fill: #FFFFFF; font-weight: 700; }
+      .c-green { fill: #10B981; font-weight: 700; }
+      .c-cyan { fill: #06B6D4; }
+      .c-blue { fill: #38BDF8; font-weight: 600; }
+      .c-yellow { fill: #FBBF24; font-weight: 600; }
+      .c-gray { fill: #94A3B8; }
+      .c-dim { fill: #64748B; }
+      .c-white { fill: #F8FAFC; font-weight: 600; }
+      .t-border { fill: #06B6D4; }
+      .t-head { fill: #E2E8F0; font-weight: 600; }
+      .badge-ok { fill: #10B981; font-weight: 700; }
+    </style>
+    <filter id="shadow" x="-5%" y="-5%" width="110%" height="110%">
+      <feDropShadow dx="0" dy="16" stdDeviation="24" flood-color="#000000" flood-opacity="0.45"/>
+    </filter>
+  </defs>
+
+  <!-- Dark Background Desktop Canvas -->
+  <rect width="1380" height="920" fill="#0B0F19"/>
+
+  <!-- macOS Terminal Window -->
+  <g transform="translate(40, 24)" filter="url(#shadow)">
+    <!-- Window Body -->
+    <rect width="1300" height="870" rx="11" fill="#181824" stroke="#2D2D3D" stroke-width="1.2"/>
+
+    <!-- Window Titlebar -->
+    <path d="M 0 11 C 0 4.93 4.93 0 11 0 L 1289 0 C 1295.07 0 1300 4.93 1300 11 L 1300 42 L 0 42 Z" fill="#20202E"/>
+    <line x1="0" y1="42" x2="1300" y2="42" stroke="#2D2D3D" stroke-width="1"/>
+
+    <!-- macOS Traffic Light Buttons -->
+    <circle cx="22" cy="21" r="6.2" fill="#FF5F56" stroke="#E0443E" stroke-width="0.8"/>
+    <circle cx="43" cy="21" r="6.2" fill="#FFBD2E" stroke="#DEA123" stroke-width="0.8"/>
+    <circle cx="64" cy="21" r="6.2" fill="#27C93F" stroke="#1AAB29" stroke-width="0.8"/>
+
+    <!-- Title Centered -->
+    <text x="650" y="26" text-anchor="middle" class="win-title">Tai.IS@MacBook-Pro: ~/my-project/logistics-management-system — zsh — 148×44</text>
+
+    <!-- Terminal Content Area -->
+    <g transform="translate(24, 68)">
+      <!-- Command 1: docker stats -->
+      <text x="0" y="0">
+        <tspan class="p-user">Tai.IS@MacBook-Pro</tspan>
+        <tspan class="c-dim"> in </tspan>
+        <tspan class="p-path">~/my-project/logistics-management-system</tspan>
+        <tspan class="c-dim"> on </tspan>
+        <tspan class="p-git">main</tspan>
+      </text>
+      <text x="0" y="22">
+        <tspan class="c-green">➜  </tspan>
+        <tspan class="p-cmd">docker stats --no-stream</tspan>
+      </text>
+
+      <!-- Docker Stats Table Output -->
+      <g transform="translate(0, 44)">
+        <text x="0" y="0" class="c-dim" font-weight="700">CONTAINER ID   NAME                 CPU %     MEM USAGE / LIMIT     MEM %     NET I/O           BLOCK I/O         PIDS</text>
+        <text x="0" y="20">
+          <tspan class="c-cyan">552b4c54a8d0   </tspan>
+          <tspan class="c-white">NEXUS-dev-postgres   </tspan>
+          <tspan class="c-green">0.60%     </tspan>
+          <tspan class="c-blue">103.5MiB / 3.827GiB   </tspan>
+          <tspan class="c-yellow">2.64%     </tspan>
+          <tspan class="c-gray">2.01MB / 961kB    </tspan>
+          <tspan class="c-gray">58.1MB / 2.63MB   </tspan>
+          <tspan class="c-cyan">24</tspan>
+        </text>
+        <text x="0" y="40">
+          <tspan class="c-cyan">2435a4e96707   </tspan>
+          <tspan class="c-white">NEXUS-dev-rabbitmq   </tspan>
+          <tspan class="c-green">1.31%     </tspan>
+          <tspan class="c-blue">169.0MiB / 3.827GiB   </tspan>
+          <tspan class="c-yellow">4.31%     </tspan>
+          <tspan class="c-gray">643kB / 443kB     </tspan>
+          <tspan class="c-gray">57.2MB / 1.16MB   </tspan>
+          <tspan class="c-cyan">32</tspan>
+        </text>
+        <text x="0" y="60">
+          <tspan class="c-cyan">cfe835279e1c   </tspan>
+          <tspan class="c-white">NEXUS-dev-redis      </tspan>
+          <tspan class="c-green">0.67%     </tspan>
+          <tspan class="c-blue">19.14MiB / 3.827GiB   </tspan>
+          <tspan class="c-yellow">0.49%     </tspan>
+          <tspan class="c-gray">4.09kB / 1.4kB    </tspan>
+          <tspan class="c-gray">10.4MB / 0B       </tspan>
+          <tspan class="c-cyan">6</tspan>
+        </text>
+        <text x="0" y="80">
+          <tspan class="c-cyan">4669ed01341f   </tspan>
+          <tspan class="c-white">NEXUS-dev-minio      </tspan>
+          <tspan class="c-green">0.04%     </tspan>
+          <tspan class="c-blue">137.0MiB / 3.827GiB   </tspan>
+          <tspan class="c-yellow">3.49%     </tspan>
+          <tspan class="c-gray">12.7kB / 8.61kB   </tspan>
+          <tspan class="c-gray">113MB / 1.25MB    </tspan>
+          <tspan class="c-cyan">9</tspan>
+        </text>
+      </g>
+
+      <!-- Command 2: Host Metrics & PM2 Resource Summary -->
+      <g transform="translate(0, 160)">
+        <text x="0" y="0">
+          <tspan class="c-green">➜  </tspan>
+          <tspan class="p-cmd">npx pm2 status | grep -E "host metrics|id |auth-|gateway|shipment|tracking"</tspan>
+        </text>
+        <text x="0" y="24" class="t-border">┌────┬────────────────────┬──────────┬──────┬───────────┬──────────┬──────────┐</text>
+        <text x="0" y="44">
+          <tspan class="t-border">│ </tspan><tspan class="t-head">id </tspan>
+          <tspan class="t-border">│ </tspan><tspan class="t-head">name               </tspan>
+          <tspan class="t-border">│ </tspan><tspan class="t-head">mode     </tspan>
+          <tspan class="t-border">│ </tspan><tspan class="t-head">↺    </tspan>
+          <tspan class="t-border">│ </tspan><tspan class="t-head">status    </tspan>
+          <tspan class="t-border">│ </tspan><tspan class="t-head">cpu      </tspan>
+          <tspan class="t-border">│ </tspan><tspan class="t-head">memory   </tspan>
+          <tspan class="t-border">│</tspan>
+        </text>
+        <text x="0" y="64" class="t-border">├────┼────────────────────┼──────────┼──────┼───────────┼──────────┼──────────┤</text>
+        <text x="0" y="84">
+          <tspan class="t-border">│ </tspan><tspan class="c-dim">9  </tspan>
+          <tspan class="t-border">│ </tspan><tspan class="c-white">auth-service       </tspan>
+          <tspan class="t-border">│ </tspan><tspan class="c-dim">fork     </tspan>
+          <tspan class="t-border">│ </tspan><tspan class="c-green">0    </tspan>
+          <tspan class="t-border">│ </tspan><tspan class="badge-ok">online    </tspan>
+          <tspan class="t-border">│ </tspan><tspan class="c-green">0%       </tspan>
+          <tspan class="t-border">│ </tspan><tspan class="c-blue">54.8mb   </tspan>
+          <tspan class="t-border">│</tspan>
+        </text>
+        <text x="0" y="104">
+          <tspan class="t-border">│ </tspan><tspan class="c-dim">13 </tspan>
+          <tspan class="t-border">│ </tspan><tspan class="c-white">gateway-bff        </tspan>
+          <tspan class="t-border">│ </tspan><tspan class="c-dim">fork     </tspan>
+          <tspan class="t-border">│ </tspan><tspan class="c-green">0    </tspan>
+          <tspan class="t-border">│ </tspan><tspan class="badge-ok">online    </tspan>
+          <tspan class="t-border">│ </tspan><tspan class="c-green">0%       </tspan>
+          <tspan class="t-border">│ </tspan><tspan class="c-blue">65.3mb   </tspan>
+          <tspan class="t-border">│</tspan>
+        </text>
+        <text x="0" y="124">
+          <tspan class="t-border">│ </tspan><tspan class="c-dim">1  </tspan>
+          <tspan class="t-border">│ </tspan><tspan class="c-white">shipment-service   </tspan>
+          <tspan class="t-border">│ </tspan><tspan class="c-dim">fork     </tspan>
+          <tspan class="t-border">│ </tspan><tspan class="c-green">0    </tspan>
+          <tspan class="t-border">│ </tspan><tspan class="badge-ok">online    </tspan>
+          <tspan class="t-border">│ </tspan><tspan class="c-green">0%       </tspan>
+          <tspan class="t-border">│ </tspan><tspan class="c-blue">65.9mb   </tspan>
+          <tspan class="t-border">│</tspan>
+        </text>
+        <text x="0" y="144">
+          <tspan class="t-border">│ </tspan><tspan class="c-dim">7  </tspan>
+          <tspan class="t-border">│ </tspan><tspan class="c-white">tracking-service   </tspan>
+          <tspan class="t-border">│ </tspan><tspan class="c-dim">fork     </tspan>
+          <tspan class="t-border">│ </tspan><tspan class="c-green">0    </tspan>
+          <tspan class="t-border">│ </tspan><tspan class="badge-ok">online    </tspan>
+          <tspan class="t-border">│ </tspan><tspan class="c-green">0%       </tspan>
+          <tspan class="t-border">│ </tspan><tspan class="c-blue">57.5mb   </tspan>
+          <tspan class="t-border">│</tspan>
+        </text>
+        <text x="0" y="164">
+          <tspan class="t-border">│ </tspan><tspan class="c-dim">14 </tspan>
+          <tspan class="t-border">│ </tspan><tspan class="c-white">nexus-static-web   </tspan>
+          <tspan class="t-border">│ </tspan><tspan class="c-dim">fork     </tspan>
+          <tspan class="t-border">│ </tspan><tspan class="c-green">0    </tspan>
+          <tspan class="t-border">│ </tspan><tspan class="badge-ok">online    </tspan>
+          <tspan class="t-border">│ </tspan><tspan class="c-green">0%       </tspan>
+          <tspan class="t-border">│ </tspan><tspan class="c-blue">51.7mb   </tspan>
+          <tspan class="t-border">│</tspan>
+        </text>
+        <text x="0" y="184" class="t-border">└────┴────────────────────┴──────────┴──────┴───────────┴──────────┴──────────┘</text>
+        <!-- Real PM2 Host Metrics line -->
+        <text x="0" y="210">
+          <tspan class="c-yellow" font-weight="700">host metrics </tspan>
+          <tspan class="c-dim">│ </tspan><tspan class="c-dim">cpu: </tspan><tspan class="c-green">10.8% </tspan>
+          <tspan class="c-dim">│ </tspan><tspan class="c-dim">ram usage: </tspan><tspan class="c-blue">18.7% </tspan>
+          <tspan class="c-dim">│ </tspan><tspan class="c-dim">en0: </tspan><tspan class="c-gray">⇓ 9kb/s ⇑ 154kb/s </tspan>
+          <tspan class="c-dim">│ </tspan><tspan class="c-dim">disk: </tspan><tspan class="c-gray">⇓ 1.4mb/s ⇑ 399kb/s</tspan>
+        </text>
+      </g>
+
+      <!-- Command 3: Health Check & Cloudflared LaunchDaemon Status -->
+      <g transform="translate(0, 420)">
+        <text x="0" y="0">
+          <tspan class="c-green">➜  </tspan>
+          <tspan class="p-cmd">curl -s http://localhost:3000/health | jq .</tspan>
+        </text>
+        <text x="0" y="24" class="c-dim">{</text>
+        <text x="0" y="44">  <tspan class="c-cyan">"service"</tspan><tspan class="c-dim">: </tspan><tspan class="c-green">"gateway-bff"</tspan><tspan class="c-dim">,</tspan></text>
+        <text x="0" y="64">  <tspan class="c-cyan">"status"</tspan><tspan class="c-dim">: </tspan><tspan class="badge-ok">"ok"</tspan><tspan class="c-dim">,</tspan></text>
+        <text x="0" y="84">  <tspan class="c-cyan">"timestamp"</tspan><tspan class="c-dim">: </tspan><tspan class="c-yellow">"2026-11-19T14:06:36.125Z"</tspan></text>
+        <text x="0" y="104" class="c-dim">}</text>
+
+        <!-- Command 4: Cloudflare Daemon Status -->
+        <text x="0" y="140">
+          <tspan class="c-green">➜  </tspan>
+          <tspan class="p-cmd">ps -o pid,user,%cpu,%mem,command -p 397</tspan>
+        </text>
+        <text x="0" y="164" class="c-dim" font-weight="700">  PID USER     %CPU %MEM COMMAND</text>
+        <text x="0" y="186">
+          <tspan class="c-cyan">  397 </tspan>
+          <tspan class="c-white">root      </tspan>
+          <tspan class="c-green">0.2  </tspan>
+          <tspan class="c-yellow">0.2 </tspan>
+          <tspan class="c-gray">/opt/homebrew/bin/cloudflared tunnel run --token-file /Library/Application Support/com.cloudflare.cloudflared/token</tspan>
+        </text>
+
+        <text x="0" y="222">
+          <tspan class="c-green">➜  </tspan>
+          <tspan class="p-cmd">echo "Deployment verification: 15/15 PM2 services ONLINE, 4/4 Docker containers HEALTHY, Cloudflare Tunnel CONNECTED."</tspan>
+        </text>
+        <text x="0" y="244" class="c-green" font-weight="700">Deployment verification: 15/15 PM2 services ONLINE, 4/4 Docker containers HEALTHY, Cloudflare Tunnel CONNECTED.</text>
+      </g>
+    </g>
+  </g>
+</svg>

@@ -2,7 +2,7 @@
   "expo": {
     "name": "NEXUS Customer",
     "slug": "customer-mobile",
-    "version": "1.0.0",
+    "version": "1.0.4",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -13,14 +13,45 @@
       "supportsTablet": true
     },
     "android": {
+      "package": "com.nexuslogistics.customermobile",
+      "versionCode": 10,
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#1D4ED8"
-      }
+      },
+      "permissions": [
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION"
+      ]
     },
+    "plugins": [
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Cho phép ứng dụng dùng vị trí hiện tại để định vị địa chỉ giao nhận hàng."
+        }
+      ],
+      "expo-font",
+      "expo-asset",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "usesCleartextTraffic": true,
+            "enableMinifyInReleaseBuilds": false
+          }
+        }
+      ]
+    ],
     "web": {
       "bundler": "metro",
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "extra": {
+      "eas": {
+        "projectId": "30f346d3-bda9-43ea-b949-be331b6de541"
+      }
+    },
+    "owner": "vovantutai"
   }
 }

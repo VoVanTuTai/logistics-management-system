@@ -6,7 +6,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, shadows, spacing } from '../../../theme';
 
 const nexusHeroBannerImg = require('../../../../assets/nexus-hero-banner.jpg');
@@ -17,6 +17,7 @@ interface HomeHeaderProps {
   onPressNotification?: () => void;
   onPressSearch?: () => void;
   onPressCreateOrder?: () => void;
+  onPressChat?: () => void;
 }
 
 export function HomeHeader({
@@ -25,6 +26,7 @@ export function HomeHeader({
   onPressNotification,
   onPressSearch,
   onPressCreateOrder,
+  onPressChat,
 }: HomeHeaderProps): React.JSX.Element {
   return (
     <View style={styles.headerContainer}>
@@ -55,8 +57,13 @@ export function HomeHeader({
           </View>
 
           <View style={styles.headerActions}>
-            <TouchableOpacity style={styles.actionBtn} activeOpacity={0.8}>
-              <Ionicons name="gift-outline" size={22} color={colors.surface} />
+            <TouchableOpacity
+              style={styles.actionBtn}
+              activeOpacity={0.8}
+              onPress={onPressChat}
+            >
+              <MaterialCommunityIcons name="robot" size={22} color={colors.surface} />
+              <View style={styles.onlineHeaderDot} />
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.actionBtn}
@@ -217,6 +224,17 @@ const styles = StyleSheet.create({
     position: 'relative',
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.38)',
+  },
+  onlineHeaderDot: {
+    position: 'absolute',
+    top: 4,
+    right: 4,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#10B981',
+    borderWidth: 1.5,
+    borderColor: '#0B4AB8',
   },
   badgeDot: {
     position: 'absolute',

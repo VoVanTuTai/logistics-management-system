@@ -104,6 +104,9 @@ export class ShipmentsService {
   }
 
   async create(input: CreateShipmentInput): Promise<Shipment> {
+    const rawMeta = asJsonRecord(input.metadata);
+    validatePhysicalOperationalCeilings(rawMeta);
+
     const pricedInput = await this.pricingClientService.applyQuote(input);
     const normalizedCode = this.normalizeCode(pricedInput.code ?? null);
     const receiverPhone = extractReceiverPhoneFromMetadata(pricedInput.metadata);
@@ -120,7 +123,8 @@ export class ShipmentsService {
       pricedInput.currentStatus ??
       (isCounterOrder ? 'PICKUP_COMPLETED' : 'CREATED');
 
-    const metaRecord = asJsonRecord(enrichedMetadata);
+    const metaRecord = { ...asJsonRecord(enrichedMetadata) };
+    enrichCommodityAndValidateCeilings(metaRecord);
     const opCode =
       metaRecord.operatorCode ||
       (metaRecord.createdBy as Record<string, unknown> | undefined)?.username ||
@@ -144,7 +148,7 @@ export class ShipmentsService {
             metaRecord.statusNote ||
             `Đã tiếp nhận hàng trực tiếp tại quầy bưu cục bởi ${opName}`,
         } as unknown as JsonValue)
-      : (enrichedMetadata as JsonValue);
+      : (metaRecord as unknown as JsonValue);
 
     const inputWithOwnership: CreateShipmentInput = {
       ...pricedInput,
@@ -560,7 +564,7 @@ export class ShipmentsService {
     eventType: ShipmentConsumedEventType,
     eventData: Record<string, unknown>,
   ): JsonValue | null {
-    const currentHubCode = this.resolveMovementHubCode(eventType, eventData);
+    let currentHubCode = this.resolveMovementHubCode(eventType, eventData);
     if (!currentHubCode) {
       return null;
     }
@@ -569,15 +573,58 @@ export class ShipmentsService {
     const location = asJsonRecord(metadata.location);
     const hub = asJsonRecord(metadata.hub);
     const movement = asJsonRecord(metadata.movement);
+    const routing = asJsonRecord(metadata.routing);
+
+    // If task.assigned has a regional hub code but current shipment metadata already points to a specific branch hub,
+    // prevent downgrading currentHubCode to the regional hub
+    if (eventType === 'task.assigned' && isRegionalHub(currentHubCode)) {
+      const existingBranchHub =
+        normalizeString(metadata.currentHubCode) ??
+        normalizeString(routing.originHubCode) ??
+        normalizeString(metadata.senderHubCode) ??
+        normalizeString(location.hubCode);
+      if (existingBranchHub && !isRegionalHub(existingBranchHub)) {
+        currentHubCode = existingBranchHub;
+      }
+    }
     const touchedHubCodes = normalizeStringList([
       ...asUnknownArray(movement.hubCodes),
       currentHubCode,
     ]);
 
+    let assignedCourierId: string | null = null;
+    let taskType: string | null = null;
+    if (eventType === 'task.assigned') {
+      const task = asJsonRecord(eventData.task);
+      taskType = readString(task.taskType);
+      const assignments = asUnknownArray(task.assignments);
+      if (assignments.length > 0) {
+        const activeAssignment = asJsonRecord(
+          assignments.find((a: any) => !a?.unassignedAt) || assignments[assignments.length - 1],
+        );
+        assignedCourierId = readString(activeAssignment.courierId);
+      }
+    }
+
+    const isPickupConfirmed = eventType === 'scan.pickup_confirmed';
+    const isScanInbound = eventType === 'scan.inbound';
+
     return {
       ...metadata,
       currentHubCode,
       currentLocation: currentHubCode,
+      ...(isPickupConfirmed || isScanInbound ? { currentTaskType: null } : {}),
+      ...(assignedCourierId
+        ? {
+            assignedCourier: assignedCourierId,
+            assignedCourierId: assignedCourierId,
+            courierId: assignedCourierId,
+            currentTaskType: taskType,
+            lastAssignedTaskType: taskType,
+            ...(taskType === 'DELIVERY' ? { deliveryCourierId: assignedCourierId } : {}),
+            ...(taskType === 'PICKUP' ? { pickupCourierId: assignedCourierId } : {}),
+          }
+        : {}),
       location: {
         ...location,
         hubCode: currentHubCode,
@@ -753,17 +800,42 @@ function isSameHubOrScopedLocation(
   );
 }
 
+function isRegionalHub(code?: string | null): boolean {
+  if (!code) return false;
+  const normalized = code.trim().toUpperCase();
+  return ['001N001', '002C001', '003S001'].includes(normalized) || /^\d{3}[A-Z]\d{3}$/.test(normalized);
+}
+
 function getBranchHubProvinceScopePrefixes(hubCode: string): string[] {
   const normalizedHubCode = hubCode.trim().toUpperCase();
+
+  if (normalizedHubCode === 'HCM-001' || normalizedHubCode === 'HUB_HCM' || normalizedHubCode === 'HUB-HCM-001') {
+    return ['003079', '079', '003'];
+  }
+  if (normalizedHubCode === 'HN-001' || normalizedHubCode === 'HUB_HN' || normalizedHubCode === 'HUB-HN-001' || normalizedHubCode === 'HUB_HANOI') {
+    return ['001001', '001'];
+  }
+  if (normalizedHubCode === 'DN-001' || normalizedHubCode === 'HUB_DN' || normalizedHubCode === 'HUB-DN-001' || normalizedHubCode === 'HUB_DANANG') {
+    return ['002048', '048', '002'];
+  }
 
   // Regional Hubs (e.g. 001N001, 002C001, 003S001) -> Match 3-digit region prefix (001, 002, 003)
   if (/^\d{3}[A-Z]\d{3}$/.test(normalizedHubCode)) {
     return [normalizedHubCode.slice(0, 3)];
   }
 
-  // Branch Hubs (e.g. 003079B001) -> Match 6-digit province prefix (003079) and 3-digit region prefix (003)
+  // Branch Hubs (e.g. 003079B001) -> Match 6-digit province prefix (003079), 3-digit region prefix (003), and 3-digit province code (079)
   if (/^\d{6}[A-Z][A-Z0-9]*$/.test(normalizedHubCode)) {
-    return [normalizedHubCode.slice(0, 6), normalizedHubCode.slice(0, 3)];
+    return [
+      normalizedHubCode.slice(0, 6),
+      normalizedHubCode.slice(0, 3),
+      normalizedHubCode.slice(3, 6),
+    ];
+  }
+
+  // Ward Hubs (e.g. 07912W001) -> Match 3-digit province prefix (079)
+  if (/^\d{5,}[A-Z][A-Z0-9]*$/.test(normalizedHubCode)) {
+    return [normalizedHubCode.slice(0, 3)];
   }
 
   return [];
@@ -1044,6 +1116,20 @@ const SPATIAL_WARD_HUBS: SpatialWardHub[] = [
     ],
   },
   {
+    code: '07904W001',
+    name: 'Bưu cục Phường An Nhơn - Gò Vấp',
+    parentHubCode: '003079B001',
+    latitude: 10.840,
+    longitude: 106.680,
+    boundaryPolygon: [
+      [10.825, 106.668],
+      [10.855, 106.670],
+      [10.856, 106.692],
+      [10.828, 106.690],
+      [10.825, 106.668],
+    ],
+  },
+  {
     code: '07912W001',
     name: 'Bưu cục Phường An Phú Đông - Quận 12',
     parentHubCode: '003079B001',
@@ -1202,6 +1288,8 @@ function resolveResponsibleHubByCoords(
     if (matchedWard) {
       return { hubCode: matchedWard.code, hubName: matchedWard.name, level: 3 };
     }
+    // Respect explicit hub code passed from saved address or client selection
+    return { hubCode: norm, hubName: explicitHubCode.trim(), level: 2 };
   }
 
   // 1. Exact Boundary Polygon matching (Ray Casting)
@@ -1301,6 +1389,8 @@ function enrichShipmentMetadataCoordinates(
   meta.destinationHubCode = destHub.hubCode;
   meta.senderHubCode = originHub.hubCode;
   meta.receiverHubCode = destHub.hubCode;
+  meta.currentHubCode = originHub.hubCode;
+  meta.currentLocation = originHub.hubCode;
 
   meta.pickupLatitude = pickupCoords.latitude;
   meta.pickupLongitude = pickupCoords.longitude;
@@ -1310,4 +1400,111 @@ function enrichShipmentMetadataCoordinates(
   meta.deliveryCoordinate = deliveryCoords as unknown as JsonValue;
 
   return meta;
+}
+
+function validatePhysicalOperationalCeilings(meta: Record<string, unknown> | null): void {
+  if (!meta) return;
+  const pkg = asJsonRecord(meta.package);
+  if (!pkg) return;
+
+  const actualWeightKg = typeof pkg.weightKg === 'number' ? pkg.weightKg : 0;
+  const dims = asJsonRecord(pkg.dimensionsCm);
+  const length = typeof dims?.length === 'number' ? dims.length : 0;
+  const width = typeof dims?.width === 'number' ? dims.width : 0;
+  const height = typeof dims?.height === 'number' ? dims.height : 0;
+
+  if (actualWeightKg > 70) {
+    throw new BadRequestException(
+      'Vượt trần mạng lưới bưu cục: Khối lượng thực tế không được vượt quá 70 kg/kiện. Vui lòng tách kiện hoặc sử dụng dịch vụ Vận tải hàng nguyên chuyến (Truckload/FTL).',
+    );
+  }
+  const maxSide = Math.max(length, width, height);
+  if (maxSide > 150) {
+    throw new BadRequestException(
+      'Vượt trần mạng lưới bưu cục: Chiều dài một cạnh lớn nhất không được vượt quá 150 cm. Vui lòng tách kiện hoặc sử dụng dịch vụ Vận tải hàng nguyên chuyến (Truckload/FTL).',
+    );
+  }
+  if (length > 0 && width > 0 && height > 0 && (length + width + height) > 300) {
+    throw new BadRequestException(
+      'Vượt trần mạng lưới bưu cục: Tổng 3 chiều (Dài + Rộng + Cao) không được vượt quá 300 cm. Vui lòng tách kiện hoặc sử dụng dịch vụ Vận tải hàng nguyên chuyến (Truckload/FTL).',
+    );
+  }
+}
+
+/**
+ * ===================================================================================
+ * QUY CHUẨN CARRIER: PHÂN LOẠI 5 NHÓM HÀNG VÀ 3 TẦNG TRẦN VẬT LÝ BƯU CỤC
+ * ===================================================================================
+ * 1. KIỂM THỬ GIÁ TRỊ BIÊN (BVA) - 3 TẦNG TRẦN VẬT LÝ MẠNG LƯỚI:
+ *   - Khối lượng tối đa: <= 70 kg / kiện.
+ *   - Chiều dài 1 cạnh lớn nhất: <= 150 cm.
+ *   - Tổng kích thước 3 chiều: D + R + C <= 300 cm.
+ *   -> Vượt bất kỳ chỉ số nào: Chặn cứng Validation (HTTP 400), bảo vệ an toàn Hub.
+ *
+ * 2. PHÂN LOẠI 5 NHÓM MẶT HÀNG CHUẨN CARRIER:
+ *   - GENERAL: Hàng thông thường, tính cước theo cân nặng thực tế.
+ *   - FRAGILE: Hàng dễ vỡ, tự động gắn nhãn "XIN NHẸ TAY", kích hoạt SOP bọc Bubble wrap >= 3 lớp.
+ *   - HIGH_VALUE: Giá trị cao, bắt buộc khai giá, tự động kích hoạt bảo hiểm 100% (cước 0.5%) + tem seal niêm phong.
+ *   - BULKY: Hàng cồng kềnh, tính cước IATA max(W, D*R*C/6000), tự động gán nhãn [CẦN XE TẢI].
+ *   - DOCUMENT: Hồ sơ thư từ, miễn trừ cước thể tích, khóa đồng kiểm nội dung theo Luật Bưu chính.
+ * ===================================================================================
+ */
+function enrichCommodityAndValidateCeilings(meta: Record<string, JsonValue>): void {
+  const pkg = asJsonRecord(meta.package);
+  if (!pkg) return;
+
+  const actualWeightKg = typeof pkg.weightKg === 'number' ? pkg.weightKg : 0;
+  const dims = asJsonRecord(pkg.dimensionsCm);
+  const length = typeof dims?.length === 'number' ? dims.length : 0;
+  const width = typeof dims?.width === 'number' ? dims.width : 0;
+  const height = typeof dims?.height === 'number' ? dims.height : 0;
+
+  // 1. Kiểm tra 3 Tầng trần vật lý tối đa của mạng lưới bưu cục (Ceiling Boundaries)
+  if (actualWeightKg > 70) {
+    throw new BadRequestException(
+      'Vượt trần mạng lưới bưu cục: Khối lượng thực tế không được vượt quá 70 kg/kiện. Vui lòng tách kiện hoặc sử dụng dịch vụ Vận tải hàng nguyên chuyến (Truckload/FTL).',
+    );
+  }
+  const maxSide = Math.max(length, width, height);
+  if (maxSide > 150) {
+    throw new BadRequestException(
+      'Vượt trần mạng lưới bưu cục: Chiều dài một cạnh lớn nhất không được vượt quá 150 cm. Vui lòng tách kiện hoặc sử dụng dịch vụ Vận tải hàng nguyên chuyến (Truckload/FTL).',
+    );
+  }
+  if (length > 0 && width > 0 && height > 0 && (length + width + height) > 300) {
+    throw new BadRequestException(
+      'Vượt trần mạng lưới bưu cục: Tổng 3 chiều (Dài + Rộng + Cao) không được vượt quá 300 cm. Vui lòng tách kiện hoặc sử dụng dịch vụ Vận tải hàng nguyên chuyến (Truckload/FTL).',
+    );
+  }
+
+  // 2. Phân loại 5 nhóm mặt hàng chuẩn Carrier (Commodity Classification)
+  const itemType = (readString(pkg.itemType) || readString(pkg.category) || '').toUpperCase();
+  const isFragile = Boolean(pkg.isFragile || itemType.includes('FRAGILE') || itemType.includes('DỄ VỠ'));
+  const isDoc = itemType.includes('DOCUMENT') || itemType.includes('TÀI LIỆU') || itemType.includes('THƯ');
+  const isHighValue = Boolean(
+    itemType.includes('HIGH_VALUE') ||
+    itemType.includes('ELECTRONICS') ||
+    itemType.includes('ĐIỆN TỬ') ||
+    (typeof pkg.declaredValue === 'number' && pkg.declaredValue >= 5000000)
+  );
+
+  if (isDoc) {
+    meta.commodityGroup = 'DOCUMENT';
+    meta.inspectionPolicy = 'KHONG_DONG_KIEM_CHI_XEM_NGOAI_QUAN';
+  } else if (isHighValue) {
+    meta.commodityGroup = 'HIGH_VALUE';
+    meta.insuranceTier = 'COMPREHENSIVE_100';
+    meta.securitySealRequired = true;
+  } else if (isFragile) {
+    meta.commodityGroup = 'FRAGILE';
+    meta.warningLabel = 'HÀNG DỄ VỠ - XIN NHẸ TAY';
+    meta.packagingSop = 'Bubble wrap ≥ 3 lớp';
+  } else if (actualWeightKg > 20 || maxSide > 60) {
+    meta.commodityGroup = 'BULKY';
+    meta.dispatchTier = 'BULKY_TRUCK';
+    meta.handlingTag = 'CẦN XE TẢI / HÀNG CỒNG KỀNH';
+  } else {
+    meta.commodityGroup = 'GENERAL';
+    meta.dispatchTier = 'STANDARD_COURIER';
+  }
 }

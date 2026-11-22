@@ -29,6 +29,7 @@ import {
   Marker as NativeMarker,
   Polygon as NativePolygon,
   PROVIDER_GOOGLE,
+  isNativeMapSupported,
 } from '../map/nativeMaps';
 
 interface AssignedArea {
@@ -238,8 +239,12 @@ export function MyRouteScreen(): React.JSX.Element {
 
   const activeMapRegion = customFocusedRegion || zoneRegion || DEFAULT_REGION;
   const zoneColor = assignedArea?.colorHex || theme.colors.primary;
-  const canUseNativeMap =
-    Platform.OS !== 'web' && Boolean(NativeMapView && NativePolygon && NativeMarker);
+  const canUseNativeMap = Boolean(
+    isNativeMapSupported &&
+      NativeMapView &&
+      NativePolygon &&
+      NativeMarker,
+  );
 
   const handleFocusZone = () => {
     if (zoneRegion) {

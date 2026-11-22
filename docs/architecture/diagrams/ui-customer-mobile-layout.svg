@@ -1,0 +1,126 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1220" height="780" viewBox="0 0 1220 780">
+  <defs>
+    <linearGradient id="brandGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#003D9B"/>
+      <stop offset="55%" stop-color="#0052CC"/>
+      <stop offset="100%" stop-color="#1D64E8"/>
+    </linearGradient>
+    <linearGradient id="navyGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0B1F44"/>
+      <stop offset="100%" stop-color="#1A3A75"/>
+    </linearGradient>
+    <filter id="cardShadow" x="-4%" y="-6%" width="108%" height="116%">
+      <feDropShadow dx="0" dy="3" stdDeviation="5" flood-color="#0F172A" flood-opacity="0.06"/>
+    </filter>
+    
+  </defs>
+  <rect width="1220" height="780" fill="#FFFFFF"/>
+  <rect x="24" y="18" width="1172" height="678" rx="16" fill="#F8FAFC" stroke="#DBE2F0" stroke-width="1.2"/>
+<text x="610.0" y="54" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="16.5" font-weight="700" fill="#102548" text-anchor="middle">CUSTOMER MOBILE — Ứng dụng Khách hàng Cá nhân (React Native / Expo 54)</text>
+<text x="610.0" y="76" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="11" font-weight="500" fill="#5B6B86" text-anchor="middle">Tạo đơn cá nhân · Ước tính cước IATA V/6000 · Tra cứu Timeline thực tế · Trợ lý AI Hybrid RAG (Rich Card)</text>
+<g filter="url(#cardShadow)"><rect x="165" y="96" width="360" height="558" rx="34" fill="#0F172A" stroke="#334155" stroke-width="2"/></g>
+<rect x="175" y="106" width="340" height="538" rx="26" fill="#F6F8FC" stroke="none" stroke-width="1.2"/>
+<rect x="301.0" y="112" width="88" height="16" rx="8" fill="#0F172A" stroke="none"/>
+<text x="195" y="124" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="10" font-weight="700" fill="#102548" text-anchor="start">09:41</text>
+<text x="497" y="124" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="9.5" font-weight="700" fill="#102548" text-anchor="end">5G  100%</text>
+<text x="345.0" y="678" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="12" font-weight="700" fill="#102548" text-anchor="middle">Màn hình 1: Trang chủ, Tạo đơn &amp; Ước tính cước</text>
+<path d="M175 132 Q175 106 201 106 H489 Q515 106 515 132 V234 H175 Z" fill="url(#brandGrad)"/>
+<rect x="301" y="112" width="88" height="16" rx="8" fill="#0F172A" stroke="none"/>
+<text x="195" y="124" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="10" font-weight="700" fill="#FFFFFF" text-anchor="start">09:41</text>
+<text x="497" y="124" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="9.5" font-weight="700" fill="#FFFFFF" text-anchor="end">5G  100%</text>
+<text x="195" y="156" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="12" font-weight="700" fill="#BFDBFE" text-anchor="start">NEXUS EXPRESS</text>
+<text x="195" y="180" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="16.5" font-weight="700" fill="#FFFFFF" text-anchor="start">Xin chào, Minh Anh</text>
+<rect x="191" y="194" width="308" height="32" rx="10" fill="#FFFFFF" stroke="none"/>
+<text x="205" y="214" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="10" font-weight="500" fill="#5B6B86" text-anchor="start">🔍  Nhập mã vận đơn SHP-... để tra cứu</text>
+<rect x="191" y="246" width="308" height="74" rx="12" fill="#EFF6FF" stroke="#93C5FD" stroke-width="1"/>
+<rect x="203" y="256" width="126" height="20" rx="10.0" fill="#0052CC" stroke="none"/><text x="266.0" y="268.975" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="8.5" font-weight="700" fill="#FFFFFF" text-anchor="middle">HỎA TỐC LIÊN TỈNH</text>
+<text x="203" y="292" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="12" font-weight="700" fill="#102548" text-anchor="start">Đồng giá Tiết kiệm chỉ từ 18.000đ</text>
+<text x="203" y="308" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="9.5" font-weight="500" fill="#5B6B86" text-anchor="start">Ước tính cước chuẩn IATA tự động trong 1 chạm</text>
+<rect x="191" y="332" width="150" height="62" rx="12" fill="#FFFFFF" stroke="#DBE2F0" stroke-width="1"/>
+<rect x="201" y="345" width="34" height="34" rx="9" fill="#E7EFFF" stroke="none"/>
+<text x="218" y="367" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="13" font-weight="700" fill="#0052CC" text-anchor="middle">T</text>
+<text x="243" y="361" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="11" font-weight="700" fill="#102548" text-anchor="start">Tạo đơn gửi</text>
+<text x="243" y="377" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="8.8" font-weight="500" fill="#5B6B86" text-anchor="start">Khởi tạo nhanh</text>
+<rect x="349" y="332" width="150" height="62" rx="12" fill="#FFFFFF" stroke="#DBE2F0" stroke-width="1"/>
+<rect x="359" y="345" width="34" height="34" rx="9" fill="#ECFDF5" stroke="none"/>
+<text x="376" y="367" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="13" font-weight="700" fill="#137F5D" text-anchor="middle">Ư</text>
+<text x="401" y="361" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="11" font-weight="700" fill="#102548" text-anchor="start">Ước tính cước</text>
+<text x="401" y="377" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="8.8" font-weight="500" fill="#5B6B86" text-anchor="start">Chuẩn IATA V/6000</text>
+<rect x="191" y="404" width="150" height="62" rx="12" fill="#FFFFFF" stroke="#DBE2F0" stroke-width="1"/>
+<rect x="201" y="417" width="34" height="34" rx="9" fill="#FEF3C7" stroke="none"/>
+<text x="218" y="439" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="13" font-weight="700" fill="#C26D0A" text-anchor="middle">S</text>
+<text x="243" y="433" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="11" font-weight="700" fill="#102548" text-anchor="start">Sổ địa chỉ</text>
+<text x="243" y="449" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="8.8" font-weight="500" fill="#5B6B86" text-anchor="start">Kho &amp; người nhận</text>
+<rect x="349" y="404" width="150" height="62" rx="12" fill="#FFFFFF" stroke="#DBE2F0" stroke-width="1"/>
+<rect x="359" y="417" width="34" height="34" rx="9" fill="#F3E8FF" stroke="none"/>
+<text x="376" y="439" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="13" font-weight="700" fill="#7C3AED" text-anchor="middle">T</text>
+<text x="401" y="433" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="11" font-weight="700" fill="#102548" text-anchor="start">Trợ lý AI 24/7</text>
+<text x="401" y="449" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="8.8" font-weight="500" fill="#5B6B86" text-anchor="start">Hỏi đáp &amp; Khiếu nại</text>
+<rect x="191" y="480" width="308" height="98" rx="12" fill="#FFFFFF" stroke="#DBE2F0" stroke-width="1"/>
+<text x="203" y="500" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="10.5" font-weight="700" fill="#5B6B86" text-anchor="start">Vận đơn đang giao gần nhất</text>
+<text x="203" y="520" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="12.5" font-weight="700" fill="#0052CC" text-anchor="start">SHP-202605-0018</text>
+<rect x="393" y="504" width="96" height="22" rx="11.0" fill="#DCFCE7" stroke="none"/><text x="441.0" y="518.15" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="9" font-weight="700" fill="#137F5D" text-anchor="middle">Đang giao hàng</text>
+<text x="203" y="542" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="9.8" font-weight="500" fill="#102548" text-anchor="start">Hub 002C001 (TP.HCM)  →  Q.3, TP.HCM</text>
+<text x="203" y="562" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="9.2" font-weight="500" fill="#5B6B86" text-anchor="start">Cập nhật: 09:30 · Bưu tá đang trên đường giao</text>
+<rect x="175" y="592" width="340" height="52" rx="0" fill="#FFFFFF" stroke="#DBE2F0" stroke-width="1"/>
+<text x="217" y="624" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="10" font-weight="700" fill="#0052CC" text-anchor="middle">Trang chủ</text>
+<text x="302" y="624" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="10" font-weight="500" fill="#5B6B86" text-anchor="middle">Đơn hàng</text>
+<text x="387" y="624" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="10" font-weight="500" fill="#5B6B86" text-anchor="middle">Tra cứu</text>
+<text x="472" y="624" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="10" font-weight="500" fill="#5B6B86" text-anchor="middle">Cá nhân</text>
+<g filter="url(#cardShadow)"><rect x="695" y="96" width="360" height="558" rx="34" fill="#0F172A" stroke="#334155" stroke-width="2"/></g>
+<rect x="705" y="106" width="340" height="538" rx="26" fill="#F6F8FC" stroke="none" stroke-width="1.2"/>
+<rect x="831.0" y="112" width="88" height="16" rx="8" fill="#0F172A" stroke="none"/>
+<text x="725" y="124" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="10" font-weight="700" fill="#102548" text-anchor="start">09:42</text>
+<text x="1027" y="124" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="9.5" font-weight="700" fill="#102548" text-anchor="end">5G  100%</text>
+<text x="875.0" y="678" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="12" font-weight="700" fill="#102548" text-anchor="middle">Màn hình 2: Trợ lý AI Hybrid RAG &amp; Rich Card</text>
+<rect x="705" y="132" width="340" height="46" rx="0" fill="#0052CC" stroke="none"/>
+<text x="725" y="154" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="12.5" font-weight="700" fill="#FFFFFF" text-anchor="start">Trợ lý AI Nexus Express</text>
+<text x="725" y="169" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="9" font-weight="500" fill="#BFDBFE" text-anchor="start">Hybrid RAG 3072-D · SSE · Kiểm soát HITL</text>
+<rect x="783" y="192" width="246" height="48" rx="14" fill="#0052CC" stroke="none"/>
+<text x="795" y="212" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="10" font-weight="500" fill="#FFFFFF" text-anchor="start">Kiểm tra giúp đơn SHP-202605-0018</text>
+<text x="795" y="228" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="10" font-weight="500" fill="#FFFFFF" text-anchor="start">và nếu hàng vỡ thì bồi thường thế nào?</text>
+<rect x="721" y="252" width="308" height="272" rx="14" fill="#FFFFFF" stroke="#DBE2F0" stroke-width="1.2"/>
+<text x="733" y="274" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="10.5" font-weight="700" fill="#102548" text-anchor="start">Đơn SHP-202605-0018 đang giao chặng cuối:</text>
+<rect x="733" y="286" width="284" height="86" rx="10" fill="#F6F8FC" stroke="#BFDBFE" stroke-width="1"/>
+<text x="745" y="306" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="10.5" font-weight="700" fill="#0052CC" text-anchor="start">SHP-202605-0018 · Giao Tiêu chuẩn</text>
+<circle cx="757" cy="328" r="6" fill="#0052CC"/>
+<line x1="763" y1="328" x2="821" y2="328" stroke="#0052CC" stroke-width="2"/>
+<text x="757" y="348" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="8.5" font-weight="700" fill="#5B6B86" text-anchor="middle">Tạo đơn</text>
+<circle cx="827" cy="328" r="6" fill="#0052CC"/>
+<line x1="833" y1="328" x2="891" y2="328" stroke="#0052CC" stroke-width="2"/>
+<text x="827" y="348" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="8.5" font-weight="700" fill="#5B6B86" text-anchor="middle">Lấy hàng</text>
+<circle cx="897" cy="328" r="6" fill="#0052CC"/>
+<line x1="903" y1="328" x2="961" y2="328" stroke="#0052CC" stroke-width="2"/>
+<text x="897" y="348" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="8.5" font-weight="700" fill="#5B6B86" text-anchor="middle">Hub</text>
+<circle cx="967" cy="328" r="6" fill="#137F5D"/>
+<text x="967" y="348" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="8.5" font-weight="700" fill="#5B6B86" text-anchor="middle">Đang giao</text>
+<text x="745" y="364" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="9.2" font-weight="500" fill="#102548" text-anchor="start">COD: 450.000đ · Dự kiến giao hôm nay</text>
+<text x="733" y="392" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="10" font-weight="700" fill="#102548" text-anchor="start">Về bồi thường (Điều 25 NĐ 47/2011/NĐ-CP):</text>
+<text x="733" y="409" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="9.3" font-weight="500" fill="#5B6B86" text-anchor="start">• Không khai giá: tối thiểu 4× cước (trần 1 triệu).</text>
+<text x="733" y="425" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="9.3" font-weight="500" fill="#5B6B86" text-anchor="start">• Có bảo hiểm khai giá: đền 100% giá trị thực.</text>
+<text x="733" y="441" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="9.3" font-weight="500" fill="#5B6B86" text-anchor="start">• Hồ sơ sẽ bàn giao QA thẩm định CCTV (HITL).</text>
+<rect x="733" y="452" width="174" height="20" rx="10.0" fill="#F1F5F9" stroke="none"/><text x="820.0" y="465.08" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="8.8" font-weight="700" fill="#5B6B86" text-anchor="middle">Nguồn: SOP_02_Claims.md</text>
+<rect x="733" y="484" width="92" height="26" rx="13.0" fill="#E7EFFF" stroke="#93C5FD" stroke-width="1"/><text x="779.0" y="500.22" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="9.2" font-weight="700" fill="#0052CC" text-anchor="middle">Hẹn lịch giao</text>
+<rect x="831" y="484" width="86" height="26" rx="13.0" fill="#E7EFFF" stroke="#93C5FD" stroke-width="1"/><text x="874.0" y="500.22" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="9.2" font-weight="700" fill="#0052CC" text-anchor="middle">Đổi địa chỉ</text>
+<rect x="923" y="484" width="92" height="26" rx="13.0" fill="#FEF3C7" stroke="#FCD34D" stroke-width="1"/><text x="969.0" y="500.22" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="9.2" font-weight="700" fill="#C26D0A" text-anchor="middle">Mở khiếu nại</text>
+<rect x="721" y="538" width="308" height="38" rx="19" fill="#FFFFFF" stroke="#DBE2F0" stroke-width="1"/>
+<text x="737" y="561" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="10" font-weight="500" fill="#5B6B86" text-anchor="start">Nhập câu hỏi hoặc mã vận đơn...</text>
+<circle cx="1011" cy="557" r="14" fill="#0052CC"/>
+<text x="1011" y="561" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="10" font-weight="700" fill="#FFFFFF" text-anchor="middle">➤</text>
+<line x1="540" y1="370" x2="678" y2="370" stroke="#0052CC" stroke-width="2" stroke-dasharray="6,4"/>
+<polygon points="682,370 670,364 670,376" fill="#0052CC"/>
+<rect x="554" y="338" width="112" height="24" rx="12.0" fill="#F3E8FF" stroke="none"/><text x="610.0" y="353.325" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="9.5" font-weight="700" fill="#7C3AED" text-anchor="middle">Mở Trợ lý AI SSE</text>
+<rect x="24" y="712" width="1172" height="52" rx="10" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="1.2"/>
+<circle cx="53.0" cy="738" r="11" fill="#0052CC"/>
+<text x="53.0" y="742" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="10.5" font-weight="700" fill="#FFFFFF" text-anchor="middle">1</text>
+<text x="72.0" y="734" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="10.8" font-weight="700" fill="#102548" text-anchor="start">Điều hướng 4 Tab chuẩn C-End</text>
+<text x="72.0" y="750" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="9.6" font-weight="500" fill="#5B6B86" text-anchor="start">Trang chủ · Đơn hàng · Tra cứu · Cá nhân (MainTabNavigator)</text>
+<circle cx="433.0" cy="738" r="11" fill="#0052CC"/>
+<text x="433.0" y="742" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="10.5" font-weight="700" fill="#FFFFFF" text-anchor="middle">2</text>
+<text x="452.0" y="734" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="10.8" font-weight="700" fill="#102548" text-anchor="start">Tiện ích gửi lẻ &amp; IATA</text>
+<text x="452.0" y="750" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="9.6" font-weight="500" fill="#5B6B86" text-anchor="start">Tạo đơn cá nhân, ước tính cước V/6000 &amp; sổ địa chỉ</text>
+<circle cx="813.0" cy="738" r="11" fill="#0052CC"/>
+<text x="813.0" y="742" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="10.5" font-weight="700" fill="#FFFFFF" text-anchor="middle">3</text>
+<text x="832.0" y="734" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="10.8" font-weight="700" fill="#102548" text-anchor="start">Rich Generative UI (SSE)</text>
+<text x="832.0" y="750" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="9.6" font-weight="500" fill="#5B6B86" text-anchor="start">Thẻ tiến trình đơn hàng + Action Chips + Trích dẫn SOP</text>
+</svg>

@@ -1,5 +1,5 @@
 import React from 'react';
-import { MapPin, Cpu, User } from 'lucide-react';
+import { MapPin, Cpu, User, ExternalLink, Image as ImageIcon } from 'lucide-react';
 
 import type { TrackingTimelineEventDto } from '../../features/tracking/tracking.types';
 import { formatDateTime } from '../../utils/format';
@@ -47,41 +47,104 @@ export function TrackingTimelineTable({
           </tr>
         </thead>
         <tbody>
-          {items.map((event) => (
-            <tr key={event.id} style={styles.row}>
-              <td style={styles.cell}>
-                <div style={{ fontWeight: 600, color: '#0f172a', fontSize: '13px' }}>
-                  {event.eventType}
-                </div>
-                {event.note ? (
-                  <div style={styles.noteBox}>
-                    {event.note}
+          {items.map((event) => {
+            const rawProofUrl =
+              event.proofImageUrl ||
+              event.photoUrl ||
+              (event.note ? event.note.match(/https?:\/\/[^\s"'<>()|]+/i)?.[0] : undefined);
+            const normalizedProofUrl = rawProofUrl
+              ? rawProofUrl
+                  .replace(/^http:\/\/minio:9000\/?/i, 'https://minio.nexus-ex.site/')
+                  .replace(/^http:\/\/localhost:9000\/?/i, 'https://minio.nexus-ex.site/')
+                  .replace(/^http:\/\/127\.0\.0\.1:9000\/?/i, 'https://minio.nexus-ex.site/')
+                  .replace(/^http:\/\/103\.82\.20\.51:19000\/?/i, 'https://minio.nexus-ex.site/')
+                  .replace(/^http:\/\/103\.82\.20\.51:9000\/?/i, 'https://minio.nexus-ex.site/')
+              : null;
+
+            return (
+              <tr key={event.id} style={styles.row}>
+                <td style={styles.cell}>
+                  <div style={{ fontWeight: 600, color: '#0f172a', fontSize: '13px' }}>
+                    {event.eventType}
                   </div>
-                ) : event.eventTypeCode ? (
-                  <small style={styles.subtle}>{event.eventTypeCode}</small>
-                ) : null}
-              </td>
-              <td style={styles.cell}>
-                {renderSourceBadge(event.eventSource, event.note)}
-              </td>
-              <td style={styles.cell}>
-                <span style={styles.statusBadge}>
-                  {event.statusAfterEvent ?? 'Không có'}
-                </span>
-              </td>
-              <td style={styles.cell}>
-                <div style={{ fontSize: '12px', color: '#334155', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                  <MapPin size={12} style={{ color: '#64748b', flexShrink: 0 }} aria-hidden="true" />
-                  <span>{event.locationText ?? event.locationCode ?? 'Chưa xác định'}</span>
-                </div>
-              </td>
-              <td style={styles.cell}>
-                <span style={{ fontSize: '12px', color: '#64748b' }}>
-                  {formatDateTime(event.occurredAt)}
-                </span>
-              </td>
-            </tr>
-          ))}
+                  {event.note ? (
+                    <div style={styles.noteBox}>
+                      {event.note}
+                    </div>
+                  ) : event.eventTypeCode ? (
+                    <small style={styles.subtle}>{event.eventTypeCode}</small>
+                  ) : null}
+
+                  {normalizedProofUrl ? (
+                    <div style={{ marginTop: 6, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                      <a
+                        href={normalizedProofUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 4,
+                          fontSize: '11px',
+                          fontWeight: 700,
+                          color: '#1d4ed8',
+                          backgroundColor: '#eff6ff',
+                          padding: '2px 8px',
+                          borderRadius: 4,
+                          border: '1px solid #bfdbfe',
+                          textDecoration: 'none',
+                        }}
+                        title="Mở link xem hình trực tiếp trong tab mới"
+                      >
+                        <ImageIcon size={12} />
+                        <span>Link xem hình</span>
+                        <ExternalLink size={11} />
+                      </a>
+                      <a
+                        href={normalizedProofUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{
+                          display: 'inline-block',
+                          borderRadius: 4,
+                          overflow: 'hidden',
+                          border: '1px solid #cbd5e1',
+                          lineHeight: 0,
+                        }}
+                        title="Bấm xem hình ảnh đầy đủ"
+                      >
+                        <img
+                          src={normalizedProofUrl}
+                          alt="Minh chứng"
+                          style={{ height: 36, width: 54, objectFit: 'cover' }}
+                          loading="lazy"
+                        />
+                      </a>
+                    </div>
+                  ) : null}
+                </td>
+                <td style={styles.cell}>
+                  {renderSourceBadge(event.eventSource, event.note)}
+                </td>
+                <td style={styles.cell}>
+                  <span style={styles.statusBadge}>
+                    {event.statusAfterEvent ?? 'Không có'}
+                  </span>
+                </td>
+                <td style={styles.cell}>
+                  <div style={{ fontSize: '12px', color: '#334155', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <MapPin size={12} style={{ color: '#64748b', flexShrink: 0 }} aria-hidden="true" />
+                    <span>{event.locationText ?? event.locationCode ?? 'Chưa xác định'}</span>
+                  </div>
+                </td>
+                <td style={styles.cell}>
+                  <span style={{ fontSize: '12px', color: '#64748b' }}>
+                    {formatDateTime(event.occurredAt)}
+                  </span>
+                </td>
+              </tr>
+            );
+          })}
         </tbody>
       </table>
     </div>

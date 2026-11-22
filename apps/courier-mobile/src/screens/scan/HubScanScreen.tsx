@@ -369,7 +369,7 @@ function LegacyHubScanForm({ route }: Pick<Props, 'route'>): React.JSX.Element {
 
       <Pressable
         disabled={mutation.isPending}
-        onPress={onSubmit}
+        onPress={() => void onSubmit()}
         style={styles.primaryButton}
       >
         {mutation.isPending ? (

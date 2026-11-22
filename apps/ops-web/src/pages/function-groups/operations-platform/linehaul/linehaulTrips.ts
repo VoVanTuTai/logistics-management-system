@@ -1,7 +1,7 @@
 import type { ManifestListItemDto } from '../../../../features/manifests/manifests.types';
 
 export type LinehaulTripType = 'PICKUP' | 'DELIVERY';
-export type LinehaulTripStatus = 'PLANNED' | 'ARRIVED' | 'PRINTED' | 'SEALED' | 'RECEIVED';
+export type LinehaulTripStatus = 'PLANNED' | 'ASSIGNED' | 'ARRIVED' | 'PRINTED' | 'SEALED' | 'RECEIVED';
 
 export interface LinehaulTrip {
   id: string;
@@ -82,10 +82,16 @@ export function getLinehaulTripStatus(trip: LinehaulTrip): LinehaulTripStatus {
   if (trip.printedAt) {
     return 'PRINTED';
   }
+  if (trip.driverName?.trim() && trip.vehiclePlate?.trim()) {
+    return 'ASSIGNED';
+  }
   return 'PLANNED';
 }
 
-export function getLinehaulTripStatusLabel(status: LinehaulTripStatus): string {
+export function getLinehaulTripStatusLabel(
+  status: LinehaulTripStatus,
+  trip?: LinehaulTrip,
+): string {
   switch (status) {
     case 'RECEIVED':
       return 'Đã tiếp nhận tại Hub đích';
@@ -95,8 +101,19 @@ export function getLinehaulTripStatusLabel(status: LinehaulTripStatus): string {
       return 'Xe đã tới Hub đích';
     case 'PRINTED':
       return 'Sẵn sàng xuất bến (Đã in tem)';
+    case 'ASSIGNED':
+      return 'Đã có tài xế/xe (Chờ in tem)';
     case 'PLANNED':
     default:
+      if (trip?.driverName?.trim() && trip?.vehiclePlate?.trim()) {
+        return 'Đã có tài xế/xe (Chờ in tem)';
+      }
+      if (trip?.driverName?.trim() && !trip?.vehiclePlate?.trim()) {
+        return 'Đã có tài xế (Chờ bổ sung xe)';
+      }
+      if (!trip?.driverName?.trim() && trip?.vehiclePlate?.trim()) {
+        return 'Đã có xe (Chờ bổ sung tài xế)';
+      }
       return 'Chờ bổ sung tài xế/xe';
   }
 }
@@ -111,6 +128,7 @@ export function parseTripFromManifest(manifest: ManifestListItemDto): LinehaulTr
   let plannedEndAt = manifest.sealedAt || manifest.createdAt || new Date().toISOString();
   let receiveNote = '';
   let noteShipmentCount = 0;
+  let printedAt = '';
 
   if (note.includes('LINEHAUL_TRIP') || note.includes('=')) {
     const parts = note.split('|');
@@ -135,6 +153,8 @@ export function parseTripFromManifest(manifest: ManifestListItemDto): LinehaulTr
         receiveNote = val;
       } else if (key === 'shipmentcount') {
         noteShipmentCount = parseInt(val, 10) || 0;
+      } else if (key === 'printedat') {
+        printedAt = val;
       }
     }
   }
@@ -173,6 +193,7 @@ export function parseTripFromManifest(manifest: ManifestListItemDto): LinehaulTr
     driverPhone: driverPhone || undefined,
     vehiclePlate: vehiclePlate || undefined,
     shipmentCount: count,
+    printedAt: printedAt || undefined,
     sealedAt: manifest.sealedAt || sealRecord?.sealedAt || undefined,
     sealedBy: sealRecord?.sealedBy || undefined,
     sealCode,
@@ -214,11 +235,17 @@ export function mergeTripsWithManifests(
     } else {
       if (local.printedAt && !existing.printedAt) {
         existing.printedAt = local.printedAt;
+      } else if (existing.printedAt && !local.printedAt) {
+        local.printedAt = existing.printedAt;
       }
-      if (!existing.driverName && local.driverName) {
+      if (local.driverName) {
         existing.driverName = local.driverName;
         existing.driverPhone = local.driverPhone;
         existing.vehiclePlate = local.vehiclePlate;
+      } else if (existing.driverName && !local.driverName) {
+        local.driverName = existing.driverName;
+        local.driverPhone = existing.driverPhone;
+        local.vehiclePlate = existing.vehiclePlate;
       }
       if (!existing.shipmentCount && local.shipmentCount) {
         existing.shipmentCount = local.shipmentCount;

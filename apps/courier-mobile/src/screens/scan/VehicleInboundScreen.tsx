@@ -2,10 +2,14 @@ import React from 'react';
 import {
   ActivityIndicator,
   Image,
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   View,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -30,6 +34,7 @@ import {
   uploadCourierImage,
 } from '../../features/media/courier-media-upload.api';
 import {
+  parseLinehaulVehicleNote,
   parseVehicleLabel,
   type VehicleLabelInfo,
 } from '../../features/scan/vehicle-label';
@@ -77,18 +82,45 @@ function toErrorMessage(error: unknown): string {
 function buildSyncedVehicleInfo(
   scannedVehicleInfo: VehicleLabelInfo,
   manifest: BagManifestDto,
+  departureRecord?: VehicleDepartureRecord | null,
+  loadRecord?: VehicleLoadRecord | null,
 ): VehicleLabelInfo {
+  const noteInfo = parseLinehaulVehicleNote(manifest.note);
+  const sealRecordNote = (manifest as { sealRecord?: { note?: string } }).sealRecord?.note;
+  const sealNoteInfo = parseLinehaulVehicleNote(sealRecordNote);
+
+  const scannedPlate =
+    scannedVehicleInfo.licensePlate && scannedVehicleInfo.licensePlate !== 'UNKNOWN'
+      ? scannedVehicleInfo.licensePlate
+      : '';
+  const notePlate = noteInfo.licensePlate || sealNoteInfo.licensePlate || '';
+  const departurePlate =
+    departureRecord?.vehicle?.licensePlate && departureRecord.vehicle.licensePlate !== 'UNKNOWN'
+      ? departureRecord.vehicle.licensePlate
+      : '';
+  const loadPlate =
+    loadRecord?.vehicle?.licensePlate && loadRecord.vehicle.licensePlate !== 'UNKNOWN'
+      ? loadRecord.vehicle.licensePlate
+      : '';
+
+  const resolvedPlate = scannedPlate || notePlate || departurePlate || loadPlate || 'UNKNOWN';
+
   return {
     ...scannedVehicleInfo,
     vehicleCode: normalizeCode(manifest.manifestCode || scannedVehicleInfo.vehicleCode),
     originHubCode:
       manifest.originHubCode?.trim().toUpperCase() ||
+      noteInfo.originHubCode ||
+      sealNoteInfo.originHubCode ||
       scannedVehicleInfo.originHubCode ||
       'UNKNOWN',
     destinationHubCode:
       manifest.destinationHubCode?.trim().toUpperCase() ||
+      noteInfo.destinationHubCode ||
+      sealNoteInfo.destinationHubCode ||
       scannedVehicleInfo.destinationHubCode ||
       'UNKNOWN',
+    licensePlate: resolvedPlate,
   };
 }
 
@@ -173,6 +205,9 @@ export function VehicleInboundScreen(): React.JSX.Element {
     () => new Set(),
   );
   const [screenMessage, setScreenMessage] = React.useState<string | null>(null);
+  const [manualVehicleInput, setManualVehicleInput] = React.useState('');
+  const [isEditingPlate, setIsEditingPlate] = React.useState(false);
+  const [tempPlate, setTempPlate] = React.useState('');
   const [scanLocked, setScanLocked] = React.useState(false);
   const [isCameraCollapsed, setIsCameraCollapsed] = React.useState(false);
   const [isCapturing, setIsCapturing] = React.useState(false);
@@ -229,7 +264,40 @@ export function VehicleInboundScreen(): React.JSX.Element {
     setSealCodes([]);
     setSelectedSealCodes(new Set());
     setIsCameraCollapsed(false);
+    setManualVehicleInput('');
+    setIsEditingPlate(false);
+    setTempPlate('');
     setScreenMessage('Đã làm mới luồng xe đến.');
+  };
+
+  const addVehicleManually = () => {
+    const trimmed = manualVehicleInput.trim();
+    if (!trimmed) {
+      playScanWarningSound();
+      setScreenMessage('Vui lòng nhập mã chuyến hoặc tem xe.');
+      return;
+    }
+    void applyVehicleLabel(trimmed);
+  };
+
+  const openPlateEditModal = () => {
+    if (!vehicleInfo) return;
+    setTempPlate(vehicleInfo.licensePlate === 'UNKNOWN' ? '' : vehicleInfo.licensePlate);
+    setIsEditingPlate(true);
+  };
+
+  const savePlateEdit = () => {
+    const cleanPlate = tempPlate.trim().toUpperCase();
+    if (!cleanPlate) {
+      playScanWarningSound();
+      setScreenMessage('Biển số xe không được để trống.');
+      return;
+    }
+
+    setVehicleInfo((prev) => (prev ? { ...prev, licensePlate: cleanPlate } : null));
+    setIsEditingPlate(false);
+    playScanSuccessSound();
+    setScreenMessage(`Đã cập nhật biển số xe: ${cleanPlate}`);
   };
 
   const appendSealCode = React.useCallback((rawCode: string) => {
@@ -296,21 +364,28 @@ export function VehicleInboundScreen(): React.JSX.Element {
       return;
     }
 
-    const syncedVehicleInfo = buildSyncedVehicleInfo(nextVehicleInfo, manifest);
-    const nextManifestSealCodes = parseSealCodesFromManifestNote(manifest.note);
+    const targetVehicleCode = normalizeCode(manifest.manifestCode || nextVehicleInfo.vehicleCode);
     const [nextLoadRecord, departureRecords] = await Promise.all([
-      findVehicleLoadRecord(syncedVehicleInfo.vehicleCode),
+      findVehicleLoadRecord(targetVehicleCode),
       readVehicleDepartureRecords(),
     ]);
-    const nextDepartureRecord = findLatestDeparture(
-      departureRecords,
-      syncedVehicleInfo.vehicleCode,
+    const nextDepartureRecord =
+      findLatestDeparture(departureRecords, targetVehicleCode) ||
+      findLatestDeparture(departureRecords, nextVehicleInfo.vehicleCode);
+
+    const syncedVehicleInfo = buildSyncedVehicleInfo(
+      nextVehicleInfo,
+      manifest,
+      nextDepartureRecord,
+      nextLoadRecord,
     );
+    const nextManifestSealCodes = parseSealCodesFromManifestNote(manifest.note);
 
     setVehicleInfo(syncedVehicleInfo);
     setVehicleLoadRecord(nextLoadRecord);
     setDepartureRecord(nextDepartureRecord);
     setManifestSealCodes(nextManifestSealCodes);
+    setManualVehicleInput('');
     playScanSuccessSound();
 
     if (!nextDepartureRecord) {
@@ -658,7 +733,27 @@ export function VehicleInboundScreen(): React.JSX.Element {
           </View>
 
           <View style={[styles.vehicleCard, vehicleInfo && styles.vehicleCardReady]}>
-            <Text style={styles.vehicleTitle}>Tem xe</Text>
+            <View style={styles.vehicleHeaderRow}>
+              <Text style={styles.vehicleTitle}>Tem xe</Text>
+              {vehicleInfo ? (
+                <Pressable onPress={resetVehicleInbound}>
+                  <Text style={styles.resetVehicleText}>Đổi tem xe</Text>
+                </Pressable>
+              ) : null}
+            </View>
+            <View style={styles.inputRow}>
+              <TextInput
+                value={manualVehicleInput}
+                onChangeText={setManualVehicleInput}
+                placeholder="Nhập mã chuyến hoặc tem xe"
+                placeholderTextColor="#9CA3AF"
+                style={[styles.fieldInput, styles.codeInput]}
+                autoCapitalize="characters"
+              />
+              <Pressable onPress={addVehicleManually} style={styles.addButton}>
+                <Text style={styles.addButtonText}>Kiểm tra</Text>
+              </Pressable>
+            </View>
             {vehicleInfo ? (
               <>
                 <View style={styles.vehicleGrid}>
@@ -674,10 +769,36 @@ export function VehicleInboundScreen(): React.JSX.Element {
                     <Text style={styles.infoLabel}>Hub đến</Text>
                     <Text style={styles.infoValue}>{vehicleInfo.destinationHubCode}</Text>
                   </View>
-                  <View style={styles.vehicleInfoCell}>
-                    <Text style={styles.infoLabel}>Biển số</Text>
-                    <Text style={styles.infoValue}>{vehicleInfo.licensePlate}</Text>
-                  </View>
+                  <Pressable
+                    onPress={openPlateEditModal}
+                    style={[
+                      styles.vehicleInfoCell,
+                      styles.vehicleInfoCellClickable,
+                      vehicleInfo.licensePlate === 'UNKNOWN' && styles.vehicleInfoCellWarning,
+                    ]}
+                  >
+                    <View style={styles.cellLabelWithAction}>
+                      <Text style={styles.infoLabel}>Biển số</Text>
+                      <Ionicons
+                        name="pencil-outline"
+                        size={12}
+                        color={vehicleInfo.licensePlate === 'UNKNOWN' ? '#D97706' : '#2563EB'}
+                      />
+                    </View>
+                    <Text
+                      style={[
+                        styles.infoValue,
+                        vehicleInfo.licensePlate === 'UNKNOWN'
+                          ? styles.infoValueMissing
+                          : styles.infoValuePlate,
+                      ]}
+                      numberOfLines={1}
+                    >
+                      {vehicleInfo.licensePlate === 'UNKNOWN'
+                        ? 'Chưa có (Chạm nhập)'
+                        : vehicleInfo.licensePlate}
+                    </Text>
+                  </Pressable>
                 </View>
                 <Text style={styles.loadSummaryText}>
                   Trạng thái tem xe: {toVehicleStatusLabel(vehicleLoadRecord?.status ?? null)}
@@ -688,7 +809,7 @@ export function VehicleInboundScreen(): React.JSX.Element {
                 </Text>
               </>
             ) : (
-              <Text style={styles.emptyGuide}>Chưa có tem xe. Hãy quét mã tem xe bằng camera.</Text>
+              <Text style={styles.emptyGuide}>Chưa có tem xe. Hãy quét mã tem xe bằng camera hoặc nhập mã ở trên.</Text>
             )}
           </View>
 
@@ -805,6 +926,48 @@ export function VehicleInboundScreen(): React.JSX.Element {
           )}
         </Pressable>
       </View>
+
+      <Modal
+        visible={isEditingPlate}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setIsEditingPlate(false)}
+      >
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          style={styles.modalBackdrop}
+        >
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Ionicons name="car-outline" size={24} color="#1D4ED8" />
+              <Text style={styles.modalTitle}>Cập nhật biển số xe</Text>
+            </View>
+            <Text style={styles.modalDescription}>
+              Nhập biển số xe thực tế của chuyến hàng để lưu trữ và đối chiếu vết quét.
+            </Text>
+            <TextInput
+              value={tempPlate}
+              onChangeText={setTempPlate}
+              placeholder="VD: 29H-123.45 hoặc 51D-888.99"
+              placeholderTextColor="#9CA3AF"
+              style={styles.modalInput}
+              autoCapitalize="characters"
+              autoFocus
+            />
+            <View style={styles.modalActionRow}>
+              <Pressable
+                onPress={() => setIsEditingPlate(false)}
+                style={styles.modalCancelButton}
+              >
+                <Text style={styles.modalCancelButtonText}>Hủy</Text>
+              </Pressable>
+              <Pressable onPress={savePlateEdit} style={styles.modalSaveButton}>
+                <Text style={styles.modalSaveButtonText}>Lưu biển số</Text>
+              </Pressable>
+            </View>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
     </View>
   );
 }
@@ -942,6 +1105,50 @@ const styles = StyleSheet.create({
     borderColor: '#99F6E4',
     backgroundColor: '#F0FDFA',
   },
+  vehicleHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  resetVehicleText: {
+    color: '#1D4ED8',
+    fontWeight: '800',
+    fontSize: 12,
+  },
+  inputRow: {
+    flexDirection: 'row',
+    gap: 8,
+    alignItems: 'center',
+  },
+  fieldInput: {
+    flex: 1,
+    minHeight: 40,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#D1D5DB',
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 12,
+    color: '#0F172A',
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  codeInput: {
+    fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
+    letterSpacing: 0.5,
+  },
+  addButton: {
+    minHeight: 40,
+    borderRadius: 8,
+    backgroundColor: '#1D4ED8',
+    paddingHorizontal: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  addButtonText: {
+    color: '#FFFFFF',
+    fontWeight: '700',
+    fontSize: 13,
+  },
   vehicleTitle: {
     color: '#0F172A',
     fontWeight: '800',
@@ -961,6 +1168,18 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     gap: 2,
   },
+  vehicleInfoCellClickable: {
+    borderColor: '#93C5FD',
+  },
+  vehicleInfoCellWarning: {
+    borderColor: '#FDE68A',
+    backgroundColor: '#FFFBEB',
+  },
+  cellLabelWithAction: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
   infoLabel: {
     color: '#64748B',
     fontSize: 11,
@@ -969,6 +1188,90 @@ const styles = StyleSheet.create({
   infoValue: {
     color: '#0F172A',
     fontWeight: '800',
+  },
+  infoValuePlate: {
+    color: '#1D4ED8',
+  },
+  infoValueMissing: {
+    color: '#D97706',
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(15, 23, 42, 0.65)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  modalContent: {
+    width: '100%',
+    maxWidth: 360,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 20,
+    gap: 14,
+    ...theme.shadow.md,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: '#0F172A',
+  },
+  modalDescription: {
+    fontSize: 13,
+    color: '#475569',
+    lineHeight: 18,
+  },
+  modalInput: {
+    minHeight: 46,
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#0F172A',
+    backgroundColor: '#F8FAFC',
+    fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
+  },
+  modalActionRow: {
+    flexDirection: 'row',
+    gap: 10,
+    marginTop: 4,
+  },
+  modalCancelButton: {
+    flex: 1,
+    minHeight: 44,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#F1F5F9',
+  },
+  modalCancelButtonText: {
+    fontWeight: '700',
+    color: '#475569',
+    fontSize: 14,
+  },
+  modalSaveButton: {
+    flex: 1,
+    minHeight: 44,
+    borderRadius: 10,
+    backgroundColor: '#1D4ED8',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalSaveButtonText: {
+    fontWeight: '700',
+    color: '#FFFFFF',
+    fontSize: 14,
   },
   emptyGuide: {
     color: '#64748B',

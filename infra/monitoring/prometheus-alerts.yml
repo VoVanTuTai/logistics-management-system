@@ -1,0 +1,52 @@
+groups:
+  - name: nexus-express-slo-alerts
+    interval: 30s
+    rules:
+      - alert: GatewayTargetDown
+        expr: up{job="gateway-bff-http"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: gateway-bff
+        annotations:
+          summary: "Gateway BFF (:3000) is unreachable"
+          description: "Prometheus failed to scrape gateway-bff /metrics for more than 1 minute."
+
+      - alert: GatewayHigh5xxErrorRate
+        expr: |
+          (
+            sum(rate(gateway_http_requests_total{status_class="5xx"}[5m]))
+            /
+            clamp_min(sum(rate(gateway_http_requests_total[5m])), 1)
+          ) > 0.01
+        for: 5m
+        labels:
+          severity: critical
+          slo: availability-99.9
+        annotations:
+          summary: "Gateway HTTP 5xx error rate exceeds 1% SLO budget"
+          description: "5xx error ratio has remained above 1% for 5 consecutive minutes."
+
+      - alert: GatewayHighP99Latency
+        expr: |
+          histogram_quantile(
+            0.99,
+            sum(rate(gateway_http_request_duration_ms_bucket[5m])) by (le)
+          ) > 500
+        for: 5m
+        labels:
+          severity: warning
+          slo: latency-p99-500ms
+        annotations:
+          summary: "Gateway p99 latency exceeds 500ms"
+          description: "99th percentile HTTP latency at gateway-bff exceeded 500ms over 5 minutes."
+
+      - alert: RabbitMQDeadLetterQueueBacklog
+        expr: rabbitmq_queue_messages{queue=~".*\\.dlq$"} > 0
+        for: 2m
+        labels:
+          severity: warning
+          component: rabbitmq
+        annotations:
+          summary: "Dead Letter Queue backlog detected ({{ $labels.queue }})"
+          description: "One or more domain events landed in a DLQ and require operator inspection or replay."

@@ -93,6 +93,9 @@ function statusTone(status: LinehaulTripStatus, overdue: boolean): string {
   if (status === 'PRINTED') {
     return 'printed';
   }
+  if (status === 'ASSIGNED') {
+    return 'assigned';
+  }
   return 'pending';
 }
 
@@ -109,6 +112,7 @@ function buildLinehaulTripNote(trip: LinehaulTrip): string {
     trip.vehiclePlate?.trim() ? `vehiclePlate=${trip.vehiclePlate.trim().toUpperCase()}` : null,
     trip.vehiclePlate?.trim() ? `licensePlate=${trip.vehiclePlate.trim().toUpperCase()}` : null,
     trip.shipmentCount !== undefined ? `shipmentCount=${trip.shipmentCount}` : null,
+    trip.printedAt ? `printedAt=${trip.printedAt}` : null,
   ]
     .filter((segment): segment is string => Boolean(segment))
     .join('|');
@@ -300,6 +304,7 @@ export function LinehaulTripManagementPage(): React.JSX.Element {
     () => ({
       total: scopedTrips.length,
       planned: scopedTrips.filter((trip) => getLinehaulTripStatus(trip) === 'PLANNED').length,
+      assigned: scopedTrips.filter((trip) => getLinehaulTripStatus(trip) === 'ASSIGNED').length,
       printed: scopedTrips.filter((trip) => getLinehaulTripStatus(trip) === 'PRINTED').length,
       sealed: scopedTrips.filter((trip) => getLinehaulTripStatus(trip) === 'SEALED').length,
       received: scopedTrips.filter((trip) => getLinehaulTripStatus(trip) === 'RECEIVED').length,
@@ -445,7 +450,19 @@ export function LinehaulTripManagementPage(): React.JSX.Element {
       printedAt: new Date().toISOString(),
     };
     saveLocalAndSync(localTrips.map((item) => (item.id === trip.id ? printedTrip : item)));
-    setActionMessage(`Đã in tem niêm phong xe cho chuyến ${trip.tripCode}.`);
+
+    if (accessToken) {
+      const targetManifestId = trip.manifestId || trip.id;
+      if (targetManifestId) {
+        void manifestsClient.update(accessToken, targetManifestId, {
+          originHubCode: printedTrip.originHubCode,
+          destinationHubCode: printedTrip.destinationHubCode,
+          note: buildLinehaulTripNote(printedTrip),
+        }).catch(() => {});
+      }
+    }
+
+    setActionMessage(`Đã in tem niêm phong xe cho chuyến ${trip.tripCode}. Chuyến xe đã sẵn sàng kẹp chì xuất bến.`);
   };
 
   // Seal & Dispatch Modal Handlers
@@ -665,6 +682,10 @@ export function LinehaulTripManagementPage(): React.JSX.Element {
           <span>Chờ bổ sung</span>
           <strong>{kpis.planned}</strong>
         </article>
+        <article data-tone="assigned">
+          <span>Đã gán xe/tài xế</span>
+          <strong>{kpis.assigned}</strong>
+        </article>
         <article data-tone="arrived">
           <span>Đã in tem</span>
           <strong>{kpis.printed}</strong>
@@ -745,7 +766,7 @@ export function LinehaulTripManagementPage(): React.JSX.Element {
             onChange={(event) => updateFilter('status', event.target.value)}
           >
             <option value="ALL">Tất cả</option>
-            {(['PLANNED', 'PRINTED', 'SEALED', 'RECEIVED'] as const).map((status) => (
+            {(['PLANNED', 'ASSIGNED', 'PRINTED', 'SEALED', 'RECEIVED'] as const).map((status) => (
               <option key={status} value={status}>
                 {getLinehaulTripStatusLabel(status)}
               </option>
@@ -815,7 +836,7 @@ export function LinehaulTripManagementPage(): React.JSX.Element {
                             overdue,
                           )}`}
                         >
-                          {overdue ? 'Quá giờ chưa xong' : getLinehaulTripStatusLabel(status)}
+                          {overdue ? 'Quá giờ chưa xong' : getLinehaulTripStatusLabel(status, trip)}
                         </span>
                       </td>
                       <td>
@@ -872,7 +893,7 @@ export function LinehaulTripManagementPage(): React.JSX.Element {
                       </td>
                       <td>
                         <div className="ops-linehaul-dashboard__row-actions">
-                          {status === 'PLANNED' || status === 'PRINTED' ? (
+                          {status === 'PLANNED' || status === 'ASSIGNED' || status === 'PRINTED' ? (
                             <button type="button" onClick={() => selectTripForOperation(trip)}>
                               <Pencil size={14} />
                               Bổ sung
@@ -884,7 +905,7 @@ export function LinehaulTripManagementPage(): React.JSX.Element {
                             {trip.printedAt ? 'In lại' : 'In tem'}
                           </button>
 
-                          {(status === 'PLANNED' || status === 'PRINTED') && canPrintTrip(trip) ? (
+                          {(status === 'PLANNED' || status === 'ASSIGNED' || status === 'PRINTED') && canPrintTrip(trip) ? (
                             <button
                               type="button"
                               className="ops-linehaul-dashboard__btn--seal"

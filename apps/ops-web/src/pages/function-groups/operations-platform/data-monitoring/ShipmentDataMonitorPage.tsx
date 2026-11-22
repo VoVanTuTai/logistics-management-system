@@ -1177,6 +1177,17 @@ Kiến nghị: Yêu cầu Hub gửi và Tài xế xe tải kiểm tra kho bãi/t
                 In tem nhiệt
               </button>
 
+              <button
+                type="button"
+                className="ops-shipment-drawer__btn--secondary"
+                style={{ color: 'var(--ops-primary, #0052cc)', borderColor: '#bfdbfe', background: '#eff6ff', fontWeight: 700 }}
+                onClick={() => {
+                  window.location.href = `/app/function-groups/service-quality/tra-cuu-tich-hop?shipmentCode=${encodeURIComponent(inspectingShipment.shipmentCode)}`;
+                }}
+              >
+                Tra cứu tích hợp 360°
+              </button>
+
               {INBOUND_EXPECTED_SET.has(inspectingShipment.currentStatus) ? (
                 <>
                   <button

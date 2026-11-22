@@ -21,6 +21,34 @@ import {
   type LocationCoordinates,
 } from '../services/locationService';
 import { colors, shadows, spacing } from '../theme';
+import { findBestHubForWard } from './AddressSelectorModal';
+
+function calculateHaversineDistanceKm(
+  lat1: number,
+  lon1: number,
+  lat2: number,
+  lon2: number,
+): number {
+  const R = 6371;
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLon = ((lon2 - lon1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos((lat1 * Math.PI) / 180) *
+      Math.cos((lat2 * Math.PI) / 180) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+}
+
+function removeAccents(str: string): string {
+  return (str || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim();
+}
 
 interface LocationPickerMapModalProps {
   visible: boolean;
@@ -45,12 +73,12 @@ export function LocationPickerMapModal({
   onConfirmLocation,
   accessToken,
 }: LocationPickerMapModalProps): React.JSX.Element {
-  const webViewRef = useRef<WebView | null>(null);
+  const webViewRef = useRef<any>(null);
   const pendingCoordsRef = useRef<LocationCoordinates | null>(null);
 
   const [coords, setCoords] = useState<LocationCoordinates>({
-    latitude: 10.867, // An Phú Đông Default
-    longitude: 106.696,
+    latitude: 10.840,
+    longitude: 106.680,
   });
   const [geocoded, setGeocoded] = useState<GeocodedAddressResult | null>(null);
   const [hubList, setHubList] = useState<HubRecord[]>(DEFAULT_HUB_RECORDS);
@@ -99,19 +127,26 @@ export function LocationPickerMapModal({
     };
   }, [visible]);
 
-  // Reverse geocode & match Hub
+  // Reverse geocode & match Hub intelligently (ward/district match -> haversine distance -> province fallback)
   const updateAddressForCoords = async (lat: number, lng: number) => {
     setResolvingAddress(true);
     try {
       const res = await locationService.reverseGeocode(lat, lng);
       setGeocoded(res);
 
-      const normProv = (res.province || '').toLowerCase().replace(/^(tỉnh|thành phố)\s+/, '');
-      const foundHub = hubList.find((h) => {
-        const normH = (h.province || '').toLowerCase();
+      const ward = res.ward || '';
+      const district = res.district || '';
+      const normProv = removeAccents(res.province || '').replace(/^(tinh|thanh pho|tp)\s+/, '');
+
+      // Filter hubList by current province if matched
+      const provinceHubs = hubList.filter((h) => {
+        const normH = removeAccents(h.province || '');
         return normH.includes(normProv) || normProv.includes(normH);
       });
-      setSelectedHub(foundHub || hubList[0] || DEFAULT_HUB_RECORDS[0]);
+      const candidates = provinceHubs.length > 0 ? provinceHubs : hubList;
+
+      const bestHub = findBestHubForWard(ward, district, { latitude: lat, longitude: lng }, candidates);
+      setSelectedHub(bestHub || candidates[0] || DEFAULT_HUB_RECORDS[0]);
     } catch {
       // Ignore errors
     } finally {
@@ -268,20 +303,20 @@ export function LocationPickerMapModal({
 
           {/* REAL INTERACTIVE MAP CANVAS */}
           <View style={styles.mapCanvasContainer}>
-            <WebView
-              ref={webViewRef}
-              originWhitelist={['*']}
-              source={{ html: mapHtml }}
-              onMessage={handleWebViewMessage}
-              onLoadEnd={() => {
+            {React.createElement(WebView as any, {
+              ref: webViewRef,
+              originWhitelist: ['*'],
+              source: { html: mapHtml },
+              onMessage: handleWebViewMessage,
+              onLoadEnd: () => {
                 if (pendingCoordsRef.current) {
                   sendCenterToMap(pendingCoordsRef.current.latitude, pendingCoordsRef.current.longitude);
                 }
-              }}
-              style={styles.webViewMap}
-              javaScriptEnabled
-              domStorageEnabled
-            />
+              },
+              style: styles.webViewMap,
+              javaScriptEnabled: true,
+              domStorageEnabled: true,
+            })}
 
             {/* FLOATING GPS RE-CENTER BUTTON */}
             <TouchableOpacity

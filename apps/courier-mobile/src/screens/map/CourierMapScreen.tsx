@@ -46,6 +46,7 @@ import {
   Polyline as NativePolyline,
   Polygon as NativePolygon,
   PROVIDER_GOOGLE,
+  isNativeMapSupported,
 } from './nativeMaps';
 
 interface AssignedCourierArea {
@@ -1384,9 +1385,16 @@ export function CourierMapScreen(): React.JSX.Element {
   ).size;
   const codTotal = mapPoints.reduce((total, point) => total + (point.codAmount ?? 0), 0);
   const todayLabel = formatTodayLabel();
-  const canUseNativeMap =
-    Platform.OS !== 'web' &&
-    Boolean(NativeMapView && NativeMarker && NativePolyline);
+  const canUseNativeMap = Boolean(
+    isNativeMapSupported &&
+      NativeMapView &&
+      NativeMarker &&
+      NativePolyline,
+  );
+  const displayRoutePoints = useMemo(
+    () => (routeMapPoints.length > 0 ? routeMapPoints : mapPoints),
+    [routeMapPoints, mapPoints],
+  );
   const locationNotice =
     locationState === 'unavailable'
       ? 'Chưa cấp quyền vị trí. Courier vẫn xem được tuyến nhưng chưa thấy vị trí hiện tại.'
@@ -1852,7 +1860,7 @@ export function CourierMapScreen(): React.JSX.Element {
                   </NativeMarker>
                 ) : null}
 
-                {routeMapPoints.map((point) => {
+                {displayRoutePoints.map((point) => {
                   if (!point.coordinate) {
                     return null;
                   }
@@ -1971,7 +1979,7 @@ export function CourierMapScreen(): React.JSX.Element {
                   </View>
                 )}
 
-                {routeMapPoints.map((point) => {
+                {displayRoutePoints.map((point) => {
                   const selected = selectedPoint?.id === point.id;
                   const clustered = selectedClusterPointIds.has(point.id);
                   const routed = routePointIds.has(point.id);

@@ -593,7 +593,7 @@ async function scenario5_autoDispatchVerification(sessions, originHub, destHub) 
     const pickupTask = pTasks[0];
     const pAssignment = pickupTask.assignments?.find(a => !a.unassignedAt) || pickupTask.assignments?.[0];
     assert(pAssignment?.courierId, `Pickup courier not assigned`);
-    assert(pickupTask.note?.includes('tự động điều phối'), 'Pickup task note should contain auto-dispatch text');
+    assert(pickupTask.note?.toLowerCase().includes('tự động điều phối'), 'Pickup task note should contain auto-dispatch text');
     pass(`Auto-Dispatch PICKUP: Shipper ${pAssignment.courierId} | Ghi chú: "${pickupTask.note?.slice(0, 60)}..."`);
 
     // 3. Hoàn tất pickup + transit

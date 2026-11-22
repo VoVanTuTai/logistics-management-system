@@ -221,6 +221,6 @@ Write-Host " Customer Mobile: Expo Port 8082 (auto-switch if in use)"
 Write-Host "-------------------------------------------------"
 Write-Host " Demo Logins (Password for all: password):"
 Write-Host "   Merchant:  41100001"
-Write-Host "   Courier:   30001001 / 30002015"
+Write-Host "   Courier:   30000000 (Toan quoc) / 30002015"
 Write-Host "   Admin:     admin@nexus.dev"
 Write-Host "=================================================" -ForegroundColor Green

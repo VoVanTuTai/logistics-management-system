@@ -1,3 +1,4 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { appEnv } from '../../utils/env';
 
 export type HttpMethod = 'GET' | 'POST' | 'PATCH' | 'DELETE';
@@ -29,9 +30,12 @@ export class ApiClientError extends Error {
   }
 }
 
+const STORAGE_ACTIVE_GATEWAY = 'CUSTOMER_ACTIVE_GATEWAY_URL';
+
 export class CustomerApiClient {
   private readonly gatewayCandidates: string[];
   private activeBaseUrl: string | null = null;
+  private storageLoaded = false;
 
   constructor(
     private readonly baseUrl: string,
@@ -49,19 +53,57 @@ export class CustomerApiClient {
     if (this.gatewayCandidates.length > 0) {
       this.activeBaseUrl = this.gatewayCandidates[0];
     }
+    // Eagerly restore previously confirmed working gateway from persistent storage
+    this.initSavedActiveGateway();
+  }
+
+  private async initSavedActiveGateway(): Promise<void> {
+    try {
+      const saved = await AsyncStorage.getItem(STORAGE_ACTIVE_GATEWAY);
+      if (saved && this.gatewayCandidates.includes(saved)) {
+        this.activeBaseUrl = saved;
+      }
+    } catch {
+      // Ignore storage errors
+    } finally {
+      this.storageLoaded = true;
+    }
   }
 
   async request<T>(path: string, options: RequestOptions = {}): Promise<T> {
+    if (!this.storageLoaded) {
+      await this.initSavedActiveGateway();
+    }
+
     let lastNetworkError: unknown = null;
 
     const candidates = this.activeBaseUrl
       ? [this.activeBaseUrl, ...this.gatewayCandidates.filter((c) => c !== this.activeBaseUrl)]
       : this.gatewayCandidates;
 
-    for (const candidateBaseUrl of candidates) {
+    for (let i = 0; i < candidates.length; i++) {
+      const candidateBaseUrl = candidates[i];
+      const isCandidateActive = candidateBaseUrl === this.activeBaseUrl;
+      const isLastCandidate = i === candidates.length - 1;
+
+      // Use fast probe timeout (2500ms) for untested candidates to fail over instantly
+      const probeTimeout = isCandidateActive || isLastCandidate
+        ? (this.timeoutMs || 8000)
+        : 2500;
+
       try {
-        const result = await this.requestWithCandidateBaseUrl<T>(candidateBaseUrl, path, options);
-        this.activeBaseUrl = candidateBaseUrl;
+        const result = await this.requestWithCandidateBaseUrl<T>(
+          candidateBaseUrl,
+          path,
+          options,
+          probeTimeout,
+        );
+
+        if (this.activeBaseUrl !== candidateBaseUrl) {
+          this.activeBaseUrl = candidateBaseUrl;
+          AsyncStorage.setItem(STORAGE_ACTIVE_GATEWAY, candidateBaseUrl).catch(() => {});
+        }
+
         return result;
       } catch (error) {
         if (error instanceof ApiClientError && !error.isNetworkError) {
@@ -85,9 +127,10 @@ export class CustomerApiClient {
     candidateBaseUrl: string,
     path: string,
     options: RequestOptions,
+    customTimeout?: number,
   ): Promise<T> {
     const controller = new AbortController();
-    const effectiveTimeout = this.timeoutMs || 15000;
+    const effectiveTimeout = customTimeout ?? (this.timeoutMs || 8000);
     const timeoutId = setTimeout(() => controller.abort(), effectiveTimeout);
 
     const trimmedBase = candidateBaseUrl.trim().replace(/\/+$/, '');

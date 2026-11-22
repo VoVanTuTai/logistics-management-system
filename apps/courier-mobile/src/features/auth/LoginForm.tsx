@@ -173,7 +173,7 @@ export function LoginForm({
         testID="login-submit-button"
         accessibilityLabel="Đăng nhập"
         disabled={loading}
-        onPress={handleSubmit(handleFormSubmit)}
+        onPress={() => void handleSubmit(handleFormSubmit)()}
         style={styles.primaryButton}
       >
         {loading ? (

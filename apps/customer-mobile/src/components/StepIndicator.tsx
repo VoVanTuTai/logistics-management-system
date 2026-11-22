@@ -1,11 +1,12 @@
 import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 import { colors, spacing } from '../theme';
 
 interface StepIndicatorProps {
   currentStep: number; // 1, 2, 3
+  onStepPress?: (step: number) => void;
 }
 
 const STEPS = [
@@ -14,17 +15,24 @@ const STEPS = [
   { step: 3, label: 'Cước phí' },
 ];
 
-export function StepIndicator({ currentStep }: StepIndicatorProps): React.JSX.Element {
+export function StepIndicator({ currentStep, onStepPress }: StepIndicatorProps): React.JSX.Element {
   return (
     <View style={styles.container}>
       <View style={styles.stepsRow}>
         {STEPS.map((item, index) => {
           const isActive = currentStep === item.step;
           const isDone = currentStep > item.step;
+          const isClickable = typeof onStepPress === 'function';
 
           return (
             <React.Fragment key={item.step}>
-              <View style={styles.stepItem}>
+              <TouchableOpacity
+                activeOpacity={isClickable ? 0.7 : 1}
+                disabled={!isClickable}
+                onPress={() => onStepPress?.(item.step)}
+                style={styles.stepItem}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              >
                 <View
                   style={[
                     styles.circle,
@@ -54,7 +62,7 @@ export function StepIndicator({ currentStep }: StepIndicatorProps): React.JSX.El
                 >
                   {item.label}
                 </Text>
-              </View>
+              </TouchableOpacity>
 
               {index < STEPS.length - 1 ? (
                 <View

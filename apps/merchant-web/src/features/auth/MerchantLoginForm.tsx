@@ -14,7 +14,7 @@ export interface MerchantLoginFormProps {
   onToggleShowPassword: () => void;
   onClearLoginError: () => void;
   onSubmit: (e: React.FormEvent<HTMLFormElement>) => void | Promise<void>;
-  onFillDemoAccount: (username: string) => void;
+  onFillDemoAccount?: (username: string) => void;
 }
 
 export function MerchantLoginForm({
@@ -30,7 +30,6 @@ export function MerchantLoginForm({
   onToggleShowPassword,
   onClearLoginError,
   onSubmit,
-  onFillDemoAccount,
 }: MerchantLoginFormProps): React.JSX.Element {
   return (
     <div className="login-shell">
@@ -39,8 +38,8 @@ export function MerchantLoginForm({
         <section className="login-hero">
           <img
             className="login-hero-img"
-            src="https://lh3.googleusercontent.com/aida-public/AB6AXuAH9tY3PsZjp-XCnVG-y43-sPKhb-INEfJPNHYxHTVdm69WwoXvGDiw7DfuvmU5b3DHK_888jICATCwV5G1g3uvdjTPamNKyM8KJB2Ei4T4RBJ-M4US87urT0uP9tXDcCuNPz6FtF-nTa_G-XDYI2LyIsduJvHEffTuIOfqjWvAttJm8D15E5_GNR64ZxIKkl1kwxBKH-3LgX4daJfTkFTanBTrDiE0qwHwVdRRNZ_O-PizHz0CEsugBHSQU-6tzxan_Mxrdatluq8"
-            alt="Logistics Background"
+            src="/images/nexus-login-hero.jpg"
+            alt="Express Logistics Hub"
           />
           <div className="login-hero-overlay" />
           <div className="login-hero-content">
@@ -86,12 +85,13 @@ export function MerchantLoginForm({
                     id="username"
                     value={loginUsername}
                     onChange={(e) => onUsernameChange(e.target.value)}
-                    placeholder="VD: 41100001 hoặc 0941000001"
+                    placeholder="Nhập mã shop, số điện thoại hoặc email"
                     type="text"
+                    autoComplete="username"
                   />
                 </div>
                 <span className="login-field-hint">
-                  Đăng nhập bằng Mã bưu cục shop (41100001), Số điện thoại (0941000001) hoặc Email demo
+                  Đăng nhập bằng Mã Shop, Số điện thoại hoặc Email doanh nghiệp đã đăng ký
                 </span>
               </div>
 
@@ -106,6 +106,7 @@ export function MerchantLoginForm({
                     onChange={(e) => onPasswordChange(e.target.value)}
                     placeholder="••••••••"
                     type={showPassword ? 'text' : 'password'}
+                    autoComplete="current-password"
                   />
                   <button
                     className="login-input-toggle-btn"
@@ -115,46 +116,6 @@ export function MerchantLoginForm({
                     <span className="material-symbols-outlined">
                       {showPassword ? 'visibility_off' : 'visibility'}
                     </span>
-                  </button>
-                </div>
-              </div>
-
-              {/* Quick Demo Preset Selector */}
-              <div className="login-demo-presets">
-                <div className="login-demo-header">
-                  <span className="material-symbols-outlined login-demo-icon">bolt</span>
-                  <span className="login-demo-title">Tài khoản Demo Nhanh (Click tự điền)</span>
-                </div>
-                <div className="login-demo-chip-list">
-                  <button
-                    type="button"
-                    className={`login-demo-chip ${loginUsername === '41100001' ? 'active' : ''}`}
-                    onClick={() => onFillDemoAccount('41100001')}
-                    title="Shop Hàng Bài - Hoàn Kiếm, Hà Nội (SĐT: 0941000001)"
-                  >
-                    <span className="login-chip-badge hn">HN</span>
-                    <span className="login-chip-code">41100001</span>
-                    <span className="login-chip-name">P. Hàng Bài</span>
-                  </button>
-                  <button
-                    type="button"
-                    className={`login-demo-chip ${loginUsername === '41100048' ? 'active' : ''}`}
-                    onClick={() => onFillDemoAccount('41100048')}
-                    title="Shop Thạch Thang - Hải Châu, Đà Nẵng (SĐT: 0941000048)"
-                  >
-                    <span className="login-chip-badge dn">ĐN</span>
-                    <span className="login-chip-code">41100048</span>
-                    <span className="login-chip-name">P. Thạch Thang</span>
-                  </button>
-                  <button
-                    type="button"
-                    className={`login-demo-chip ${loginUsername === '41100079' ? 'active' : ''}`}
-                    onClick={() => onFillDemoAccount('41100079')}
-                    title="Shop Bến Thành - Quận 1, TP.HCM (SĐT: 0941000079)"
-                  >
-                    <span className="login-chip-badge hcm">HCM</span>
-                    <span className="login-chip-code">41100079</span>
-                    <span className="login-chip-name">P. Bến Thành</span>
                   </button>
                 </div>
               </div>

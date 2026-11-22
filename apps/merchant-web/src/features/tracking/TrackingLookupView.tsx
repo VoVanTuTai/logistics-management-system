@@ -534,6 +534,109 @@ export function TrackingLookupView({
                               <span>{ev.actor ?? 'Hệ thống'}</span>
                             </div>
                           </div>
+
+                          {(() => {
+                            const proofUrl =
+                              ev.proofImageUrl ||
+                              ev.photoUrl ||
+                              (ev.note ? ev.note.match(/https?:\/\/[^\s"'<>()|]+/i)?.[0] : undefined);
+                            if (!proofUrl) return null;
+                            const isPickup =
+                              ev.eventType?.toLowerCase().includes('lấy') ||
+                              ev.eventType?.toLowerCase().includes('pickup') ||
+                              ev.eventTypeCode?.toLowerCase().includes('pickup');
+                            return (
+                              <div
+                                className="tracking-stepper-proof"
+                                style={{
+                                  marginTop: '8px',
+                                  paddingTop: '8px',
+                                  borderTop: '1px solid #e2e8f0',
+                                }}
+                              >
+                                <div
+                                  style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'space-between',
+                                    marginBottom: '6px',
+                                    gap: '8px',
+                                  }}
+                                >
+                                  <span
+                                    style={{
+                                      fontSize: '11px',
+                                      fontWeight: 700,
+                                      color: '#475569',
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      gap: '4px',
+                                    }}
+                                  >
+                                    <span
+                                      className="material-symbols-outlined"
+                                      style={{ fontSize: '15px', color: '#2563eb' }}
+                                    >
+                                      image
+                                    </span>
+                                    {isPickup
+                                      ? 'Ảnh minh chứng khi lấy hàng:'
+                                      : 'Ảnh minh chứng khi giao hàng (POD):'}
+                                  </span>
+                                  <a
+                                    href={proofUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    style={{
+                                      fontSize: '11px',
+                                      fontWeight: 700,
+                                      color: '#2563eb',
+                                      backgroundColor: '#eff6ff',
+                                      padding: '2px 8px',
+                                      borderRadius: '4px',
+                                      textDecoration: 'none',
+                                      display: 'inline-flex',
+                                      alignItems: 'center',
+                                      gap: '2px',
+                                      border: '1px solid #bfdbfe',
+                                    }}
+                                  >
+                                    <span>Link xem hình</span>
+                                    <span
+                                      className="material-symbols-outlined"
+                                      style={{ fontSize: '13px' }}
+                                    >
+                                      open_in_new
+                                    </span>
+                                  </a>
+                                </div>
+                                <a
+                                  href={proofUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  style={{
+                                    display: 'inline-block',
+                                    borderRadius: '6px',
+                                    overflow: 'hidden',
+                                    border: '1px solid #cbd5e1',
+                                  }}
+                                  title="Bấm để xem ảnh phóng to trong tab mới"
+                                >
+                                  <img
+                                    src={proofUrl}
+                                    alt="Ảnh minh chứng"
+                                    style={{
+                                      height: '64px',
+                                      width: '96px',
+                                      objectFit: 'cover',
+                                      display: 'block',
+                                    }}
+                                    loading="lazy"
+                                  />
+                                </a>
+                              </div>
+                            );
+                          })()}
                         </div>
                       </div>
                     );

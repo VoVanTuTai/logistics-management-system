@@ -48,12 +48,22 @@ export class TrackingProjectionStore {
     const occurredAt = new Date(event.occurred_at);
     await this.deleteExpiredProjectionForShipmentCode(shipmentCode, occurredAt);
     const actor = this.extractActor(event);
-    const locationCode = this.extractLocationCode(event);
+    let locationCode = this.extractLocationCode(event);
     const existingCurrent = await this.prisma.trackingCurrent.findUnique({
       where: {
         shipmentCode,
       },
     });
+
+    if (
+      event.event_type === 'task.assigned' &&
+      isRegionalHub(locationCode) &&
+      existingCurrent?.currentLocationCode &&
+      !isRegionalHub(existingCurrent.currentLocationCode)
+    ) {
+      locationCode = existingCurrent.currentLocationCode;
+    }
+
     const currentStatus = this.deriveCurrentStatus(event, existingCurrent);
     const currentStatusLabelVi = toTrackingStatusLabelVi(currentStatus);
     const timelineTextVi = toTimelineTextVi(event, locationCode);
@@ -423,4 +433,10 @@ function readPositiveNumber(value: string | undefined, fallback: number): number
   const parsed = Number(value);
 
   return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
+}
+
+function isRegionalHub(code?: string | null): boolean {
+  if (!code) return false;
+  const normalized = code.trim().toUpperCase();
+  return ['001N001', '002C001', '003S001'].includes(normalized) || /^\d{3}[A-Z]\d{3}$/.test(normalized);
 }

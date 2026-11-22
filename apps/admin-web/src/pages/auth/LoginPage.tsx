@@ -76,9 +76,9 @@ export function LoginPage(): React.JSX.Element {
     <div className="login-shell">
       <div className="login-layout">
         {/* Left Side: Visual Focus & Brand Identity */}
-        <section className="login-hero" style={{ background: 'linear-gradient(180deg, rgba(31, 43, 111, 0.88), rgba(15, 23, 42, 0.96))' }}>
-          <img className="login-hero-img" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAH9tY3PsZjp-XCnVG-y43-sPKhb-INEfJPNHYxHTVdm69WwoXvGDiw7DfuvmU5b3DHK_888jICATCwV5G1g3uvdjTPamNKyM8KJB2Ei4T4RBJ-M4US87urT0uP9tXDcCuNPz6FtF-nTa_G-XDYI2LyIsduJvHEffTuIOfqjWvAttJm8D15E5_GNR64ZxIKkl1kwxBKH-3LgX4daJfTkFTanBTrDiE0qwHwVdRRNZ_O-PizHz0CEsugBHSQU-6tzxan_Mxrdatluq8" alt="Logistics Background" />
-          <div className="login-hero-overlay" style={{ background: 'linear-gradient(to top, rgba(15, 23, 42, 0.9), transparent 60%, rgba(31, 43, 111, 0.4))' }} />
+        <section className="login-hero">
+          <img className="login-hero-img" src="/images/nexus-login-hero.jpg" alt="Express Logistics Hub" />
+          <div className="login-hero-overlay" />
           <div className="login-hero-content">
             <div className="login-hero-top">
               <NexusBrandLogo size={40} portal="admin" theme="dark" showLabel={true} />

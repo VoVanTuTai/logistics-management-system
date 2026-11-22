@@ -5,6 +5,8 @@ import {
   toTimelineTextVi,
   toTrackingStatusLabelVi,
   extractTimelineNote,
+  extractTimelineProofImage,
+  normalizeMediaPublicUrl,
 } from '../mappers/tracking-display.mapper';
 import type { TimelineEvent } from '../../domain/entities/timeline-event.entity';
 import type { TrackingCurrent } from '../../domain/entities/tracking-current.entity';
@@ -25,6 +27,8 @@ export interface TimelineEventView {
   occurredAt: Date;
   payload: TimelineEvent['payload'];
   note: string | null;
+  proofImageUrl?: string | null;
+  photoUrl?: string | null;
 }
 
 export interface TrackingCurrentView {
@@ -40,6 +44,11 @@ export interface TrackingCurrentView {
   viewPayload: Record<string, unknown> | null;
 }
 
+export interface PublicProofPhotosView {
+  pickupPhotoUrl?: string | null;
+  deliveryPhotoUrl?: string | null;
+}
+
 export interface PublicTrackingView {
   shipmentCode: string;
   current: TrackingCurrentView | null;
@@ -49,6 +58,7 @@ export interface PublicTrackingView {
     currentStatus: string;
     currentLocation: string;
   };
+  proofPhotos?: PublicProofPhotosView;
 }
 
 export interface PublicContactView {
@@ -126,11 +136,13 @@ export class TrackingQueryProjection {
       normalizedShipmentCode,
     );
     const receiverPhoneFromOrder = this.extractReceiverPhone(shipmentSnapshot);
+    const senderPhoneFromOrder = this.extractSenderPhone(shipmentSnapshot);
 
     const isPhoneProvided = Boolean(normalizedLookupPhone);
     const isPhoneMatched =
       isPhoneProvided &&
-      phonesMatch(receiverPhoneFromOrder, normalizedLookupPhone);
+      (phonesMatch(receiverPhoneFromOrder, normalizedLookupPhone) ||
+        phonesMatch(senderPhoneFromOrder, normalizedLookupPhone));
 
     if (isPhoneProvided && !isPhoneMatched) {
       throw new NotFoundException(
@@ -142,6 +154,37 @@ export class TrackingQueryProjection {
 
     const timeline = this.mapTimeline(timelineRecords);
     const current = this.mapCurrent(currentRecord, timeline);
+
+    let pickupPhotoUrl: string | null = null;
+    let deliveryPhotoUrl: string | null = null;
+
+    // 1. Extract from timeline events
+    for (const ev of timeline) {
+      if (ev.proofImageUrl) {
+        const code = (ev.eventTypeCode || '').toLowerCase();
+        const name = (ev.eventType || '').toLowerCase();
+        if (code.includes('pickup') || name.includes('lấy hàng') || name.includes('nhận hàng')) {
+          pickupPhotoUrl = ev.proofImageUrl;
+        } else if (code.includes('delivery') || code.includes('delivered') || name.includes('giao') || name.includes('ký nhận')) {
+          deliveryPhotoUrl = ev.proofImageUrl;
+        }
+      }
+    }
+
+    // 2. Fallback to shipmentSnapshot metadata
+    const snapMeta = this.asRecord(shipmentSnapshot?.metadata) || {};
+    if (!pickupPhotoUrl) {
+      const pPhoto = this.asString(snapMeta.pickupPhotoUrl) || this.asString(snapMeta.pickupProofUrl);
+      if (pPhoto) pickupPhotoUrl = normalizeMediaPublicUrl(pPhoto);
+    }
+    if (!deliveryPhotoUrl) {
+      const dPhoto =
+        this.asString(snapMeta.podImageUrl) ||
+        this.asString(snapMeta.deliveryPhotoUrl) ||
+        this.asString(snapMeta.proofOfDeliveryUrl) ||
+        this.asString(snapMeta.podUrl);
+      if (dPhoto) deliveryPhotoUrl = normalizeMediaPublicUrl(dPhoto);
+    }
 
     return {
       shipmentCode: normalizedShipmentCode,
@@ -155,6 +198,10 @@ export class TrackingQueryProjection {
       sourceOfTruth: {
         currentStatus: 'shipment-service',
         currentLocation: 'scan-service',
+      },
+      proofPhotos: {
+        pickupPhotoUrl,
+        deliveryPhotoUrl,
       },
     };
   }
@@ -264,6 +311,8 @@ export class TrackingQueryProjection {
         locationText = receiverAddress;
       }
 
+      const proofImageUrl = extractTimelineProofImage(event.payload);
+
       return {
         id: event.id,
         eventId: event.eventId,
@@ -279,6 +328,8 @@ export class TrackingQueryProjection {
         occurredAt: event.occurredAt,
         payload: event.payload,
         note: extractTimelineNote(event.payload),
+        proofImageUrl,
+        photoUrl: proofImageUrl,
       };
     });
   }
@@ -403,6 +454,20 @@ export class TrackingQueryProjection {
       this.getNestedString(shipmentSnapshot, ['receiver', 'phone']) ??
       this.getNestedString(metadata, ['receiverPhone']) ??
       this.getNestedString(shipmentSnapshot, ['receiverPhone']) ??
+      null
+    );
+  }
+
+  private extractSenderPhone(
+    shipmentSnapshot: Record<string, unknown> | null,
+  ): string | null {
+    const metadata = this.asRecord(shipmentSnapshot?.metadata);
+
+    return (
+      this.getNestedString(metadata, ['sender', 'phone']) ??
+      this.getNestedString(shipmentSnapshot, ['sender', 'phone']) ??
+      this.getNestedString(metadata, ['senderPhone']) ??
+      this.getNestedString(shipmentSnapshot, ['senderPhone']) ??
       null
     );
   }

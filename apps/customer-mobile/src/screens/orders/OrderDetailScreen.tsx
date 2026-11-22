@@ -20,12 +20,17 @@ import { TrackingTimeline } from '../../components/TrackingTimeline';
 import type { RootStackParamList } from '../../navigation/types';
 import { trackingApi } from '../../services/api/tracking.api';
 import { shipmentApi } from '../../services/api/shipment.api';
+import { ratingsApi } from '../../services/api/ratings.api';
 import { authStore } from '../../store/authStore';
 import { colors, shadows, spacing } from '../../theme';
 import type { ShipmentStatus, TrackingEvent } from '../../types';
 import { copyToClipboard } from '../../utils/clipboard';
 import { mapTimelineEventsForCustomer } from '../../utils/customerTrackingMapper';
-import { resolveCourierForOrder, formatCourierPhone } from '../../utils/courierResolver';
+import {
+  resolveCourierForOrder,
+  resolveCourierContextForOrder,
+  formatCourierPhone,
+} from '../../utils/courierResolver';
 
 import { printOrShareShippingLabel } from '../../services/shippingLabelPrinter';
 
@@ -52,6 +57,12 @@ export function OrderDetailScreen({ route, navigation }: Props): React.JSX.Eleme
     !['DELIVERED', 'COMPLETED', 'RETURN_STARTED', 'RETURN_COMPLETED', 'RETURNED', 'RETURNING', 'CANCELLED', 'DELIVERING', 'OUT_FOR_DELIVERY'].includes(
       String(liveStatus).toUpperCase(),
     );
+
+  const isDelivered =
+    ['DELIVERED', 'COMPLETED', 'DELIVERY_SUCCESS'].includes(String(liveStatus).toUpperCase()) ||
+    ['DELIVERED', 'COMPLETED', 'DELIVERY_SUCCESS'].includes(String(order.status).toUpperCase());
+
+  const isReceiver = order.category === 'RECEIVED';
 
   const handleCancelOrder = () => {
     Alert.alert(
@@ -119,6 +130,24 @@ export function OrderDetailScreen({ route, navigation }: Props): React.JSX.Eleme
     return () => clearInterval(interval);
   }, [order.code]);
 
+  useEffect(() => {
+    let mounted = true;
+    if (isReceiver && isDelivered) {
+      ratingsApi
+        .getRatingForShipment(order.code)
+        .then((existing) => {
+          if (mounted && existing) {
+            setHasRated(true);
+            setReceiptStatus('CONFIRMED');
+          }
+        })
+        .catch(() => {});
+    }
+    return () => {
+      mounted = false;
+    };
+  }, [order.code, isReceiver, isDelivered]);
+
   const onRefresh = () => {
     setRefreshing(true);
     fetchLiveTracking();
@@ -135,23 +164,49 @@ export function OrderDetailScreen({ route, navigation }: Props): React.JSX.Eleme
     }
   };
 
-  const courier = resolveCourierForOrder({
+  const courierResolution = resolveCourierContextForOrder({
+    status: liveStatus,
+    courierId: order.courierId || (order as any).metadata?.assignedCourier || (order as any).metadata?.courierId,
+    courierName: (order as any).metadata?.courierName || (order as any).metadata?.deliveryCourierName,
+    courierPhone: (order as any).metadata?.courierPhone || (order as any).metadata?.deliveryCourierPhone,
+    pickupCourierId: (order as any).metadata?.pickupCourierId,
+    deliveryCourierId: (order as any).metadata?.deliveryCourierId,
+    currentTaskType: (order as any).metadata?.currentTaskType,
+    senderHubCode: order.sender.hubCode,
     receiverHubCode: order.receiver.hubCode,
-    timelineNotes: liveTimeline.map((t) => t.noteText || t.title || ''),
+    currentHubCode: (order as any).metadata?.currentHubCode,
+    timelineNotes: liveTimeline.map((t) => [t.noteText, t.title, t.actorText, t.boldPrefix, t.addressSuffix].filter(Boolean).join(' ')),
+  });
+
+  const courier = courierResolution.courier;
+  const activeOrFallbackCourier = courier || resolveCourierForOrder({
+    courierId: order.courierId || (order as any).metadata?.assignedCourier || (order as any).metadata?.courierId,
+    courierName: (order as any).metadata?.courierName || (order as any).metadata?.deliveryCourierName,
+    courierPhone: (order as any).metadata?.courierPhone || (order as any).metadata?.deliveryCourierPhone,
+    receiverHubCode: order.receiver.hubCode,
   });
 
   const handleCallCourier = () => {
-    Linking.openURL(`tel:${courier.phone}`).catch(() => {
-      Alert.alert('Thông tin bưu tá', `Bưu tá: ${courier.name}\nSố điện thoại: ${courier.phone}`);
+    const target = courier || activeOrFallbackCourier;
+    Linking.openURL(`tel:${target.phone}`).catch(() => {
+      Alert.alert('Thông tin bưu tá', `Bưu tá: ${target.name}\nSố điện thoại: ${target.phone}`);
     });
   };
 
   const handleCopyCourierPhone = () => {
-    copyToClipboard(courier.phone);
-    Alert.alert('Đã sao chép', `Đã sao chép số điện thoại ${courier.phone} vào bộ nhớ tạm.`);
+    const target = courier || activeOrFallbackCourier;
+    copyToClipboard(target.phone);
+    Alert.alert('Đã sao chép', `Đã sao chép số điện thoại ${target.phone} vào bộ nhớ tạm.`);
   };
 
   const handleConfirmReceived = () => {
+    if (!isDelivered) {
+      Alert.alert(
+        'Chưa thể xác nhận',
+        'Kiện hàng đang trong hành trình vận chuyển. Bạn chỉ có thể xác nhận nhận hàng và đánh giá bưu tá sau khi đơn hàng được giao đến nơi.',
+      );
+      return;
+    }
     Alert.alert(
       'Xác nhận nhận hàng',
       'Bạn xác nhận đã nhận được kiện hàng này nguyên vẹn từ bưu tá?',
@@ -185,7 +240,7 @@ export function OrderDetailScreen({ route, navigation }: Props): React.JSX.Eleme
       [
         { text: 'Đóng', style: 'cancel' },
         {
-          text: `Gọi bưu tá (${courier.phone})`,
+          text: `Gọi bưu tá (${activeOrFallbackCourier.phone})`,
           onPress: handleCallCourier,
         },
         {
@@ -301,9 +356,14 @@ export function OrderDetailScreen({ route, navigation }: Props): React.JSX.Eleme
         {/* RECEIVER COD & DELIVERY NOTICE BANNER */}
         {order.category === 'RECEIVED' ? (
           <View style={styles.receiverNoticeCard}>
-            <Text style={styles.receiverNoticeTitle}>THÔNG BÁO NHẬN HÀNG</Text>
+            <View style={styles.receiverNoticeHeader}>
+              <Ionicons name="information-circle-outline" size={18} color={colors.primary} />
+              <Text style={styles.receiverNoticeTitle}>THÔNG BÁO NHẬN HÀNG</Text>
+            </View>
             <Text style={styles.receiverNoticeDesc}>
-              Bưu phẩm đang được điều phối giao. Quý khách chỉ thanh toán số tiền COD bên dưới cho bưu tá khi nhận kiện:
+              {courierResolution.isDelivery
+                ? 'Bưu phẩm đang được điều phối giao. Quý khách chỉ thanh toán số tiền COD bên dưới cho bưu tá khi nhận kiện:'
+                : 'Đơn hàng đang trong quy trình gom lấy & trung chuyển. Quý khách vui lòng chuẩn bị số tiền COD dự kiến khi nhận kiện:'}
             </Text>
             <View style={styles.receiverNoticeAmountRow}>
               <Text style={styles.receiverNoticeAmountLabel}>Số tiền cần thanh toán (COD):</Text>
@@ -314,51 +374,87 @@ export function OrderDetailScreen({ route, navigation }: Props): React.JSX.Eleme
           </View>
         ) : null}
 
-        {/* COURIER INFO CARD */}
-        <View style={styles.card}>
-          <View style={styles.cardHeader}>
-            <Ionicons name="bicycle-outline" size={20} color={colors.primary} />
-            <Text style={styles.cardTitle}>Bưu tá phát hàng phụ trách</Text>
-          </View>
-
-          <View style={styles.courierCardContent}>
-            <View style={styles.courierAvatarCircle}>
-              <Ionicons name="person" size={22} color={colors.primary} />
+        {/* COURIER / TRANSIT INFO CARD */}
+        {courierResolution.isInTransit ? (
+          <View style={styles.card}>
+            <View style={styles.cardHeader}>
+              <Ionicons name="swap-horizontal-outline" size={20} color={colors.primary} />
+              <Text style={styles.cardTitle}>{courierResolution.cardTitle}</Text>
             </View>
-            <View style={styles.courierInfoBlock}>
-              <View style={styles.courierNameBadgeRow}>
-                <Text style={styles.courierNameText}>{courier.name}</Text>
-                <View style={styles.activeShipperBadge}>
-                  <Text style={styles.activeShipperBadgeText}>Shipper Tuyến</Text>
-                </View>
+            <View style={styles.inTransitCardContent}>
+              <Text style={styles.inTransitDesc}>{courierResolution.statusDescription}</Text>
+              <View style={styles.inTransitHubRow}>
+                <Text style={styles.inTransitHubLabel}>Bưu cục kế tiếp: </Text>
+                <Text style={styles.inTransitHubVal}>{courierResolution.hubLabel}</Text>
               </View>
-              <Text style={styles.courierPhoneText}>SĐT: {formatCourierPhone(courier.phone)}</Text>
-              <Text style={styles.courierHubText}>{courier.hubName}</Text>
-            </View>
-
-            <View style={styles.courierActionsCol}>
-              <TouchableOpacity
-                style={styles.callBtn}
-                activeOpacity={0.8}
-                onPress={handleCallCourier}
-              >
-                <Ionicons name="call" size={16} color="#FFFFFF" />
-                <Text style={styles.callBtnText}>Gọi</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.copyPhoneBtn}
-                activeOpacity={0.7}
-                onPress={handleCopyCourierPhone}
-              >
-                <Ionicons name="copy-outline" size={14} color={colors.textSecondary} />
-              </TouchableOpacity>
             </View>
           </View>
-        </View>
+        ) : courier ? (
+          <View style={styles.card}>
+            <View style={styles.cardHeader}>
+              <Ionicons
+                name={courierResolution.isPickup ? 'cube-outline' : 'bicycle-outline'}
+                size={20}
+                color={colors.primary}
+              />
+              <Text style={styles.cardTitle}>{courierResolution.cardTitle}</Text>
+            </View>
 
-        {/* RECEIPT CONFIRMATION SECTION (FOR RECEIVER) */}
-        {order.category === 'RECEIVED' ? (
-          <View style={styles.receiptCard}>
+            <View style={styles.courierCardContent}>
+              <View style={styles.courierAvatarCircle}>
+                <Ionicons name="person" size={22} color={colors.primary} />
+              </View>
+              <View style={styles.courierInfoBlock}>
+                <View style={styles.courierNameBadgeRow}>
+                  <Text style={styles.courierNameText}>{courier.name}</Text>
+                  <View
+                    style={[
+                      styles.activeShipperBadge,
+                      {
+                        backgroundColor: courierResolution.badgeBg,
+                        borderColor: courierResolution.badgeBorder,
+                      },
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.activeShipperBadgeText,
+                        { color: courierResolution.badgeTextColor },
+                      ]}
+                    >
+                      {courierResolution.badgeLabel}
+                    </Text>
+                  </View>
+                </View>
+                <Text style={styles.courierPhoneText}>SĐT: {formatCourierPhone(courier.phone)}</Text>
+                <Text style={styles.courierHubText}>{courierResolution.hubLabel}</Text>
+              </View>
+
+              <View style={styles.courierActionsCol}>
+                <TouchableOpacity
+                  style={styles.callBtn}
+                  activeOpacity={0.8}
+                  onPress={handleCallCourier}
+                >
+                  <Ionicons name="call" size={16} color="#FFFFFF" />
+                  <Text style={styles.callBtnText}>Gọi</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.copyPhoneBtn}
+                  activeOpacity={0.7}
+                  onPress={handleCopyCourierPhone}
+                >
+                  <Ionicons name="copy-outline" size={14} color={colors.textSecondary} />
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        ) : null}
+
+        {/* RECEIPT CONFIRMATION & RATING SECTION (CHỈ DÀNH CHO NGƯỜI NHẬN SAU KHI GIAO HÀNG THÀNH CÔNG) */}
+        {isReceiver ? (
+          isDelivered ? (
+            <View style={styles.receiptCard}>
             <View style={styles.receiptHeader}>
               <Ionicons
                 name={
@@ -424,7 +520,7 @@ export function OrderDetailScreen({ route, navigation }: Props): React.JSX.Eleme
             ) : receiptStatus === 'REPORTED_NOT_RECEIVED' ? (
               <View style={styles.reportedBox}>
                 <Text style={styles.reportedText}>
-                  Hệ thống đã ghi nhận phản ánh của bạn. Bưu cục đang kiểm tra lại với bưu tá {courier.name}.
+                  Hệ thống đã ghi nhận phản ánh của bạn. Bưu cục đang kiểm tra lại với bưu tá {activeOrFallbackCourier.name}.
                 </Text>
                 <TouchableOpacity
                   style={styles.callShipperLink}
@@ -433,7 +529,7 @@ export function OrderDetailScreen({ route, navigation }: Props): React.JSX.Eleme
                 >
                   <Ionicons name="call-outline" size={14} color="#DC2626" />
                   <Text style={styles.callShipperLinkText}>
-                    Bấm để gọi trực tiếp cho shipper ({formatCourierPhone(courier.phone)})
+                    Bấm để gọi trực tiếp cho shipper ({formatCourierPhone(activeOrFallbackCourier.phone)})
                   </Text>
                 </TouchableOpacity>
 
@@ -475,7 +571,19 @@ export function OrderDetailScreen({ route, navigation }: Props): React.JSX.Eleme
               </View>
             )}
           </View>
-        ) : null}
+        ) : (
+          <View style={[styles.receiptCard, { backgroundColor: '#F8FAFC', borderColor: '#E2E8F0' }]}>
+            <View style={styles.receiptHeader}>
+              <Ionicons name="information-circle-outline" size={20} color="#64748B" />
+              <Text style={[styles.receiptTitle, { color: '#475569' }]}>
+                ĐANG VẬN CHUYỂN ĐẾN NGƯỜI NHẬN
+              </Text>
+            </View>
+            <Text style={{ fontSize: 13, color: '#64748B', lineHeight: 18, marginTop: 4 }}>
+              Kiện hàng đang trong hành trình luân chuyển đến bạn. Bạn sẽ có thể xác nhận nhận hàng và đánh giá thái độ bưu tá ngay sau khi kiện hàng được giao thành công.
+            </Text>
+          </View>
+        )) : null}
 
         {/* 4. ITEM & PACKAGE INFO */}
         <View style={styles.card}>
@@ -532,29 +640,16 @@ export function OrderDetailScreen({ route, navigation }: Props): React.JSX.Eleme
           <Text style={{ fontSize: 12, color: '#64748B', lineHeight: 18, marginBottom: 12 }}>
             Kiện hàng được bảo hiểm theo Quy chuẩn Nexus Logistics. Bạn có thể giục phát, khiếu nại bể vỡ hoặc theo dõi hồ sơ đền bù bất cứ lúc nào.
           </Text>
-          <View style={{ flexDirection: 'row', gap: 10 }}>
-            <TouchableOpacity
-              style={[styles.receiptBtn, { backgroundColor: '#0284C7', flex: 1, justifyContent: 'center' }]}
-              activeOpacity={0.8}
-              onPress={() => setShowComplaintsModal(true)}
-            >
-              <Ionicons name="chatbubbles-outline" size={16} color="#FFFFFF" />
-              <Text style={{ color: '#FFFFFF', fontWeight: '700', fontSize: 13 }}>
-                Khiếu nại bưu kiện
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[styles.receiptBtn, { backgroundColor: '#F8FAFC', borderWidth: 1, borderColor: '#CBD5E1', flex: 1, justifyContent: 'center' }]}
-              activeOpacity={0.8}
-              onPress={() => setShowRatingModal(true)}
-            >
-              <Ionicons name="star" size={16} color="#EAB308" />
-              <Text style={{ color: '#0F172A', fontWeight: '600', fontSize: 13 }}>
-                Đánh giá bưu tá
-              </Text>
-            </TouchableOpacity>
-          </View>
+          <TouchableOpacity
+            style={[styles.receiptBtn, { backgroundColor: '#0284C7', justifyContent: 'center' }]}
+            activeOpacity={0.8}
+            onPress={() => setShowComplaintsModal(true)}
+          >
+            <Ionicons name="chatbubbles-outline" size={16} color="#FFFFFF" />
+            <Text style={{ color: '#FFFFFF', fontWeight: '700', fontSize: 13 }}>
+              Khiếu nại bưu kiện
+            </Text>
+          </TouchableOpacity>
         </View>
 
         {/* 6. CANCEL ORDER (BEFORE COURIER HANDOVER) */}
@@ -587,8 +682,8 @@ export function OrderDetailScreen({ route, navigation }: Props): React.JSX.Eleme
         visible={showRatingModal}
         onClose={() => setShowRatingModal(false)}
         shipmentCode={order.code}
-        courierName={courier.name}
-        courierPhone={courier.phone}
+        courierName={activeOrFallbackCourier.name}
+        courierPhone={activeOrFallbackCourier.phone}
         customerPhone={order.receiver.phone}
         onRatingSubmitted={() => setHasRated(true)}
       />
@@ -820,6 +915,35 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     flex: 1,
     lineHeight: 15,
+  },
+  inTransitCardContent: {
+    paddingVertical: 4,
+  },
+  inTransitDesc: {
+    fontSize: 12.5,
+    color: colors.textSecondary,
+    lineHeight: 18,
+    marginBottom: 8,
+  },
+  inTransitHubRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#EFF6FF',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#DBEAFE',
+  },
+  inTransitHubLabel: {
+    fontSize: 11.5,
+    fontWeight: '700',
+    color: '#1E40AF',
+  },
+  inTransitHubVal: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#1D4ED8',
   },
   courierCardContent: {
     flexDirection: 'row',

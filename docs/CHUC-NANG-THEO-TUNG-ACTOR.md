@@ -134,7 +134,7 @@ Bảng dưới đây đối chiếu toàn bộ danh sách chức năng cũ do ng
 
 ### 2.4 Actor 4: Nhân Viên Vận Hành (Ops Staff - Bưu Cục & Hub Khai Thác)
 **Ứng dụng phục vụ:** `ops-web` (Port `5175`) — Tham chiếu: Mục 4, 9  
-**Dịch vụ backend:** `shipment-service` (:3002), `pickup-service` (:3003), `dispatch-service` (:3004), `manifest-service` (:3005), `scan-service` (:3006), `delivery-service` (:3007), `payment-service` (:3011), `linehaul-service` (:3014)
+**Dịch vụ backend:** `shipment-service` (:3002), `pickup-service` (:3003), `dispatch-service` (:3004), `manifest-service` (:3005), `scan-service` (:3006), `delivery-service` (:3007), `payment-service` (:3011)
 
 | STT | Tên Chức Năng | Tình Trạng | Tham Chiếu Trong `PROJECT-OVERVIEW.md` | Mô Tả Nghiệp Vụ Cụ Thể |
 | :---: | :--- | :---: | :--- | :--- |

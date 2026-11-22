@@ -10,9 +10,18 @@ import {
   KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
+  Keyboard,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import Constants from 'expo-constants';
+import {
+  ALL_VIETNAMESE_PROVINCES,
+  removeAccents,
+  getWardsForProvinceName,
+  resolveHubForAddress,
+  parseWardAndDistrict,
+  type ResolvedWard,
+} from '../utils/vietnamProvincesData';
 import { customerApiClient } from '../services/api/client';
 import { authStore } from '../store/authStore';
 import { appEnv } from '../utils/env';
@@ -44,9 +53,16 @@ interface ChatMessage {
   citations?: { file: string; title: string; score: number }[];
   shipmentCards?: ShipmentCard[];
   actionChips?: ActionChip[];
+  orderFormRequested?: boolean;
+  orderConfirmation?: any;
 }
 
 const QUICK_SUGGESTIONS = [
+  {
+    icon: 'add-circle-outline' as const,
+    label: 'Tạo đơn ngay',
+    query: 'Tôi muốn tạo đơn hàng',
+  },
   {
     icon: 'search-outline' as const,
     label: 'Tra cứu bưu gửi',
@@ -204,6 +220,1208 @@ function formatToolBadge(tool: string): string | null {
   return null;
 }
 
+export interface OrderFormDataMobile {
+  senderName: string;
+  senderPhone: string;
+  senderAddress: string;
+  senderCity: string;
+  senderWard: string;
+  senderDistrict?: string;
+  senderHubCode?: string;
+  senderHubName?: string;
+  receiverName: string;
+  receiverPhone: string;
+  receiverAddress: string;
+  receiverCity: string;
+  receiverWard: string;
+  receiverDistrict?: string;
+  receiverHubCode?: string;
+  receiverHubName?: string;
+  itemName: string;
+  weightKg: number;
+  lengthCm?: number;
+  widthCm?: number;
+  heightCm?: number;
+  codAmount: number;
+  payer: 'SENDER' | 'RECEIVER';
+  notes?: string;
+}
+
+const OrderCreationFormMobile: React.FC<{
+  defaultSenderName?: string;
+  defaultSenderPhone?: string;
+  onSubmit: (data: OrderFormDataMobile) => void;
+  onCancel: () => void;
+  disabled?: boolean;
+}> = ({ defaultSenderName = '', defaultSenderPhone = '', onSubmit, onCancel, disabled = false }) => {
+  const [senderName, setSenderName] = useState(defaultSenderName);
+  const [senderPhone, setSenderPhone] = useState(defaultSenderPhone);
+  const [senderCity, setSenderCity] = useState('TP. Hồ Chí Minh');
+  const [senderWard, setSenderWard] = useState('Phường An Nhơn (Quận Gò Vấp)');
+  const [senderAddress, setSenderAddress] = useState('');
+
+  const [receiverName, setReceiverName] = useState('');
+  const [receiverPhone, setReceiverPhone] = useState('');
+  const [receiverCity, setReceiverCity] = useState('Hà Nội');
+  const [receiverWard, setReceiverWard] = useState('Phường Tràng Tiền (Quận Hoàn Kiếm)');
+  const [receiverAddress, setReceiverAddress] = useState('');
+
+  const [itemName, setItemName] = useState('');
+  const [weightKg, setWeightKg] = useState('1');
+  const [lengthCm, setLengthCm] = useState('10');
+  const [widthCm, setWidthCm] = useState('10');
+  const [heightCm, setHeightCm] = useState('10');
+  const [codAmount, setCodAmount] = useState('0');
+  const [notes, setNotes] = useState('');
+  const [payer, setPayer] = useState<'SENDER' | 'RECEIVER'>('RECEIVER');
+
+  // Tính toán thể tích IATA và trần vận hành Carrier
+  const numWeight = Math.max(0.1, parseFloat(weightKg) || 1);
+  const numL = Math.max(1, parseInt(lengthCm, 10) || 10);
+  const numW = Math.max(1, parseInt(widthCm, 10) || 10);
+  const numH = Math.max(1, parseInt(heightCm, 10) || 10);
+  const volW = Number(((numL * numW * numH) / 6000).toFixed(2));
+  const chargeableW = Math.max(numWeight, volW);
+  const isVolApplied = volW > numWeight;
+  const maxEdge = Math.max(numL, numW, numH);
+  const sumDims = numL + numW + numH;
+  const isBulky = numWeight > 20 || maxEdge > 60;
+  const isOverLimit = numWeight > 70 || maxEdge > 150 || sumDims > 300;
+
+  // Quản lý modal chọn Tỉnh/Thành hoặc Phường/Xã
+  const [activePicker, setActivePicker] = useState<
+    'SENDER_PROVINCE' | 'RECEIVER_PROVINCE' | 'SENDER_WARD' | 'RECEIVER_WARD' | null
+  >(null);
+  const [pickerSearch, setPickerSearch] = useState('');
+
+  const [errorMsg, setErrorMsg] = useState('');
+  const [submitted, setSubmitted] = useState(false);
+
+  // Xác định Bưu cục điều phối lấy hàng và bưu cục phát
+  const senderHub = resolveHubForAddress(senderCity, senderWard);
+  const receiverHub = resolveHubForAddress(receiverCity, receiverWard);
+
+  const handleSubmit = () => {
+    if (!senderName.trim() || !senderPhone.trim()) {
+      setErrorMsg('Vui lòng điền họ tên và SĐT người gửi.');
+      return;
+    }
+    if (!senderWard.trim()) {
+      setErrorMsg('Vui lòng chọn Phường / Xã người gửi để bưu cục điều phối bưu tá.');
+      return;
+    }
+    if (!senderAddress.trim()) {
+      setErrorMsg('Vui lòng nhập số nhà, tên đường người gửi.');
+      return;
+    }
+    if (!receiverName.trim() || !receiverPhone.trim()) {
+      setErrorMsg('Vui lòng điền họ tên và SĐT người nhận.');
+      return;
+    }
+    if (!receiverWard.trim()) {
+      setErrorMsg('Vui lòng chọn Phường / Xã người nhận để gán bưu cục giao hàng.');
+      return;
+    }
+    if (!receiverAddress.trim()) {
+      setErrorMsg('Vui lòng nhập số nhà, tên đường người nhận.');
+      return;
+    }
+    if (!itemName.trim()) {
+      setErrorMsg('Vui lòng nhập tên bưu phẩm / hàng hóa.');
+      return;
+    }
+    if (isOverLimit) {
+      setErrorMsg('Vượt trần mạng lưới bưu cục (Tối đa 70kg, 1 cạnh ≤ 150cm, tổng 3 cạnh ≤ 300cm). Vui lòng tách kiện hoặc đổi dịch vụ vận tải.');
+      return;
+    }
+    setErrorMsg('');
+    setSubmitted(true);
+
+    const senderParsed = parseWardAndDistrict(senderWard);
+    const receiverParsed = parseWardAndDistrict(receiverWard);
+
+    onSubmit({
+      senderName: senderName.trim(),
+      senderPhone: senderPhone.trim(),
+      senderAddress: senderAddress.trim(),
+      senderCity,
+      senderWard,
+      senderDistrict: senderParsed.district,
+      senderHubCode: senderHub.hubCode,
+      senderHubName: senderHub.hubName,
+      receiverName: receiverName.trim(),
+      receiverPhone: receiverPhone.trim(),
+      receiverAddress: receiverAddress.trim(),
+      receiverCity,
+      receiverWard,
+      receiverDistrict: receiverParsed.district,
+      receiverHubCode: receiverHub.hubCode,
+      receiverHubName: receiverHub.hubName,
+      itemName: itemName.trim(),
+      weightKg: numWeight,
+      lengthCm: numL,
+      widthCm: numW,
+      heightCm: numH,
+      codAmount: Math.max(0, parseInt(codAmount.replace(/\D/g, ''), 10) || 0),
+      payer,
+      notes: notes.trim(),
+    });
+  };
+
+  if (submitted || disabled) {
+    return (
+      <View style={formStyles.submittedCard}>
+        <Ionicons name="checkmark-circle" size={16} color="#059669" style={{ marginRight: 6 }} />
+        <Text style={formStyles.submittedText}>Đã gửi thông tin đơn hàng - Đang chờ xác nhận</Text>
+      </View>
+    );
+  }
+
+  // 1. Màn hình chọn Tỉnh / Thành phố (trong 63 tỉnh)
+  if (activePicker === 'SENDER_PROVINCE' || activePicker === 'RECEIVER_PROVINCE') {
+    const isSenderPicker = activePicker === 'SENDER_PROVINCE';
+    const currentSelected = isSenderPicker ? senderCity : receiverCity;
+    const title = isSenderPicker ? 'Chọn Tỉnh / Thành người gửi' : 'Chọn Tỉnh / Thành người nhận';
+
+    const filteredProvinces = ALL_VIETNAMESE_PROVINCES.filter((p) => {
+      if (!pickerSearch.trim()) return true;
+      const cleanP = removeAccents(p);
+      const cleanQ = removeAccents(pickerSearch.trim());
+      return cleanP.includes(cleanQ) || p.toLowerCase().includes(pickerSearch.trim().toLowerCase());
+    });
+
+    const handleSelectProvince = (prov: string) => {
+      const wards = getWardsForProvinceName(prov);
+      const defaultWard = wards[0]?.name || '';
+      if (isSenderPicker) {
+        setSenderCity(prov);
+        setSenderWard(defaultWard);
+      } else {
+        setReceiverCity(prov);
+        setReceiverWard(defaultWard);
+      }
+      setActivePicker(null);
+      setPickerSearch('');
+    };
+
+    return (
+      <View style={formStyles.pickerContainer}>
+        <View style={formStyles.pickerHeader}>
+          <TouchableOpacity
+            style={formStyles.pickerBackBtn}
+            onPress={() => {
+              setActivePicker(null);
+              setPickerSearch('');
+            }}
+          >
+            <Ionicons name="arrow-back" size={18} color="#1D4ED8" />
+            <Text style={formStyles.pickerBackText}>Quay lại</Text>
+          </TouchableOpacity>
+          <Text style={formStyles.pickerTitle}>{title}</Text>
+        </View>
+
+        <View style={formStyles.pickerSearchBox}>
+          <Ionicons name="search" size={16} color="#94A3B8" style={{ marginRight: 6 }} />
+          <TextInput
+            style={formStyles.pickerSearchInput}
+            placeholder="Tìm theo tên tỉnh thành (vd: Hà Nội, Đồng Nai...)"
+            placeholderTextColor="#94A3B8"
+            value={pickerSearch}
+            onChangeText={setPickerSearch}
+            autoFocus
+          />
+          {pickerSearch ? (
+            <TouchableOpacity onPress={() => setPickerSearch('')}>
+              <Ionicons name="close-circle" size={16} color="#94A3B8" />
+            </TouchableOpacity>
+          ) : null}
+        </View>
+
+        {!pickerSearch && (
+          <View style={formStyles.pickerQuickWrapper}>
+            <Text style={formStyles.pickerQuickLabel}>Phổ biến:</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={formStyles.pickerQuickRow}>
+              {['TP. Hồ Chí Minh', 'Hà Nội', 'Đà Nẵng', 'Bình Dương', 'Đồng Nai', 'Hải Phòng', 'Cần Thơ'].map((city) => (
+                <TouchableOpacity
+                  key={city}
+                  style={[formStyles.pickerQuickPill, currentSelected === city && formStyles.pickerQuickPillActive]}
+                  onPress={() => handleSelectProvince(city)}
+                >
+                  <Text style={[formStyles.pickerQuickPillText, currentSelected === city && formStyles.pickerQuickPillTextActive]}>
+                    {city === 'TP. Hồ Chí Minh' ? 'TP.HCM' : city}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+        )}
+
+        <Text style={formStyles.pickerCountText}>Toàn bộ 63 Tỉnh / Thành phố ({filteredProvinces.length})</Text>
+
+        <ScrollView style={formStyles.pickerList} keyboardShouldPersistTaps="handled">
+          {filteredProvinces.map((prov) => {
+            const isSelected = currentSelected === prov;
+            return (
+              <TouchableOpacity
+                key={prov}
+                style={[formStyles.pickerItem, isSelected && formStyles.pickerItemActive]}
+                onPress={() => handleSelectProvince(prov)}
+                activeOpacity={0.7}
+              >
+                <Ionicons
+                  name={isSelected ? 'radio-button-on' : 'radio-button-off'}
+                  size={18}
+                  color={isSelected ? '#1D4ED8' : '#94A3B8'}
+                  style={{ marginRight: 10 }}
+                />
+                <Text style={[formStyles.pickerItemText, isSelected && formStyles.pickerItemTextActive]}>
+                  {prov}
+                </Text>
+                {isSelected && (
+                  <Ionicons name="checkmark" size={18} color="#1D4ED8" style={{ marginLeft: 'auto' }} />
+                )}
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
+      </View>
+    );
+  }
+
+  // 2. Màn hình chọn Phường / Xã (kèm Quận / Huyện) theo Tỉnh đã chọn
+  if (activePicker === 'SENDER_WARD' || activePicker === 'RECEIVER_WARD') {
+    const isSender = activePicker === 'SENDER_WARD';
+    const targetCity = isSender ? senderCity : receiverCity;
+    const currentSelected = isSender ? senderWard : receiverWard;
+    const title = isSender ? `Chọn Phường / Xã gửi (${targetCity})` : `Chọn Phường / Xã nhận (${targetCity})`;
+
+    const allWards = getWardsForProvinceName(targetCity);
+    const filteredWards = allWards.filter((w) => {
+      if (!pickerSearch.trim()) return true;
+      const cleanW = removeAccents(w.name);
+      const cleanQ = removeAccents(pickerSearch.trim());
+      return cleanW.includes(cleanQ) || w.name.toLowerCase().includes(pickerSearch.trim().toLowerCase());
+    });
+
+    const handleSelectWard = (w: ResolvedWard) => {
+      if (isSender) {
+        setSenderWard(w.name);
+      } else {
+        setReceiverWard(w.name);
+      }
+      setActivePicker(null);
+      setPickerSearch('');
+    };
+
+    return (
+      <View style={formStyles.pickerContainer}>
+        <View style={formStyles.pickerHeader}>
+          <TouchableOpacity
+            style={formStyles.pickerBackBtn}
+            onPress={() => {
+              setActivePicker(null);
+              setPickerSearch('');
+            }}
+          >
+            <Ionicons name="arrow-back" size={18} color="#1D4ED8" />
+            <Text style={formStyles.pickerBackText}>Quay lại</Text>
+          </TouchableOpacity>
+          <Text style={formStyles.pickerTitle} numberOfLines={1}>{title}</Text>
+        </View>
+
+        <View style={formStyles.pickerSearchBox}>
+          <Ionicons name="search" size={16} color="#94A3B8" style={{ marginRight: 6 }} />
+          <TextInput
+            style={formStyles.pickerSearchInput}
+            placeholder="Tìm theo tên phường, xã, quận, huyện..."
+            placeholderTextColor="#94A3B8"
+            value={pickerSearch}
+            onChangeText={setPickerSearch}
+            autoFocus
+          />
+          {pickerSearch ? (
+            <TouchableOpacity onPress={() => setPickerSearch('')}>
+              <Ionicons name="close-circle" size={16} color="#94A3B8" />
+            </TouchableOpacity>
+          ) : null}
+        </View>
+
+        <Text style={formStyles.pickerCountText}>Danh sách Phường / Xã ({filteredWards.length})</Text>
+
+        <ScrollView style={formStyles.pickerList} keyboardShouldPersistTaps="handled">
+          {filteredWards.map((w) => {
+            const isSelected = currentSelected === w.name;
+            return (
+              <TouchableOpacity
+                key={w.name}
+                style={[formStyles.pickerItem, isSelected && formStyles.pickerItemActive]}
+                onPress={() => handleSelectWard(w)}
+                activeOpacity={0.7}
+              >
+                <Ionicons
+                  name={isSelected ? 'radio-button-on' : 'radio-button-off'}
+                  size={18}
+                  color={isSelected ? '#1D4ED8' : '#94A3B8'}
+                  style={{ marginRight: 10 }}
+                />
+                <View style={{ flex: 1 }}>
+                  <Text style={[formStyles.pickerItemText, isSelected && formStyles.pickerItemTextActive]}>
+                    {w.wardName}
+                  </Text>
+                  {w.district && (
+                    <Text style={{ fontSize: 10, color: '#64748B', marginTop: 1 }}>
+                      {w.district}
+                    </Text>
+                  )}
+                </View>
+                {isSelected && (
+                  <Ionicons name="checkmark" size={18} color="#1D4ED8" style={{ marginLeft: 'auto' }} />
+                )}
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
+      </View>
+    );
+  }
+
+  return (
+    <View style={formStyles.container}>
+      <View style={formStyles.headerRow}>
+        <View>
+          <Text style={formStyles.headerTitle}>Biểu mẫu tạo đơn hàng</Text>
+          <Text style={formStyles.headerSub}>Bưu tá qua lấy tận nơi • Toàn quốc</Text>
+        </View>
+        <View style={formStyles.stdBadge}>
+          <Text style={formStyles.stdBadgeText}>Chuẩn Carrier</Text>
+        </View>
+      </View>
+
+      {/* 1. NGƯỜI GỬI */}
+      <Text style={formStyles.sectionTitle}>1. THÔNG TIN NGƯỜI GỬI (ĐỊA CHỈ LẤY HÀNG)</Text>
+      <View style={formStyles.inputRow}>
+        <TextInput
+          style={[formStyles.input, { flex: 1, marginRight: 6 }]}
+          placeholder="Họ tên người gửi *"
+          placeholderTextColor="#94A3B8"
+          value={senderName}
+          onChangeText={setSenderName}
+        />
+        <TextInput
+          style={[formStyles.input, { flex: 1 }]}
+          placeholder="SĐT người gửi *"
+          placeholderTextColor="#94A3B8"
+          keyboardType="phone-pad"
+          value={senderPhone}
+          onChangeText={setSenderPhone}
+        />
+      </View>
+
+      {/* Chọn Tỉnh/Thành gửi */}
+      <View style={formStyles.provinceSelectorBox}>
+        <Text style={formStyles.labelTiny}>Tỉnh / Thành phố gửi *:</Text>
+        <TouchableOpacity
+          style={formStyles.provinceSelectBtn}
+          onPress={() => {
+            setActivePicker('SENDER_PROVINCE');
+            setPickerSearch('');
+          }}
+          activeOpacity={0.8}
+        >
+          <Ionicons name="location" size={15} color="#1D4ED8" style={{ marginRight: 6 }} />
+          <Text style={formStyles.provinceSelectText}>{senderCity}</Text>
+          <View style={formStyles.provinceChangeBadge}>
+            <Text style={formStyles.provinceChangeText}>Đổi trong 63 tỉnh ▾</Text>
+          </View>
+        </TouchableOpacity>
+      </View>
+
+      {/* Quick selection pills người gửi */}
+      <View style={formStyles.citySelectorRow}>
+        {['TP. Hồ Chí Minh', 'Hà Nội', 'Đà Nẵng', 'Bình Dương'].map((city) => (
+          <TouchableOpacity
+            key={city}
+            style={[formStyles.cityPill, senderCity === city && formStyles.cityPillActive]}
+            onPress={() => {
+              setSenderCity(city);
+              const wards = getWardsForProvinceName(city);
+              setSenderWard(wards[0]?.name || '');
+            }}
+          >
+            <Text style={[formStyles.cityPillText, senderCity === city && formStyles.cityPillTextActive]}>
+              {city === 'TP. Hồ Chí Minh' ? 'TP.HCM' : city}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+
+      {/* Phường / Xã gửi - Hiện khi đã có tỉnh */}
+      <View style={formStyles.provinceSelectorBox}>
+        <Text style={formStyles.labelTiny}>Phường / Xã & Quận / Huyện gửi * (điều phối bưu tá lấy hàng):</Text>
+        <TouchableOpacity
+          style={formStyles.provinceSelectBtn}
+          onPress={() => {
+            setActivePicker('SENDER_WARD');
+            setPickerSearch('');
+          }}
+          activeOpacity={0.8}
+        >
+          <Ionicons name="business" size={15} color="#1D4ED8" style={{ marginRight: 6 }} />
+          <Text style={[formStyles.provinceSelectText, !senderWard && formStyles.wardSelectPlaceholder]} numberOfLines={1}>
+            {senderWard || 'Chạm để chọn Phường / Xã ▾'}
+          </Text>
+          <View style={formStyles.provinceChangeBadge}>
+            <Text style={formStyles.provinceChangeText}>Chọn ▾</Text>
+          </View>
+        </TouchableOpacity>
+        {senderHub && (
+          <View style={formStyles.hubBadge}>
+            <Ionicons name="checkmark-circle" size={12} color="#15803D" style={{ marginRight: 4 }} />
+            <Text style={formStyles.hubBadgeText}>
+              Bưu cục điều phối lấy hàng: [{senderHub.hubCode}] {senderHub.hubName}
+            </Text>
+          </View>
+        )}
+      </View>
+
+      <TextInput
+        style={[formStyles.input, { marginTop: 6 }]}
+        placeholder="Số nhà, tên đường (Địa chỉ nhà lấy hàng) *"
+        placeholderTextColor="#94A3B8"
+        value={senderAddress}
+        onChangeText={setSenderAddress}
+      />
+
+      {/* 2. NGƯỜI NHẬN */}
+      <Text style={[formStyles.sectionTitle, { marginTop: 12 }]}>2. THÔNG TIN NGƯỜI NHẬN (ĐỊA CHỈ GIAO HÀNG)</Text>
+      <View style={formStyles.inputRow}>
+        <TextInput
+          style={[formStyles.input, { flex: 1, marginRight: 6 }]}
+          placeholder="Họ tên người nhận *"
+          placeholderTextColor="#94A3B8"
+          value={receiverName}
+          onChangeText={setReceiverName}
+        />
+        <TextInput
+          style={[formStyles.input, { flex: 1 }]}
+          placeholder="SĐT người nhận *"
+          placeholderTextColor="#94A3B8"
+          keyboardType="phone-pad"
+          value={receiverPhone}
+          onChangeText={setReceiverPhone}
+        />
+      </View>
+
+      {/* Chọn Tỉnh/Thành nhận */}
+      <View style={formStyles.provinceSelectorBox}>
+        <Text style={formStyles.labelTiny}>Tỉnh / Thành phố nhận *:</Text>
+        <TouchableOpacity
+          style={formStyles.provinceSelectBtn}
+          onPress={() => {
+            setActivePicker('RECEIVER_PROVINCE');
+            setPickerSearch('');
+          }}
+          activeOpacity={0.8}
+        >
+          <Ionicons name="location" size={15} color="#1D4ED8" style={{ marginRight: 6 }} />
+          <Text style={formStyles.provinceSelectText}>{receiverCity}</Text>
+          <View style={formStyles.provinceChangeBadge}>
+            <Text style={formStyles.provinceChangeText}>Đổi trong 63 tỉnh ▾</Text>
+          </View>
+        </TouchableOpacity>
+      </View>
+
+      {/* Quick selection pills người nhận */}
+      <View style={formStyles.citySelectorRow}>
+        {['Hà Nội', 'TP. Hồ Chí Minh', 'Đà Nẵng', 'Hải Phòng', 'Cần Thơ'].map((city) => (
+          <TouchableOpacity
+            key={city}
+            style={[formStyles.cityPill, receiverCity === city && formStyles.cityPillActive]}
+            onPress={() => {
+              setReceiverCity(city);
+              const wards = getWardsForProvinceName(city);
+              setReceiverWard(wards[0]?.name || '');
+            }}
+          >
+            <Text style={[formStyles.cityPillText, receiverCity === city && formStyles.cityPillTextActive]}>
+              {city === 'TP. Hồ Chí Minh' ? 'TP.HCM' : city}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+
+      {/* Phường / Xã nhận - Hiện khi đã có tỉnh */}
+      <View style={formStyles.provinceSelectorBox}>
+        <Text style={formStyles.labelTiny}>Phường / Xã & Quận / Huyện nhận * (phục vụ phát hàng):</Text>
+        <TouchableOpacity
+          style={formStyles.provinceSelectBtn}
+          onPress={() => {
+            setActivePicker('RECEIVER_WARD');
+            setPickerSearch('');
+          }}
+          activeOpacity={0.8}
+        >
+          <Ionicons name="business" size={15} color="#1D4ED8" style={{ marginRight: 6 }} />
+          <Text style={[formStyles.provinceSelectText, !receiverWard && formStyles.wardSelectPlaceholder]} numberOfLines={1}>
+            {receiverWard || 'Chạm để chọn Phường / Xã ▾'}
+          </Text>
+          <View style={formStyles.provinceChangeBadge}>
+            <Text style={formStyles.provinceChangeText}>Chọn ▾</Text>
+          </View>
+        </TouchableOpacity>
+        {receiverHub && (
+          <View style={formStyles.hubBadge}>
+            <Ionicons name="checkmark-circle" size={12} color="#15803D" style={{ marginRight: 4 }} />
+            <Text style={formStyles.hubBadgeText}>
+              Bưu cục phát: [{receiverHub.hubCode}] {receiverHub.hubName}
+            </Text>
+          </View>
+        )}
+      </View>
+
+      <TextInput
+        style={[formStyles.input, { marginTop: 6 }]}
+        placeholder="Số nhà, tên đường (Địa chỉ nhà giao hàng) *"
+        placeholderTextColor="#94A3B8"
+        value={receiverAddress}
+        onChangeText={setReceiverAddress}
+      />
+
+      {/* 3. BƯU PHẨM & CƯỚC */}
+      <Text style={[formStyles.sectionTitle, { marginTop: 12 }]}>3. BƯU PHẨM & CƯỚC VẬN CHUYỂN</Text>
+      <TextInput
+        style={formStyles.input}
+        placeholder="Tên hàng hóa (ví dụ: Quần áo, tài liệu, đồ gia dụng...) *"
+        placeholderTextColor="#94A3B8"
+        value={itemName}
+        onChangeText={setItemName}
+      />
+
+      <View style={[formStyles.inputRow, { marginTop: 6 }]}>
+        <View style={{ flex: 1, marginRight: 6 }}>
+          <Text style={formStyles.labelTiny}>Khối lượng (kg) *</Text>
+          <TextInput
+            style={formStyles.input}
+            placeholder="1"
+            placeholderTextColor="#94A3B8"
+            keyboardType="numeric"
+            value={weightKg}
+            onChangeText={setWeightKg}
+          />
+        </View>
+        <View style={{ flex: 1 }}>
+          <Text style={formStyles.labelTiny}>Tiền thu hộ COD (đ)</Text>
+          <TextInput
+            style={formStyles.input}
+            placeholder="0"
+            placeholderTextColor="#94A3B8"
+            keyboardType="numeric"
+            value={codAmount}
+            onChangeText={setCodAmount}
+          />
+        </View>
+      </View>
+
+      {/* Kích thước Dài x Rộng x Cao (cm) & Quy đổi thể tích IATA */}
+      <View style={{ marginTop: 6 }}>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+          <Text style={formStyles.labelTiny}>Kích thước (Dài x Rộng x Cao cm) *</Text>
+          <Text style={{ fontSize: 9, color: '#94A3B8' }}>IATA: D x R x C / 6000</Text>
+        </View>
+        <View style={formStyles.inputRowThree}>
+          <View style={{ flex: 1, marginRight: 4 }}>
+            <TextInput
+              style={[formStyles.input, { textAlign: 'center' }]}
+              placeholder="Dài (cm)"
+              placeholderTextColor="#94A3B8"
+              keyboardType="numeric"
+              value={lengthCm}
+              onChangeText={setLengthCm}
+            />
+          </View>
+          <View style={{ flex: 1, marginRight: 4 }}>
+            <TextInput
+              style={[formStyles.input, { textAlign: 'center' }]}
+              placeholder="Rộng (cm)"
+              placeholderTextColor="#94A3B8"
+              keyboardType="numeric"
+              value={widthCm}
+              onChangeText={setWidthCm}
+            />
+          </View>
+          <View style={{ flex: 1 }}>
+            <TextInput
+              style={[formStyles.input, { textAlign: 'center' }]}
+              placeholder="Cao (cm)"
+              placeholderTextColor="#94A3B8"
+              keyboardType="numeric"
+              value={heightCm}
+              onChangeText={setHeightCm}
+            />
+          </View>
+        </View>
+
+        {/* Volumetric Weight & Bulky/Ceiling badge */}
+        <View style={formStyles.volumetricBox}>
+          <Text style={formStyles.volumetricText}>
+            Quy đổi IATA: <Text style={{ fontWeight: '700', color: '#1E293B' }}>{volW} kg</Text>
+            {isVolApplied ? ' (Tính cước)' : ''}
+          </Text>
+          <Text style={formStyles.chargeableText}>
+            Tính cước: {chargeableW} kg
+          </Text>
+        </View>
+        {isBulky && !isOverLimit && (
+          <View style={formStyles.bulkyBadge}>
+            <Ionicons name="warning-outline" size={12} color="#92400E" style={{ marginRight: 4 }} />
+            <Text style={formStyles.bulkyBadgeText}>Hàng cồng kềnh - Cần điều phối xe tải</Text>
+          </View>
+        )}
+        {isOverLimit && (
+          <View style={formStyles.overLimitBadge}>
+            <Ionicons name="alert-circle-outline" size={12} color="#BE123C" style={{ marginRight: 4 }} />
+            <Text style={formStyles.overLimitBadgeText}>Vượt trần bưu cục (&gt;70kg hoặc cạnh &gt;150cm)</Text>
+          </View>
+        )}
+      </View>
+
+      <TextInput
+        style={[formStyles.input, { marginTop: 6 }]}
+        placeholder="Ghi chú giao hàng (ví dụ: Cho xem hàng, gọi trước khi giao)"
+        placeholderTextColor="#94A3B8"
+        value={notes}
+        onChangeText={setNotes}
+      />
+
+      <Text style={[formStyles.labelTiny, { marginTop: 8 }]}>Bên thanh toán cước vận chuyển:</Text>
+      <View style={formStyles.payerRow}>
+        <TouchableOpacity
+          style={[formStyles.payerBtn, payer === 'RECEIVER' && formStyles.payerBtnActive]}
+          onPress={() => setPayer('RECEIVER')}
+        >
+          <Text style={[formStyles.payerText, payer === 'RECEIVER' && formStyles.payerTextActive]}>
+            Người nhận trả khi nhận
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[formStyles.payerBtn, payer === 'SENDER' && formStyles.payerBtnActive]}
+          onPress={() => setPayer('SENDER')}
+        >
+          <Text style={[formStyles.payerText, payer === 'SENDER' && formStyles.payerTextActive]}>
+            Người gửi thanh toán khi gửi
+          </Text>
+        </TouchableOpacity>
+      </View>
+
+      {errorMsg ? <Text style={formStyles.errorText}>{errorMsg}</Text> : null}
+
+      <View style={formStyles.btnRow}>
+        <TouchableOpacity style={formStyles.submitBtn} onPress={handleSubmit}>
+          <Text style={formStyles.submitBtnText}>Xác nhận gửi thông tin</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={formStyles.cancelBtn} onPress={onCancel}>
+          <Text style={formStyles.cancelBtnText}>Hủy</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+};
+
+const formStyles = StyleSheet.create({
+  container: {
+    marginTop: 8,
+    padding: 12,
+    backgroundColor: '#F8FAFC',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  headerRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingBottom: 6,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E2E8F0',
+    marginBottom: 8,
+  },
+  headerTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#0F172A',
+  },
+  headerSub: {
+    fontSize: 10,
+    color: '#2563EB',
+    fontWeight: '500',
+  },
+  stdBadge: {
+    backgroundColor: '#EEF2FF',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+    borderWidth: 1,
+    borderColor: '#C7D2FE',
+  },
+  stdBadgeText: {
+    fontSize: 9,
+    color: '#4338CA',
+    fontWeight: '700',
+  },
+  sectionTitle: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#475569',
+    marginBottom: 4,
+    letterSpacing: 0.5,
+  },
+  inputRow: {
+    flexDirection: 'row',
+  },
+  inputRowThree: {
+    flexDirection: 'row',
+  },
+  volumetricBox: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: '#F1F5F9',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    borderRadius: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    marginTop: 4,
+  },
+  volumetricText: {
+    fontSize: 10,
+    color: '#64748B',
+  },
+  chargeableText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#1D4ED8',
+  },
+  bulkyBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FEF3C7',
+    borderWidth: 1,
+    borderColor: '#FDE68A',
+    borderRadius: 6,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    marginTop: 4,
+  },
+  bulkyBadgeText: {
+    fontSize: 9,
+    color: '#92400E',
+    fontWeight: '600',
+  },
+  overLimitBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFE4E6',
+    borderWidth: 1,
+    borderColor: '#FECDD3',
+    borderRadius: 6,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    marginTop: 4,
+  },
+  overLimitBadgeText: {
+    fontSize: 9,
+    color: '#BE123C',
+    fontWeight: '700',
+  },
+  input: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+    borderRadius: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+    fontSize: 12,
+    color: '#0F172A',
+  },
+  provinceSelectorBox: {
+    marginTop: 6,
+  },
+  provinceSelectBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#EFF6FF',
+    borderWidth: 1,
+    borderColor: '#BFDBFE',
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 7,
+    marginTop: 2,
+  },
+  provinceSelectText: {
+    flex: 1,
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#1D4ED8',
+  },
+  provinceChangeBadge: {
+    backgroundColor: '#DBEAFE',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  provinceChangeText: {
+    fontSize: 10,
+    color: '#1E40AF',
+    fontWeight: '600',
+  },
+  citySelectorRow: {
+    flexDirection: 'row',
+    marginTop: 6,
+    gap: 4,
+    flexWrap: 'wrap',
+  },
+  cityPill: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+  },
+  cityPillActive: {
+    backgroundColor: '#EFF6FF',
+    borderColor: '#3B82F6',
+  },
+  cityPillText: {
+    fontSize: 10,
+    color: '#64748B',
+    fontWeight: '500',
+  },
+  cityPillTextActive: {
+    color: '#1D4ED8',
+    fontWeight: '700',
+  },
+  hubBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F0FDF4',
+    borderWidth: 1,
+    borderColor: '#BBF7D0',
+    borderRadius: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    marginTop: 4,
+  },
+  hubBadgeText: {
+    fontSize: 10,
+    color: '#15803D',
+    fontWeight: '600',
+  },
+  wardSelectPlaceholder: {
+    color: '#94A3B8',
+    fontWeight: '400',
+  },
+  emptyGuideText: {
+    fontSize: 11,
+    color: '#D97706',
+    fontStyle: 'italic',
+    marginTop: 4,
+  },
+  labelTiny: {
+    fontSize: 10,
+    color: '#64748B',
+    marginBottom: 2,
+  },
+  payerRow: {
+    flexDirection: 'row',
+    gap: 6,
+    marginTop: 4,
+  },
+  payerBtn: {
+    flex: 1,
+    paddingVertical: 6,
+    borderRadius: 8,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+    alignItems: 'center',
+  },
+  payerBtnActive: {
+    backgroundColor: '#EFF6FF',
+    borderColor: '#3B82F6',
+  },
+  payerText: {
+    fontSize: 11,
+    color: '#64748B',
+    fontWeight: '500',
+    textAlign: 'center',
+  },
+  payerTextActive: {
+    color: '#1D4ED8',
+    fontWeight: '700',
+  },
+  errorText: {
+    color: '#E11D48',
+    fontSize: 11,
+    marginTop: 6,
+    fontWeight: '500',
+  },
+  btnRow: {
+    flexDirection: 'row',
+    gap: 6,
+    marginTop: 10,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: '#E2E8F0',
+  },
+  submitBtn: {
+    flex: 1,
+    backgroundColor: '#2563EB',
+    paddingVertical: 8,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  submitBtnText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  cancelBtn: {
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  cancelBtnText: {
+    color: '#64748B',
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  // Style cho màn hình chọn 63 Tỉnh/Thành
+  pickerContainer: {
+    marginTop: 8,
+    padding: 12,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+    minHeight: 340,
+    maxHeight: 440,
+  },
+  pickerHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+    paddingBottom: 6,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E2E8F0',
+  },
+  pickerBackBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 4,
+    paddingHorizontal: 6,
+    borderRadius: 6,
+    backgroundColor: '#EFF6FF',
+  },
+  pickerBackText: {
+    fontSize: 11,
+    color: '#1D4ED8',
+    fontWeight: '700',
+    marginLeft: 4,
+  },
+  pickerTitle: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#0F172A',
+  },
+  pickerSearchBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+    borderRadius: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    marginBottom: 8,
+  },
+  pickerSearchInput: {
+    flex: 1,
+    fontSize: 12,
+    color: '#0F172A',
+    paddingVertical: 2,
+  },
+  pickerQuickWrapper: {
+    marginBottom: 8,
+  },
+  pickerQuickLabel: {
+    fontSize: 10,
+    color: '#64748B',
+    fontWeight: '600',
+    marginBottom: 4,
+  },
+  pickerQuickRow: {
+    flexDirection: 'row',
+    gap: 4,
+  },
+  pickerQuickPill: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+    backgroundColor: '#F1F5F9',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  pickerQuickPillActive: {
+    backgroundColor: '#EFF6FF',
+    borderColor: '#3B82F6',
+  },
+  pickerQuickPillText: {
+    fontSize: 10,
+    color: '#475569',
+    fontWeight: '500',
+  },
+  pickerQuickPillTextActive: {
+    color: '#1D4ED8',
+    fontWeight: '700',
+  },
+  pickerCountText: {
+    fontSize: 10,
+    color: '#64748B',
+    marginBottom: 4,
+    fontWeight: '600',
+  },
+  pickerList: {
+    maxHeight: 240,
+  },
+  pickerItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: 6,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1F5F9',
+  },
+  pickerItemActive: {
+    backgroundColor: '#EFF6FF',
+    borderRadius: 6,
+  },
+  pickerItemText: {
+    fontSize: 12,
+    color: '#334155',
+  },
+  pickerItemTextActive: {
+    color: '#1D4ED8',
+    fontWeight: '700',
+  },
+  submittedCard: {
+    marginTop: 8,
+    padding: 8,
+    backgroundColor: '#ECFDF5',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#A7F3D0',
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  submittedText: {
+    fontSize: 11,
+    color: '#065F46',
+    fontWeight: '600',
+  },
+  confirmationCard: {
+    marginTop: 8,
+    padding: 10,
+    backgroundColor: '#EFF6FF',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#BFDBFE',
+  },
+  confHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  confTitle: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#1E3A8A',
+  },
+  confBadge: {
+    backgroundColor: '#FEF3C7',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  confBadgeText: {
+    fontSize: 9,
+    fontWeight: '700',
+    color: '#92400E',
+  },
+  confBody: {
+    gap: 2,
+  },
+  confLine: {
+    fontSize: 11,
+    color: '#475569',
+  },
+  confBold: {
+    fontWeight: '600',
+    color: '#0F172A',
+  },
+  confFeeRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 4,
+    paddingTop: 4,
+    borderTopWidth: 1,
+    borderTopColor: '#DBEAFE',
+  },
+  confFee: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#1E3A8A',
+  },
+  confBtnRow: {
+    flexDirection: 'row',
+    gap: 6,
+    marginTop: 8,
+  },
+  confConfirmBtn: {
+    flex: 1,
+    backgroundColor: '#2563EB',
+    paddingVertical: 7,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  confConfirmText: {
+    color: '#FFFFFF',
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  confCancelBtn: {
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  confCancelText: {
+    color: '#64748B',
+    fontSize: 11,
+    fontWeight: '500',
+  },
+});
+
 export function FloatingAiChatModal({ visible, onClose }: FloatingAiChatModalProps): React.JSX.Element {
   const currentUser = authStore.getUser();
   const currentUserId = currentUser?.id || currentUser?.phone || null;
@@ -214,7 +1432,7 @@ export function FloatingAiChatModal({ visible, onClose }: FloatingAiChatModalPro
     {
       id: 'welcome',
       sender: 'bot',
-      text: 'Kính chào Quý khách!\nTôi là Chuyên Viên Điều Phối Bưu Chính Nexus Express trực tuyến 24/7.\nTôi sẵn sàng hỗ trợ Quý khách: Tra cứu hành trình bưu phẩm, đặt lịch bưu tá lấy hàng tận nơi, tính cước tuyến liên tỉnh và giải đáp chính sách bưu chính 24/7.',
+      text: 'Chào Quý khách. Tôi là Trợ lý AI của Nexus Logistics. Tôi có thể hỗ trợ Quý khách giải đáp dịch vụ bưu chính, dự toán cước hoặc tạo đơn gửi hàng. Quý khách cần hỗ trợ thông tin gì ạ?',
       time: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
     },
   ]);
@@ -226,15 +1444,37 @@ export function FloatingAiChatModal({ visible, onClose }: FloatingAiChatModalPro
         id: 'welcome_' + (currentUserId || 'guest'),
         sender: 'bot',
         text: currentUserId
-          ? `Kính chào Quý khách ${currentUser?.displayName || currentUser?.username || currentUser?.phone || ''}!\nTôi là Chuyên Viên Điều Phối Bưu Chính Nexus Express trực tuyến 24/7.\nTôi sẵn sàng hỗ trợ Quý khách: Tra cứu vận trình bưu phẩm thời gian thực, điều phối bưu tá qua lấy hàng tận nơi, báo giá cước IATA chuẩn xác và giải quyết hồ sơ bồi thường theo đúng Luật Bưu chính.`
-          : 'Kính chào Quý khách!\nTôi là Chuyên Viên Điều Phối Bưu Chính Nexus Express trực tuyến 24/7.\nTôi sẵn sàng hỗ trợ Quý khách: Tra cứu hành trình bưu phẩm, đặt lịch bưu tá lấy hàng tận nơi, tính cước tuyến liên tỉnh và giải đáp chính sách bưu chính 24/7.',
+          ? `Chào Quý khách ${currentUser?.displayName || currentUser?.username || currentUser?.phone || ''}. Tôi là Trợ lý AI của Nexus Logistics. Tôi có thể hỗ trợ Quý khách giải đáp dịch vụ bưu chính, dự toán cước hoặc tạo đơn gửi hàng. Quý khách cần hỗ trợ thông tin gì ạ?`
+          : 'Chào Quý khách. Tôi là Trợ lý AI của Nexus Logistics. Tôi có thể hỗ trợ Quý khách giải đáp dịch vụ bưu chính, dự toán cước hoặc tạo đơn gửi hàng. Quý khách cần hỗ trợ thông tin gì ạ?',
         time: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
       },
     ]);
   }, [currentUserId]);
 
-  const scrollViewRef = useRef<ScrollView>(null);
+  const scrollViewRef = useRef<any>(null);
   const [conversationId, setConversationId] = useState<string | null>(null);
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
+
+  useEffect(() => {
+    const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+
+    const showSub = Keyboard.addListener(showEvent, (e) => {
+      setKeyboardHeight(e.endCoordinates.height);
+      setTimeout(() => {
+        scrollViewRef.current?.scrollToEnd({ animated: true });
+      }, 100);
+    });
+
+    const hideSub = Keyboard.addListener(hideEvent, () => {
+      setKeyboardHeight(0);
+    });
+
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
 
   const getLastTrackedShipmentCode = (): string | undefined => {
     for (let i = messages.length - 1; i >= 0; i--) {
@@ -264,7 +1504,7 @@ export function FloatingAiChatModal({ visible, onClose }: FloatingAiChatModalPro
     }
   }, [visible, messages]);
 
-  const handleSendMessage = async (textToSend?: string) => {
+  const handleSendMessage = async (textToSend?: string, options?: { action?: string; orderData?: any }) => {
     const query = (textToSend || inputMessage).trim();
     if (!query || isLoading) return;
 
@@ -289,7 +1529,11 @@ export function FloatingAiChatModal({ visible, onClose }: FloatingAiChatModalPro
         conversationId: conversationId || undefined,
         selectedShipmentCode: lastShipmentCode,
         message: query,
-        userId: currentUser?.id || currentUser?.phone,
+        action: options?.action,
+        orderData: options?.orderData,
+        userId: currentUser?.id || currentUser?.phone || undefined,
+        userPhone: currentUser?.phone || undefined,
+        userName: currentUser?.displayName || currentUser?.username || undefined,
         senderRole: currentUser ? 'CUSTOMER' : 'GUEST',
       };
 
@@ -342,6 +1586,8 @@ export function FloatingAiChatModal({ visible, onClose }: FloatingAiChatModalPro
           citations: answerData.citations,
           shipmentCards: answerData.shipmentCards,
           actionChips: answerData.actionChips,
+          orderFormRequested: answerData.orderFormRequested,
+          orderConfirmation: answerData.orderConfirmation,
         };
         setMessages((prev) => [...prev, botMsg]);
       } else {
@@ -417,30 +1663,36 @@ export function FloatingAiChatModal({ visible, onClose }: FloatingAiChatModalPro
       visible={visible}
       animationType="slide"
       transparent={true}
+      statusBarTranslucent={true}
       onRequestClose={onClose}
     >
       <View style={styles.modalOverlay}>
         <KeyboardAvoidingView
-          style={styles.keyboardContainer}
+          style={[
+            styles.keyboardContainer,
+            Platform.OS === 'android' && keyboardHeight > 0
+              ? { paddingBottom: keyboardHeight, height: '100%' }
+              : null,
+          ]}
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         >
           <View style={styles.chatSheet}>
-            {/* 1. Header */}
+            {/* 1. Header (Synchronized with Web Tracking Nexus AI Robot) */}
             <View style={styles.header}>
               <View style={styles.headerLeft}>
                 <View style={styles.botIconWrapper}>
-                  <Ionicons name="bus" size={20} color="#38BDF8" />
+                  <MaterialCommunityIcons name="robot" size={22} color="#FFFFFF" />
                 </View>
                 <View>
                   <View style={styles.titleRow}>
-                    <Text style={styles.headerTitle}>Trung Tâm Điều Phối Nexus</Text>
+                    <Text style={styles.headerTitle}>Nexus AI Robot</Text>
                     <View style={styles.ragBadge}>
-                      <Text style={styles.ragBadgeText}>Bưu cục 24/7</Text>
+                      <Text style={styles.ragBadgeText}>AI BOT</Text>
                     </View>
                   </View>
                   <View style={styles.statusRow}>
                     <View style={styles.statusDot} />
-                    <Text style={styles.headerSubtitle}>Trực tuyến 24/7 • Hotline 1900 6868</Text>
+                    <Text style={styles.headerSubtitle}>Trợ lý robot bưu chính trực tuyến 24/7</Text>
                   </View>
                 </View>
               </View>
@@ -450,7 +1702,7 @@ export function FloatingAiChatModal({ visible, onClose }: FloatingAiChatModalPro
                 style={styles.closeBtn}
                 hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
               >
-                <Ionicons name="close" size={22} color="#94A3B8" />
+                <Ionicons name="close" size={22} color="#FFFFFF" />
               </TouchableOpacity>
             </View>
 
@@ -493,6 +1745,8 @@ export function FloatingAiChatModal({ visible, onClose }: FloatingAiChatModalPro
               style={styles.messagesContainer}
               contentContainerStyle={styles.messagesContent}
               showsVerticalScrollIndicator={false}
+              keyboardShouldPersistTaps="handled"
+              keyboardDismissMode="on-drag"
             >
               {messages.map((msg) => (
                 <View
@@ -504,7 +1758,7 @@ export function FloatingAiChatModal({ visible, onClose }: FloatingAiChatModalPro
                 >
                   {msg.sender === 'bot' && (
                     <View style={styles.botAvatarMini}>
-                      <Ionicons name="bus" size={14} color="#38BDF8" />
+                      <MaterialCommunityIcons name="robot" size={16} color="#FFFFFF" />
                     </View>
                   )}
 
@@ -532,6 +1786,64 @@ export function FloatingAiChatModal({ visible, onClose }: FloatingAiChatModalPro
 
                     {/* Text Body */}
                     <RenderFormattedMessage text={msg.text} isUser={msg.sender === 'user'} />
+
+                    {/* Interactive Order Creation Form */}
+                    {msg.orderFormRequested && (
+                      <OrderCreationFormMobile
+                        defaultSenderName={currentUser?.displayName || currentUser?.username || ''}
+                        defaultSenderPhone={currentUser?.phone || ''}
+                        onSubmit={(formData) => {
+                          handleSendMessage(
+                            `Tạo đơn hàng từ ${formData.senderCity} đi ${formData.receiverCity}: ${formData.itemName}`,
+                            {
+                              action: 'SUBMIT_ORDER_FORM',
+                              orderData: formData,
+                            }
+                          );
+                        }}
+                        onCancel={() => {
+                          handleSendMessage('Hủy tạo đơn', { action: 'CANCEL_ORDER' });
+                        }}
+                      />
+                    )}
+
+                    {/* Order Confirmation Card */}
+                    {msg.orderConfirmation && (
+                      <View style={formStyles.confirmationCard}>
+                        <View style={formStyles.confHeader}>
+                          <Text style={formStyles.confTitle}>Đơn hàng chờ xác nhận</Text>
+                          <View style={formStyles.confBadge}>
+                            <Text style={formStyles.confBadgeText}>Chưa tạo đơn</Text>
+                          </View>
+                        </View>
+                        <View style={formStyles.confBody}>
+                          <Text style={formStyles.confLine}>Người gửi: <Text style={formStyles.confBold}>{msg.orderConfirmation.senderName} ({msg.orderConfirmation.senderPhone})</Text></Text>
+                          <Text style={formStyles.confLine}>Lấy tại: <Text style={formStyles.confBold}>{[msg.orderConfirmation.senderAddress, msg.orderConfirmation.senderWard, msg.orderConfirmation.senderCity].filter(Boolean).join(', ')} [{msg.orderConfirmation.senderHubCode || '07904W001'}]</Text></Text>
+                          <Text style={formStyles.confLine}>Người nhận: <Text style={formStyles.confBold}>{msg.orderConfirmation.receiverName} ({msg.orderConfirmation.receiverPhone})</Text></Text>
+                          <Text style={formStyles.confLine}>Giao đến: <Text style={formStyles.confBold}>{[msg.orderConfirmation.receiverAddress, msg.orderConfirmation.receiverWard, msg.orderConfirmation.receiverCity].filter(Boolean).join(', ')} [{msg.orderConfirmation.receiverHubCode || 'HUB-HN-001'}]</Text></Text>
+                          <Text style={formStyles.confLine}>Hàng hóa: <Text style={formStyles.confBold}>{msg.orderConfirmation.itemName} ({msg.orderConfirmation.weightKg} kg • {msg.orderConfirmation.lengthCm || 10}x{msg.orderConfirmation.widthCm || 10}x{msg.orderConfirmation.heightCm || 10} cm)</Text></Text>
+                          <Text style={[formStyles.confLine, { fontSize: 10, color: '#64748B' }]}>Quy đổi thể tích IATA: {Number((((msg.orderConfirmation.lengthCm || 10) * (msg.orderConfirmation.widthCm || 10) * (msg.orderConfirmation.heightCm || 10)) / 6000).toFixed(2))} kg</Text>
+                          <View style={formStyles.confFeeRow}>
+                            <Text style={formStyles.confFee}>COD: {Number(msg.orderConfirmation.codAmount || 0).toLocaleString('vi-VN')} đ</Text>
+                            <Text style={formStyles.confFee}>Cước: {Number(msg.orderConfirmation.shippingFee || 21500).toLocaleString('vi-VN')} đ</Text>
+                          </View>
+                        </View>
+                        <View style={formStyles.confBtnRow}>
+                          <TouchableOpacity
+                            style={formStyles.confConfirmBtn}
+                            onPress={() => handleSendMessage('Xác nhận tạo đơn', { action: 'CONFIRM_ORDER' })}
+                          >
+                            <Text style={formStyles.confConfirmText}>Xác nhận tạo đơn</Text>
+                          </TouchableOpacity>
+                          <TouchableOpacity
+                            style={formStyles.confCancelBtn}
+                            onPress={() => handleSendMessage('Hủy tạo đơn', { action: 'CANCEL_ORDER' })}
+                          >
+                            <Text style={formStyles.confCancelText}>Hủy</Text>
+                          </TouchableOpacity>
+                        </View>
+                      </View>
+                    )}
 
                     {/* Interactive Shipment Cards */}
                     {msg.shipmentCards && msg.shipmentCards.length > 0 && (
@@ -595,7 +1907,17 @@ export function FloatingAiChatModal({ visible, onClose }: FloatingAiChatModalPro
                           <TouchableOpacity
                             key={cIdx}
                             style={styles.actionChipItem}
-                            onPress={() => handleSendMessage(chip.query)}
+                            onPress={() => {
+                              if (chip.label === 'Xác nhận tạo đơn' || chip.query === 'Xác nhận tạo đơn') {
+                                handleSendMessage('Xác nhận tạo đơn', { action: 'CONFIRM_ORDER' });
+                              } else if (chip.label === 'Tạo đơn ngay' || chip.query === 'Tạo đơn ngay') {
+                                handleSendMessage('Tạo đơn ngay', { action: 'OPEN_ORDER_FORM' });
+                              } else if (chip.label === 'Hủy tạo đơn' || chip.query === 'Hủy tạo đơn') {
+                                handleSendMessage('Hủy tạo đơn', { action: 'CANCEL_ORDER' });
+                              } else {
+                                handleSendMessage(chip.query);
+                              }
+                            }}
                             disabled={isLoading}
                             activeOpacity={0.7}
                           >
@@ -622,7 +1944,7 @@ export function FloatingAiChatModal({ visible, onClose }: FloatingAiChatModalPro
               {isLoading && (
                 <View style={[styles.messageRow, styles.messageRowBot]}>
                   <View style={styles.botAvatarMini}>
-                    <Ionicons name="car-outline" size={14} color="#FFFFFF" />
+                    <MaterialCommunityIcons name="robot" size={16} color="#FFFFFF" />
                   </View>
                   <View style={[styles.messageBubble, styles.bubbleBot, styles.loadingBubble]}>
                     <ActivityIndicator size="small" color="#1D4ED8" />
@@ -645,6 +1967,11 @@ export function FloatingAiChatModal({ visible, onClose }: FloatingAiChatModalPro
                   returnKeyType="send"
                   onSubmitEditing={() => handleSendMessage()}
                   editable={!isLoading}
+                  onFocus={() => {
+                    setTimeout(() => {
+                      scrollViewRef.current?.scrollToEnd({ animated: true });
+                    }, 120);
+                  }}
                 />
                 <TouchableOpacity
                   style={[
@@ -690,7 +2017,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingVertical: 14,
-    backgroundColor: '#0F172A',
+    backgroundColor: '#1D4ED8',
   },
   headerLeft: {
     flexDirection: 'row',
@@ -701,9 +2028,9 @@ const styles = StyleSheet.create({
     width: 38,
     height: 38,
     borderRadius: 12,
-    backgroundColor: '#1E293B',
-    borderWidth: 1,
-    borderColor: '#334155',
+    backgroundColor: 'rgba(255, 255, 255, 0.22)',
+    borderWidth: 1.5,
+    borderColor: 'rgba(255, 255, 255, 0.38)',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -718,17 +2045,17 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
   },
   ragBadge: {
-    backgroundColor: 'rgba(16, 185, 129, 0.2)',
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: 'rgba(16, 185, 129, 0.4)',
+    borderColor: 'rgba(255, 255, 255, 0.35)',
   },
   ragBadgeText: {
     fontSize: 10,
-    fontWeight: '600',
-    color: '#34D399',
+    fontWeight: '700',
+    color: '#FFFFFF',
   },
   statusRow: {
     flexDirection: 'row',
@@ -740,26 +2067,26 @@ const styles = StyleSheet.create({
     width: 6,
     height: 6,
     borderRadius: 3,
-    backgroundColor: '#10B981',
+    backgroundColor: '#34D399',
   },
   headerSubtitle: {
     fontSize: 11,
-    color: '#94A3B8',
+    color: 'rgba(255, 255, 255, 0.85)',
   },
   closeBtn: {
     padding: 6,
     borderRadius: 8,
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    backgroundColor: 'rgba(255, 255, 255, 0.18)',
   },
   slaBanner: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#020617',
+    backgroundColor: '#1E3A8A',
     paddingHorizontal: 16,
     paddingVertical: 6,
     borderBottomWidth: 1,
-    borderBottomColor: '#1E293B',
+    borderBottomColor: '#172554',
   },
   slaLeft: {
     flexDirection: 'row',
@@ -774,16 +2101,16 @@ const styles = StyleSheet.create({
   },
   slaText: {
     fontSize: 11,
-    color: '#94A3B8',
+    color: '#BFDBFE',
   },
   slaBold: {
     fontWeight: '700',
-    color: '#E2E8F0',
+    color: '#FFFFFF',
   },
   slaBadge: {
     fontSize: 10,
     fontWeight: '600',
-    color: '#64748B',
+    color: '#93C5FD',
     fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
   },
   quickSuggestionsWrapper: {
@@ -836,12 +2163,13 @@ const styles = StyleSheet.create({
     width: 28,
     height: 28,
     borderRadius: 8,
-    backgroundColor: '#0F172A',
+    backgroundColor: '#1D4ED8',
     borderWidth: 1,
-    borderColor: '#334155',
+    borderColor: '#60A5FA',
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: 2,
+    marginRight: 8,
   },
   messageBubble: {
     maxWidth: '82%',

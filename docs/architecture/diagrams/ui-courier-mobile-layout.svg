@@ -1,0 +1,128 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1220" height="780" viewBox="0 0 1220 780">
+  <defs>
+    <linearGradient id="brandGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#003D9B"/>
+      <stop offset="55%" stop-color="#0052CC"/>
+      <stop offset="100%" stop-color="#1D64E8"/>
+    </linearGradient>
+    <linearGradient id="navyGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0B1F44"/>
+      <stop offset="100%" stop-color="#1A3A75"/>
+    </linearGradient>
+    <filter id="cardShadow" x="-4%" y="-6%" width="108%" height="116%">
+      <feDropShadow dx="0" dy="3" stdDeviation="5" flood-color="#0F172A" flood-opacity="0.06"/>
+    </filter>
+    
+  </defs>
+  <rect width="1220" height="780" fill="#FFFFFF"/>
+  <rect x="24" y="18" width="1172" height="678" rx="16" fill="#F8FAFC" stroke="#DBE2F0" stroke-width="1.2"/>
+<text x="610.0" y="54" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="16.5" font-weight="700" fill="#102548" text-anchor="middle">COURIER MOBILE — Ứng dụng Nhân viên Giao nhận (React Native / Expo 54)</text>
+<text x="610.0" y="76" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="11" font-weight="500" fill="#5B6B86" text-anchor="middle">Tối ưu thao tác một tay ngoài hiện trường · Quét mã vạch Camera · Chụp ảnh POD · Hàng đợi ngoại tuyến (AsyncStorage)</text>
+<g filter="url(#cardShadow)"><rect x="165" y="96" width="360" height="558" rx="34" fill="#0F172A" stroke="#334155" stroke-width="2"/></g>
+<rect x="175" y="106" width="340" height="538" rx="26" fill="#F6F8FC" stroke="none" stroke-width="1.2"/>
+<rect x="301.0" y="112" width="88" height="16" rx="8" fill="#0F172A" stroke="none"/>
+<text x="195" y="124" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="10" font-weight="700" fill="#102548" text-anchor="start">09:41</text>
+<text x="497" y="124" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="9.5" font-weight="700" fill="#102548" text-anchor="end">5G  100%</text>
+<text x="345.0" y="678" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="12" font-weight="700" fill="#102548" text-anchor="middle">Màn hình 1: Bảng điều phối &amp; Tác vụ hiện trường</text>
+<path d="M175 132 Q175 106 201 106 H489 Q515 106 515 132 V244 Q515 264 495 264 H195 Q175 264 175 244 Z" fill="url(#navyGrad)"/>
+<rect x="301" y="112" width="88" height="16" rx="8" fill="#0F172A" stroke="none"/>
+<text x="195" y="124" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="10" font-weight="700" fill="#FFFFFF" text-anchor="start">09:41</text>
+<text x="497" y="124" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="9.5" font-weight="700" fill="#FFFFFF" text-anchor="end">5G  100%</text>
+<text x="195" y="154" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="11" font-weight="500" fill="#BFDBFE" text-anchor="start">Xin chào,</text>
+<text x="195" y="178" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="16" font-weight="700" fill="#FFFFFF" text-anchor="start">Nguyễn Văn Bưu Tá</text>
+<text x="195" y="198" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="10" font-weight="500" fill="#93C5FD" text-anchor="start">Mã NV: 20000001 · Hub 002C001</text>
+<rect x="195" y="214" width="152" height="26" rx="13.0" fill="#1E3A8A" stroke="#60A5FA" stroke-width="1"/><text x="271.0" y="230.5" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="10" font-weight="700" fill="#FFFFFF" text-anchor="middle">➤  Sẵn sàng giao nhận</text>
+<circle cx="451" cy="160" r="16" fill="#234585"/>
+<text x="451" y="165" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="9.5" font-weight="700" fill="#FFFFFF" text-anchor="middle">QR</text>
+<circle cx="489" cy="160" r="16" fill="#234585"/>
+<text x="489" y="165" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="11" font-weight="500" fill="#FFFFFF" text-anchor="middle">🔔</text>
+<rect x="191" y="274" width="148" height="66" rx="12" fill="#FFFFFF" stroke="#DBE2F0" stroke-width="1"/>
+<text x="205" y="300" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="10.5" font-weight="500" fill="#5B6B86" text-anchor="start">Đợi lấy</text>
+<text x="323" y="308" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="20" font-weight="700" fill="#0052CC" text-anchor="end">6</text>
+<text x="205" y="326" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="9.2" font-weight="500" fill="#5B6B86" text-anchor="start">Phiếu thu gom</text>
+<rect x="351" y="274" width="148" height="66" rx="12" fill="#FFFFFF" stroke="#DBE2F0" stroke-width="1"/>
+<text x="365" y="300" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="10.5" font-weight="500" fill="#5B6B86" text-anchor="start">Đợi phát</text>
+<text x="483" y="308" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="20" font-weight="700" fill="#137F5D" text-anchor="end">14</text>
+<text x="365" y="326" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="9.2" font-weight="500" fill="#5B6B86" text-anchor="start">Đơn giao chặng cuối</text>
+<rect x="191" y="350" width="308" height="46" rx="10" fill="#FEF3C7" stroke="#FCD34D" stroke-width="1"/>
+<text x="205" y="370" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="10.5" font-weight="700" fill="#C26D0A" text-anchor="start">Đơn đang xử lý (ASSIGNED)</text>
+<text x="205" y="386" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="9.2" font-weight="500" fill="#92400E" text-anchor="start">Công nợ COD ca: 3.450.000 đ / 15.000.000 đ</text>
+<text x="487" y="378" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="15" font-weight="700" fill="#C26D0A" text-anchor="end">20</text>
+<rect x="191" y="406" width="308" height="180" rx="12" fill="#FFFFFF" stroke="#DBE2F0" stroke-width="1"/>
+<text x="203" y="428" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="11.5" font-weight="700" fill="#102548" text-anchor="start">Ứng dụng tác nghiệp hiện trường</text>
+<rect x="217" y="440" width="36" height="36" rx="10" fill="#DCFCE7" stroke="none"/>
+<text x="235" y="463" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="13" font-weight="700" fill="#137F5D" text-anchor="middle">N</text>
+<text x="235" y="492" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="9" font-weight="700" fill="#102548" text-anchor="middle">Nhận hàng</text>
+<rect x="291" y="440" width="36" height="36" rx="10" fill="#E7EFFF" stroke="none"/>
+<text x="309" y="463" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="13" font-weight="700" fill="#0052CC" text-anchor="middle">P</text>
+<text x="309" y="492" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="9" font-weight="700" fill="#102548" text-anchor="middle">Phát hàng</text>
+<rect x="365" y="440" width="36" height="36" rx="10" fill="#DCFCE7" stroke="none"/>
+<text x="383" y="463" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="13" font-weight="700" fill="#137F5D" text-anchor="middle">G</text>
+<text x="383" y="492" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="9" font-weight="700" fill="#102548" text-anchor="middle">Gửi hàng</text>
+<rect x="439" y="440" width="36" height="36" rx="10" fill="#E7EFFF" stroke="none"/>
+<text x="457" y="463" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="13" font-weight="700" fill="#0052CC" text-anchor="middle">H</text>
+<text x="457" y="492" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="9" font-weight="700" fill="#102548" text-anchor="middle">Hàng đến</text>
+<rect x="217" y="508" width="36" height="36" rx="10" fill="#FEF3C7" stroke="none"/>
+<text x="235" y="531" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="13" font-weight="700" fill="#C26D0A" text-anchor="middle">Đ</text>
+<text x="235" y="560" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="9" font-weight="700" fill="#102548" text-anchor="middle">Đóng bao</text>
+<rect x="291" y="508" width="36" height="36" rx="10" fill="#E7EFFF" stroke="none"/>
+<text x="309" y="531" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="13" font-weight="700" fill="#0052CC" text-anchor="middle">X</text>
+<text x="309" y="560" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="9" font-weight="700" fill="#102548" text-anchor="middle">Xe đi</text>
+<rect x="365" y="508" width="36" height="36" rx="10" fill="#E7EFFF" stroke="none"/>
+<text x="383" y="531" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="13" font-weight="700" fill="#0052CC" text-anchor="middle">T</text>
+<text x="383" y="560" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="9" font-weight="700" fill="#102548" text-anchor="middle">Tiền COD</text>
+<rect x="439" y="508" width="36" height="36" rx="10" fill="#E7EFFF" stroke="none"/>
+<text x="457" y="531" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="13" font-weight="700" fill="#0052CC" text-anchor="middle">T</text>
+<text x="457" y="560" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="9" font-weight="700" fill="#102548" text-anchor="middle">Theo dõi</text>
+<rect x="175" y="592" width="340" height="52" rx="0" fill="#FFFFFF" stroke="#DBE2F0" stroke-width="1"/>
+<text x="209" y="624" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="9.2" font-weight="700" fill="#0052CC" text-anchor="middle">Nhiệm vụ</text>
+<text x="277" y="624" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="9.2" font-weight="500" fill="#5B6B86" text-anchor="middle">Thống kê</text>
+<circle cx="345" cy="606" r="20" fill="#0052CC"/>
+<text x="345" y="611" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="11" font-weight="700" fill="#FFFFFF" text-anchor="middle">[ ]</text>
+<text x="345" y="638" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="8.8" font-weight="700" fill="#0052CC" text-anchor="middle">Quét mã</text>
+<text x="413" y="624" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="9.2" font-weight="500" fill="#5B6B86" text-anchor="middle">Chat</text>
+<text x="481" y="624" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="9.2" font-weight="500" fill="#5B6B86" text-anchor="middle">Cá nhân</text>
+<g filter="url(#cardShadow)"><rect x="695" y="96" width="360" height="558" rx="34" fill="#0F172A" stroke="#334155" stroke-width="2"/></g>
+<rect x="705" y="106" width="340" height="538" rx="26" fill="#F6F8FC" stroke="none" stroke-width="1.2"/>
+<rect x="831.0" y="112" width="88" height="16" rx="8" fill="#0F172A" stroke="none"/>
+<text x="725" y="124" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="10" font-weight="700" fill="#102548" text-anchor="start">09:42</text>
+<text x="1027" y="124" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="9.5" font-weight="700" fill="#102548" text-anchor="end">5G  100%</text>
+<text x="875.0" y="678" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="12" font-weight="700" fill="#102548" text-anchor="middle">Màn hình 2: Quét mã POD &amp; Hàng đợi Ngoại tuyến</text>
+<rect x="705" y="132" width="340" height="42" rx="0" fill="#FFFFFF" stroke="#DBE2F0" stroke-width="1"/>
+<text x="875.0" y="158" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="13" font-weight="700" fill="#102548" text-anchor="middle">Xác nhận Phát hàng &amp; POD</text>
+<rect x="721" y="184" width="308" height="44" rx="10" fill="#ECFDF5" stroke="#6EE7B7" stroke-width="1"/>
+<text x="733" y="203" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="10" font-weight="700" fill="#137F5D" text-anchor="start">●  Offline Queue (AsyncStorage): Đã đồng bộ</text>
+<text x="733" y="219" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="9" font-weight="500" fill="#065F46" text-anchor="start">Tự động phát lại kèm idempotencyKey khi có mạng</text>
+<rect x="721" y="238" width="308" height="134" rx="14" fill="#0F172A" stroke="none"/>
+<rect x="751" y="260" width="248" height="68" rx="8" fill="none" stroke="#38BDF8" stroke-width="2" stroke-dasharray="5,4"/>
+<text x="875.0" y="299" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="18" font-weight="700" fill="#E0F2FE" text-anchor="middle">||||  || ||| | ||  ||||</text>
+<rect x="783" y="338" width="184" height="22" rx="11.0" fill="#137F5D" stroke="none"/><text x="875.0" y="352.325" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="9.5" font-weight="700" fill="#FFFFFF" text-anchor="middle">SHP-202605-0018 · Hợp lệ</text>
+<rect x="721" y="384" width="308" height="144" rx="12" fill="#FFFFFF" stroke="#DBE2F0" stroke-width="1"/>
+<text x="733" y="406" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="11.5" font-weight="700" fill="#102548" text-anchor="start">Thông tin bàn giao chặng cuối</text>
+<text x="733" y="428" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="9.8" font-weight="500" fill="#5B6B86" text-anchor="start">• Người nhận: Trần Minh Quân — Q.3, TP.HCM</text>
+<text x="733" y="446" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="9.8" font-weight="700" fill="#0052CC" text-anchor="start">• Thu hộ COD: 450.000 VNĐ (Tiền mặt / VietQR)</text>
+<text x="733" y="464" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="9.8" font-weight="500" fill="#137F5D" text-anchor="start">• Ảnh POD: Đã chụp (Tải S3 Presign → MinIO)</text>
+<text x="733" y="482" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="9.8" font-weight="700" fill="#102548" text-anchor="start">• Xác thực OTP 6 số: [ 4  8  2  9  1  0 ]</text>
+<rect x="733" y="496" width="134" height="24" rx="6" fill="#FEE2E2" stroke="#FCA5A5" stroke-width="1"/>
+<text x="800" y="512" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="9.5" font-weight="700" fill="#B91C1C" text-anchor="middle">Báo sự cố NDR</text>
+<rect x="877" y="496" width="138" height="24" rx="6" fill="#E7EFFF" stroke="#93C5FD" stroke-width="1"/>
+<text x="946" y="512" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="9.5" font-weight="700" fill="#0052CC" text-anchor="middle">Hiện mã VietQR</text>
+<rect x="721" y="540" width="308" height="42" rx="10" fill="#0052CC" stroke="none"/>
+<text x="875.0" y="565" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="12" font-weight="700" fill="#FFFFFF" text-anchor="middle">Xác nhận Phát hàng thành công</text>
+<line x1="540" y1="370" x2="678" y2="370" stroke="#0052CC" stroke-width="2" stroke-dasharray="6,4"/>
+<polygon points="682,370 670,364 670,376" fill="#0052CC"/>
+<rect x="554" y="338" width="112" height="24" rx="12.0" fill="#E7EFFF" stroke="none"/><text x="610.0" y="353.325" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="9.5" font-weight="700" fill="#0052CC" text-anchor="middle">Chọn tác vụ / Quét</text>
+<rect x="24" y="712" width="1172" height="52" rx="10" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="1.2"/>
+<circle cx="53.0" cy="738" r="11" fill="#0052CC"/>
+<text x="53.0" y="742" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="10.5" font-weight="700" fill="#FFFFFF" text-anchor="middle">1</text>
+<text x="72.0" y="734" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="10.8" font-weight="700" fill="#102548" text-anchor="start">Header định danh &amp; Công nợ ca</text>
+<text x="72.0" y="750" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="9.6" font-weight="500" fill="#5B6B86" text-anchor="start">Hiển thị mã NV, Hub trực thuộc &amp; hạn mức 15 triệu COD</text>
+<circle cx="433.0" cy="738" r="11" fill="#0052CC"/>
+<text x="433.0" y="742" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="10.5" font-weight="700" fill="#FFFFFF" text-anchor="middle">2</text>
+<text x="452.0" y="734" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="10.8" font-weight="700" fill="#102548" text-anchor="start">Lưới tác vụ &amp; FAB Quét mã</text>
+<text x="452.0" y="750" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="9.6" font-weight="500" fill="#5B6B86" text-anchor="start">Phân quyền động qua MobilePermissionProfile/Override</text>
+<circle cx="813.0" cy="738" r="11" fill="#0052CC"/>
+<text x="813.0" y="742" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="10.5" font-weight="700" fill="#FFFFFF" text-anchor="middle">3</text>
+<text x="832.0" y="734" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="10.8" font-weight="700" fill="#102548" text-anchor="start">Offline-First (AsyncStorage)</text>
+<text x="832.0" y="750" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="9.6" font-weight="500" fill="#5B6B86" text-anchor="start">Lưu hàng đợi khi mất sóng &amp; đồng bộ chống trùng lặp</text>
+</svg>
