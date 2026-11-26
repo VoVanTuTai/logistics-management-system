@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { EmbeddingService } from '../rag/embedding.service';
 import { VectorStoreService } from '../rag/vector-store.service';
-import { LogisticsToolsService } from '../tools/logistics-tools.service';
+import { LogisticsToolsService, phonesMatch } from '../tools/logistics-tools.service';
 import type { ActionChipDto, ChatResponseDto, Citation, ShipmentCardDto } from '../rag/rag.types';
 import type { ChatRequestDto, OrderDataDto } from './dto/chat-request.dto';
 
@@ -390,16 +390,36 @@ export class ChatService {
       !cleanNormalizedQ.includes('may lan') &&
       !cleanNormalizedQ.includes('toi da') &&
       !cleanNormalizedQ.includes('quy dinh') &&
-      (cleanNormalizedQ.includes('giao lai') ||
-       cleanNormalizedQ.includes('phat lai') ||
-       cleanNormalizedQ.includes('hen giao') ||
-       cleanNormalizedQ.includes('hen phat') ||
-       cleanNormalizedQ.includes('hom nay ban') ||
-       cleanNormalizedQ.includes('chua nhan duoc') ||
-       cleanNormalizedQ.includes('giao vao ngay mai') ||
-       cleanNormalizedQ.includes('giao buoi chieu') ||
-       cleanNormalizedQ.includes('giao sau')) &&
-      (cleanNormalizedQ.includes('don') || cleanNormalizedQ.includes('hang') || cleanNormalizedQ.includes('kien') || !!trackingCode || !!session.selectedCode || session.pendingIntent === 'REDELIVERY');
+      (
+        /(?:hen|doi)\s+(?:lai\s+)?(?:ngay\s+mai|sang\s+mai|chieu\s+mai|mai|gio\s+khac|ngay\s+khac|sau)?.*(?:giao|phat)/i.test(cleanNormalizedQ) ||
+        /(?:giao|phat)\s+(?:lai|vao\s+ngay\s+mai|sang\s+mai|chieu\s+mai|buoi\s+chieu|buoi\s+sang|mai|sau)/i.test(cleanNormalizedQ) ||
+        /(?:hom\s+nay|bua\s+nay).*(?:ban|khong\s+co\s+nha|di\s+vang|khong\s+nhan)/i.test(cleanNormalizedQ) ||
+        cleanNormalizedQ.includes('giao lai') ||
+        cleanNormalizedQ.includes('phat lai') ||
+        cleanNormalizedQ.includes('hen giao') ||
+        cleanNormalizedQ.includes('hen phat') ||
+        cleanNormalizedQ.includes('mai giao') ||
+        cleanNormalizedQ.includes('mai phat') ||
+        cleanNormalizedQ.includes('ngay mai giao') ||
+        cleanNormalizedQ.includes('ngay mai phat') ||
+        cleanNormalizedQ.includes('hom nay ban') ||
+        cleanNormalizedQ.includes('chua nhan duoc') ||
+        cleanNormalizedQ.includes('giao vao ngay mai') ||
+        cleanNormalizedQ.includes('giao buoi chieu') ||
+        cleanNormalizedQ.includes('giao sau') ||
+        session.pendingIntent === 'REDELIVERY'
+      ) &&
+      (
+        cleanNormalizedQ.includes('don') ||
+        cleanNormalizedQ.includes('hang') ||
+        cleanNormalizedQ.includes('kien') ||
+        cleanNormalizedQ.includes('giao') ||
+        cleanNormalizedQ.includes('phat') ||
+        cleanNormalizedQ.includes('mai') ||
+        !!trackingCode ||
+        !!session.selectedCode ||
+        session.pendingIntent === 'REDELIVERY'
+      );
 
     // Xác định mã đơn hàng đang hoạt động trong phiên (Multi-turn Contextual Memory)
     const activeTrackingCode =
@@ -1166,9 +1186,23 @@ export class ChatService {
         targetCode = session.lastShipments[0].code;
       }
 
-      // Trích xuất khung giờ hẹn giao
-      const timeMatch = question.match(/(?:ngày mai|ngay mai|chiều mai|chieu mai|sáng mai|sang mai|buổi chiều|buoi chieu|buổi sáng|buoi sang|sau 17h|sau 18h|hẹn lúc|hen luc)\s*([0-9a-zA-Z\s:h-]*)/i);
-      const preferredTime = timeMatch ? timeMatch[0].trim() : (session.pendingData?.preferredTime || 'Ngày làm việc tiếp theo (khung giờ hành chính)');
+      // Trích xuất khung giờ hẹn giao linh hoạt theo ngôn ngữ tự nhiên
+      let preferredTime = 'Ngày mai (trong giờ hành chính)';
+      const lowerQ = question.toLowerCase();
+      if (lowerQ.includes('sáng mai') || lowerQ.includes('sang mai') || lowerQ.includes('buổi sáng') || lowerQ.includes('buoi sang')) {
+        preferredTime = 'Sáng mai (08:00 - 12:00)';
+      } else if (lowerQ.includes('chiều mai') || lowerQ.includes('chieu mai') || lowerQ.includes('buổi chiều') || lowerQ.includes('buoi chieu')) {
+        preferredTime = 'Chiều mai (13:30 - 18:00)';
+      } else if (lowerQ.includes('ngày mai') || lowerQ.includes('ngay mai') || lowerQ.includes('mai')) {
+        preferredTime = 'Ngày mai (trong giờ hành chính)';
+      } else {
+        const timeMatch = question.match(/(?:ngày mai|ngay mai|chiều mai|chieu mai|sáng mai|sang mai|buổi chiều|buoi chieu|buổi sáng|buoi sang|sau 17h|sau 18h|hẹn lúc|hen luc)\s*([0-9a-zA-Z\s:h-]*)/i);
+        if (timeMatch && timeMatch[0].trim()) {
+          preferredTime = timeMatch[0].trim();
+        } else if (session.pendingData?.preferredTime) {
+          preferredTime = session.pendingData.preferredTime;
+        }
+      }
 
       if (!targetCode) {
         // THIẾU MÃ VẬN ĐƠN -> HỎI LẠI KHÁCH HÀNG
@@ -1191,7 +1225,7 @@ export class ChatService {
           `  2. ⏰ Khung giờ thuận tiện nhất (sáng/chiều hoặc ngày mai) để bưu tá tuyến ưu tiên giao đúng hẹn cho mình nhé ạ!\n` +
           `- HƯỚNG DẪN AI: Trả lời thân thiện, chu đáo, hỏi lại thông tin như trên để khách gửi mã đơn và thời gian hẹn nhé ạ.\n`;
       } else {
-        // ĐÃ CÓ MÃ ĐƠN -> THỰC THI GỌI TOOL!
+        // ĐÃ CÓ MÃ ĐƠN -> THỰC THI GỌI TOOL & KÍCH HOẠT API BACKEND!
         toolsUsed.push(`scheduleRedelivery(${targetCode}, ${preferredTime})`);
         const redelivRes = await this.toolsService.scheduleRedelivery({
           trackingNumber: targetCode,
@@ -1215,8 +1249,14 @@ export class ChatService {
           `- Mã vận đơn: ${targetCode}\n` +
           `- Thời gian hẹn giao lại: ${preferredTime}\n` +
           `- Trạng thái cập nhật: ${redelivRes.message}\n` +
-          `- Chính sách phát lại: Miễn phí phát lại lần 2 và lần 3 (tối đa 3 lần) theo quy chuẩn bưu chính.\n` +
-          `- HƯỚNG DẪN AI: Thông báo với anh/chị thật lịch sự, ấm áp rằng bưu tá tuyến đã nhận lịch hẹn và sẽ gọi trước khi qua phát, nhắc anh/chị yên tâm nhé ạ.\n`;
+          `- QUY CHUẨN VẬN HÀNH CARRIER SOP CHO BƯU TÁ & OPS:\n` +
+          `  + Hệ thống đã tự động chạy API cập nhật lịch hẹn lên phân hệ Điều phối và ứng dụng Bưu tá.\n` +
+          `  + Bưu tá không cần thao tác lập biên bản sự cố hay kiện vấn đề trên app giao hàng làm gián đoạn hành trình.\n` +
+          `  + Việc của bưu tá: Chỉ cần mang kiện hàng về bưu cục phát vào cuối ca làm việc.\n` +
+          `  + Bộ phận OPS bưu cục: Quét nhập tồn kho lưu giữ (Scan Inbound - Warehouse Hold / Postponed Inventory).\n` +
+          `  + Sáng hôm sau: Hệ thống tự động gán tuyến phát lại đúng lịch hẹn ưu tiên cho khách.\n` +
+          `  + Chính sách phát lại: Miễn phí phát lại hoàn toàn 100% (0 VNĐ) theo quy chuẩn bưu chính (tối đa 03 lần phát).\n` +
+          `- HƯỚNG DẪN AI: Thông báo với anh/chị thật lịch sự, ấm áp (xưng em, gọi anh/chị) rằng hệ thống đã tự động ghi nhận lịch hẹn phát lại vào ${preferredTime} trên hệ thống điều phối. Nhấn mạnh rõ shipper và OPS đã nắm thông tin, shipper không cần thao tác báo lỗi/kiện vấn đề trên app mà chỉ việc mang hàng về bưu cục cuối ca để OPS quét tồn kho, sáng hôm sau sẽ ưu tiên phát lại đúng hẹn cho anh/chị hoàn toàn miễn phí nhé ạ.\n`;
       }
     } else if (isTrackingOrFollowUp) {
       const targetTrackingCode = activeTrackingCode!;
@@ -1303,14 +1343,45 @@ export class ChatService {
           },
         ];
 
+        // Phân định trạng thái bưu tá đang phát hàng (Out For Delivery)
+        const isOutForDelivery =
+          trackRes.status === 'OUT_FOR_DELIVERY' ||
+          trackRes.status === 'DELIVERING' ||
+          trackRes.statusText?.toLowerCase().includes('dang phat') ||
+          trackRes.statusText?.toLowerCase().includes('dang giao');
+
+        // Phân định vai trò Khách gửi (Shop / Merchant) vs Khách nhận (Recipient)
+        const isSender =
+          (!isGuest && !!accountPhone && phonesMatch(trackRes.senderPhone, accountPhone)) ||
+          dto.senderRole === 'MERCHANT' ||
+          cleanNormalizedQ.includes('nguoi gui') ||
+          cleanNormalizedQ.includes('shop gui') ||
+          cleanNormalizedQ.includes('shop');
+
         // Gợi ý action chips phù hợp với trạng thái đơn
         const canCancel = ['CREATED', 'TASK_ASSIGNED', 'PICKUP_ASSIGNED', 'PICKING_UP', 'PENDING', 'READY_TO_SHIP'].includes(trackRes.status);
 
-        actionChips = [
-          ...(canCancel ? [{ label: `❌ Hủy đơn ${trackRes.trackingNumber}`, query: `Tôi muốn hủy đơn hàng ${trackRes.trackingNumber}` }] : []),
-          { label: '📦 Tra cứu đơn khác', query: 'Tra cứu hành trình đơn hàng' },
-          { label: '➕ Gửi đơn hàng mới', query: 'Tôi muốn gửi hàng mới' },
-        ];
+        if (isOutForDelivery) {
+          if (isSender) {
+            actionChips = [
+              { label: '📦 Tra cứu đơn khác', query: 'Tra cứu hành trình đơn hàng' },
+              { label: '📞 Liên hệ bưu tá phát', query: `Tôi muốn liên hệ bưu tá phát đơn ${trackRes.trackingNumber}` },
+              { label: '➕ Gửi đơn hàng mới', query: 'Tôi muốn gửi hàng mới' },
+            ];
+          } else {
+            actionChips = [
+              { label: '⏰ Hẹn giao lại ngày mai', query: `Hôm nay tôi bận, hẹn giao lại đơn ${trackRes.trackingNumber} vào ngày mai` },
+              { label: '📞 Liên hệ bưu tá phát', query: `Tôi muốn liên hệ bưu tá phát đơn ${trackRes.trackingNumber}` },
+              { label: '📦 Tra cứu đơn khác', query: 'Tra cứu hành trình đơn hàng' },
+            ];
+          }
+        } else {
+          actionChips = [
+            ...(canCancel ? [{ label: `❌ Hủy đơn ${trackRes.trackingNumber}`, query: `Tôi muốn hủy đơn hàng ${trackRes.trackingNumber}` }] : []),
+            { label: '📦 Tra cứu đơn khác', query: 'Tra cứu hành trình đơn hàng' },
+            { label: '➕ Gửi đơn hàng mới', query: 'Tôi muốn gửi hàng mới' },
+          ];
+        }
 
         toolAugmentedContext += (extractedPhone
           ? `\n[XÁC THỰC THÀNH CÔNG SỐ ĐIỆN THOẠI NGƯỜI NHẬN - HIỂN THỊ TOÀN BỘ THÔNG TIN CHI TIẾT]:\n`
@@ -1334,6 +1405,26 @@ export class ChatService {
           `- ĐỊA CHỈ GỬI HÀNG (NƠI LẤY): ${trackRes.senderAddress || trackRes.senderCity}.\n` +
           `- LƯU Ý PHÂN BIỆT: Tuyệt đối không nhầm lẫn bưu cục lấy hàng ban đầu của người gửi (hoặc vị trí Hub bưu tá lấy hàng) thành địa chỉ của người nhận!\n` +
           `- HƯỚNG DẪN AI: Trả lời rõ ràng, chu đáo và chính xác mọi thông tin đơn hàng cho anh/chị. TUYỆT ĐỐI KHÔNG DÙNG ICON.\n`;
+
+        if (isOutForDelivery) {
+          if (isSender) {
+            toolAugmentedContext += `\n[THÔNG BÁO VẬN HÀNH DÀNH CHO NGƯỜI GỬI / SHOP - ĐƠN HÀNG ĐANG ĐƯỢC BƯU TÁ PHÁT]:\n` +
+              `- Mã vận đơn: ${trackRes.trackingNumber}\n` +
+              `- Người nhận: ${trackRes.receiverName || 'Khách hàng'}${trackRes.receiverPhone ? ` (${trackRes.receiverPhone})` : ''}\n` +
+              `- Địa chỉ giao hàng: ${trackRes.receiverAddress || trackRes.receiverCity}\n` +
+              `- Bưu tá phụ trách phát: ${trackRes.courierName || 'Bưu tá tuyến'}${trackRes.courierPhone ? ` (SĐT: ${trackRes.courierPhone})` : ''}\n` +
+              `- Thời gian dự kiến: ${trackRes.estimatedDelivery || 'Trong ngày hôm nay'}\n` +
+              `- HƯỚNG DẪN AI CHO NGƯỜI GỬI: Báo cho Shop/Người gửi biết đơn hàng đang được bưu tá trực tiếp đi phát tới người nhận trong hôm nay. Trấn an Shop rằng bưu tá đang trên tuyến giao và hệ thống sẽ gửi thông báo kết quả ngay khi giao xong nhé ạ.\n`;
+          } else {
+            toolAugmentedContext += `\n[THÔNG BÁO VẬN HÀNH DÀNH CHO NGƯỜI NHẬN - ĐƠN HÀNG ĐANG ĐƯỢC BƯU TÁ PHÁT TẬN NƠI]:\n` +
+              `- Mã vận đơn: ${trackRes.trackingNumber}\n` +
+              `- Người nhận: ${trackRes.receiverName || 'Quý khách'}\n` +
+              `- Địa chỉ giao hàng: ${trackRes.receiverAddress || trackRes.receiverCity}\n` +
+              `- Bưu tá phụ trách phát: ${trackRes.courierName || 'Bưu tá tuyến'}${trackRes.courierPhone ? ` (SĐT: ${trackRes.courierPhone})` : ''}\n` +
+              `- Thời gian dự kiến: ${trackRes.estimatedDelivery || 'Trong ngày hôm nay'}\n` +
+              `- HƯỚNG DẪN AI CHO NGƯỜI NHẬN: Báo cho anh/chị biết bưu tá đang trực tiếp đi phát đơn hàng tới anh/chị hôm nay và nhắc anh/chị để ý điện thoại. ĐẶC BIỆT THÔNG BÁO TIỆN ÍCH: "Nếu hôm nay anh/chị bận hoặc không có mặt tại địa chỉ nhận, anh/chị hoàn toàn có thể hẹn lại lịch giao hàng sang ngày mai hoặc khung giờ khác trực tiếp ngay tại đây qua Chatbot mà không phát sinh bất kỳ chi phí nào!"\n`;
+          }
+        }
       }
     } else {
       // 1. Kiểm tra nếu người dùng hỏi tra cứu đơn hoặc hỏi về đơn của họ (Tracking / Query Intent)
@@ -2519,6 +2610,7 @@ HÃY ĐƯA RA CÂU TRẢ LỜI ĐẦY ĐỦ VÀ CHÍNH XÁC:`;
         body: JSON.stringify({
           model,
           temperature: this.temperature,
+          max_tokens: 800,
           messages: [
             { role: 'system', content: systemPrompt },
             { role: 'user', content: userPrompt },
@@ -3262,6 +3354,56 @@ HÃY ĐƯA RA CÂU TRẢ LỜI ĐẦY ĐỦ VÀ CHÍNH XÁC:`;
           (eta ? `• Dự kiến phát hàng: ${eta}\n` : '');
       }
 
+      if (realtimeSection.includes('[KẾT QUẢ GHI NHẬN LỊCH HẸN GIAO LẠI HÀNG CHO VẬN ĐƠN')) {
+        const codeMatch = realtimeSection.match(/Mã vận đơn:\s*(.*?)\n/);
+        const code = codeMatch ? codeMatch[1].trim() : '';
+        const timeMatch = realtimeSection.match(/Thời gian hẹn giao lại:\s*(.*?)\n/);
+        const time = timeMatch ? timeMatch[1].trim() : 'Ngày mai (trong giờ hành chính)';
+        return `Dạ em chào anh/chị ạ!\n\n` +
+          `Hệ thống điều phối trung tâm của Nexus Logistics đã **tự động ghi nhận lịch hẹn phát lại** cho vận đơn **${code}** vào: **${time}** rồi nhé ạ.\n\n` +
+          `• **Đồng bộ tự động sang Shipper & OPS**: Thông tin hẹn giao lại đã được cập nhật trực tiếp lên hệ thống điều phối và ứng dụng của bưu tá. Bưu tá phụ trách tuyến **không cần thao tác lập biên bản sự cố hay kiện vấn đề** trên app.\n` +
+          `• **Quy trình vận hành bưu tá**: Cuối ca làm việc hôm nay, bưu tá chỉ cần mang kiện hàng về bưu cục phát bàn giao.\n` +
+          `• **Bộ phận OPS bưu cục**: Thực hiện quét nhập tồn kho lưu giữ (Scan Inbound - Warehouse Hold / Postponed Inventory) để bảo quản kiện an toàn.\n` +
+          `• **Phát lại ưu tiên**: Vào sáng mai, hệ thống sẽ tự động gán tuyến phát lại đúng theo lịch hẹn ưu tiên cho anh/chị.\n\n` +
+          `Toàn bộ quá trình phát lại lần này là **hoàn toàn miễn phí** (0 VNĐ) theo chính sách phát lại 03 lần của Nexus Logistics. Anh/chị hoàn toàn yên tâm nhé ạ!`;
+      }
+
+      if (realtimeSection.includes('[THÔNG BÁO VẬN HÀNH DÀNH CHO NGƯỜI NHẬN - ĐƠN HÀNG ĐANG ĐƯỢC BƯU TÁ PHÁT TẬN NƠI]')) {
+        const codeMatch = realtimeSection.match(/Mã vận đơn:\s*(.*?)\n/);
+        const code = codeMatch ? codeMatch[1].trim() : '';
+        const courierMatch = realtimeSection.match(/Bưu tá phụ trách phát:\s*(.*?)\n/);
+        const courier = courierMatch ? courierMatch[1].trim() : 'Bưu tá tuyến';
+        const etaMatch = realtimeSection.match(/Thời gian dự kiến:\s*(.*?)\n/);
+        const eta = etaMatch ? etaMatch[1].trim() : 'Trong ngày hôm nay';
+        const addrMatch = realtimeSection.match(/Địa chỉ giao hàng:\s*(.*?)\n/);
+        const addr = addrMatch ? addrMatch[1].trim() : '';
+
+        return `Dạ em chào anh/chị ạ!\n\n` +
+          `Đơn hàng **${code}** của anh/chị hiện đang được bưu tá **${courier}** trực tiếp đi phát tận nơi ạ.\n\n` +
+          (addr ? `• **Địa chỉ nhận hàng**: ${addr}\n` : '') +
+          `• **Thời gian dự kiến giao**: ${eta}\n\n` +
+          `Anh/chị vui lòng để ý điện thoại để bưu tá liên hệ khi đến giao hàng nhé ạ.\n\n` +
+          `💡 **Lưu ý tiện ích**: Nếu hôm nay anh/chị bận việc hoặc không có mặt tại địa chỉ nhận, anh/chị hoàn toàn có thể **hẹn lại lịch giao hàng sang ngày mai** (hoặc khung giờ khác) trực tiếp ngay tại đây qua Chatbot mà không phát sinh bất kỳ chi phí nào!`;
+      }
+
+      if (realtimeSection.includes('[THÔNG BÁO VẬN HÀNH DÀNH CHO NGƯỜI GỬI / SHOP - ĐƠN HÀNG ĐANG ĐƯỢC BƯU TÁ PHÁT]')) {
+        const codeMatch = realtimeSection.match(/Mã vận đơn:\s*(.*?)\n/);
+        const code = codeMatch ? codeMatch[1].trim() : '';
+        const receiverMatch = realtimeSection.match(/Người nhận:\s*(.*?)\n/);
+        const receiver = receiverMatch ? receiverMatch[1].trim() : '';
+        const addrMatch = realtimeSection.match(/Địa chỉ giao hàng:\s*(.*?)\n/);
+        const addr = addrMatch ? addrMatch[1].trim() : '';
+        const courierMatch = realtimeSection.match(/Bưu tá phụ trách phát:\s*(.*?)\n/);
+        const courier = courierMatch ? courierMatch[1].trim() : 'Bưu tá tuyến';
+
+        return `Dạ em chào Shop ạ!\n\n` +
+          `Đơn hàng **${code}** của Shop hiện đang được bưu tá **${courier}** trực tiếp đi phát đến người nhận:\n\n` +
+          (receiver ? `• **Khách nhận**: ${receiver}\n` : '') +
+          (addr ? `• **Địa chỉ phát hàng**: ${addr}\n` : '') +
+          `• **Tiến độ**: Bưu tá đang trên tuyến giao hàng trong ngày hôm nay.\n\n` +
+          `Shop hoàn toàn yên tâm nhé, hệ thống đang bám sát tiến độ và sẽ tự động cập nhật kết quả giao hàng thành công ngay khi bưu tá hoàn tất đơn ạ!`;
+      }
+
       if (realtimeSection.includes('[THÔNG TIN HỒ SƠ TÀI KHOẢN NGƯỜI DÙNG HIỆN TẠI (ĐÃ ĐĂNG NHẬP)]')) {
         const nameMatch = realtimeSection.match(/Tên người dùng \/ Tên hiển thị:\s*(.*?)\n/);
         const name = nameMatch ? nameMatch[1].trim() : 'Quý khách';
@@ -3523,6 +3665,9 @@ HÃY ĐƯA RA CÂU TRẢ LỜI ĐẦY ĐỦ VÀ CHÍNH XÁC:`;
         .replace(/\[BẢNG BÁO GIÁ CƯỚC THỜI GIAN THỰC TỪ MICROSERVICE PRICING-SERVICE\]:/g, '**Dự toán cước phí vận chuyển**:')
         .replace(/\[QUY ĐỊNH THỜI HẠN LƯU KHO & XỬ LÝ HÀNG QUÁ HẠN \/ VÔ CHỦ - (.*?)\]:/g, '**Quy định thời hạn lưu kho & Xử lý hàng quá hạn, vô chủ ($1)**:')
         .replace(/\[QUY HOẠCH DẢI MÃ VẬN ĐƠN & MÃ ĐỊNH TUYẾN 3 ĐOẠN (.*?)\]:/g, '**Quy hoạch dải mã vận đơn & Mã định tuyến 3 đoạn $1**:')
+        .replace(/\[THÔNG BÁO VẬN HÀNH DÀNH CHO NGƯỜI NHẬN - ĐƠN HÀNG ĐANG ĐƯỢC BƯU TÁ PHÁT TẬN NƠI\]:/g, '**Thông báo phát hàng tận nơi**:')
+        .replace(/\[THÔNG BÁO VẬN HÀNH DÀNH CHO NGƯỜI GỬI \/ SHOP - ĐƠN HÀNG ĐANG ĐƯỢC BƯU TÁ PHÁT\]:/g, '**Thông báo phát hàng tới người nhận (dành cho Shop)**:')
+        .replace(/\[KẾT QUẢ GHI NHẬN LỊCH HẸN GIAO LẠI HÀNG CHO VẬN ĐƠN (.*?)\]:/g, '**Ghi nhận lịch hẹn phát lại cho đơn $1**:')
         .replace(/\[KẾT QUẢ TRA CỨU\]:\s*/g, '')
         .trim();
 

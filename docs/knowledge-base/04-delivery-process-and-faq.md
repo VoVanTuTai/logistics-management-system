@@ -36,3 +36,25 @@ Khi đơn hàng giao không thành công sau 03 lần phát (NDR) hoặc ngườ
 - **Thời gian bưu tá đến lấy hàng:** Bưu tá tiếp nhận lệnh điều phối và đến lấy hàng tận nhà trong vòng 02 đến 04 giờ sau khi tạo đơn thành công, theo ca sáng (trước 12:00) hoặc ca chiều (trước 18:00).
 - **Hẹn giờ giao lại hàng (Redelivery):** Khách hàng có thể hẹn lại thời gian phát hàng phù hợp (hẹn buổi chiều, hẹn ngày mai, hẹn cuối tuần) bằng cách phản hồi tin nhắn hoặc thông báo cho bưu tá qua ứng dụng.
 
+## 7. Quy Chuẩn Thông Báo Khi Đơn Hàng Đang Phát (Out For Delivery Alert SOP)
+Khi bưu tá xuất kho đi phát hàng (`OUT_FOR_DELIVERY` / `DELIVERING`), hệ thống phân định thông báo rõ ràng theo 2 đối tượng:
+- **Đối với Khách Nhận (Recipient):**
+  - Thông báo kiện hàng đang được bưu tá phụ trách tuyến trực tiếp đi phát, kèm thông tin họ tên và số điện thoại bưu tá.
+  - Nhắc nhở người nhận chú ý điện thoại để bưu tá liên hệ giao hàng.
+  - **Tiện ích hẹn phát lại thông minh:** Nếu hôm nay người nhận bận việc hoặc vắng nhà, khách có thể hẹn lại lịch giao hàng sang ngày mai hoặc khung giờ khác trực tiếp qua AI Chatbot hoàn toàn miễn phí.
+- **Đối với Khách Gửi (Shop / Merchant):**
+  - Thông báo minh bạch cho Shop biết đơn hàng đang được bưu tá phát đến người nhận (kèm tên người nhận, địa chỉ và số điện thoại).
+  - Trấn an Shop yên tâm vì bưu tá đang trên tuyến và hệ thống sẽ cập nhật ngay kết quả giao hàng thành công hoặc báo cáo đối soát.
+
+## 8. Quy Chuẩn Hẹn Giao Lại Qua AI Chatbot & SOP Xử Lý Tồn Kho (Automated Redelivery & Warehouse Hold SOP)
+Khi khách hàng bận và yêu cầu hẹn giao lại (ví dụ hẹn ngày mai, sáng mai, chiều mai) thông qua AI Chatbot:
+1. **Tự động gọi API hệ thống:** Chatbot tự động phân tích ý định và kích hoạt API ghi nhận lịch hẹn trên hệ thống điều phối bưu chính (`delivery-service` / `dispatch-service`).
+2. **Quy chuẩn Carrier SOP cho Bưu tá (Shipper):**
+   - Bưu tá phụ trách tuyến **KHÔNG CẦN phải thao tác lập "Kiện vấn đề" hay biên bản sự cố (NDR)** trên ứng dụng di động làm gián đoạn hành trình hay phải rời khỏi app.
+   - Nhiệm vụ duy nhất của bưu tá: Mang kiện hàng về bưu cục phát vào cuối ca giao nhận.
+3. **Quy chuẩn Carrier SOP cho Vận hành Bưu cục (OPS Hub):**
+   - Bộ phận OPS thực hiện thao tác **Quét nhập tồn kho lưu giữ (Scan Inbound - Warehouse Hold / Postponed Inventory)** để quản lý kiện hàng an toàn trong kho.
+   - Vào ca làm việc sáng hôm sau, hệ thống tự động đưa kiện vào danh sách phân bổ tuyến phát lại đúng theo lịch hẹn ưu tiên cho khách.
+4. **Chính sách cước phát lại:** Miễn phí phát lại hoàn toàn 100% (0 VNĐ) theo quy chuẩn phát tối đa 03 lần của Nexus Logistics.
+
+
