@@ -18,7 +18,7 @@ export interface ChatSessionContext {
   lastShipments?: any[];
   selectedCode?: string;
   receiverPhone?: string;
-  pendingIntent?: 'PRICING' | 'CANCEL' | 'TRACKING' | 'CHANGE_ADDRESS' | 'REDELIVERY' | 'CLAIM' | 'CREATE_ORDER';
+  pendingIntent?: 'PRICING' | 'CANCEL' | 'TRACKING' | 'CHANGE_ADDRESS' | 'REDELIVERY' | 'CLAIM' | 'CREATE_ORDER' | 'HOLD_AT_HUB';
   pendingData?: {
     fromCity?: string;
     toCity?: string;
@@ -26,6 +26,7 @@ export interface ChatSessionContext {
     dimensions?: { length: number; width: number; height: number };
     newAddress?: string;
     preferredTime?: string;
+    pickupTime?: string;
     claimReason?: string;
   };
   pendingOrderData?: OrderDataDto;
@@ -365,9 +366,61 @@ export class ChatService {
         cleanNormalizedQ.includes('dung huy') ||
         cleanNormalizedQ.includes('van muon gui'));
 
+    // Kiểm tra ý định Giữ hàng tại Bưu cục & Tự đến lấy (Hold at Hub / PUDO - Customer Self-Pickup)
+    const isHoldAtHubQuery =
+      !isSafetyOrComplianceViolation &&
+      !cleanNormalizedQ.includes('co duoc') &&
+      !cleanNormalizedQ.includes('may ngay') &&
+      !cleanNormalizedQ.includes('bao lau') &&
+      !cleanNormalizedQ.includes('quy dinh') &&
+      (
+        cleanNormalizedQ.includes('giu tai buu cuc') ||
+        cleanNormalizedQ.includes('giu o buu cuc') ||
+        cleanNormalizedQ.includes('giu lai buu cuc') ||
+        cleanNormalizedQ.includes('giu lai o buu cuc') ||
+        cleanNormalizedQ.includes('giu tai quay') ||
+        cleanNormalizedQ.includes('giu o quay') ||
+        cleanNormalizedQ.includes('tu den lay') ||
+        cleanNormalizedQ.includes('tu ghe lay') ||
+        cleanNormalizedQ.includes('tu qua lay') ||
+        cleanNormalizedQ.includes('tu den nhan') ||
+        cleanNormalizedQ.includes('tu ghe nhan') ||
+        cleanNormalizedQ.includes('tu qua nhan') ||
+        cleanNormalizedQ.includes('ghe buu cuc lay') ||
+        cleanNormalizedQ.includes('den buu cuc lay') ||
+        cleanNormalizedQ.includes('qua buu cuc lay') ||
+        cleanNormalizedQ.includes('ghe buu cuc nhan') ||
+        cleanNormalizedQ.includes('den buu cuc nhan') ||
+        cleanNormalizedQ.includes('qua buu cuc nhan') ||
+        cleanNormalizedQ.includes('nhan tai quay') ||
+        cleanNormalizedQ.includes('lay tai quay') ||
+        cleanNormalizedQ.includes('nhan tai buu cuc') ||
+        cleanNormalizedQ.includes('lay tai buu cuc') ||
+        cleanNormalizedQ.includes('hold at hub') ||
+        cleanNormalizedQ.includes('pudo') ||
+        /(?:giu|de)\s+(?:lai\s+)?(?:o|tai)\s+buu\s+cuc/i.test(cleanNormalizedQ) ||
+        /(?:tu\s+)?(?:ghe|den|qua)\s+buu\s+cuc\s+(?:lay|nhan)/i.test(cleanNormalizedQ) ||
+        /(?:buu\s+cuc\s+giu\s+lai|giu\s+lai\s+giup)/i.test(cleanNormalizedQ) ||
+        session.pendingIntent === 'HOLD_AT_HUB'
+      ) &&
+      (
+        cleanNormalizedQ.includes('don') ||
+        cleanNormalizedQ.includes('hang') ||
+        cleanNormalizedQ.includes('kien') ||
+        cleanNormalizedQ.includes('lay') ||
+        cleanNormalizedQ.includes('nhan') ||
+        cleanNormalizedQ.includes('buu cuc') ||
+        cleanNormalizedQ.includes('quay') ||
+        cleanNormalizedQ.includes('ghe') ||
+        !!trackingCode ||
+        !!session.selectedCode ||
+        session.pendingIntent === 'HOLD_AT_HUB'
+      );
+
     // Kiểm tra ý định thay đổi địa chỉ nhận hàng / sửa SĐT người nhận (Change Delivery Address)
     const isAddressChangeQuery =
       !isSafetyOrComplianceViolation &&
+      !isHoldAtHubQuery &&
       !cleanNormalizedQ.includes('co duoc') &&
       !cleanNormalizedQ.includes('co cho') &&
       !cleanNormalizedQ.includes('the nao') &&
@@ -386,6 +439,7 @@ export class ChatService {
     // Kiểm tra ý định hẹn giao lại hàng / phát lại (Redelivery / NDR Schedule)
     const isRedeliveryQuery =
       !isSafetyOrComplianceViolation &&
+      !isHoldAtHubQuery &&
       !cleanNormalizedQ.includes('co duoc') &&
       !cleanNormalizedQ.includes('may lan') &&
       !cleanNormalizedQ.includes('toi da') &&
@@ -565,7 +619,8 @@ export class ChatService {
       !isCancelIntent &&
       !isKeepOrderIntent &&
       !isAddressChangeQuery &&
-      !isRedeliveryQuery;
+      !isRedeliveryQuery &&
+      !isHoldAtHubQuery;
 
     // Stage 0 luôn chạy TRƯỚC tất cả các nhánh định tuyến vận hành (Stage 1) và RAG (Stage 2)
     if (isProhibitedGoodsQuery) {
@@ -1258,6 +1313,94 @@ export class ChatService {
           `  + Chính sách phát lại: Miễn phí phát lại hoàn toàn 100% (0 VNĐ) theo quy chuẩn bưu chính (tối đa 03 lần phát).\n` +
           `- HƯỚNG DẪN AI: Thông báo với anh/chị thật lịch sự, ấm áp (xưng em, gọi anh/chị) rằng hệ thống đã tự động ghi nhận lịch hẹn phát lại vào ${preferredTime} trên hệ thống điều phối. Nhấn mạnh rõ shipper và OPS đã nắm thông tin, shipper không cần thao tác báo lỗi/kiện vấn đề trên app mà chỉ việc mang hàng về bưu cục cuối ca để OPS quét tồn kho, sáng hôm sau sẽ ưu tiên phát lại đúng hẹn cho anh/chị hoàn toàn miễn phí nhé ạ.\n`;
       }
+    } else if (isHoldAtHubQuery) {
+      let targetCode: string | undefined = trackingCode || dto.selectedShipmentCode || session.selectedCode;
+      if (!targetCode && session.lastShipments && session.lastShipments.length === 1) {
+        targetCode = session.lastShipments[0].code;
+      }
+
+      // Trích xuất thời gian dự kiến khách đến lấy bưu phẩm tại quầy
+      let pickupTime = 'Tối nay khoảng 19:30';
+      const lowerQ = question.toLowerCase();
+      const timeRegex = /(?:khoảng|tầm|lúc)?\s*(\d{1,2}(?:h|g|:)\d{0,2}|\d{1,2}\s*(?:giờ|h))\s*(?:tối|chiều|sáng)?|(?:tối|chiều|sáng)\s+nay|ngày\s+mai|sau\s+giờ\s+làm|tan\s+ca/i;
+      const match = question.match(timeRegex);
+      if (match && match[0].trim()) {
+        if (lowerQ.includes('19h30') || lowerQ.includes('19:30')) {
+          pickupTime = 'Tối nay khoảng 19:30 (sau giờ tan ca)';
+        } else if (lowerQ.includes('tan ca') || lowerQ.includes('sau gio lam') || lowerQ.includes('sau giờ làm')) {
+          pickupTime = 'Tối nay sau giờ tan ca (18:00 - 20:30)';
+        } else {
+          pickupTime = match[0].trim();
+        }
+      } else if (session.pendingData?.pickupTime) {
+        pickupTime = session.pendingData.pickupTime;
+      }
+
+      if (!targetCode) {
+        // THIẾU MÃ VẬN ĐƠN -> HỎI LẠI KHÁCH HÀNG
+        this.sessions.set(conversationId, {
+          ...session,
+          pendingIntent: 'HOLD_AT_HUB',
+          pendingData: { pickupTime },
+          lastUpdated: Date.now(),
+        });
+
+        actionChips = [
+          ...(session.lastShipments ? session.lastShipments.slice(0, 2).map((s) => ({ label: `🏢 Giữ đơn ${s.code}`, query: `Đơn ${s.code} giữ tại bưu cục giúp mình, mình tự ghé lấy hàng` })) : []),
+          { label: '📦 Xem các đơn hàng của tôi', query: 'Tôi có những đơn hàng nào' },
+        ];
+
+        toolAugmentedContext += `\n[YÊU CẦU CSKH HỎI LẠI THÔNG TIN GIỮ HÀNG TẠI BƯU CỤC (PUDO CLARIFICATION)]:\n` +
+          `- Yêu cầu khách: Khách hàng muốn giữ hàng tại quầy bưu cục phát để tự đến lấy nhưng CHƯA CUNG CẤP mã vận đơn cụ thể.\n` +
+          `- NGUYÊN TẮC CSKH: Chào anh/chị niềm nở, thông báo rằng bưu cục hoàn toàn hỗ trợ dịch vụ Giữ hàng tại bưu cục & Tự đến lấy (PUDO) miễn phí lưu kho tới 05 ngày. HỎI LẠI KHÁCH HÀNG:\n` +
+          `  1. 🏷️ Mã vận đơn của kiện hàng mình muốn giữ lại tại bưu cục?\n` +
+          `  2. ⏰ Khung giờ dự kiến anh/chị ghé quầy để bưu cục chuẩn bị sẵn hàng cho mình nhé ạ!\n` +
+          `- HƯỚNG DẪN AI: Trả lời thân thiện, chu đáo, hỏi lại mã vận đơn của khách nhé ạ.\n`;
+      } else {
+        // ĐÃ CÓ MÃ ĐƠN -> THỰC THI GỌI TOOL holdAtHubForPickup & KÍCH HOẠT API BACKEND!
+        toolsUsed.push(`holdAtHubForPickup(${targetCode}, ${pickupTime})`);
+        const holdRes = await this.toolsService.holdAtHubForPickup({
+          trackingNumber: targetCode,
+          pickupTime,
+        });
+
+        this.sessions.set(conversationId, {
+          ...session,
+          selectedCode: targetCode,
+          pendingIntent: undefined,
+          pendingData: undefined,
+          lastUpdated: Date.now(),
+        });
+
+        actionChips = [
+          { label: '🗺️ Chỉ đường đến bưu cục', query: `Địa chỉ và giờ mở cửa của ${holdRes.destinationHub.name}` },
+          { label: `🔍 Xem hành trình ${targetCode}`, query: `Tra cứu hành trình đơn ${targetCode}` },
+          { label: '📦 Xem các đơn khác', query: 'Tôi có những đơn hàng nào' },
+        ];
+
+        toolAugmentedContext += `\n[KẾT QUẢ ĐĂNG KÝ NHẬN HÀNG TẠI BƯU CỤC (HOLD AT HUB / PUDO) CHO VẬN ĐƠN ${targetCode}]:\n` +
+          `- Mã vận đơn: ${targetCode}\n` +
+          `- Hình thức nhận hàng mới: Tự đến lấy tại quầy bưu cục (Hold at Hub / PUDO)\n` +
+          `- Mã nhận hàng OTP/PIN bảo mật: ${holdRes.pickupOtpPin}\n` +
+          `- Bưu cục lưu giữ: ${holdRes.destinationHub.name}\n` +
+          `- Địa chỉ bưu cục: ${holdRes.destinationHub.address}\n` +
+          `- Giờ mở cửa quầy giao dịch: ${holdRes.destinationHub.openingHours}\n` +
+          `- Hotline bưu cục: ${holdRes.destinationHub.hotline}\n` +
+          `- Thời gian khách hẹn đến lấy: ${pickupTime}\n` +
+          `- Thời hạn lưu kho miễn phí: Tối đa ${holdRes.freeHoldDays} ngày\n` +
+          `- Chính sách cước dịch vụ: ${holdRes.carrierSop.feePolicy}\n` +
+          `- Tiền thu hộ COD: ${holdRes.carrierSop.codPolicy}\n` +
+          `- QUY CHUẨN VẬN HÀNH CARRIER SOP CHO BƯU TÁ & GIAO DỊCH VIÊN QUẦY:\n` +
+          `  + ${holdRes.carrierSop.shipperInstruction}\n` +
+          `  + ${holdRes.carrierSop.opsInstruction}\n` +
+          `  + ${holdRes.carrierSop.podMethod}\n` +
+          `- HƯỚNG DẪN AI:\n` +
+          `  + Chào anh/chị niềm nở, ấm áp (xưng em, gọi anh/chị). Xác nhận hệ thống đã ghi nhận chuyển hình thức sang 'Giữ tại Bưu cục & Tự đến lấy' cho đơn hàng ${targetCode}.\n` +
+          `  + Cung cấp rõ ràng cho anh/chị: Mã PIN nhận hàng bảo mật: **${holdRes.pickupOtpPin}**, Tên bưu cục (${holdRes.destinationHub.name}), Địa chỉ (${holdRes.destinationHub.address}), Giờ mở cửa quầy giao dịch (${holdRes.destinationHub.openingHours}) và thời hạn lưu kho miễn phí 05 ngày.\n` +
+          `  + Nhắc anh/chị khi đến quầy bưu cục chỉ cần đọc Số điện thoại người nhận và cung cấp Mã PIN ${holdRes.pickupOtpPin} cho giao dịch viên để đối chiếu xuất hàng (COUNTER_PICKUP_POD) và thanh toán COD (nếu có) rất nhanh chóng mà không cần chờ đợi.\n` +
+          `  + Trấn an anh/chị rằng bưu tá tuyến đã nhận được thông tin điều phối và sẽ không đi phát tận nơi, kiện hàng được bảo quản an toàn tại quầy bưu cục.\n` +
+          `  + TUYỆT ĐỐI KHÔNG DÙNG ICON.\n`;
+      }
     } else if (isTrackingOrFollowUp) {
       const targetTrackingCode = activeTrackingCode!;
       // Nếu người dùng đổi sang mã vận đơn khác thì reset lại SĐT người nhận đã lưu trước đó
@@ -1371,6 +1514,7 @@ export class ChatService {
           } else {
             actionChips = [
               { label: '⏰ Hẹn giao lại ngày mai', query: `Hôm nay tôi bận, hẹn giao lại đơn ${trackRes.trackingNumber} vào ngày mai` },
+              { label: '🏢 Giữ tại bưu cục (Tự đến lấy)', query: `Đơn ${trackRes.trackingNumber} giữ tại bưu cục phát giúp mình, mình tự ghé lấy hàng` },
               { label: '📞 Liên hệ bưu tá phát', query: `Tôi muốn liên hệ bưu tá phát đơn ${trackRes.trackingNumber}` },
               { label: '📦 Tra cứu đơn khác', query: 'Tra cứu hành trình đơn hàng' },
             ];
@@ -2507,7 +2651,16 @@ Bạn có kiến thức uyên thâm, thấu đáo và toàn diện về toàn b�
     3. Đặt câu hỏi trực diện, gãy gọn, chia mục rõ ràng (1, 2, 3) để thu thập thông tin còn thiếu.
     4. Cung cấp mức tham khảo nhanh hoặc gợi ý các nút bấm Action Chips để khách tiện chọn nếu trùng nhu cầu.
     5. Ghi nhớ ngữ cảnh đa lượt: Khi khách trả lời thông tin còn thiếu ở câu tiếp theo, hệ thống lập tức xâu chuỗi và gọi API xử lý dứt điểm cho khách hàng ngay.
-  + KHI ĐÃ CÓ ĐỦ THÔNG TIN: Gọi đúng API/Tool cần thiết, trả lời mạch lạc, súc tích, giải tỏa băn khoăn cho khách.`;
+  + KHI ĐÃ CÓ ĐỦ THÔNG TIN: Gọi đúng API/Tool cần thiết, trả lời mạch lạc, súc tích, giải tỏa băn khoăn cho khách.
+
+7. QUY CHUẨN GIỮ HÀNG TẠI BƯU CỤC & TỰ ĐẾN LẤY (HOLD AT HUB / PUDO SOP):
+- Khi khách hàng bận việc ban ngày (ví dụ làm việc 8h-19h) và yêu cầu giữ hàng tại bưu cục để tự ghé nhận:
+  + Hệ thống tự động ghi nhận chuyển hình thức sang "Tự đến lấy tại quầy bưu cục" (Hold for Pickup / PUDO).
+  + Bưu tá không cần đi phát tận nơi, hàng được giữ an toàn tại quầy giao dịch bưu cục phát. Bộ phận OPS quét tồn kho (INVENTORY_CHECK) tại bưu cục phát.
+  + Hệ thống cấp cho khách Mã PIN nhận hàng bảo mật 6 chữ số.
+  + Thông báo cho khách: Mã PIN nhận hàng (in đậm 6 chữ số), Tên và Địa chỉ bưu cục phát, Giờ mở cửa quầy giao dịch, Thời hạn lưu kho miễn phí tối đa 05 ngày.
+  + Hướng dẫn khách khi đến quầy bưu cục chỉ cần đọc Số điện thoại người nhận và cung cấp Mã PIN 6 chữ số cho giao dịch viên để đối chiếu xuất hàng (COUNTER_PICKUP_POD), thu COD (nếu có, hỗ trợ tiền mặt/VietQR) rất nhanh chóng.
+  + Dịch vụ lưu giữ tại quầy bưu cục là hoàn toàn MIỄN PHÍ (0 VNĐ).`;
 
     const userPrompt = `DỮ LIỆU NGỮ CẢNH HỆ THỐNG CUNG CẤP:
 ${context || '(Không tìm thấy tài liệu phù hợp trực tiếp)'}
@@ -3366,6 +3519,39 @@ HÃY ĐƯA RA CÂU TRẢ LỜI ĐẦY ĐỦ VÀ CHÍNH XÁC:`;
           `• **Bộ phận OPS bưu cục**: Thực hiện quét tồn kho (INVENTORY_CHECK) tại bưu cục phát.\n` +
           `• **Phát lại ưu tiên**: Vào sáng mai, hệ thống sẽ tự động gán tuyến phát lại đúng theo lịch hẹn ưu tiên cho anh/chị.\n\n` +
           `Toàn bộ quá trình phát lại lần này là **hoàn toàn miễn phí** (0 VNĐ) theo chính sách phát lại 03 lần của Nexus Logistics. Anh/chị hoàn toàn yên tâm nhé ạ!`;
+      }
+
+      if (realtimeSection.includes('[KẾT QUẢ ĐĂNG KÝ NHẬN HÀNG TẠI BƯU CỤC (HOLD AT HUB / PUDO) CHO VẬN ĐƠN')) {
+        const codeMatch = realtimeSection.match(/Mã vận đơn:\s*(.*?)\n/);
+        const code = codeMatch ? codeMatch[1].trim() : '';
+        const pinMatch = realtimeSection.match(/Mã nhận hàng OTP\/PIN bảo mật:\s*(.*?)\n/);
+        const pin = pinMatch ? pinMatch[1].trim() : '';
+        const hubMatch = realtimeSection.match(/Bưu cục lưu giữ:\s*(.*?)\n/);
+        const hub = hubMatch ? hubMatch[1].trim() : 'Bưu cục phát';
+        const addrMatch = realtimeSection.match(/Địa chỉ bưu cục:\s*(.*?)\n/);
+        const addr = addrMatch ? addrMatch[1].trim() : '';
+        const hoursMatch = realtimeSection.match(/Giờ mở cửa quầy giao dịch:\s*(.*?)\n/);
+        const hours = hoursMatch ? hoursMatch[1].trim() : '07:30 - 21:00 hàng ngày';
+        const timeMatch = realtimeSection.match(/Thời gian khách hẹn đến lấy:\s*(.*?)\n/);
+        const time = timeMatch ? timeMatch[1].trim() : 'Tối nay khoảng 19:30';
+        const codMatch = realtimeSection.match(/Tiền thu hộ COD:\s*(.*?)\n/);
+        const cod = codMatch ? codMatch[1].trim() : '';
+
+        return `Dạ em chào anh/chị ạ!\n\n` +
+          `Hệ thống đã **ghi nhận thành công** yêu cầu chuyển hình thức sang **"Giữ tại Bưu cục & Tự đến lấy" (PUDO)** cho vận đơn **${code}** của anh/chị rồi ạ.\n\n` +
+          `THÔNG TIN NHẬN HÀNG TẠI QUẦY BƯU CỤC:\n` +
+          `• **Mã PIN nhận hàng bảo mật**: **${pin}** (Anh/chị lưu lại mã PIN này nhé)\n` +
+          `• **Bưu cục lưu giữ**: **${hub}**\n` +
+          (addr ? `• **Địa chỉ**: ${addr}\n` : '') +
+          `• **Giờ mở cửa phục vụ**: ${hours}\n` +
+          `• **Thời gian anh/chị dự kiến ghé**: ${time}\n` +
+          `• **Thời hạn lưu kho miễn phí**: Tối đa **05 ngày**\n` +
+          (cod ? `• **${cod}**\n` : '') +
+          `\nQUY TRÌNH VẬN HÀNH CARRIER SOP CHO BƯU TÁ & GIAO DỊCH VIÊN QUẦY:\n` +
+          `• Bưu tá phụ trách tuyến sẽ không cần đi phát tận nhà, kiện hàng được giữ an toàn tại quầy giao dịch bưu cục phát.\n` +
+          `• Bộ phận OPS quét tồn kho (INVENTORY_CHECK) và lưu giữ trên kệ PUDO tại quầy.\n` +
+          `• Khi anh/chị ghé bưu cục, chỉ cần cung cấp **Số điện thoại** và đọc **Mã PIN ${pin}** cho giao dịch viên tại quầy để đối chiếu xuất hàng (COUNTER_PICKUP_POD) và thanh toán COD (nếu có, hỗ trợ tiền mặt hoặc VietQR) rất nhanh chóng ạ!\n\n` +
+          `Chúc anh/chị một buổi tối tốt lành và nhận hàng thuận lợi nhé ạ!`;
       }
 
       if (realtimeSection.includes('[THÔNG BÁO VẬN HÀNH DÀNH CHO NGƯỜI NHẬN - ĐƠN HÀNG ĐANG ĐƯỢC BƯU TÁ PHÁT TẬN NƠI]')) {

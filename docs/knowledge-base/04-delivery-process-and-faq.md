@@ -57,4 +57,33 @@ Khi khách hàng bận và yêu cầu hẹn giao lại (ví dụ hẹn ngày mai
    - Vào ca làm việc sáng hôm sau, hệ thống tự động đưa kiện vào danh sách phân bổ tuyến phát lại đúng theo lịch hẹn ưu tiên cho khách.
 4. **Chính sách cước phát lại:** Miễn phí phát lại hoàn toàn 100% (0 VNĐ) theo quy chuẩn phát tối đa 03 lần của Nexus Logistics.
 
+## 9. Quy Chuẩn Giữ Hàng Tại Bưu Cục & Tự Đến Lấy (Hold at Hub / PUDO - Customer Self-Pickup SOP)
+
+### 9.1. Tình Huống Thực Tế & Kích Hoạt Tự Động
+- **Bối cảnh vận hành:** Khách hàng làm việc văn phòng (8:00 - 19:00), vắng nhà ban ngày khi shipper đi phát, không có người nhận hộ.
+- **Kích hoạt qua AI Chatbot:** Khách chỉ cần nhắn yêu cầu giữ hàng qua Chatbot (ví dụ: *"Đơn này bưu cục giữ lại giúp mình nhé, tối tan ca khoảng 19h30 mình tự ghé bưu cục phát lấy hàng"*).
+- **Chuyển đổi hình thức bưu gửi:** Hệ thống tự động ghi nhận chuyển phương thức giao nhận từ *"Giao tận nhà"* sang *"Tự đến lấy tại quầy bưu cục"* (Hold for Pickup / PUDO).
+
+### 9.2. Quy Chuẩn Carrier SOP cho Bưu Tá (Shipper)
+- Bưu tá tuyến được giải phóng khỏi lệnh phát tận nhà cho đơn hàng này.
+- Bưu tá **không cần lập biên bản sự cố hay kiện vấn đề** trên app di động.
+- Kiện hàng được lưu giữ an toàn tại quầy giao dịch bưu cục phát.
+
+### 9.3. Quy Chuẩn Carrier SOP cho Vận Hành Bưu Cục (OPS Hub)
+- Bộ phận OPS thực hiện thao tác **Quét tồn kho (`INVENTORY_CHECK`)** tại bưu cục phát.
+- Dán nhãn định vị PUDO và phân loại kiện hàng vào khu vực giá kệ giữ hàng chờ khách nhận tại quầy giao dịch.
+- **Thời hạn lưu giữ miễn phí:** Bưu cục lưu kho miễn phí tối đa **05 ngày làm việc** (0 VNĐ).
+
+### 9.4. Cơ Chế Bảo Mật Mã Nhận Hàng (Secure Pickup OTP / PIN)
+- Hệ thống tự động sinh và cấp một **Mã PIN bảo mật 6 chữ số** ngẫu nhiên gửi trực tiếp cho khách qua Chatbot/SMS.
+- Mã PIN này có hiệu lực trong suốt thời gian lưu giữ kiện hàng tại bưu cục phát.
+
+### 9.5. Quy Trình Giao Nhận Tại Quầy Bưu Cục (`COUNTER_PICKUP_POD`)
+1. Khách hàng đến quầy bưu cục phát (mở cửa từ 07:30 - 21:00 hàng ngày, kể cả Chủ Nhật và ngày lễ).
+2. Khách xuất trình: **Số điện thoại người nhận** + đọc **Mã PIN 6 chữ số**.
+3. Giao dịch viên OPS nhập mã kiểm tra đối soát thông tin kiện hàng trên phần mềm quản lý quầy giao dịch.
+4. Thu tiền thu hộ COD (nếu có): Hỗ trợ thanh toán tiền mặt hoặc quét mã VietQR tĩnh/động tại quầy.
+5. Giao dịch viên hoàn tất biên bản bàn giao tại quầy (**COUNTER_PICKUP_POD**), khách ký nhận hoặc chụp ảnh xác nhận và nhận kiện hàng.
+
+
 
