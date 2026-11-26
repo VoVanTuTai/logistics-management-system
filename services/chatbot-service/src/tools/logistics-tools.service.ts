@@ -1463,7 +1463,7 @@ export class LogisticsToolsService {
               issueType: 'CUSTOMER_REQUEST',
               issueCategory: 'INFORMATION',
               reportedBy: 'CHATBOT_AI',
-              note: `Khách hẹn giao lại: ${input.preferredTime} qua Chatbot AI. Bưu tá mang hàng về cuối ca để OPS quét tồn kho lưu giữ (Warehouse Hold). ${input.notes || ''}`.trim(),
+              note: `Khách hẹn giao lại: ${input.preferredTime} qua Chatbot AI. Bưu tá mang hàng về cuối ca để OPS quét tồn kho. ${input.notes || ''}`.trim(),
               status: 'RESCHEDULED',
             }),
             signal: AbortSignal.timeout(2000),
@@ -1497,8 +1497,8 @@ export class LogisticsToolsService {
         inMem = {
           found: true,
           trackingNumber: cleanTracking,
-          status: 'REDELIVERY_SCHEDULED',
-          statusText: `Khách hẹn phát lại (${input.preferredTime})`,
+          status: 'INVENTORY_CHECK',
+          statusText: `Quét tồn kho (Khách hẹn phát lại: ${input.preferredTime})`,
           courierName: 'Nguyễn Văn Hùng',
           courierPhone: '0988123456',
           senderName: 'Shop Thời Trang Coolmate',
@@ -1513,7 +1513,7 @@ export class LogisticsToolsService {
           destinationHubName: 'Bưu cục phát Quận 1',
           itemName: 'Váy hoa voan mùa hè',
           codAmount: 350000,
-          currentLocation: 'Bưu cục phát Quận 1 (Chờ nhập kho tồn lưu Warehouse Hold)',
+          currentLocation: 'Bưu cục phát Quận 1',
           estimatedDelivery: input.preferredTime,
           timeline: [
             { time: 'Hôm nay 08:30', status: 'OUT_FOR_DELIVERY', description: 'Bưu tá Nguyễn Văn Hùng (0988123456) đang phát hàng đến người nhận' },
@@ -1528,11 +1528,11 @@ export class LogisticsToolsService {
         inMem = {
           found: true,
           trackingNumber: cleanTracking,
-          status: 'REDELIVERY_SCHEDULED',
-          statusText: `Khách hẹn phát lại (${input.preferredTime})`,
+          status: 'INVENTORY_CHECK',
+          statusText: `Quét tồn kho (Khách hẹn phát lại: ${input.preferredTime})`,
           receiverCity: 'TP. Hồ Chí Minh',
           receiverName: 'Quý khách',
-          currentLocation: 'Bưu cục phát (Chờ nhập kho tồn lưu)',
+          currentLocation: 'Bưu cục phát',
           estimatedDelivery: input.preferredTime,
           timeline: [],
           isMasked: false,
@@ -1541,21 +1541,21 @@ export class LogisticsToolsService {
         };
       }
     } else {
-      inMem.status = 'REDELIVERY_SCHEDULED';
-      inMem.statusText = `Khách hẹn phát lại (${input.preferredTime})`;
+      inMem.status = 'INVENTORY_CHECK';
+      inMem.statusText = `Quét tồn kho (Khách hẹn phát lại: ${input.preferredTime})`;
       inMem.estimatedDelivery = input.preferredTime;
     }
 
     inMem.timeline.unshift({
       time: new Date().toLocaleString('vi-VN'),
-      status: 'REDELIVERY_SCHEDULED',
-      description: `Khách hẹn giao lại qua Chatbot AI: ${input.preferredTime}. Hệ thống điều phối đã tự động ghi nhận, bưu tá không cần lập kiện vấn đề, mang hàng về bưu cục cuối ca để OPS quét tồn kho lưu giữ (Warehouse Hold).`,
+      status: 'INVENTORY_CHECK',
+      description: `Khách hẹn giao lại qua Chatbot AI: ${input.preferredTime}. Bưu tá không cần lập kiện vấn đề, mang hàng về cuối ca để OPS quét tồn kho.`,
     });
     this.createdShipmentsMap.set(cleanTracking, inMem);
 
     const carrierSop = {
       shipperInstruction: 'Bưu tá không cần thao tác lập biên bản sự cố hay kiện vấn đề trên app di động. Cuối ca mang kiện hàng về bưu cục bàn giao.',
-      opsInstruction: 'Bộ phận OPS quét nhập tồn kho lưu giữ (Scan Inbound - Warehouse Hold / Postponed Inventory) và tự động gán tuyến phát lại vào sáng mai.',
+      opsInstruction: 'Bộ phận OPS quét tồn kho (INVENTORY_CHECK) tại bưu cục phát và tự động gán tuyến phát lại vào sáng mai.',
       feePolicy: 'Hoàn toàn miễn phí phát lại (0 VNĐ) theo quy chuẩn dịch vụ bưu chính Nexus Logistics (hỗ trợ tối đa 03 lần phát).',
     };
 
@@ -1565,7 +1565,7 @@ export class LogisticsToolsService {
       scheduledTime: input.preferredTime,
       apiSynced,
       carrierSop,
-      message: `Đã tự động chạy API ghi nhận lịch hẹn giao lại cho vận đơn ${cleanTracking} vào: ${input.preferredTime} trên hệ thống điều phối bưu chính. Bưu tá phụ trách và bộ phận OPS đã nhận được thông tin: Bưu tá không cần lập kiện vấn đề trên app, chỉ cần đem hàng về bưu cục cuối ca để OPS quét tồn kho lưu giữ (Warehouse Hold). Sáng mai hệ thống sẽ tự động gán tuyến phát lại đúng hẹn cho Quý khách hoàn toàn miễn phí!`,
+      message: `Đã tự động chạy API ghi nhận lịch hẹn giao lại cho vận đơn ${cleanTracking} vào: ${input.preferredTime} trên hệ thống điều phối bưu chính. Bưu tá phụ trách và bộ phận OPS đã nhận được thông tin: Bưu tá không cần lập kiện vấn đề trên app, chỉ cần đem hàng về bưu cục cuối ca để OPS quét tồn kho. Sáng mai hệ thống sẽ tự động gán tuyến phát lại đúng hẹn cho Quý khách hoàn toàn miễn phí!`,
     };
   }
 }

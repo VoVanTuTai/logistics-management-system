@@ -46,14 +46,14 @@ Khi bưu tá xuất kho đi phát hàng (`OUT_FOR_DELIVERY` / `DELIVERING`), h�
   - Thông báo minh bạch cho Shop biết đơn hàng đang được bưu tá phát đến người nhận (kèm tên người nhận, địa chỉ và số điện thoại).
   - Trấn an Shop yên tâm vì bưu tá đang trên tuyến và hệ thống sẽ cập nhật ngay kết quả giao hàng thành công hoặc báo cáo đối soát.
 
-## 8. Quy Chuẩn Hẹn Giao Lại Qua AI Chatbot & SOP Xử Lý Tồn Kho (Automated Redelivery & Warehouse Hold SOP)
+## 8. Quy Chuẩn Hẹn Giao Lại Qua AI Chatbot & Thao Tác Quét Tồn Kho (Automated Redelivery & Inventory Check SOP)
 Khi khách hàng bận và yêu cầu hẹn giao lại (ví dụ hẹn ngày mai, sáng mai, chiều mai) thông qua AI Chatbot:
 1. **Tự động gọi API hệ thống:** Chatbot tự động phân tích ý định và kích hoạt API ghi nhận lịch hẹn trên hệ thống điều phối bưu chính (`delivery-service` / `dispatch-service`).
 2. **Quy chuẩn Carrier SOP cho Bưu tá (Shipper):**
    - Bưu tá phụ trách tuyến **KHÔNG CẦN phải thao tác lập "Kiện vấn đề" hay biên bản sự cố (NDR)** trên ứng dụng di động làm gián đoạn hành trình hay phải rời khỏi app.
    - Nhiệm vụ duy nhất của bưu tá: Mang kiện hàng về bưu cục phát vào cuối ca giao nhận.
 3. **Quy chuẩn Carrier SOP cho Vận hành Bưu cục (OPS Hub):**
-   - Bộ phận OPS thực hiện thao tác **Quét nhập tồn kho lưu giữ (Scan Inbound - Warehouse Hold / Postponed Inventory)** để quản lý kiện hàng an toàn trong kho.
+   - Bộ phận OPS thực hiện thao tác **Quét tồn kho (`INVENTORY_CHECK`)** tại bưu cục phát để quản lý kiện hàng chờ phát lại.
    - Vào ca làm việc sáng hôm sau, hệ thống tự động đưa kiện vào danh sách phân bổ tuyến phát lại đúng theo lịch hẹn ưu tiên cho khách.
 4. **Chính sách cước phát lại:** Miễn phí phát lại hoàn toàn 100% (0 VNĐ) theo quy chuẩn phát tối đa 03 lần của Nexus Logistics.
 

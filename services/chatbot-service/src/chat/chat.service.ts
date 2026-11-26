@@ -1253,7 +1253,7 @@ export class ChatService {
           `  + Hệ thống đã tự động chạy API cập nhật lịch hẹn lên phân hệ Điều phối và ứng dụng Bưu tá.\n` +
           `  + Bưu tá không cần thao tác lập biên bản sự cố hay kiện vấn đề trên app giao hàng làm gián đoạn hành trình.\n` +
           `  + Việc của bưu tá: Chỉ cần mang kiện hàng về bưu cục phát vào cuối ca làm việc.\n` +
-          `  + Bộ phận OPS bưu cục: Quét nhập tồn kho lưu giữ (Scan Inbound - Warehouse Hold / Postponed Inventory).\n` +
+          `  + Bộ phận OPS bưu cục: Quét tồn kho (INVENTORY_CHECK) tại bưu cục phát.\n` +
           `  + Sáng hôm sau: Hệ thống tự động gán tuyến phát lại đúng lịch hẹn ưu tiên cho khách.\n` +
           `  + Chính sách phát lại: Miễn phí phát lại hoàn toàn 100% (0 VNĐ) theo quy chuẩn bưu chính (tối đa 03 lần phát).\n` +
           `- HƯỚNG DẪN AI: Thông báo với anh/chị thật lịch sự, ấm áp (xưng em, gọi anh/chị) rằng hệ thống đã tự động ghi nhận lịch hẹn phát lại vào ${preferredTime} trên hệ thống điều phối. Nhấn mạnh rõ shipper và OPS đã nắm thông tin, shipper không cần thao tác báo lỗi/kiện vấn đề trên app mà chỉ việc mang hàng về bưu cục cuối ca để OPS quét tồn kho, sáng hôm sau sẽ ưu tiên phát lại đúng hẹn cho anh/chị hoàn toàn miễn phí nhé ạ.\n`;
@@ -3363,7 +3363,7 @@ HÃY ĐƯA RA CÂU TRẢ LỜI ĐẦY ĐỦ VÀ CHÍNH XÁC:`;
           `Hệ thống điều phối trung tâm của Nexus Logistics đã **tự động ghi nhận lịch hẹn phát lại** cho vận đơn **${code}** vào: **${time}** rồi nhé ạ.\n\n` +
           `• **Đồng bộ tự động sang Shipper & OPS**: Thông tin hẹn giao lại đã được cập nhật trực tiếp lên hệ thống điều phối và ứng dụng của bưu tá. Bưu tá phụ trách tuyến **không cần thao tác lập biên bản sự cố hay kiện vấn đề** trên app.\n` +
           `• **Quy trình vận hành bưu tá**: Cuối ca làm việc hôm nay, bưu tá chỉ cần mang kiện hàng về bưu cục phát bàn giao.\n` +
-          `• **Bộ phận OPS bưu cục**: Thực hiện quét nhập tồn kho lưu giữ (Scan Inbound - Warehouse Hold / Postponed Inventory) để bảo quản kiện an toàn.\n` +
+          `• **Bộ phận OPS bưu cục**: Thực hiện quét tồn kho (INVENTORY_CHECK) tại bưu cục phát.\n` +
           `• **Phát lại ưu tiên**: Vào sáng mai, hệ thống sẽ tự động gán tuyến phát lại đúng theo lịch hẹn ưu tiên cho anh/chị.\n\n` +
           `Toàn bộ quá trình phát lại lần này là **hoàn toàn miễn phí** (0 VNĐ) theo chính sách phát lại 03 lần của Nexus Logistics. Anh/chị hoàn toàn yên tâm nhé ạ!`;
       }
