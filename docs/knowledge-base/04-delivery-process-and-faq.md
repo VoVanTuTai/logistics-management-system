@@ -2,7 +2,7 @@
 
 ## 1. Quy Trình Phát Hàng & Số Lần Giao Lại
 - **Số lần giao tối đa:** Mỗi đơn hàng được giao tận nơi tối đa 03 lần hoàn toàn miễn phí.
-- **Thời gian liên hệ:** Bưu tá gọi điện trước khi phát tối thiểu 02 cuộc gọi cách nhau 15 phút.
+- **Thời gian liên hệ:** Bưu tá gọi điện trước khi phát tối thiểu 02 - 03 cuộc gọi (không yêu cầu khoảng cách thời gian giữa các cuộc gọi để đảm bảo năng suất giao hàng 80 - 120 đơn/ngày).
 - **Trường hợp giao không thành công (NDR - Non-Delivery Report):**
   - Bưu tá sẽ cập nhật lý do cụ thể trên ứng dụng (Không liên lạc được, Khách hẹn ngày khác, Sai địa chỉ, Khách từ chối nhận).
   - Khách hàng nhận được tin nhắn SMS / thông báo ứng dụng về việc giao không thành công kèm số điện thoại bưu tá để chủ động hẹn lại.
@@ -104,6 +104,27 @@ Khi khách hàng bận và yêu cầu hẹn giao lại (ví dụ hẹn ngày mai
 ### 10.4. Vết Quét Kiểm Toán Vận Đơn (Audit Trail)
 - Hệ thống tự động ghi nhận sự kiện **`CONSIGNEE_UPDATED`** vào chuỗi lịch sử hành trình: ghi rõ tên người nhận mới, số điện thoại mới và thời điểm cập nhật nhằm phục vụ đối soát và giải trình sự cố phát hàng (nếu có).
 
+## 11. Quy Chuẩn Kiểm Soát Cuộc Gọi & Chống "Bắn Trạng Thái Ma" (Call Attempt Audit & Anti-Ghost NDR SOP)
 
+### 11.1. Thực Trạng & Nỗi Đau "Bắn Trạng Thái Ma" (Ghost NDR / Fake Failures)
+- **Hành vi gian lận vận hành:** Shipper lười đi phát hàng hoặc muốn về sớm, ngồi tại quán cà phê/xa địa chỉ nhận rồi tự ý bấm lý do thất bại "Không liên lạc được" (`CANNOT_CONTACT`) hoặc "Khách vắng nhà" để trốn tránh chỉ tiêu SLA phát hàng trong ngày.
+- **Hậu quả:** Gây bức xúc cho người nhận (ở nhà cả ngày không thấy cuộc gọi nào nhưng đơn hàng báo giao không thành công), làm hỏng uy tín của Shop và hãng vận chuyển.
 
+### 11.2. Cơ Chế Kiểm Soát 2 Lớp Bắt Buộc (Two-Factor Carrier Attempt Audit)
+Trước khi hệ thống chấp nhận lý do giao thất bại "Không liên lạc được", hệ thống bắt buộc kiểm tra 2 điều kiện cứng:
+1. **Kiểm soát Lịch sử Cuộc gọi (Call Attempt Audit):**
+   - Bưu tá bắt buộc phải thực hiện tối thiểu **02 - 03 cuộc gọi** đến số điện thoại người nhận.
+   - **Không yêu cầu khoảng cách thời gian giữa các cuộc gọi** nhằm bảo đảm năng suất giao nhận cao (80 - 120 kiện/ngày/bưu tá).
+   - Nếu chưa gọi đủ tối thiểu 02 cuộc, ứng dụng bưu tá sẽ chặn thao tác và cảnh báo: *"Chưa thực hiện đủ tối thiểu 02 cuộc gọi đến khách hàng"*.
+2. **Kiểm soát Tọa độ Địa lý Thực tế (GPS Geofence Verification):**
+   - Tọa độ GPS thực tế của bưu tá tại thời điểm bấm thất bại bắt buộc phải nằm trong bán kính **$\le 200\text{m}$** so với tọa độ địa chỉ giao nhận của khách hàng.
+   - Nếu tọa độ bưu tá cách xa $> 200\text{m}$, hệ thống kích hoạt cảnh báo chặn gian lận: *"Tọa độ GPS nằm ngoài bán kính 200m so với địa chỉ nhận hàng. Vui lòng di chuyển đến đúng địa chỉ nhận hàng trước khi báo sự cố"*.
+
+### 11.3. AI Chatbot Tự Động Kích Hoạt Tin Nhắn Chăm Sóc Khi Có Cuộc Gọi Nhỡ (Proactive NDR Chatbot Trigger)
+- Khi bưu tá đã đáp ứng đủ 2 điều kiện kiểm soát ($\ge 2$ cuộc gọi và GPS $\le 200\text{m}$) mà khách hàng thực sự bận không thể bắt máy:
+  - Hệ thống tự động kích hoạt thông điệp gửi đến người nhận qua AI Chatbot / Zalo ZNS / SMS:
+    *"Bưu tá [Tên bưu tá] vừa liên hệ giao đơn [Mã vận đơn] lúc [HH:mm] nhưng chưa kết nối được máy với mình ạ. Anh/chị có thể cho em xin khung giờ nghe máy thuận tiện nhất trong hôm nay (hoặc chiều nay / ngày mai) để bưu tá gọi lại nhé ạ!"*
+- Khi khách hàng phản hồi khung giờ thuận tiện (ví dụ: *"Lúc nãy bận họp chưa nghe máy, tầm 14h chiều bưu tá gọi lại giao nhé"*):
+  - AI Chatbot tự động ghi nhận ý định và kích hoạt công cụ `scheduleRedelivery` ghi nhận khung giờ hẹn lại vào hệ thống điều phối.
+  - Thông báo khung giờ gọi lại trực tiếp trên ứng dụng của bưu tá mà không cần bưu tá phải rời khỏi app hay tạo kiện vấn đề phức tạp.
 

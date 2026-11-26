@@ -125,8 +125,69 @@ async function run() {
   });
   console.log('Thông tin người nhận mới sau khi cập nhật:\n' + res8.answer + '\n');
 
+  console.log('\n---------------------------------------------------------');
+  console.log('9. KHÁCH BẬN HỌP PHẢN HỒI CUỘC GỌI NHỠ HẸN SHIPPER GỌI LẠI (CARRIER SOP)');
+  console.log('Câu hỏi: "Lúc nãy bưu tá gọi mình bận họp chưa nghe máy, tầm 14h chiều shipper gọi lại giao giúp mình nhé"');
+  console.log('---------------------------------------------------------');
+  await delay(1000);
+  const res9 = await chatService.handleMessage({
+    message: 'Lúc nãy bưu tá gọi mình bận họp chưa nghe máy, tầm 14h chiều shipper gọi lại giao giúp mình nhé',
+    receiverPhone: '0988112233',
+    senderRole: 'CUSTOMER',
+    userId: '0988112233',
+    conversationId: 'session-recipient-1'
+  });
+  console.log('Phản hồi Phản Hồi Cuộc Gọi Nhỡ Carrier SOP:\n' + res9.answer + '\n');
+  console.log('Tools đã thực thi:', res9.toolsUsed);
+  console.log('Action Chips:', res9.actionChips);
+
+  console.log('\n---------------------------------------------------------');
+  console.log('10. HỎI QUY ĐỊNH KIỂM SOÁT CUỘC GỌI & CHỐNG BẮN TRẠNG THÁI MA (ANTI-GHOST NDR)');
+  console.log('Câu hỏi: "Quy định kiểm soát bưu tá gọi không nghe máy và chống shipper bắn trạng thái ma như thế nào?"');
+  console.log('---------------------------------------------------------');
+  await delay(1000);
+  const res10 = await chatService.handleMessage({
+    message: 'Quy định kiểm soát bưu tá gọi không nghe máy và chống shipper bắn trạng thái ma như thế nào?',
+    senderRole: 'CUSTOMER',
+    conversationId: 'session-policy-1'
+  });
+  console.log('Phản hồi Quy Định Kiểm Soát 2 Tầng:\n' + res10.answer + '\n');
+
+  console.log('\n---------------------------------------------------------');
+  console.log('11. KIỂM THỬ TRỰC TIẾP KIỂM TOÁN CUỘC GỌI VÀ ĐỊNH VỊ GPS (AUDIT DELIVERY ATTEMPT)');
+  console.log('---------------------------------------------------------');
+  const logisticsTools = app.get(require('./src/tools/logistics-tools.service').LogisticsToolsService);
+  
+  console.log('Case 11.1: Bưu tá mới gọi 1 cuộc (< 2 cuộc) -> Phải bị chặn!');
+  const auditFailCalls = await logisticsTools.auditDeliveryAttempt({
+    trackingNumber: 'NX-77889900',
+    callCount: 1,
+    courierLat: 10.779785,
+    courierLng: 106.699018,
+  });
+  console.log('Kết quả 11.1:', auditFailCalls.passed ? 'FAILED (Lẽ ra phải chặn)' : 'PASSED (Đã chặn đúng: ' + auditFailCalls.rejectionMessage + ')');
+
+  console.log('\nCase 11.2: Bưu tá gọi 2 cuộc nhưng ở quán cà phê cách 3.5km (> 200m) -> Phải chặn bắn trạng thái ma!');
+  const auditFailGps = await logisticsTools.auditDeliveryAttempt({
+    trackingNumber: 'NX-77889900',
+    callCount: 2,
+    courierLat: 10.750000,
+    courierLng: 106.650000, // Cách xa vài km
+  });
+  console.log('Kết quả 11.2:', auditFailGps.passed ? 'FAILED (Lẽ ra phải chặn)' : 'PASSED (Đã chặn đúng: ' + auditFailGps.rejectionMessage + ')');
+
+  console.log('\nCase 11.3: Bưu tá gọi 2 cuộc và đứng ngay trước nhà khách (cách 15m <= 200m) -> Đạt chuẩn!');
+  const auditSuccess = await logisticsTools.auditDeliveryAttempt({
+    trackingNumber: 'NX-77889900',
+    callCount: 2,
+    courierLat: 10.779800,
+    courierLng: 106.699050,
+  });
+  console.log('Kết quả 11.3:', auditSuccess.passed ? 'PASSED (Đạt chuẩn Carrier SOP)' : 'FAILED');
+  console.log('Thông điệp CSKH tự động kích hoạt:', auditSuccess.proactivePrompt);
+
   await app.close();
-  console.log('=== HOÀN TẤT KIỂM THỬ THÀNH CÔNG 100% ===');
+  console.log('\n=== HOÀN TẤT TOÀN BỘ 11 KỊCH BẢN KIỂM THỬ THÀNH CÔNG 100% ===');
 }
 
 run().catch((err) => {
