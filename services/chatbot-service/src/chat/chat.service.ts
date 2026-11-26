@@ -18,7 +18,7 @@ export interface ChatSessionContext {
   lastShipments?: any[];
   selectedCode?: string;
   receiverPhone?: string;
-  pendingIntent?: 'PRICING' | 'CANCEL' | 'TRACKING' | 'CHANGE_ADDRESS' | 'REDELIVERY' | 'CLAIM' | 'CREATE_ORDER' | 'HOLD_AT_HUB';
+  pendingIntent?: 'PRICING' | 'CANCEL' | 'TRACKING' | 'CHANGE_ADDRESS' | 'REDELIVERY' | 'CLAIM' | 'CREATE_ORDER' | 'HOLD_AT_HUB' | 'CHANGE_CONSIGNEE';
   pendingData?: {
     fromCity?: string;
     toCity?: string;
@@ -27,6 +27,8 @@ export interface ChatSessionContext {
     newAddress?: string;
     preferredTime?: string;
     pickupTime?: string;
+    newReceiverName?: string;
+    newReceiverPhone?: string;
     claimReason?: string;
   };
   pendingOrderData?: OrderDataDto;
@@ -417,10 +419,59 @@ export class ChatService {
         session.pendingIntent === 'HOLD_AT_HUB'
       );
 
+    // Kiểm tra ý định Đổi Người Nhận hoặc Đổi SĐT Nhận Hàng (Change Consignee / Receiver Info)
+    const isChangeConsigneeQuery =
+      !isSafetyOrComplianceViolation &&
+      !isHoldAtHubQuery &&
+      !cleanNormalizedQ.includes('co duoc') &&
+      !cleanNormalizedQ.includes('quy dinh') &&
+      !cleanNormalizedQ.includes('may lan') &&
+      (
+        cleanNormalizedQ.includes('doi nguoi nhan') ||
+        cleanNormalizedQ.includes('thay doi nguoi nhan') ||
+        cleanNormalizedQ.includes('doi sdt') ||
+        cleanNormalizedQ.includes('doi so dien thoai') ||
+        cleanNormalizedQ.includes('doi sdt nguoi nhan') ||
+        cleanNormalizedQ.includes('doi so nguoi nhan') ||
+        cleanNormalizedQ.includes('doi thong tin nguoi nhan') ||
+        cleanNormalizedQ.includes('doi so nhan') ||
+        cleanNormalizedQ.includes('chuyen nguoi nhan') ||
+        cleanNormalizedQ.includes('nguoi nhan ho') ||
+        cleanNormalizedQ.includes('nhan ho') ||
+        cleanNormalizedQ.includes('nhan giup') ||
+        cleanNormalizedQ.includes('doi sang cho') ||
+        cleanNormalizedQ.includes('doi sang anh') ||
+        cleanNormalizedQ.includes('doi sang chi') ||
+        cleanNormalizedQ.includes('doi sang em') ||
+        cleanNormalizedQ.includes('doi sang bac') ||
+        cleanNormalizedQ.includes('doi sang chu') ||
+        cleanNormalizedQ.includes('doi sang co') ||
+        cleanNormalizedQ.includes('doi sang ong') ||
+        cleanNormalizedQ.includes('doi sang ba') ||
+        cleanNormalizedQ.includes('doi sang') ||
+        /(?:doi|thay\s+doi|chuyen)\s+(?:sang\s+)?(?:cho\s+)?(?:anh|chi|em|bac|chu|co|ong|ba|[a-z]+).*sdt/i.test(cleanNormalizedQ) ||
+        /(?:doi|thay\s+doi|chuyen)\s+(?:thong\s+tin\s+)?(?:nguoi\s+nhan|sdt|so\s+dien\s+thoai)/i.test(cleanNormalizedQ) ||
+        session.pendingIntent === 'CHANGE_CONSIGNEE'
+      ) &&
+      (
+        cleanNormalizedQ.includes('don') ||
+        cleanNormalizedQ.includes('hang') ||
+        cleanNormalizedQ.includes('kien') ||
+        cleanNormalizedQ.includes('shipper') ||
+        cleanNormalizedQ.includes('goi') ||
+        cleanNormalizedQ.includes('sdt') ||
+        cleanNormalizedQ.includes('so') ||
+        cleanNormalizedQ.includes('nhan') ||
+        !!trackingCode ||
+        !!session.selectedCode ||
+        session.pendingIntent === 'CHANGE_CONSIGNEE'
+      );
+
     // Kiểm tra ý định thay đổi địa chỉ nhận hàng / sửa SĐT người nhận (Change Delivery Address)
     const isAddressChangeQuery =
       !isSafetyOrComplianceViolation &&
       !isHoldAtHubQuery &&
+      !isChangeConsigneeQuery &&
       !cleanNormalizedQ.includes('co duoc') &&
       !cleanNormalizedQ.includes('co cho') &&
       !cleanNormalizedQ.includes('the nao') &&
@@ -440,6 +491,7 @@ export class ChatService {
     const isRedeliveryQuery =
       !isSafetyOrComplianceViolation &&
       !isHoldAtHubQuery &&
+      !isChangeConsigneeQuery &&
       !cleanNormalizedQ.includes('co duoc') &&
       !cleanNormalizedQ.includes('may lan') &&
       !cleanNormalizedQ.includes('toi da') &&
@@ -620,7 +672,8 @@ export class ChatService {
       !isKeepOrderIntent &&
       !isAddressChangeQuery &&
       !isRedeliveryQuery &&
-      !isHoldAtHubQuery;
+      !isHoldAtHubQuery &&
+      !isChangeConsigneeQuery;
 
     // Stage 0 luôn chạy TRƯỚC tất cả các nhánh định tuyến vận hành (Stage 1) và RAG (Stage 2)
     if (isProhibitedGoodsQuery) {
@@ -1102,6 +1155,120 @@ export class ChatService {
         }
         }
       }
+    } else if (isChangeConsigneeQuery) {
+      let targetCode: string | undefined = trackingCode || dto.selectedShipmentCode || session.selectedCode;
+      if (!targetCode && session.lastShipments && session.lastShipments.length === 1) {
+        targetCode = session.lastShipments[0].code;
+      }
+
+      // Trích xuất số điện thoại người nhận mới từ tin nhắn
+      let newReceiverPhone: string | undefined;
+      const phoneInMsg = question.match(/(?:\+?84|0)[\s.-]?[1-9](?:[\s.-]?\d){8,9}\b/);
+      if (phoneInMsg) {
+        newReceiverPhone = phoneInMsg[0].replace(/[\s.-]/g, '').replace(/^\+84/, '0');
+      } else if (contextualPhoneMatch && contextualPhoneMatch[1].replace(/[\s.-]/g, '').length >= 9) {
+        newReceiverPhone = contextualPhoneMatch[1].replace(/[\s.-]/g, '').replace(/^\+84/, '0');
+      } else if (session.pendingData?.newReceiverPhone) {
+        newReceiverPhone = session.pendingData.newReceiverPhone;
+      }
+
+      // Trích xuất tên người nhận mới
+      let newReceiverName = 'Người nhận hộ';
+      const nameMatch = question.match(
+        /(?:đổi\s+(?:người\s+nhận\s+)?sang\s+|chuyển\s+(?:người\s+nhận\s+)?sang\s+|người\s+nhận\s+(?:là|mới\s+là)\s+|cho\s+)(?:anh|chị|em|bác|chú|cô|ông|bà)?\s*([a-zA-ZÀ-ỹ\s]{2,25}?)(?:,|\.|\s+sđt|\s+sdt|\s+số|\s+đt|\s+0\d|\s+giúp|\s+để|$)/i,
+      );
+      if (nameMatch && nameMatch[1].trim()) {
+        const rawName = nameMatch[1].trim();
+        newReceiverName = rawName.charAt(0).toUpperCase() + rawName.slice(1);
+        const honorificMatch = question.match(/(?:sang\s+|cho\s+)(anh|chị|em|bác|chú|cô|ông|bà)\s+/i);
+        if (honorificMatch && !new RegExp(`^${honorificMatch[1]}`, 'i').test(newReceiverName)) {
+          newReceiverName = `${honorificMatch[1].charAt(0).toUpperCase() + honorificMatch[1].slice(1)} ${newReceiverName}`;
+        }
+      } else if (session.pendingData?.newReceiverName) {
+        newReceiverName = session.pendingData.newReceiverName;
+      }
+
+      if (!targetCode) {
+        // THIẾU MÃ VẬN ĐƠN -> HỎI LẠI KHÁCH HÀNG
+        this.sessions.set(conversationId, {
+          ...session,
+          pendingIntent: 'CHANGE_CONSIGNEE',
+          pendingData: { newReceiverName, newReceiverPhone },
+          lastUpdated: Date.now(),
+        });
+
+        actionChips = [
+          ...(session.lastShipments ? session.lastShipments.slice(0, 2).map((s) => ({ label: `👤 Đổi người nhận đơn ${s.code}`, query: `Đổi người nhận đơn ${s.code} sang ${newReceiverName} SĐT ${newReceiverPhone || ''}` })) : []),
+          { label: '📦 Xem các đơn hàng của tôi', query: 'Tôi có những đơn hàng nào' },
+        ];
+
+        toolAugmentedContext += `\n[YÊU CẦU CSKH HỎI LẠI THÔNG TIN ĐỔI NGƯỜI NHẬN / SĐT (CHANGE CONSIGNEE CLARIFICATION)]:\n` +
+          `- Yêu cầu khách: Khách hàng muốn đổi người nhận / số điện thoại nhận hộ nhưng CHƯA CUNG CẤP mã vận đơn cụ thể.\n` +
+          `- NGUYÊN TẮC CSKH: Chào anh/chị niềm nở, thông báo rằng hệ thống hỗ trợ đổi người nhận hoặc SĐT nhận hộ tại cùng địa chỉ hoàn toàn MIỄN PHÍ 100%. HỎI LẠI KHÁCH HÀNG:\n` +
+          `  1. 🏷️ Mã vận đơn của kiện hàng mình cần đổi người nhận?\n` +
+          (newReceiverPhone ? '' : `  2. 📱 Số điện thoại của người nhận hộ để bưu tá liên hệ trực tiếp khi đến giao hàng nhé ạ!\n`) +
+          `- HƯỚNG DẪN AI: Trả lời thân thiện, chu đáo, hỏi lại mã vận đơn của khách nhé ạ.\n`;
+      } else if (!newReceiverPhone) {
+        // CÓ MÃ ĐƠN NHƯNG THIẾU SĐT NGƯỜI NHẬN MỚI
+        this.sessions.set(conversationId, {
+          ...session,
+          selectedCode: targetCode,
+          pendingIntent: 'CHANGE_CONSIGNEE',
+          pendingData: { newReceiverName },
+          lastUpdated: Date.now(),
+        });
+
+        actionChips = [
+          { label: `📱 Cung cấp SĐT cho ${newReceiverName}`, query: `Số điện thoại của ${newReceiverName} là ` },
+          { label: `🔍 Xem hành trình ${targetCode}`, query: `Tra cứu hành trình đơn ${targetCode}` },
+          { label: '📦 Xem các đơn khác', query: 'Tôi có những đơn hàng nào' },
+        ];
+
+        toolAugmentedContext += `\n[YÊU CẦU CSKH HỎI SỐ ĐIỆN THOẠI NGƯỜI NHẬN MỚI CHO VẬN ĐƠN ${targetCode}]:\n` +
+          `- Mã vận đơn: ${targetCode}\n` +
+          `- Người nhận mới: ${newReceiverName}\n` +
+          `- Tình trạng: Chưa có số điện thoại người nhận mới để bưu tá liên lạc.\n` +
+          `- NGUYÊN TẮC CSKH: Chào anh/chị lịch sự, hỏi lại số điện thoại của ${newReceiverName} để hệ thống cập nhật vào task giao hàng của bưu tá nhé ạ.\n`;
+      } else {
+        // ĐÃ ĐẦY ĐỦ MÃ ĐƠN & SĐT MỚI -> THỰC THI GỌI TOOL changeConsignee!
+        toolsUsed.push(`changeConsignee(${targetCode}, ${newReceiverName}, ${newReceiverPhone})`);
+        const consigneeRes = await this.toolsService.changeConsignee({
+          trackingNumber: targetCode,
+          newReceiverName,
+          newReceiverPhone,
+        });
+
+        this.sessions.set(conversationId, {
+          ...session,
+          selectedCode: targetCode,
+          receiverPhone: newReceiverPhone,
+          pendingIntent: undefined,
+          pendingData: undefined,
+          lastUpdated: Date.now(),
+        });
+
+        actionChips = [
+          { label: `🔍 Xem hành trình ${targetCode}`, query: `Tra cứu hành trình đơn ${targetCode}` },
+          { label: '📞 Liên hệ bưu tá phát', query: `Tôi muốn liên hệ bưu tá phát đơn ${targetCode}` },
+          { label: '📦 Xem các đơn khác', query: 'Tôi có những đơn hàng nào' },
+        ];
+
+        toolAugmentedContext += `\n[KẾT QUẢ ĐỔI THÔNG TIN NGƯỜI NHẬN HÀNG (CHANGE CONSIGNEE) CHO VẬN ĐƠN ${targetCode}]:\n` +
+          `- Mã vận đơn: ${targetCode}\n` +
+          `- Người nhận mới: ${consigneeRes.newReceiver.name} (SĐT: ${consigneeRes.newReceiver.phone})\n` +
+          `- Người nhận trước đó: ${consigneeRes.oldReceiver.name} (${consigneeRes.oldReceiver.phone})\n` +
+          `- Địa chỉ giao hàng: ${consigneeRes.deliveryAddress} (Giữ nguyên không đổi)\n` +
+          `- Bưu tá phụ trách: ${consigneeRes.courierName}\n` +
+          `- Chính sách cước: ${consigneeRes.carrierSop.feePolicy}\n` +
+          `- ĐỒNG BỘ ỨNG DỤNG BƯU TÁ (COURIER APP):\n` +
+          `  + ${consigneeRes.carrierSop.shipperAppSync}\n` +
+          `  + ${consigneeRes.carrierSop.dispatchInstruction}\n` +
+          `- HƯỚNG DẪN AI:\n` +
+          `  + Chào anh/chị niềm nở, chu đáo (xưng em, gọi anh/chị). Xác nhận hệ thống đã cập nhật thành công thông tin người nhận mới sang **${consigneeRes.newReceiver.name}** với số điện thoại **${consigneeRes.newReceiver.phone}**.\n` +
+          `  + Nhấn mạnh rõ ràng: Thao tác này hoàn toàn MIỄN PHÍ 100% (0 VNĐ) do cùng địa chỉ nhận hàng.\n` +
+          `  + Trấn an khách rằng hệ thống đã cập nhật trực tiếp vào task phát hàng của bưu tá tuyến (${consigneeRes.courierName}) trên app di động, khi tới địa chỉ bưu tá sẽ bấm nút gọi điện trực tiếp cho ${consigneeRes.newReceiver.name} để giao hàng mà không bị nhầm lẫn.\n` +
+          `  + TUYỆT ĐỐI KHÔNG DÙNG ICON.\n`;
+      }
     } else if (isAddressChangeQuery) {
       let targetCode: string | undefined = trackingCode || dto.selectedShipmentCode || session.selectedCode;
       if (!targetCode && session.lastShipments && session.lastShipments.length === 1) {
@@ -1515,6 +1682,7 @@ export class ChatService {
             actionChips = [
               { label: '⏰ Hẹn giao lại ngày mai', query: `Hôm nay tôi bận, hẹn giao lại đơn ${trackRes.trackingNumber} vào ngày mai` },
               { label: '🏢 Giữ tại bưu cục (Tự đến lấy)', query: `Đơn ${trackRes.trackingNumber} giữ tại bưu cục phát giúp mình, mình tự ghé lấy hàng` },
+              { label: '👤 Đổi người nhận hộ', query: `Đơn ${trackRes.trackingNumber} đổi người nhận sang anh Nam SĐT 0988112233 giúp mình` },
               { label: '📞 Liên hệ bưu tá phát', query: `Tôi muốn liên hệ bưu tá phát đơn ${trackRes.trackingNumber}` },
               { label: '📦 Tra cứu đơn khác', query: 'Tra cứu hành trình đơn hàng' },
             ];
@@ -2660,7 +2828,13 @@ Bạn có kiến thức uyên thâm, thấu đáo và toàn diện về toàn b�
   + Hệ thống cấp cho khách Mã PIN nhận hàng bảo mật 6 chữ số.
   + Thông báo cho khách: Mã PIN nhận hàng (in đậm 6 chữ số), Tên và Địa chỉ bưu cục phát, Giờ mở cửa quầy giao dịch, Thời hạn lưu kho miễn phí tối đa 05 ngày.
   + Hướng dẫn khách khi đến quầy bưu cục chỉ cần đọc Số điện thoại người nhận và cung cấp Mã PIN 6 chữ số cho giao dịch viên để đối chiếu xuất hàng (COUNTER_PICKUP_POD), thu COD (nếu có, hỗ trợ tiền mặt/VietQR) rất nhanh chóng.
-  + Dịch vụ lưu giữ tại quầy bưu cục là hoàn toàn MIỄN PHÍ (0 VNĐ).`;
+  + Dịch vụ lưu giữ tại quầy bưu cục là hoàn toàn MIỄN PHÍ (0 VNĐ).
+
+8. QUY CHUẨN ĐỔI NGƯỜI NHẬN / SĐT NHẬN HỘ TẠI CÙNG ĐỊA CHỈ (CHANGE CONSIGNEE SOP):
+- Khi khách hàng bận đột xuất muốn đổi sang cho người thân, bảo vệ chung cư, hoặc đồng nghiệp nhận hộ tại cùng địa chỉ:
+  + Thao tác đổi người nhận / số điện thoại nhận hộ tại cùng địa chỉ là hoàn toàn MIỄN PHÍ 100% (0 VNĐ).
+  + Hệ thống tự động cập nhật receiverName và receiverPhone mới vào task phát hàng của bưu tá trên ứng dụng di động (Courier Mobile).
+  + Ứng dụng bưu tá tự động cập nhật SĐT mới để bưu tá bấm gọi trực tiếp cho người nhận mới mà không bị nhầm lẫn.`;
 
     const userPrompt = `DỮ LIỆU NGỮ CẢNH HỆ THỐNG CUNG CẤP:
 ${context || '(Không tìm thấy tài liệu phù hợp trực tiếp)'}
@@ -3552,6 +3726,29 @@ HÃY ĐƯA RA CÂU TRẢ LỜI ĐẦY ĐỦ VÀ CHÍNH XÁC:`;
           `• Bộ phận OPS quét tồn kho (INVENTORY_CHECK) và lưu giữ trên kệ PUDO tại quầy.\n` +
           `• Khi anh/chị ghé bưu cục, chỉ cần cung cấp **Số điện thoại** và đọc **Mã PIN ${pin}** cho giao dịch viên tại quầy để đối chiếu xuất hàng (COUNTER_PICKUP_POD) và thanh toán COD (nếu có, hỗ trợ tiền mặt hoặc VietQR) rất nhanh chóng ạ!\n\n` +
           `Chúc anh/chị một buổi tối tốt lành và nhận hàng thuận lợi nhé ạ!`;
+      }
+
+      if (realtimeSection.includes('[KẾT QUẢ ĐỔI THÔNG TIN NGƯỜI NHẬN HÀNG (CHANGE CONSIGNEE) CHO VẬN ĐƠN')) {
+        const codeMatch = realtimeSection.match(/Mã vận đơn:\s*(.*?)\n/);
+        const code = codeMatch ? codeMatch[1].trim() : '';
+        const newReceiverMatch = realtimeSection.match(/Người nhận mới:\s*(.*?)\n/);
+        const newReceiver = newReceiverMatch ? newReceiverMatch[1].trim() : '';
+        const addrMatch = realtimeSection.match(/Địa chỉ giao hàng:\s*(.*?)\n/);
+        const addr = addrMatch ? addrMatch[1].trim() : '';
+        const courierMatch = realtimeSection.match(/Bưu tá phụ trách:\s*(.*?)\n/);
+        const courier = courierMatch ? courierMatch[1].trim() : 'Bưu tá tuyến';
+
+        return `Dạ em chào anh/chị ạ!\n\n` +
+          `Hệ thống đã **cập nhật thành công** thông tin người nhận mới cho đơn hàng **${code}** rồi nhé ạ:\n\n` +
+          `THÔNG TIN NGƯỜI NHẬN MỚI:\n` +
+          `• **Người nhận mới**: **${newReceiver}** (Ủy quyền nhận hộ)\n` +
+          (addr ? `• **Địa chỉ phát hàng**: ${addr} (Giữ nguyên)\n` : '') +
+          `• **Bưu tá phụ trách**: ${courier}\n` +
+          `• **Chi phí điều chỉnh**: **0 VNĐ (Hoàn toàn miễn phí)** do giao tại cùng địa chỉ\n\n` +
+          `QUY CHUẨN VẬN HÀNH CARRIER & ĐỒNG BỘ APP BƯU TÁ:\n` +
+          `• Thông tin tên và số điện thoại người nhận mới đã được cập nhật trực tiếp vào task giao hàng của bưu tá trên ứng dụng Courier Mobile.\n` +
+          `• Khi bưu tá đến địa chỉ giao hàng, bưu tá sẽ **bấm nút gọi trực tiếp cho ${newReceiver}** để giao hàng mà không bị nhầm lẫn.\n\n` +
+          `Anh/chị hoàn toàn yên tâm nhé, nếu cần hỗ trợ thêm thông tin gì khác cứ nhắn em ngay ạ!`;
       }
 
       if (realtimeSection.includes('[THÔNG BÁO VẬN HÀNH DÀNH CHO NGƯỜI NHẬN - ĐƠN HÀNG ĐANG ĐƯỢC BƯU TÁ PHÁT TẬN NƠI]')) {

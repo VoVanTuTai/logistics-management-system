@@ -97,6 +97,34 @@ async function run() {
   });
   console.log('Trạng thái & Lịch sử vết quét sau khi đăng ký PUDO:\n' + res6.answer + '\n');
 
+  console.log('\n---------------------------------------------------------');
+  console.log('7. ĐỔI NGƯỜI NHẬN / SĐT NHẬN HÀNG TẠI CÙNG ĐỊA CHỈ (CHANGE CONSIGNEE)');
+  console.log('Câu hỏi: "Đơn này đổi người nhận sang anh Nam, SĐT 0988112233 giúp mình để shipper gọi anh ấy nhé"');
+  console.log('---------------------------------------------------------');
+  await delay(1000);
+  const res7 = await chatService.handleMessage({
+    message: 'Đơn này đổi người nhận sang anh Nam, SĐT 0988112233 giúp mình để shipper gọi anh ấy nhé',
+    senderRole: 'CUSTOMER',
+    userId: '0909887766',
+    conversationId: 'session-recipient-1'
+  });
+  console.log('Phản hồi Đổi Người Nhận Carrier SOP:\n' + res7.answer + '\n');
+  console.log('Tools đã thực thi:', res7.toolsUsed);
+  console.log('Action Chips:', res7.actionChips);
+
+  console.log('\n---------------------------------------------------------');
+  console.log('8. KIỂM TRA LẠI THÔNG TIN VÀ SĐT NGƯỜI NHẬN MỚI TRÊN VẬN ĐƠN');
+  console.log('---------------------------------------------------------');
+  await delay(1000);
+  const res8 = await chatService.handleMessage({
+    message: 'Kiểm tra lại người nhận đơn NX-77889900',
+    receiverPhone: '0988112233', // Dùng SĐT mới của anh Nam để tra cứu
+    senderRole: 'CUSTOMER',
+    userId: '0988112233',
+    conversationId: 'session-recipient-1'
+  });
+  console.log('Thông tin người nhận mới sau khi cập nhật:\n' + res8.answer + '\n');
+
   await app.close();
   console.log('=== HOÀN TẤT KIỂM THỬ THÀNH CÔNG 100% ===');
 }

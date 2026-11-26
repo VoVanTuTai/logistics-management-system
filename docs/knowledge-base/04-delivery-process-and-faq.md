@@ -85,5 +85,25 @@ Khi khách hàng bận và yêu cầu hẹn giao lại (ví dụ hẹn ngày mai
 4. Thu tiền thu hộ COD (nếu có): Hỗ trợ thanh toán tiền mặt hoặc quét mã VietQR tĩnh/động tại quầy.
 5. Giao dịch viên hoàn tất biên bản bàn giao tại quầy (**COUNTER_PICKUP_POD**), khách ký nhận hoặc chụp ảnh xác nhận và nhận kiện hàng.
 
+## 10. Quy Chuẩn Đổi Người Nhận & Số Điện Thoại Nhận Hộ (Change Consignee / Receiver Info SOP)
+
+### 10.1. Tình Huống Thực Tế & Kích Hoạt Tự Động
+- **Bối cảnh vận hành:** Khách hàng bận đột xuất (họp, đi công tác, vắng nhà), muốn đổi sang cho người thân / bảo vệ chung cư / đồng nghiệp nhận hộ tại cùng địa chỉ đã đăng ký.
+- **Kích hoạt qua AI Chatbot:** Khách chỉ cần nhắn yêu cầu (ví dụ: *"Đơn này đổi người nhận sang anh Nam, SĐT 0988112233 giúp mình để shipper gọi anh ấy nhé"*).
+
+### 10.2. Quy Chuẩn Vận Hành Khác Biệt Giữa Đổi Địa Chỉ vs Đổi Người Nhận
+- **Đổi địa chỉ giao hàng:** Có thể làm thay đổi tuyến phát, phải tính lại cước tuyến (nếu khác quận/tỉnh) và chuyển giao giữa các bưu tá khác nhau.
+- **Đổi người nhận / SĐT tại cùng địa chỉ:**
+  - **Hoàn toàn miễn phí 100% (0 VNĐ):** Không phát sinh phụ phí do không thay đổi phân bổ tuyến giao nhận của bưu tá.
+  - Áp dụng linh hoạt ngay cả khi kiện hàng đang trên tuyến đi phát (`OUT_FOR_DELIVERY` / `DELIVERING`).
+
+### 10.3. Đồng Bộ Tự Động Vào Ứng Dụng Bưu Tá (Courier Mobile)
+- Hệ thống tự động cập nhật `receiverName` và `receiverPhone` mới vào task phát hàng của bưu tá phụ trách tuyến.
+- Màn hình phát hàng trên App bưu tá tự động hiển thị số điện thoại mới kèm nút **"Gọi điện"**, giúp bưu tá bấm gọi trực tiếp cho người nhận mới mà không bị nhầm lẫn với khách hàng ban đầu.
+
+### 10.4. Vết Quét Kiểm Toán Vận Đơn (Audit Trail)
+- Hệ thống tự động ghi nhận sự kiện **`CONSIGNEE_UPDATED`** vào chuỗi lịch sử hành trình: ghi rõ tên người nhận mới, số điện thoại mới và thời điểm cập nhật nhằm phục vụ đối soát và giải trình sự cố phát hàng (nếu có).
+
+
 
 
