@@ -272,6 +272,13 @@ export class ResponseFormatterService {
       if (cleanQ.includes('nang') || cleanQ.includes('kg') || cleanQ.includes('khoi luong')) {
         return `Dạ đơn hàng **${code}** có khối lượng **${weight || 'đang cập nhật'}** ạ. Trạng thái hiện tại: ${status}, vị trí: ${loc}.`;
       }
+      if (cleanQ.includes('ai') || cleanQ.includes('buu ta') || cleanQ.includes('shipper') || cleanQ.includes('giao') || cleanQ.includes('phat')) {
+        const courier = this.extractLineValue(section, 'Bưu tá phụ trách');
+        if (courier) {
+          return `Dạ đơn hàng **${code}** đang do bưu tá **${courier}** phụ trách phát hàng ạ (vị trí hiện tại: ${loc}, trạng thái: ${status}).`;
+        }
+        return `Dạ đơn hàng **${code}** hiện đang ở **${loc}** (trạng thái: ${status}), hiện chưa phân công bưu tá đi phát lúc này ạ.`;
+      }
       if (cleanQ.includes('cod') || cleanQ.includes('thu ho')) {
         return `Dạ tiền thu hộ COD của đơn hàng **${code}** là **${cod || '0 VNĐ'}** ạ. Trạng thái: ${status}.`;
       }

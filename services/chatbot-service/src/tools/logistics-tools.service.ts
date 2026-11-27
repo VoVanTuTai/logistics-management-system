@@ -497,9 +497,11 @@ export class LogisticsToolsService {
         const pkg = payload.package || meta.package || {};
 
         const storedPhone: string | undefined =
-          receiver.phone || receiver.phoneNumber || shipData?.receiverPhone || meta.receiverPhone || meta.receiver?.phone || (cleanTracking === 'NX-88992211' ? '0909112288' : undefined);
+          receiver.phone || receiver.phoneNumber || shipData?.receiverPhone || meta.receiverPhone || meta.receiver?.phone ||
+          (cleanTracking === 'NX-88992211' ? '0909112288' : cleanTracking === 'NX-77889900' || cleanTracking === 'NX-DELIVERING' ? '0909887766' : undefined);
         const storedSenderPhone: string | undefined =
-          sender.phone || sender.phoneNumber || shipData?.senderPhone || meta.senderPhone || meta.sender?.phone || (cleanTracking === 'NX-88992211' ? '0901234567' : undefined);
+          sender.phone || sender.phoneNumber || shipData?.senderPhone || meta.senderPhone || meta.sender?.phone ||
+          (cleanTracking === 'NX-88992211' ? '0901234567' : cleanTracking === 'NX-77889900' || cleanTracking === 'NX-DELIVERING' ? '0901234567' : undefined);
 
         const isAccountParty = !isGuest && !!accountPhone && (
           phonesMatch(storedSenderPhone, accountPhone) || phonesMatch(storedPhone, accountPhone)

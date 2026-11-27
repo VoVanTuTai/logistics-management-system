@@ -161,6 +161,11 @@ export class QueryRewriterService {
       return `Bồi thường hư hỏng bể vỡ ${itemHint} đồng kiểm bảo hiểm`.replace(/\s+/g, ' ').trim();
     }
 
+    // Packaging / Fragile items follow-up: "có cần bọc/đóng gói gì không?", "cốc thủy tinh", "hàng dễ vỡ"
+    if (/\b(?:dong goi|boc|chong soc|bubble|xop|thuy tinh|gom su|de vo|chai lo|bat trang)\b/i.test(nq)) {
+      return `Quy chuẩn đóng gói hàng dễ vỡ thủy tinh gốm sứ bọc bubble wrap xốp hơi`;
+    }
+
     // Delivery ETA / status follow-up: "Thế bao giờ nó giao?"
     if (code && /\b(?:no|don do|don nay|kien do)\b/i.test(nq)) {
       return question.replace(/\b(?:nó|đơn đó|đơn này|kiện đó)\b/gi, `đơn hàng ${code}${itemHint ? ` (${itemHint})` : ''}`);
