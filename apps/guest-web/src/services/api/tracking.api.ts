@@ -1,5 +1,11 @@
 import { apiClient } from '../client';
-import { normalizeMediaPublicUrl, cleanCustomerNote } from '../../utils/trackingUtils';
+import {
+  normalizeMediaPublicUrl,
+  cleanCustomerNote,
+  extractProofImageFromEvent,
+  isPickupTimelineEvent,
+  isDeliveryTimelineEvent,
+} from '../../utils/trackingUtils';
 
 export interface TimelineEventResponse {
   id: string;
@@ -80,6 +86,15 @@ export interface GpsPositionView {
   source?: string | null;
 }
 
+export interface PublicProofPhotosView {
+  pickupPhotoUrl?: string | null;
+  pickupOccurredAt?: string | null;
+  pickupLocation?: string | null;
+  deliveryPhotoUrl?: string | null;
+  deliveryOccurredAt?: string | null;
+  deliveryLocation?: string | null;
+}
+
 export interface UnifiedTrackingResponse {
   shipmentCode: string;
   current: TrackingCurrentResponse | null;
@@ -87,6 +102,7 @@ export interface UnifiedTrackingResponse {
   order?: PublicOrderView | null;
   gpsPosition?: GpsPositionView | null;
   requiresReceiverPhone?: boolean;
+  proofPhotos?: PublicProofPhotosView | null;
 }
 
 export const trackingApi = {
@@ -115,22 +131,57 @@ export const trackingApi = {
         }
 
         const rawTimeline: any[] = Array.isArray(publicData.timeline) ? publicData.timeline : [];
+        let pickupPhotoUrl = publicData.proofPhotos?.pickupPhotoUrl || null;
+        let deliveryPhotoUrl = publicData.proofPhotos?.deliveryPhotoUrl || null;
+        let pickupOccurredAt = publicData.proofPhotos?.pickupOccurredAt || null;
+        let deliveryOccurredAt = publicData.proofPhotos?.deliveryOccurredAt || null;
+        let pickupLocation = publicData.proofPhotos?.pickupLocation || null;
+        let deliveryLocation = publicData.proofPhotos?.deliveryLocation || null;
+
         const processedTimeline: TimelineEventResponse[] = rawTimeline.map((ev, idx) => {
-          let proof = ev.metadata?.podImageUrl || ev.metadata?.proofImageUrl || ev.metadata?.photoUrl || ev.photoUrl;
+          let proof = extractProofImageFromEvent(ev);
           if (!proof && idx === rawTimeline.length - 1 && publicData.order?.metadata?.podImageUrl) {
             proof = publicData.order.metadata.podImageUrl;
           }
-          if (!proof && ev.note) {
-            const match = ev.note.match(/https?:\/\/[^\s"'<>()]+/i);
-            if (match) proof = match[0];
+          if (!proof) {
+            if (isDeliveryTimelineEvent(ev) && deliveryPhotoUrl) {
+              proof = deliveryPhotoUrl;
+            } else if (isPickupTimelineEvent(ev) && pickupPhotoUrl) {
+              proof = pickupPhotoUrl;
+            }
           }
+          const normalizedProof = normalizeMediaPublicUrl(proof) ?? null;
+
+          if (normalizedProof) {
+            if (isDeliveryTimelineEvent(ev)) {
+              if (!deliveryPhotoUrl) deliveryPhotoUrl = normalizedProof;
+              if (!deliveryOccurredAt) deliveryOccurredAt = ev.occurredAt;
+              if (!deliveryLocation) deliveryLocation = ev.locationText || ev.locationCode;
+            } else if (isPickupTimelineEvent(ev)) {
+              if (!pickupPhotoUrl) pickupPhotoUrl = normalizedProof;
+              if (!pickupOccurredAt) pickupOccurredAt = ev.occurredAt;
+              if (!pickupLocation) pickupLocation = ev.locationText || ev.locationCode;
+            }
+          }
+
           return {
             ...ev,
             actor: null, // Bảo mật thông tin nội bộ: không để lộ danh tính nhân viên cho khách hàng
             eventSource: 'Hệ thống Nexus',
             note: cleanCustomerNote(ev.note) ?? null,
-            proofImageUrl: normalizeMediaPublicUrl(proof),
+            proofImageUrl: normalizedProof,
           };
+        });
+
+        // Backfill timeline events if pickup/delivery photos were found
+        processedTimeline.forEach((ev) => {
+          if (!ev.proofImageUrl) {
+            if (isDeliveryTimelineEvent(ev) && deliveryPhotoUrl) {
+              ev.proofImageUrl = deliveryPhotoUrl;
+            } else if (isPickupTimelineEvent(ev) && pickupPhotoUrl) {
+              ev.proofImageUrl = pickupPhotoUrl;
+            }
+          }
         });
 
         const current = publicData.current ? {
@@ -214,6 +265,14 @@ export const trackingApi = {
           order,
           gpsPosition,
           requiresReceiverPhone: !receiverPhone?.trim(),
+          proofPhotos: {
+            pickupPhotoUrl,
+            pickupOccurredAt,
+            pickupLocation,
+            deliveryPhotoUrl,
+            deliveryOccurredAt,
+            deliveryLocation,
+          },
         };
       } catch (err: any) {
         // Fallback: If public track fails, try fetching public shipment data directly
@@ -284,6 +343,10 @@ export const trackingApi = {
                 },
               },
               requiresReceiverPhone: !receiverPhone?.trim(),
+              proofPhotos: {
+                pickupPhotoUrl: normalizeMediaPublicUrl(meta.pickupPhotoUrl || meta.pickupProofUrl) ?? null,
+                deliveryPhotoUrl: normalizeMediaPublicUrl(meta.podImageUrl || meta.proofImageUrl || meta.deliveryPhotoUrl) ?? null,
+              },
             };
           }
         } catch {
@@ -382,22 +445,63 @@ export const trackingApi = {
       // Optional
     }
 
+    let pickupPhotoUrl: string | null = null;
+    let deliveryPhotoUrl: string | null = null;
+    let pickupOccurredAt: string | null = null;
+    let deliveryOccurredAt: string | null = null;
+    let pickupLocation: string | null = null;
+    let deliveryLocation: string | null = null;
+
+    if (shipmentData?.metadata?.podImageUrl) {
+      deliveryPhotoUrl = normalizeMediaPublicUrl(shipmentData.metadata.podImageUrl) ?? null;
+    }
+    if (shipmentData?.metadata?.pickupPhotoUrl) {
+      pickupPhotoUrl = normalizeMediaPublicUrl(shipmentData.metadata.pickupPhotoUrl) ?? null;
+    }
+
     const processedTimeline: TimelineEventResponse[] = rawTimeline.map((ev, idx) => {
-      let proof = ev.metadata?.podImageUrl || ev.metadata?.proofImageUrl || ev.metadata?.photoUrl || ev.photoUrl;
+      let proof = extractProofImageFromEvent(ev);
       if (!proof && idx === rawTimeline.length - 1 && shipmentData?.metadata?.podImageUrl) {
         proof = shipmentData.metadata.podImageUrl;
       }
-      if (!proof && ev.note) {
-        const match = ev.note.match(/https?:\/\/[^\s"'<>()]+/i);
-        if (match) proof = match[0];
+      if (!proof) {
+        if (isDeliveryTimelineEvent(ev) && deliveryPhotoUrl) {
+          proof = deliveryPhotoUrl;
+        } else if (isPickupTimelineEvent(ev) && pickupPhotoUrl) {
+          proof = pickupPhotoUrl;
+        }
       }
+      const normalizedProof = normalizeMediaPublicUrl(proof) ?? null;
+
+      if (normalizedProof) {
+        if (isDeliveryTimelineEvent(ev)) {
+          if (!deliveryPhotoUrl) deliveryPhotoUrl = normalizedProof;
+          if (!deliveryOccurredAt) deliveryOccurredAt = ev.occurredAt;
+          if (!deliveryLocation) deliveryLocation = ev.locationText || ev.locationCode;
+        } else if (isPickupTimelineEvent(ev)) {
+          if (!pickupPhotoUrl) pickupPhotoUrl = normalizedProof;
+          if (!pickupOccurredAt) pickupOccurredAt = ev.occurredAt;
+          if (!pickupLocation) pickupLocation = ev.locationText || ev.locationCode;
+        }
+      }
+
       return {
         ...ev,
         actor: null, // Bảo mật thông tin nội bộ: không để lộ danh tính nhân viên cho khách hàng
         eventSource: 'Hệ thống Nexus',
         note: cleanCustomerNote(ev.note) ?? null,
-        proofImageUrl: normalizeMediaPublicUrl(proof),
+        proofImageUrl: normalizedProof,
       };
+    });
+
+    processedTimeline.forEach((ev) => {
+      if (!ev.proofImageUrl) {
+        if (isDeliveryTimelineEvent(ev) && deliveryPhotoUrl) {
+          ev.proofImageUrl = deliveryPhotoUrl;
+        } else if (isPickupTimelineEvent(ev) && pickupPhotoUrl) {
+          ev.proofImageUrl = pickupPhotoUrl;
+        }
+      }
     });
 
     const normalizedCurrent = current ? {
@@ -415,6 +519,14 @@ export const trackingApi = {
       order,
       gpsPosition,
       requiresReceiverPhone: false,
+      proofPhotos: {
+        pickupPhotoUrl,
+        pickupOccurredAt,
+        pickupLocation,
+        deliveryPhotoUrl,
+        deliveryOccurredAt,
+        deliveryLocation,
+      },
     };
   },
 };

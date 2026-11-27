@@ -786,7 +786,7 @@ def generate_diagram_3(out_paths):
         ("LÀN 2: DỊCH VỤ VẬN ĐƠN & TÍNH CƯỚC", "shipment-service :3002 • pricing-service :3012", 704),
         ("LÀN 3: ĐIỀU PHỐI & BƯU TÁ (COURIER)", "dispatch :3004 • courier-mobile • POD OTP", 704),
         ("LÀN 4: BƯU CỤC GỐC & HUB KHAI THÁC", "station :3006 • manifest • Cân DWS • Kẹp seal", 704),
-        ("LÀN 5: VẬN TẢI TUYẾN CHÍNH & HUB ĐÍCH", "linehaul-service :3014 • Xe tải trung chuyển", 704)
+        ("LÀN 5: VẬN TẢI TUYẾN CHÍNH & HUB ĐÍCH", "manifest-service :3005 • Xe tải trung chuyển", 704)
     ]
     b.draw_swimlanes(lanes, top_y=160, height=2090)
 

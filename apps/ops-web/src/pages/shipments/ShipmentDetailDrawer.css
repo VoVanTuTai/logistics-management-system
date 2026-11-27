@@ -1,0 +1,320 @@
+.ops-shipment-detail-drawer-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.4);
+  backdrop-filter: blur(2px);
+  z-index: 9999;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.ops-shipment-detail-drawer {
+  background: #ffffff;
+  width: 100%;
+  max-width: 620px;
+  height: 100%;
+  box-shadow: -8px 0 24px rgba(0, 0, 0, 0.15);
+  display: flex;
+  flex-direction: column;
+  animation: opsDrawerSlideIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  overflow: hidden;
+}
+
+@keyframes opsDrawerSlideIn {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+.ops-shipment-detail-drawer__header {
+  padding: 16px 20px;
+  border-bottom: 1px solid #e2e8f0;
+  background: #f8fafc;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.ops-shipment-detail-drawer__code-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.ops-shipment-detail-drawer__code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 17px;
+  font-weight: 800;
+  color: var(--ops-primary, #0052cc);
+  user-select: text;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ops-shipment-detail-drawer__copy-btn {
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 4px;
+  padding: 3px 8px;
+  cursor: pointer;
+  font-size: 11px;
+  color: #475569;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: all 0.15s ease;
+}
+
+.ops-shipment-detail-drawer__copy-btn:hover {
+  background: #f1f5f9;
+  color: #1e293b;
+  border-color: #94a3b8;
+}
+
+.ops-shipment-detail-drawer__close-btn {
+  background: transparent;
+  border: 0;
+  font-size: 24px;
+  color: #64748b;
+  cursor: pointer;
+  line-height: 1;
+  padding: 2px 6px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ops-shipment-detail-drawer__close-btn:hover {
+  background: #e2e8f0;
+  color: #0f172a;
+}
+
+.ops-shipment-detail-drawer__body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* Quick Jump Banner */
+.ops-shipment-detail-drawer__jump-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 16px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+  border: 1px solid #bfdbfe;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  text-decoration: none;
+}
+
+.ops-shipment-detail-drawer__jump-banner:hover {
+  background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+  border-color: #93c5fd;
+  box-shadow: 0 2px 6px rgba(0, 82, 204, 0.12);
+}
+
+.ops-shipment-detail-drawer__jump-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.ops-shipment-detail-drawer__jump-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: #1d4ed8;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.ops-shipment-detail-drawer__jump-desc {
+  font-size: 11.5px;
+  color: #3b82f6;
+  margin: 0;
+}
+
+.ops-shipment-detail-drawer__jump-btn {
+  background: #1d4ed8;
+  color: #ffffff;
+  border: 0;
+  border-radius: 6px;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  flex-shrink: 0;
+  cursor: pointer;
+  pointer-events: none;
+}
+
+/* Cards */
+.ops-shipment-detail-drawer__card {
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #ffffff;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ops-shipment-detail-drawer__card-title {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 800;
+  color: #334155;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.ops-shipment-detail-drawer__grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px 14px;
+}
+
+.ops-shipment-detail-drawer__item {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.ops-shipment-detail-drawer__item-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.ops-shipment-detail-drawer__item-value {
+  font-size: 13px;
+  font-weight: 600;
+  color: #0f172a;
+  word-break: break-word;
+}
+
+.ops-shipment-detail-drawer__item-value--mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+.ops-shipment-detail-drawer__party-row {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding-bottom: 8px;
+  border-bottom: 1px dashed #e2e8f0;
+}
+
+.ops-shipment-detail-drawer__party-row:last-child {
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
+/* Timeline */
+.ops-shipment-detail-drawer__timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  position: relative;
+  padding-left: 18px;
+  margin-top: 4px;
+}
+
+.ops-shipment-detail-drawer__timeline::before {
+  content: '';
+  position: absolute;
+  top: 4px;
+  bottom: 4px;
+  left: 5px;
+  width: 2px;
+  background: #e2e8f0;
+}
+
+.ops-shipment-detail-drawer__timeline-item {
+  position: relative;
+  font-size: 12px;
+  color: #334155;
+}
+
+.ops-shipment-detail-drawer__timeline-dot {
+  position: absolute;
+  left: -18px;
+  top: 3px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 2px solid #ffffff;
+  box-shadow: 0 0 0 1px #cbd5e1;
+}
+
+/* Footer */
+.ops-shipment-detail-drawer__footer {
+  padding: 14px 20px;
+  border-top: 1px solid #e2e8f0;
+  background: #f8fafc;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.ops-shipment-detail-drawer__footer-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ops-shipment-detail-drawer__btn {
+  padding: 8px 14px;
+  border-radius: 6px;
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid transparent;
+  transition: all 0.15s ease;
+}
+
+.ops-shipment-detail-drawer__btn--primary {
+  background: var(--ops-primary, #0052cc);
+  color: #ffffff;
+}
+
+.ops-shipment-detail-drawer__btn--primary:hover {
+  background: #0747a6;
+}
+
+.ops-shipment-detail-drawer__btn--secondary {
+  background: #ffffff;
+  color: #334155;
+  border-color: #cbd5e1;
+}
+
+.ops-shipment-detail-drawer__btn--secondary:hover {
+  background: #f1f5f9;
+  border-color: #94a3b8;
+}

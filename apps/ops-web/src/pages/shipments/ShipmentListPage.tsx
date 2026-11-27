@@ -1,7 +1,7 @@
 import { useQueryClient } from '@tanstack/react-query';
 import React, { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { SlidersHorizontal, FileSpreadsheet, Copy, Check, Printer, Sparkles, Building2, Target } from 'lucide-react';
+import { SlidersHorizontal, FileSpreadsheet, Copy, Check, Printer, Sparkles, Building2, Target, Eye, Search } from 'lucide-react';
 
 import { useHubsQuery } from '../../features/masterdata/masterdata.api';
 import type { HubDto } from '../../features/masterdata/masterdata.types';
@@ -25,6 +25,7 @@ import { formatShipmentStatusLabel } from '../../utils/logisticsLabels';
 import { queryKeys } from '../../utils/queryKeys';
 import { exportShipmentsToExcel } from '../../utils/shipmentExcelExporter';
 import { ShipmentsTable } from './ShipmentsTable';
+import { ShipmentDetailDrawer } from './ShipmentDetailDrawer';
 
 type ServiceType = 'STANDARD' | 'EXPRESS' | 'SAME_DAY';
 type ShipmentTimeFilter = 'today' | 'last7Days' | 'last30Days' | 'custom' | 'all';
@@ -692,6 +693,7 @@ export function ShipmentListPage(): React.JSX.Element {
   const [senderAddressInput, setSenderAddressInput] = useState(senderAddressFilter);
   const [receiverAddressInput, setReceiverAddressInput] = useState(receiverAddressFilter);
   const [selectedShipmentCodes, setSelectedShipmentCodes] = useState<string[]>([]);
+  const [inspectingShipment, setInspectingShipment] = useState<ShipmentListItemDto | null>(null);
   const [isBatchSearchOpen, setIsBatchSearchOpen] = useState(false);
   const [copyFeedback, setCopyFeedback] = useState<string | null>(null);
 
@@ -1697,6 +1699,26 @@ export function ShipmentListPage(): React.JSX.Element {
                 ? `${selectedShipments.length} vận đơn đã chọn`
                 : 'Chưa chọn vận đơn'}
             </span>
+            {selectedShipments.length === 1 && (
+              <button
+                type="button"
+                style={{
+                  ...styles.btnSolidSystem,
+                  backgroundColor: '#eff6ff',
+                  borderColor: '#bfdbfe',
+                  color: '#1d4ed8',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  fontWeight: 700,
+                }}
+                onClick={() => setInspectingShipment(selectedShipments[0])}
+                title="Xem chi tiết & Tra cứu tích hợp 360°"
+              >
+                <Eye size={14} />
+                <span>Xem chi tiết đơn</span>
+              </button>
+            )}
             <button
               type="button"
               style={{
@@ -2364,6 +2386,7 @@ export function ShipmentListPage(): React.JSX.Element {
               selectedShipmentCodes={selectedShipmentCodes}
               onToggleShipment={toggleShipmentSelection}
               onToggleAllVisible={toggleAllVisibleShipments}
+              onRowClick={(item) => setInspectingShipment(item)}
               storageKeyPrefix="ops_shipment_list"
               defaultVisibleColumns={{
                 stt: false,
@@ -2391,6 +2414,15 @@ export function ShipmentListPage(): React.JSX.Element {
           ) : null}
         </>
       ) : null}
+
+      {inspectingShipment && (
+        <ShipmentDetailDrawer
+          shipment={inspectingShipment}
+          onClose={() => setInspectingShipment(null)}
+          onPrintLabel={(shipmentItem) => void handlePrintWaybill(shipmentItem)}
+          deliveryCourierName={deliveryCourierByShipment.get(inspectingShipment.shipmentCode)}
+        />
+      )}
     </div>
   );
 }

@@ -436,6 +436,19 @@ export function resolveShipmentStatusLabel(item: ShipmentListItemDto): string {
     return deliveryNote;
   }
 
+  if (item.currentStatus === 'TASK_ASSIGNED') {
+    const meta = (item.metadata ?? {}) as Record<string, unknown>;
+    const taskType = String(meta.currentTaskType ?? meta.lastAssignedTaskType ?? '').toUpperCase();
+    if (taskType === 'PICKUP' || meta.pickupCourierId) {
+      return 'Phân công lấy hàng';
+    }
+    const movement = meta.movement as Record<string, unknown> | undefined;
+    const hubCodes = Array.isArray(movement?.hubCodes) ? movement.hubCodes : [];
+    if (hubCodes.length === 0 && !meta.pickupCompletedAt && !meta.deliveryCourierId) {
+      return 'Phân công lấy hàng';
+    }
+  }
+
   return formatShipmentStatusLabel(item.currentStatus);
 }
 

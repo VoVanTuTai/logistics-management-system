@@ -1,0 +1,116 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="760" viewBox="0 0 1280 760">
+  <defs>
+    <linearGradient id="brandGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#003D9B"/>
+      <stop offset="55%" stop-color="#0052CC"/>
+      <stop offset="100%" stop-color="#1D64E8"/>
+    </linearGradient>
+    <linearGradient id="navyGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0B1F44"/>
+      <stop offset="100%" stop-color="#1A3A75"/>
+    </linearGradient>
+    <filter id="cardShadow" x="-4%" y="-6%" width="108%" height="116%">
+      <feDropShadow dx="0" dy="3" stdDeviation="5" flood-color="#0F172A" flood-opacity="0.06"/>
+    </filter>
+  </defs>
+  <rect width="1280" height="760" fill="#FFFFFF"/>
+  <g filter="url(#cardShadow)"><rect x="24" y="18" width="1232" height="658" rx="14" fill="#F6F8FC" stroke="#CBD5E1" stroke-width="1.5"/></g>
+<path d="M24 32 Q24 18 38 18 H1242 Q1256 18 1256 32 V60 H24 Z" fill="#EEF2F7" stroke="#CBD5E1" stroke-width="1"/>
+<circle cx="46" cy="39" r="5" fill="#EF4444"/>
+<circle cx="62" cy="39" r="5" fill="#F59E0B"/>
+<circle cx="78" cy="39" r="5" fill="#22C55E"/>
+<rect x="100" y="26" width="236" height="26" rx="7" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1"/>
+<rect x="110" y="32" width="14" height="14" rx="3" fill="#0052CC" stroke="none"/>
+<text x="117" y="43" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="9.5" font-weight="700" fill="#FFFFFF" text-anchor="middle">N</text>
+<text x="132" y="43" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="10.5" font-weight="700" fill="#102548" text-anchor="start">NEXUS Ops — Giám định đơn lạc &amp; CCTV</text>
+<rect x="348" y="27" width="874" height="24" rx="12" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1"/>
+<text x="364" y="43" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="10.5" font-weight="500" fill="#5B6B86" text-anchor="start">🔒  https://ops.nexus-ex.site/app/function-groups/service-quality/stray-investigation</text>
+<rect x="25" y="60" width="1230" height="52" rx="0" fill="#FFFFFF" stroke="#DBE2F0" stroke-width="1"/>
+<text x="46" y="91" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="13.5" font-weight="700" fill="#102548" text-anchor="start">Chất lượng dịch vụ  &gt;  Giám định đơn lạc &amp; Phân tích chuỗi vết quét (Chain of Custody)</text>
+<rect x="1014" y="74" width="220" height="26" rx="13.0" fill="#FEF3C7" stroke="none"/><text x="1124.0" y="90.22" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="9.2" font-weight="700" fill="#C26D0A" text-anchor="middle">Bắt buộc xem toàn cảnh trước phán quyết</text>
+<rect x="46" y="128" width="636" height="530" rx="12" fill="#FFFFFF" stroke="#D9DEF3" stroke-width="1.2"/>
+<text x="64" y="156" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="13" font-weight="700" fill="#102548" text-anchor="start">Danh sách hồ sơ giám định bất thường (Nhấp dòng để mở Drawer)</text>
+<rect x="64" y="170" width="138" height="25" rx="12.5" fill="#0052CC" stroke="none"/><text x="133.0" y="185.72" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="9.2" font-weight="700" fill="#FFFFFF" text-anchor="middle">Tất cả (12)</text>
+<rect x="212" y="170" width="138" height="25" rx="12.5" fill="#FEF3C7" stroke="none"/><text x="281.0" y="185.72" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="9.2" font-weight="700" fill="#C26D0A" text-anchor="middle">Lưu kho &gt;48h (5)</text>
+<rect x="360" y="170" width="138" height="25" rx="12.5" fill="#FEE2E2" stroke="none"/><text x="429.0" y="185.72" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="9.2" font-weight="700" fill="#B91C1C" text-anchor="middle">Đường trục (3)</text>
+<rect x="508" y="170" width="138" height="25" rx="12.5" fill="#E7EFFF" stroke="none"/><text x="577.0" y="185.72" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="9.2" font-weight="700" fill="#0052CC" text-anchor="middle">Sai luồng (4)</text>
+<rect x="47" y="210" width="634" height="30" rx="0" fill="#F8FAFF" stroke="#CBD5E1" stroke-width="1"/>
+<text x="60" y="229" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="9.2" font-weight="700" fill="#1F2B6F" text-anchor="start">MÃ VẬN ĐƠN</text>
+<text x="202" y="229" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="9.2" font-weight="700" fill="#1F2B6F" text-anchor="start">NHÓM ĐỨT GÃY</text>
+<text x="376" y="229" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="9.2" font-weight="700" fill="#1F2B6F" text-anchor="start">ĐƠN VỊ TÌNH NGHI</text>
+<text x="540" y="229" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="9.2" font-weight="700" fill="#1F2B6F" text-anchor="start">TRẠNG THÁI</text>
+<rect x="47" y="240" width="634" height="40" rx="0" fill="#EFF6FF" stroke="#93C5FD" stroke-width="1.2"/>
+<line x1="47" y1="280" x2="681" y2="280" stroke="#E2E8F0" stroke-width="1"/>
+<text x="60" y="264" font-family="'SF Mono','Menlo','Consolas',monospace" font-size="10.3" font-weight="700" fill="#0052CC" text-anchor="start">SHP-202605-0082</text>
+<text x="202" y="264" font-family="'SF Mono','Menlo','Consolas',monospace" font-size="9.4" font-weight="700" fill="#102548" text-anchor="start">WAREHOUSE_STALE_LOSS</text>
+<text x="376" y="264" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="9.8" font-weight="500" fill="#5B6B86" text-anchor="start">Hub HCM02 (88%)</text>
+<rect x="538" y="249" width="130" height="22" rx="11.0" fill="#FEF3C7" stroke="none"/><text x="603.0" y="263.08" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="8.8" font-weight="700" fill="#C26D0A" text-anchor="middle">Đang điều trần 24h</text>
+<line x1="47" y1="320" x2="681" y2="320" stroke="#E2E8F0" stroke-width="1"/>
+<text x="60" y="304" font-family="'SF Mono','Menlo','Consolas',monospace" font-size="10.3" font-weight="700" fill="#0052CC" text-anchor="start">SHP-202605-0079</text>
+<text x="202" y="304" font-family="'SF Mono','Menlo','Consolas',monospace" font-size="9.4" font-weight="700" fill="#102548" text-anchor="start">LINEHAUL_IN_TRANSIT</text>
+<text x="376" y="304" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="9.8" font-weight="500" fill="#5B6B86" text-anchor="start">Xe TRIP-HN08 (92%)</text>
+<rect x="538" y="289" width="130" height="22" rx="11.0" fill="#FEE2E2" stroke="none"/><text x="603.0" y="303.08" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="8.8" font-weight="700" fill="#B91C1C" text-anchor="middle">Chờ trích CCTV</text>
+<line x1="47" y1="360" x2="681" y2="360" stroke="#E2E8F0" stroke-width="1"/>
+<text x="60" y="344" font-family="'SF Mono','Menlo','Consolas',monospace" font-size="10.3" font-weight="700" fill="#0052CC" text-anchor="start">SHP-202605-0071</text>
+<text x="202" y="344" font-family="'SF Mono','Menlo','Consolas',monospace" font-size="9.4" font-weight="700" fill="#102548" text-anchor="start">MISROUTED_SORTING</text>
+<text x="376" y="344" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="9.8" font-weight="500" fill="#5B6B86" text-anchor="start">Mega Hub ĐN (81%)</text>
+<rect x="538" y="329" width="130" height="22" rx="11.0" fill="#DCFCE7" stroke="none"/><text x="603.0" y="343.08" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="8.8" font-weight="700" fill="#137F5D" text-anchor="middle">Đã tìm thấy (Cứu)</text>
+<line x1="47" y1="400" x2="681" y2="400" stroke="#E2E8F0" stroke-width="1"/>
+<text x="60" y="384" font-family="'SF Mono','Menlo','Consolas',monospace" font-size="10.3" font-weight="700" fill="#0052CC" text-anchor="start">SHP-202605-0064</text>
+<text x="202" y="384" font-family="'SF Mono','Menlo','Consolas',monospace" font-size="9.4" font-weight="700" fill="#102548" text-anchor="start">LAST_MILE_UNACCOUNTED</text>
+<text x="376" y="384" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="9.8" font-weight="500" fill="#5B6B86" text-anchor="start">Bưu tá NV09 (95%)</text>
+<rect x="538" y="369" width="130" height="22" rx="11.0" fill="#F3E8FF" stroke="none"/><text x="603.0" y="383.08" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="8.8" font-weight="700" fill="#6D28D9" text-anchor="middle">Chuyển Claims</text>
+<line x1="47" y1="440" x2="681" y2="440" stroke="#E2E8F0" stroke-width="1"/>
+<text x="60" y="424" font-family="'SF Mono','Menlo','Consolas',monospace" font-size="10.3" font-weight="700" fill="#0052CC" text-anchor="start">SHP-202605-0058</text>
+<text x="202" y="424" font-family="'SF Mono','Menlo','Consolas',monospace" font-size="9.4" font-weight="700" fill="#102548" text-anchor="start">WAREHOUSE_STALE_LOSS</text>
+<text x="376" y="424" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="9.8" font-weight="500" fill="#5B6B86" text-anchor="start">Hub HN04 (84%)</text>
+<rect x="538" y="409" width="130" height="22" rx="11.0" fill="#FEF3C7" stroke="none"/><text x="603.0" y="423.08" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="8.8" font-weight="700" fill="#C26D0A" text-anchor="middle">Đang điều trần 24h</text>
+<rect x="64" y="466" width="600" height="174" rx="10" fill="#F8FAFC" stroke="#DBE2F0" stroke-width="1"/>
+<text x="78" y="490" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="11" font-weight="700" fill="#102548" text-anchor="start">Quy trình 4 giai đoạn khép kín (Không quy chụp vội vàng):</text>
+<text x="78" y="514" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="9.8" font-weight="700" fill="#0052CC" text-anchor="start">• 1. Bắt điểm đứt gãy:</text>
+<text x="234" y="514" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="9.5" font-weight="500" fill="#5B6B86" text-anchor="start">Audit Engine đối chiếu lịch sử quét Inbound/Outbound và sai lệch cân nặng.</text>
+<text x="78" y="542" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="9.8" font-weight="700" fill="#0052CC" text-anchor="start">• 2. Điều trần 24 giờ (+12h):</text>
+<text x="234" y="542" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="9.5" font-weight="500" fill="#5B6B86" text-anchor="start">Cho đơn vị tình nghi nộp video CCTV bàn dỡ lưu trên MinIO Object Storage.</text>
+<text x="78" y="570" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="9.8" font-weight="700" fill="#0052CC" text-anchor="start">• 3. Ưu tiên Cứu đơn:</text>
+<text x="234" y="570" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="9.5" font-weight="500" fill="#5B6B86" text-anchor="start">Rà soát kho tìm lại kiện → chuyển RESOLVED_FOUND, triệt tiêu rủi ro đền bù.</text>
+<text x="78" y="598" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="9.8" font-weight="700" fill="#0052CC" text-anchor="start">• 4. Phán quyết &amp; Claims:</text>
+<text x="234" y="598" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="9.5" font-weight="500" fill="#5B6B86" text-anchor="start">Quá hạn không chứng minh vô can → tự sinh Hồ sơ Bồi thường bên Claims.</text>
+<g filter="url(#cardShadow)"><rect x="698" y="128" width="536" height="530" rx="14" fill="#FFFFFF" stroke="#60A5FA" stroke-width="1.8"/></g>
+<path d="M698 142 Q698 128 712 128 H1220 Q1234 128 1234 142 V186 H698 Z" fill="url(#navyGrad)"/>
+<text x="718" y="154" font-family="'SF Mono','Menlo','Consolas',monospace" font-size="13" font-weight="700" fill="#FFFFFF" text-anchor="start">HỒ SƠ GIÁM ĐỊNH: SHP-202605-0082</text>
+<text x="718" y="174" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="10" font-weight="500" fill="#FDE68A" text-anchor="start">Cửa sổ điều trần 24h — Còn lại: 14:28:15 · Độ tin cậy AI: 88%</text>
+<text x="718" y="210" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="11.5" font-weight="700" fill="#102548" text-anchor="start">Chuỗi vết quét Domino (Chain of Custody)</text>
+<rect x="718" y="224" width="496" height="26" rx="6" fill="#F8FAFC" stroke="#DBE2F0" stroke-width="1"/>
+<text x="728" y="241" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="9.6" font-weight="500" fill="#137F5D" text-anchor="start">✓ 16/05 09:10 · Pickup Scan — Kho Shop 411 (2,4 kg)</text>
+<rect x="718" y="256" width="496" height="26" rx="6" fill="#F8FAFC" stroke="#DBE2F0" stroke-width="1"/>
+<text x="728" y="273" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="9.6" font-weight="500" fill="#137F5D" text-anchor="start">✓ 16/05 14:35 · Inbound Scan — Hub HCM02 (2,4 kg)</text>
+<rect x="718" y="288" width="496" height="26" rx="6" fill="#FEF2F2" stroke="#FCA5A5" stroke-width="1"/>
+<text x="728" y="305" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="9.6" font-weight="700" fill="#B91C1C" text-anchor="start">✕ ĐỨT GÃY &gt; 48 GIỜ: Không phát sinh Outbound Scan tại Hub HCM02</text>
+<text x="718" y="340" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="11.5" font-weight="700" fill="#102548" text-anchor="start">Bằng chứng Video CCTV &amp; Biên bản (MinIO S3)</text>
+<rect x="718" y="352" width="496" height="118" rx="10" fill="#0F172A" stroke="none"/>
+<text x="966.0" y="404" font-family="'SF Mono','Menlo','Consolas',monospace" font-size="10.5" font-weight="700" fill="#E0F2FE" text-anchor="middle">▶  CCTV_CAM04_HCM02_16052026_1435.mp4</text>
+<text x="966.0" y="426" font-family="'SF Mono','Menlo','Consolas',monospace" font-size="9.2" font-weight="500" fill="#93C5FD" text-anchor="middle">Bucket: nexus-pod-images/claims-evidence/INV-0082/</text>
+<rect x="732" y="438" width="156" height="22" rx="11.0" fill="#1E3A8A" stroke="none"/><text x="810.0" y="452.08" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="8.8" font-weight="700" fill="#FFFFFF" text-anchor="middle">Đã nộp biên bản bàn giao</text>
+<rect x="718" y="484" width="496" height="56" rx="8" fill="#FFFBEB" stroke="#FCD34D" stroke-width="1"/>
+<text x="730" y="504" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="10" font-weight="700" fill="#C26D0A" text-anchor="start">Đơn vị tình nghi #1: Hub HCM02  ·  Đề xuất bồi thường: 1.000.000 đ</text>
+<text x="730" y="524" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="9.2" font-weight="500" fill="#92400E" text-anchor="start">Căn cứ: Điều 25 NĐ 47/2011 (Hàng không khai giá — trần 4× cước / 1 triệu)</text>
+<rect x="718" y="556" width="242.0" height="38" rx="8" fill="#137F5D" stroke="none"/>
+<text x="839.0" y="579" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="10.5" font-weight="700" fill="#FFFFFF" text-anchor="middle">Đã tìm thấy hàng (Cứu đơn)</text>
+<rect x="972.0" y="556" width="242.0" height="38" rx="8" fill="#B91C1C" stroke="none"/>
+<text x="1093.0" y="579" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="10.5" font-weight="700" fill="#FFFFFF" text-anchor="middle">Phán quyết → Claims</text>
+<rect x="718" y="604" width="496" height="34" rx="8" fill="#FFFFFF" stroke="#0052CC" stroke-width="1.1"/>
+<text x="966.0" y="625" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="10.2" font-weight="700" fill="#0052CC" text-anchor="middle">Gia hạn điều trần +12 giờ (Trích xuất CCTV liên Hub)</text>
+<rect x="24" y="692" width="1232" height="52" rx="10" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="1.2"/>
+<circle cx="53.0" cy="718" r="11" fill="#0052CC"/>
+<text x="53.0" y="722" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="10.5" font-weight="700" fill="#FFFFFF" text-anchor="middle">1</text>
+<text x="72.0" y="714" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="10.8" font-weight="700" fill="#102548" text-anchor="start">Không đặt nút phán quyết ngoài bảng</text>
+<text x="72.0" y="730" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="9.6" font-weight="500" fill="#5B6B86" text-anchor="start">Triệt tiêu bấm nhầm — bắt buộc mở Drawer xem toàn cảnh</text>
+<circle cx="453.0" cy="718" r="11" fill="#0052CC"/>
+<text x="453.0" y="722" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="10.5" font-weight="700" fill="#FFFFFF" text-anchor="middle">2</text>
+<text x="472.0" y="714" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="10.8" font-weight="700" fill="#102548" text-anchor="start">Chuỗi Domino &amp; CCTV trên MinIO</text>
+<text x="472.0" y="730" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="9.6" font-weight="500" fill="#5B6B86" text-anchor="start">Đối chiếu trực tiếp điểm đứt gãy &gt;48h và video camera bàn dỡ</text>
+<circle cx="853.0" cy="718" r="11" fill="#0052CC"/>
+<text x="853.0" y="722" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="10.5" font-weight="700" fill="#FFFFFF" text-anchor="middle">3</text>
+<text x="872.0" y="714" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="10.8" font-weight="700" fill="#102548" text-anchor="start">Tự động liên kết Claims Liability</text>
+<text x="872.0" y="730" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="9.6" font-weight="500" fill="#5B6B86" text-anchor="start">Cứu đơn khi thấy hàng hoặc tự sinh hồ sơ bồi thường sau 24h</text>
+</svg>

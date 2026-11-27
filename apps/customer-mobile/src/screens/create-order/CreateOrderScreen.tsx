@@ -14,6 +14,8 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 
 import { AddressSelectorModal, type StructuredAddress } from '../../components/AddressSelectorModal';
+import { StandardLocationPickerModal } from '../../components/StandardLocationPickerModal';
+import { LocationPickerMapModal } from '../../components/LocationPickerMapModal';
 import { SavedAddressPickerModal } from '../../components/SavedAddressPickerModal';
 import { AppHeader } from '../../components/AppHeader';
 import { AppModal, type ModalVariant } from '../../components/common/AppModal';
@@ -22,6 +24,7 @@ import { PrimaryButton } from '../../components/PrimaryButton';
 import { StepIndicator } from '../../components/StepIndicator';
 import { MOCK_SHIPPING_SERVICES } from '../../mock/mockServices';
 import { computeFallbackPricing } from '../../utils/pricingCalculator';
+import { FALLBACK_VIETNAM_PROVINCES } from '../../utils/vietnamProvincesData';
 import type { RootStackParamList } from '../../navigation/types';
 import { ApiClientError } from '../../services/api/client';
 import { pricingApi, type PricingQuoteResponse } from '../../services/api/pricing.api';
@@ -30,6 +33,8 @@ import {
   DEFAULT_HUB_RECORDS,
   masterdataApi,
   type HubRecord,
+  type VietnamProvince,
+  type VietnamWard,
 } from '../../services/api/masterdata.api';
 import { authStore, useAuthSession } from '../../store/authStore';
 import { savedAddressStore } from '../../store/savedAddressStore';
@@ -137,14 +142,17 @@ export function CreateOrderScreen({ navigation, route }: Props): React.JSX.Eleme
       if (def) {
         setSenderName(def.name);
         setSenderPhone(def.phone);
+        const resolvedHubCode = def.hubCode || (def.province?.includes('Hồ Chí Minh') ? '07904W001' : 'HUB-DEFAULT');
+        const resolvedHubName = def.hubName || (def.province?.includes('Hồ Chí Minh') ? 'Bưu cục Phường An Nhơn - Gò Vấp' : 'Bưu cục tiếp nhận');
+
         setSenderAddress({
           province: def.province || '',
           district: def.district || '',
           ward: def.ward || '',
           addressDetail: def.addressDetail || '',
           composedAddress: def.composedAddress || '',
-          hubCode: def.hubCode || '',
-          hubName: def.hubName || '',
+          hubCode: resolvedHubCode,
+          hubName: resolvedHubName,
           latitude: def.latitude,
           longitude: def.longitude,
         });
@@ -160,6 +168,214 @@ export function CreateOrderScreen({ navigation, route }: Props): React.JSX.Eleme
   const [receiverName, setReceiverName] = useState('');
   const [receiverPhone, setReceiverPhone] = useState('');
   const [receiverAddress, setReceiverAddress] = useState<StructuredAddress | null>(null);
+  const [receiverProvince, setReceiverProvince] = useState<VietnamProvince | null>(null);
+  const [receiverWard, setReceiverWard] = useState<VietnamWard | null>(null);
+  const [receiverHub, setReceiverHub] = useState<HubRecord | null>(null);
+  const [receiverDetailAddress, setReceiverDetailAddress] = useState<string>('');
+  const [showReceiverProvincePicker, setShowReceiverProvincePicker] = useState<boolean>(false);
+  const [showReceiverWardPicker, setShowReceiverWardPicker] = useState<boolean>(false);
+  const [showReceiverMapModal, setShowReceiverMapModal] = useState<boolean>(false);
+
+  // Sender details (Manual mode)
+  const [senderProvince, setSenderProvince] = useState<VietnamProvince | null>(null);
+  const [senderWard, setSenderWard] = useState<VietnamWard | null>(null);
+  const [senderHub, setSenderHub] = useState<HubRecord | null>(null);
+  const [senderDetailAddress, setSenderDetailAddress] = useState<string>('');
+  const [showSenderProvincePicker, setShowSenderProvincePicker] = useState<boolean>(false);
+  const [showSenderWardPicker, setShowSenderWardPicker] = useState<boolean>(false);
+  const [showSenderMapModal, setShowSenderMapModal] = useState<boolean>(false);
+
+  const handleSelectReceiverProvince = (p: VietnamProvince) => {
+    setReceiverProvince(p);
+    setReceiverWard(null);
+    setReceiverHub(null);
+    setReceiverAddress(null);
+  };
+
+  const handleSelectReceiverWardAndHub = (w: VietnamWard, h: HubRecord) => {
+    setReceiverWard(w);
+    setReceiverHub(h);
+    const cleanWard = w.wardName || w.name;
+    const cleanDistrict = w.district || '';
+    const composed = [receiverDetailAddress.trim(), cleanWard, cleanDistrict, receiverProvince?.name || h.province]
+      .filter(Boolean)
+      .join(', ');
+    setReceiverAddress({
+      province: receiverProvince?.name || h.province,
+      district: cleanDistrict,
+      ward: cleanWard,
+      addressDetail: receiverDetailAddress.trim(),
+      composedAddress: composed,
+      hubCode: h.code,
+      hubName: h.name,
+      latitude: h.latitude,
+      longitude: h.longitude,
+    });
+  };
+
+  const handleReceiverDetailAddressChange = (text: string) => {
+    setReceiverDetailAddress(text);
+    if (receiverProvince && receiverWard && receiverHub) {
+      const cleanWard = receiverWard.wardName || receiverWard.name;
+      const cleanDistrict = receiverWard.district || '';
+      const composed = [text.trim(), cleanWard, cleanDistrict, receiverProvince.name].filter(Boolean).join(', ');
+      setReceiverAddress({
+        province: receiverProvince.name,
+        district: cleanDistrict,
+        ward: cleanWard,
+        addressDetail: text.trim(),
+        composedAddress: composed,
+        hubCode: receiverHub.code,
+        hubName: receiverHub.name,
+        latitude: receiverAddress?.latitude || receiverHub.latitude,
+        longitude: receiverAddress?.longitude || receiverHub.longitude,
+      });
+    }
+  };
+
+  const handleConfirmReceiverFromMap = (res: {
+    province: string;
+    ward: string;
+    district?: string;
+    street: string;
+    composedAddress: string;
+    hubCode: string;
+    hubName: string;
+    latitude?: number;
+    longitude?: number;
+  }) => {
+    const foundProv = (FALLBACK_VIETNAM_PROVINCES.find(
+      (p) =>
+        p.name.toLowerCase().includes(res.province.toLowerCase()) ||
+        res.province.toLowerCase().includes(p.name.toLowerCase()),
+    ) as unknown as VietnamProvince) || null;
+    if (foundProv) setReceiverProvince(foundProv);
+    setReceiverWard({
+      code: Math.floor(Math.random() * 9000) + 1000,
+      name: res.district ? `${res.ward} (${res.district})` : res.ward,
+      wardName: res.ward,
+      district: res.district,
+      codename: 'map_ward',
+      provinceCode: foundProv?.code || 1,
+    });
+    setReceiverDetailAddress(res.street);
+    const matchedHub = allHubs.find((h) => h.code === res.hubCode) || {
+      code: res.hubCode,
+      name: res.hubName,
+      province: res.province,
+      district: res.district,
+      ward: res.ward,
+      addressDetail: res.street,
+    };
+    setReceiverHub(matchedHub);
+    setReceiverAddress({
+      province: res.province,
+      district: res.district || '',
+      ward: res.ward,
+      addressDetail: res.street,
+      composedAddress: res.composedAddress,
+      hubCode: res.hubCode,
+      hubName: res.hubName,
+      latitude: res.latitude,
+      longitude: res.longitude,
+    });
+  };
+
+  const handleSelectSenderProvince = (p: VietnamProvince) => {
+    setSenderProvince(p);
+    setSenderWard(null);
+    setSenderHub(null);
+    setSenderAddress(null);
+  };
+
+  const handleSelectSenderWardAndHub = (w: VietnamWard, h: HubRecord) => {
+    setSenderWard(w);
+    setSenderHub(h);
+    const cleanWard = w.wardName || w.name;
+    const cleanDistrict = w.district || '';
+    const composed = [senderDetailAddress.trim(), cleanWard, cleanDistrict, senderProvince?.name || h.province]
+      .filter(Boolean)
+      .join(', ');
+    setSenderAddress({
+      province: senderProvince?.name || h.province,
+      district: cleanDistrict,
+      ward: cleanWard,
+      addressDetail: senderDetailAddress.trim(),
+      composedAddress: composed,
+      hubCode: h.code,
+      hubName: h.name,
+      latitude: h.latitude,
+      longitude: h.longitude,
+    });
+  };
+
+  const handleSenderDetailAddressChange = (text: string) => {
+    setSenderDetailAddress(text);
+    if (senderProvince && senderWard && senderHub) {
+      const cleanWard = senderWard.wardName || senderWard.name;
+      const cleanDistrict = senderWard.district || '';
+      const composed = [text.trim(), cleanWard, cleanDistrict, senderProvince.name].filter(Boolean).join(', ');
+      setSenderAddress({
+        province: senderProvince.name,
+        district: cleanDistrict,
+        ward: cleanWard,
+        addressDetail: text.trim(),
+        composedAddress: composed,
+        hubCode: senderHub.code,
+        hubName: senderHub.name,
+        latitude: senderAddress?.latitude || senderHub.latitude,
+        longitude: senderAddress?.longitude || senderHub.longitude,
+      });
+    }
+  };
+
+  const handleConfirmSenderFromMap = (res: {
+    province: string;
+    ward: string;
+    district?: string;
+    street: string;
+    composedAddress: string;
+    hubCode: string;
+    hubName: string;
+    latitude?: number;
+    longitude?: number;
+  }) => {
+    const foundProv = (FALLBACK_VIETNAM_PROVINCES.find(
+      (p) =>
+        p.name.toLowerCase().includes(res.province.toLowerCase()) ||
+        res.province.toLowerCase().includes(p.name.toLowerCase()),
+    ) as unknown as VietnamProvince) || null;
+    if (foundProv) setSenderProvince(foundProv);
+    setSenderWard({
+      code: Math.floor(Math.random() * 9000) + 1000,
+      name: res.district ? `${res.ward} (${res.district})` : res.ward,
+      wardName: res.ward,
+      district: res.district,
+      codename: 'map_ward',
+      provinceCode: foundProv?.code || 1,
+    });
+    setSenderDetailAddress(res.street);
+    const matchedHub = allHubs.find((h) => h.code === res.hubCode) || {
+      code: res.hubCode,
+      name: res.hubName,
+      province: res.province,
+      district: res.district,
+      ward: res.ward,
+      addressDetail: res.street,
+    };
+    setSenderHub(matchedHub);
+    setSenderAddress({
+      province: res.province,
+      district: res.district || '',
+      ward: res.ward,
+      addressDetail: res.street,
+      composedAddress: res.composedAddress,
+      hubCode: res.hubCode,
+      hubName: res.hubName,
+      latitude: res.latitude,
+      longitude: res.longitude,
+    });
+  };
 
   // Package & Service details
   const [itemName, setItemName] = useState('');
@@ -191,14 +407,17 @@ export function CreateOrderScreen({ navigation, route }: Props): React.JSX.Eleme
       if (def && isMounted && !route.params?.prefilledSenderAddress) {
         setSenderName(def.name);
         setSenderPhone(def.phone);
+        const resolvedHubCode = def.hubCode || (def.province?.includes('Hồ Chí Minh') ? '07904W001' : 'HUB-DEFAULT');
+        const resolvedHubName = def.hubName || (def.province?.includes('Hồ Chí Minh') ? 'Bưu cục Phường An Nhơn - Gò Vấp' : 'Bưu cục tiếp nhận');
+
         setSenderAddress({
           province: def.province || '',
           district: def.district || '',
           ward: def.ward || '',
           addressDetail: def.addressDetail || '',
           composedAddress: def.composedAddress || '',
-          hubCode: def.hubCode || '',
-          hubName: def.hubName || '',
+          hubCode: resolvedHubCode,
+          hubName: resolvedHubName,
           latitude: def.latitude,
           longitude: def.longitude,
         });
@@ -213,8 +432,66 @@ export function CreateOrderScreen({ navigation, route }: Props): React.JSX.Eleme
   useEffect(() => {
     const params = route.params;
     if (params) {
-      if (params.prefilledSenderAddress) setSenderAddress(params.prefilledSenderAddress);
-      if (params.prefilledReceiverAddress) setReceiverAddress(params.prefilledReceiverAddress);
+      if (params.prefilledSenderAddress) {
+        const s = params.prefilledSenderAddress;
+        setSenderAddress(s);
+        setSenderDetailAddress(s.addressDetail || '');
+        const matchedP = (FALLBACK_VIETNAM_PROVINCES.find(
+          (p) =>
+            p.name.toLowerCase().includes(s.province.toLowerCase()) ||
+            s.province.toLowerCase().includes(p.name.toLowerCase()),
+        ) as unknown as VietnamProvince) || null;
+        if (matchedP) {
+          setSenderProvince(matchedP);
+          setSenderWard({
+            code: 1,
+            name: s.district ? `${s.ward} (${s.district})` : s.ward,
+            wardName: s.ward,
+            district: s.district,
+            codename: 'prefilled_ward',
+            provinceCode: matchedP.code,
+          });
+        }
+        if (s.hubCode) {
+          const matchedH = allHubs.find((h) => h.code === s.hubCode) || {
+            code: s.hubCode,
+            name: s.hubName || 'Bưu cục gửi',
+            province: s.province,
+            addressDetail: s.addressDetail,
+          };
+          setSenderHub(matchedH);
+        }
+      }
+      if (params.prefilledReceiverAddress) {
+        const r = params.prefilledReceiverAddress;
+        setReceiverAddress(r);
+        setReceiverDetailAddress(r.addressDetail || '');
+        const matchedP = (FALLBACK_VIETNAM_PROVINCES.find(
+          (p) =>
+            p.name.toLowerCase().includes(r.province.toLowerCase()) ||
+            r.province.toLowerCase().includes(p.name.toLowerCase()),
+        ) as unknown as VietnamProvince) || null;
+        if (matchedP) {
+          setReceiverProvince(matchedP);
+          setReceiverWard({
+            code: 1,
+            name: r.district ? `${r.ward} (${r.district})` : r.ward,
+            wardName: r.ward,
+            district: r.district,
+            codename: 'prefilled_ward',
+            provinceCode: matchedP.code,
+          });
+        }
+        if (r.hubCode) {
+          const matchedH = allHubs.find((h) => h.code === r.hubCode) || {
+            code: r.hubCode,
+            name: r.hubName || 'Bưu cục nhận',
+            province: r.province,
+            addressDetail: r.addressDetail,
+          };
+          setReceiverHub(matchedH);
+        }
+      }
       if (params.prefilledWeightKg) setWeightKg(params.prefilledWeightKg);
       if (params.prefilledLengthCm) setLengthCm(params.prefilledLengthCm);
       if (params.prefilledWidthCm) setWidthCm(params.prefilledWidthCm);
@@ -222,7 +499,7 @@ export function CreateOrderScreen({ navigation, route }: Props): React.JSX.Eleme
       if (params.prefilledHasCod !== undefined) setHasCod(params.prefilledHasCod);
       if (params.prefilledCodAmount) setCodAmount(params.prefilledCodAmount);
     }
-  }, [route.params]);
+  }, [route.params, allHubs]);
 
   // Calculate pricing quote dynamically from live backend pricing-service with debounce
   useEffect(() => {
@@ -341,16 +618,18 @@ export function CreateOrderScreen({ navigation, route }: Props): React.JSX.Eleme
         showModal('Thiếu thông tin', 'Vui lòng chọn bưu cục tiếp nhận gửi hàng.');
         return;
       }
-      if (pickupMethod === 'PICKUP' && !senderAddress) {
-        showModal('Thiếu thông tin', 'Vui lòng chọn địa chỉ lấy hàng tại nhà.');
-        return;
+      if (pickupMethod === 'PICKUP') {
+        if (!senderAddress || !senderAddress.province || !senderAddress.ward || !senderAddress.addressDetail) {
+          showModal('Thiếu thông tin', 'Vui lòng chọn Tỉnh/Thành, Phường/Xã và nhập địa chỉ chi tiết lấy hàng.');
+          return;
+        }
       }
       if (!receiverName.trim() || !receiverPhone.trim()) {
         showModal('Thiếu thông tin', 'Vui lòng nhập tên và số điện thoại người nhận.');
         return;
       }
-      if (!receiverAddress) {
-        showModal('Thiếu thông tin', 'Vui lòng chọn địa chỉ người nhận.');
+      if (!receiverAddress || !receiverAddress.province || !receiverAddress.ward || !receiverAddress.addressDetail) {
+        showModal('Thiếu thông tin', 'Vui lòng chọn Tỉnh/Thành, Phường/Xã và nhập địa chỉ chi tiết người nhận.');
         return;
       }
       setStep(2);
@@ -443,6 +722,8 @@ export function CreateOrderScreen({ navigation, route }: Props): React.JSX.Eleme
           estimatedFee: liveFee,
           originHubCode: senderAddress.hubCode,
           destinationHubCode: receiverAddress.hubCode,
+          currentHubCode: senderAddress.hubCode,
+          currentLocation: senderAddress.hubCode,
           senderHubCode: senderAddress.hubCode,
           receiverHubCode: receiverAddress.hubCode,
           routing: {
@@ -484,14 +765,59 @@ export function CreateOrderScreen({ navigation, route }: Props): React.JSX.Eleme
     }
   };
 
+  const handleGoToStep = (targetStep: number) => {
+    if (targetStep === step) return;
+    if (targetStep < step) {
+      // Cho phép ấn quay lại xem các bước trước tự do
+      setStep(targetStep);
+      return;
+    }
+    // Khi ấn tới bước tiếp theo, xác thực dữ liệu bước trước
+    if (targetStep === 2 && step === 1) {
+      if (!senderName.trim() || !senderPhone.trim()) {
+        showModal('Thiếu thông tin', 'Vui lòng nhập tên và số điện thoại người gửi.');
+        return;
+      }
+      if (!senderAddress) {
+        showModal('Thiếu thông tin', 'Vui lòng chọn địa chỉ / bưu cục gửi hàng.');
+        return;
+      }
+      if (!receiverName.trim() || !receiverPhone.trim()) {
+        showModal('Thiếu thông tin', 'Vui lòng nhập tên và số điện thoại người nhận.');
+        return;
+      }
+      if (!receiverAddress) {
+        showModal('Thiếu thông tin', 'Vui lòng chọn địa chỉ người nhận.');
+        return;
+      }
+      setStep(2);
+    } else if (targetStep === 3) {
+      if (step === 1) {
+        if (!senderName.trim() || !senderPhone.trim() || !senderAddress) {
+          showModal('Thiếu thông tin', 'Vui lòng điền đầy đủ thông tin gửi ở Bước 1.');
+          return;
+        }
+        if (!receiverName.trim() || !receiverPhone.trim() || !receiverAddress) {
+          showModal('Thiếu thông tin', 'Vui lòng điền đầy đủ thông tin nhận ở Bước 1.');
+          return;
+        }
+      }
+      if (!itemName.trim() || !weightKg.trim()) {
+        showModal('Thiếu thông tin', 'Vui lòng nhập tên hàng hóa và khối lượng ở Bước 2.');
+        return;
+      }
+      setStep(3);
+    }
+  };
+
   return (
     <KeyboardAvoidingView
       style={styles.flex}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      keyboardVerticalOffset={Platform.OS === 'ios' ? 64 : 20}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 64 : 0}
     >
       <AppHeader title="Tạo đơn hàng mới" onBackPress={handlePrevStep} />
-      <StepIndicator currentStep={step} />
+      <StepIndicator currentStep={step} onStepPress={handleGoToStep} />
 
       <ScrollView
         contentContainerStyle={styles.container}
@@ -721,21 +1047,71 @@ export function CreateOrderScreen({ navigation, route }: Props): React.JSX.Eleme
                         required
                       />
 
-                      <Text style={styles.fieldLabel}>Địa chỉ lấy hàng mới (Chọn từ Database) *</Text>
+                      {/* TỈNH / THÀNH PHỐ GỬI */}
+                      <Text style={styles.fieldLabel}>Tỉnh / Thành phố lấy hàng *</Text>
                       <TouchableOpacity
-                        activeOpacity={0.8}
-                        style={[styles.addressBoxSelect, !senderAddress && styles.addressBoxUnselected]}
-                        onPress={() => setShowSenderAddressModal(true)}
+                        activeOpacity={0.7}
+                        style={styles.formPickerSelectBtn}
+                        onPress={() => setShowSenderProvincePicker(true)}
                       >
-                        {senderAddress ? (
-                          <View style={styles.addressBoxTextCol}>
-                            <Text style={styles.addressComposedText}>{senderAddress.composedAddress}</Text>
-                            <Text style={styles.addressHubText}>Bưu cục gửi: {senderAddress.hubName} [{senderAddress.hubCode}]</Text>
+                        <Text style={[styles.formPickerSelectText, !senderProvince && styles.formPickerPlaceholder]}>
+                          {senderProvince?.name || 'Chọn Tỉnh / Thành phố lấy hàng (34 Tỉnh/TP khả dụng)'}
+                        </Text>
+                        <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+                      </TouchableOpacity>
+
+                      {/* PHƯỜNG / XÃ & BƯU CỤC LẤY HÀNG */}
+                      <Text style={styles.fieldLabel}>Phường / Xã & Bưu cục tiếp nhận *</Text>
+                      <TouchableOpacity
+                        activeOpacity={0.7}
+                        style={[styles.formPickerSelectBtn, !senderProvince && styles.formPickerSelectBtnDisabled]}
+                        disabled={!senderProvince}
+                        onPress={() => {
+                          if (senderProvince) setShowSenderWardPicker(true);
+                        }}
+                      >
+                        <Text style={[styles.formPickerSelectText, !senderWard && styles.formPickerPlaceholder]}>
+                          {senderWard
+                            ? `${senderWard.wardName || senderWard.name} - ${senderHub?.name || 'Bưu cục'} (${senderHub?.code || ''})`
+                            : senderProvince
+                            ? 'Chọn Phường / Xã & Bưu cục tiếp nhận'
+                            : 'Vui lòng chọn Tỉnh / Thành trước'}
+                        </Text>
+                        <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+                      </TouchableOpacity>
+
+                      {/* ĐỊA CHỈ CHI TIẾT LẤY HÀNG */}
+                      <InputField
+                        label="Địa chỉ chi tiết lấy hàng (Số nhà, tên đường, tòa nhà...) *"
+                        placeholder="Ví dụ: 123 Nguyễn Trãi, Tòa Landmark 81..."
+                        value={senderDetailAddress}
+                        onChangeText={handleSenderDetailAddressChange}
+                        required
+                      />
+
+                      {/* BƯU CỤC TIẾP NHẬN GỬI */}
+                      {senderHub ? (
+                        <View style={styles.hubResolvedBanner}>
+                          <View style={styles.hubResolvedBannerHeader}>
+                            <Ionicons name="business" size={16} color={colors.primary} />
+                            <Text style={styles.hubResolvedBannerTitle}>Bưu cục tiếp nhận lấy hàng</Text>
                           </View>
-                        ) : (
-                          <Text style={styles.addressPlaceholderText}>+ Bấm để chọn Tỉnh / Thành / Bưu cục gửi mới</Text>
-                        )}
-                        <Ionicons name="chevron-forward" size={20} color={colors.primary} />
+                          <Text style={styles.hubResolvedBannerName}>
+                            [{senderHub.code}] {senderHub.name}
+                          </Text>
+                          <Text style={styles.hubResolvedBannerAddress}>
+                            Khu vực: {senderHub.province} {senderHub.addressDetail ? `• ${senderHub.addressDetail}` : ''}
+                          </Text>
+                        </View>
+                      ) : null}
+
+                      {/* GPS MAP LINK BUTTON */}
+                      <TouchableOpacity
+                        style={styles.gpsMapLinkBtn}
+                        onPress={() => setShowSenderMapModal(true)}
+                      >
+                        <Ionicons name="map-outline" size={15} color={colors.primary} />
+                        <Text style={styles.gpsMapLinkBtnText}>Hoặc chọn nhanh vị trí trên bản đồ GPS</Text>
                       </TouchableOpacity>
                     </View>
                   )}
@@ -766,21 +1142,71 @@ export function CreateOrderScreen({ navigation, route }: Props): React.JSX.Eleme
                 required
               />
 
-              <Text style={styles.fieldLabel}>Địa chỉ người nhận (Chọn từ Database) *</Text>
+              {/* TỈNH / THÀNH PHỐ NHẬN (Chuẩn 100% Form Admin & Merchant) */}
+              <Text style={styles.fieldLabel}>Tỉnh / Thành phố nhận *</Text>
               <TouchableOpacity
-                activeOpacity={0.8}
-                style={[styles.addressBoxSelect, !receiverAddress && styles.addressBoxUnselected]}
-                onPress={() => setShowReceiverAddressModal(true)}
+                activeOpacity={0.7}
+                style={styles.formPickerSelectBtn}
+                onPress={() => setShowReceiverProvincePicker(true)}
               >
-                {receiverAddress ? (
-                  <View style={styles.addressBoxTextCol}>
-                    <Text style={styles.addressComposedText}>{receiverAddress.composedAddress}</Text>
-                    <Text style={styles.addressHubText}>Bưu cục nhận: {receiverAddress.hubName} [{receiverAddress.hubCode}]</Text>
+                <Text style={[styles.formPickerSelectText, !receiverProvince && styles.formPickerPlaceholder]}>
+                  {receiverProvince?.name || 'Chọn Tỉnh / Thành phố nhận (34 Tỉnh/TP khả dụng)'}
+                </Text>
+                <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+              </TouchableOpacity>
+
+              {/* PHƯỜNG / XÃ & BƯU CỤC PHÁT (Chuẩn 100% Form Admin & Merchant) */}
+              <Text style={styles.fieldLabel}>Phường / Xã & Bưu cục phát *</Text>
+              <TouchableOpacity
+                activeOpacity={0.7}
+                style={[styles.formPickerSelectBtn, !receiverProvince && styles.formPickerSelectBtnDisabled]}
+                disabled={!receiverProvince}
+                onPress={() => {
+                  if (receiverProvince) setShowReceiverWardPicker(true);
+                }}
+              >
+                <Text style={[styles.formPickerSelectText, !receiverWard && styles.formPickerPlaceholder]}>
+                  {receiverWard
+                    ? `${receiverWard.wardName || receiverWard.name} - ${receiverHub?.name || 'Bưu cục phụ trách'} (${receiverHub?.code || ''})`
+                    : receiverProvince
+                    ? 'Chọn Phường / Xã & Bưu cục phát'
+                    : 'Vui lòng chọn Tỉnh / Thành trước'}
+                </Text>
+                <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+              </TouchableOpacity>
+
+              {/* ĐỊA CHỈ CHI TIẾT NGƯỜI NHẬN */}
+              <InputField
+                label="Địa chỉ chi tiết người nhận (Số nhà, tên đường, tòa nhà...) *"
+                placeholder="Ví dụ: 123 Nguyễn Trãi, Tòa nhà Landmark 81..."
+                value={receiverDetailAddress}
+                onChangeText={handleReceiverDetailAddressChange}
+                required
+              />
+
+              {/* BƯU CỤC PHÁT TIẾP NHẬN */}
+              {receiverHub ? (
+                <View style={styles.hubResolvedBanner}>
+                  <View style={styles.hubResolvedBannerHeader}>
+                    <Ionicons name="business" size={16} color={colors.primary} />
+                    <Text style={styles.hubResolvedBannerTitle}>Bưu cục phát tiếp nhận</Text>
                   </View>
-                ) : (
-                  <Text style={styles.addressPlaceholderText}>+ Bấm để chọn Tỉnh / Thành / Bưu cục nhận</Text>
-                )}
-                <Ionicons name="chevron-forward" size={20} color={colors.primary} />
+                  <Text style={styles.hubResolvedBannerName}>
+                    [{receiverHub.code}] {receiverHub.name}
+                  </Text>
+                  <Text style={styles.hubResolvedBannerAddress}>
+                    Khu vực: {receiverHub.province} {receiverHub.addressDetail ? `• ${receiverHub.addressDetail}` : ''}
+                  </Text>
+                </View>
+              ) : null}
+
+              {/* GPS MAP LINK BUTTON */}
+              <TouchableOpacity
+                style={styles.gpsMapLinkBtn}
+                onPress={() => setShowReceiverMapModal(true)}
+              >
+                <Ionicons name="map-outline" size={15} color={colors.primary} />
+                <Text style={styles.gpsMapLinkBtnText}>Hoặc chọn nhanh vị trí trên bản đồ GPS</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -1056,23 +1482,59 @@ export function CreateOrderScreen({ navigation, route }: Props): React.JSX.Eleme
         </View>
       </ScrollView>
 
-      {/* ADDRESS SELECTOR MODALS */}
-      <AddressSelectorModal
-        visible={showSenderAddressModal}
-        title="Chọn địa chỉ người gửi"
-        initialAddress={senderAddress}
+      {/* STANDARD LOCATION PICKER MODALS (100% DATABASE HUB ADMIN) */}
+      <StandardLocationPickerModal
+        visible={showReceiverProvincePicker}
+        type="PROVINCE"
+        selectedProvince={receiverProvince}
+        onSelectProvince={handleSelectReceiverProvince}
+        onClose={() => setShowReceiverProvincePicker(false)}
         accessToken={session?.accessToken}
-        onConfirm={(addr) => setSenderAddress(addr)}
-        onClose={() => setShowSenderAddressModal(false)}
       />
 
-      <AddressSelectorModal
-        visible={showReceiverAddressModal}
-        title="Chọn địa chỉ người nhận"
-        initialAddress={receiverAddress}
+      <StandardLocationPickerModal
+        visible={showReceiverWardPicker}
+        type="WARD_HUB"
+        selectedProvince={receiverProvince}
+        selectedWard={receiverWard}
+        selectedHubCode={receiverHub?.code}
+        onSelectWardAndHub={handleSelectReceiverWardAndHub}
+        onClose={() => setShowReceiverWardPicker(false)}
         accessToken={session?.accessToken}
-        onConfirm={(addr) => setReceiverAddress(addr)}
-        onClose={() => setShowReceiverAddressModal(false)}
+      />
+
+      <LocationPickerMapModal
+        visible={showReceiverMapModal}
+        onClose={() => setShowReceiverMapModal(false)}
+        onConfirmLocation={handleConfirmReceiverFromMap}
+        accessToken={session?.accessToken}
+      />
+
+      <StandardLocationPickerModal
+        visible={showSenderProvincePicker}
+        type="PROVINCE"
+        selectedProvince={senderProvince}
+        onSelectProvince={handleSelectSenderProvince}
+        onClose={() => setShowSenderProvincePicker(false)}
+        accessToken={session?.accessToken}
+      />
+
+      <StandardLocationPickerModal
+        visible={showSenderWardPicker}
+        type="WARD_HUB"
+        selectedProvince={senderProvince}
+        selectedWard={senderWard}
+        selectedHubCode={senderHub?.code}
+        onSelectWardAndHub={handleSelectSenderWardAndHub}
+        onClose={() => setShowSenderWardPicker(false)}
+        accessToken={session?.accessToken}
+      />
+
+      <LocationPickerMapModal
+        visible={showSenderMapModal}
+        onClose={() => setShowSenderMapModal(false)}
+        onConfirmLocation={handleConfirmSenderFromMap}
+        accessToken={session?.accessToken}
       />
 
       {/* SAVED ADDRESS PICKER MODAL */}
@@ -1082,14 +1544,19 @@ export function CreateOrderScreen({ navigation, route }: Props): React.JSX.Eleme
         onSelectAddress={(picked) => {
           setSenderName(picked.name);
           setSenderPhone(picked.phone);
+          const resolvedHubCode = picked.hubCode || (picked.province?.includes('Hồ Chí Minh') ? '07904W001' : 'HUB-DEFAULT');
+          const resolvedHubName = picked.hubName || (picked.province?.includes('Hồ Chí Minh') ? 'Bưu cục Phường An Nhơn - Gò Vấp' : 'Bưu cục tiếp nhận');
+
           setSenderAddress({
             province: picked.province || '',
             district: picked.district || '',
             ward: picked.ward || '',
             addressDetail: picked.addressDetail || '',
             composedAddress: picked.composedAddress || '',
-            hubCode: picked.hubCode || '',
-            hubName: picked.hubName || '',
+            hubCode: resolvedHubCode,
+            hubName: resolvedHubName,
+            latitude: picked.latitude,
+            longitude: picked.longitude,
           });
         }}
         onManageAddresses={() => navigation.navigate('AddressManagement')}
@@ -1115,7 +1582,7 @@ export function CreateOrderScreen({ navigation, route }: Props): React.JSX.Eleme
         onRequestClose={() => setShowHubPickerModal(false)}
       >
         <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
           style={styles.hubModalOverlay}
         >
           <View style={styles.hubModalContent}>
@@ -1271,6 +1738,89 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: colors.primary,
     marginTop: 4,
+  },
+  formPickerSelectBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: colors.background,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 10,
+    paddingHorizontal: spacing.md,
+    paddingVertical: 13,
+    marginBottom: spacing.sm,
+  },
+  formPickerSelectBtnDisabled: {
+    backgroundColor: '#f1f5f9',
+    opacity: 0.7,
+  },
+  formPickerSelectText: {
+    fontSize: 14,
+    color: colors.textPrimary,
+    fontWeight: '600',
+    flex: 1,
+    marginRight: 8,
+  },
+  formPickerPlaceholder: {
+    color: colors.textMuted,
+    fontWeight: '400',
+  },
+  hubResolvedBanner: {
+    backgroundColor: '#f8fafc',
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+    borderRadius: 12,
+    padding: spacing.md,
+    marginTop: spacing.xs,
+    marginBottom: spacing.sm,
+  },
+  hubResolvedBannerHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 6,
+  },
+  hubResolvedBannerTitle: {
+    fontSize: 12.5,
+    fontWeight: '700',
+    color: colors.textPrimary,
+    flex: 1,
+  },
+  hubKhopBadge: {
+    backgroundColor: colors.successLight,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  hubKhopBadgeText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: colors.success,
+  },
+  hubResolvedBannerName: {
+    fontSize: 13.5,
+    fontWeight: '700',
+    color: colors.primary,
+  },
+  hubResolvedBannerAddress: {
+    fontSize: 11.5,
+    color: colors.textSecondary,
+    marginTop: 2,
+  },
+  gpsMapLinkBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingVertical: 6,
+    alignSelf: 'flex-start',
+    marginTop: 2,
+    marginBottom: spacing.xs,
+  },
+  gpsMapLinkBtnText: {
+    fontSize: 12.5,
+    color: colors.primary,
+    fontWeight: '600',
   },
   rowThreeCols: {
     flexDirection: 'row',

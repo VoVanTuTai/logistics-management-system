@@ -79,6 +79,8 @@ export class PricingClientService {
         hubCode: readString(receiver?.hubCode),
       },
       package: {
+        itemType: readString(packageInfo?.itemType),
+        category: readString(packageInfo?.category),
         weightKg: readNumber(packageInfo?.weightKg),
         dimensionsCm: {
           length: readNumber(dimensions?.length),

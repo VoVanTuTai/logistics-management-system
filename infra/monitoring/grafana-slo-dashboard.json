@@ -1,0 +1,52 @@
+{
+  "uid": "nexus-express-slo-v1",
+  "title": "Nexus Express — Gateway & Logistics SLO Dashboard",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "15s",
+  "tags": ["nexus-express", "slo", "gateway-bff", "logistics"],
+  "time": { "from": "now-1h", "to": "now" },
+  "panels": [
+    {
+      "id": 1,
+      "type": "stat",
+      "title": "Gateway Availability (SLO 99.9%)",
+      "gridPos": { "x": 0, "y": 0, "w": 6, "h": 4 },
+      "targets": [
+        {
+          "expr": "100 * (1 - (sum(rate(gateway_http_requests_total{status_class=\"5xx\"}[5m])) / clamp_min(sum(rate(gateway_http_requests_total[5m])), 1)))"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "percent", "thresholds": { "mode": "absolute", "steps": [{ "color": "red", "value": null }, { "color": "yellow", "value": 99 }, { "color": "green", "value": 99.9 }] } } }
+    },
+    {
+      "id": 2,
+      "type": "stat",
+      "title": "Throughput (req/s)",
+      "gridPos": { "x": 6, "y": 0, "w": 6, "h": 4 },
+      "targets": [{ "expr": "sum(rate(gateway_http_requests_total[1m]))" }],
+      "fieldConfig": { "defaults": { "unit": "reqps" } }
+    },
+    {
+      "id": 3,
+      "type": "timeseries",
+      "title": "HTTP Latency Percentiles (p50 / p95 / p99 ms)",
+      "gridPos": { "x": 0, "y": 4, "w": 12, "h": 8 },
+      "targets": [
+        { "legendFormat": "p50", "expr": "histogram_quantile(0.50, sum(rate(gateway_http_request_duration_ms_bucket[5m])) by (le))" },
+        { "legendFormat": "p95", "expr": "histogram_quantile(0.95, sum(rate(gateway_http_request_duration_ms_bucket[5m])) by (le))" },
+        { "legendFormat": "p99 (SLO <= 500ms)", "expr": "histogram_quantile(0.99, sum(rate(gateway_http_request_duration_ms_bucket[5m])) by (le))" }
+      ]
+    },
+    {
+      "id": 4,
+      "type": "timeseries",
+      "title": "RabbitMQ DLQ Backlog & Chat WebSocket Connections",
+      "gridPos": { "x": 12, "y": 0, "w": 12, "h": 12 },
+      "targets": [
+        { "legendFormat": "DLQ {{ queue }}", "expr": "rabbitmq_queue_messages{queue=~\".*\\\\.dlq$\"}" },
+        { "legendFormat": "Active Chat WS", "expr": "chat_realtime_active_connections" }
+      ]
+    }
+  ]
+}

@@ -462,6 +462,12 @@
   color: #c2410c;
 }
 
+.ops-linehaul-dashboard__badge--assigned {
+  border-color: #c7d2fe;
+  background: #e0e7ff;
+  color: #3730a3;
+}
+
 .ops-linehaul-dashboard__badge--printed {
   border-color: #cbd5e1;
   background: #f1f5f9;

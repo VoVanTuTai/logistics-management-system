@@ -1,0 +1,104 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="760" viewBox="0 0 1280 760">
+  <defs>
+    <linearGradient id="brandGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#003D9B"/>
+      <stop offset="55%" stop-color="#0052CC"/>
+      <stop offset="100%" stop-color="#1D64E8"/>
+    </linearGradient>
+    <linearGradient id="navyGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0B1F44"/>
+      <stop offset="100%" stop-color="#1A3A75"/>
+    </linearGradient>
+    <filter id="cardShadow" x="-4%" y="-6%" width="108%" height="116%">
+      <feDropShadow dx="0" dy="3" stdDeviation="5" flood-color="#0F172A" flood-opacity="0.06"/>
+    </filter>
+    
+  </defs>
+  <rect width="1280" height="760" fill="#FFFFFF"/>
+  <g filter="url(#cardShadow)"><rect x="24" y="18" width="1232" height="658" rx="14" fill="#F6F8FC" stroke="#CBD5E1" stroke-width="1.5"/></g>
+<path d="M24 32 Q24 18 38 18 H1242 Q1256 18 1256 32 V60 H24 Z" fill="#EEF2F7" stroke="#CBD5E1" stroke-width="1"/>
+<circle cx="46" cy="39" r="5" fill="#EF4444"/>
+<circle cx="62" cy="39" r="5" fill="#F59E0B"/>
+<circle cx="78" cy="39" r="5" fill="#22C55E"/>
+<rect x="100" y="26" width="236" height="26" rx="7" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1"/>
+<rect x="110" y="32" width="14" height="14" rx="3" fill="#0052CC" stroke="none"/>
+<text x="117" y="43" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="9.5" font-weight="700" fill="#FFFFFF" text-anchor="middle">N</text>
+<text x="132" y="43" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="10.5" font-weight="700" fill="#102548" text-anchor="start">NEXUS Ops Web — Control Tower</text>
+<rect x="348" y="27" width="874" height="24" rx="12" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1"/>
+<text x="364" y="43" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="10.5" font-weight="500" fill="#5B6B86" text-anchor="start">🔒  https://ops.nexus-ex.site/app/dashboard</text>
+<rect x="25" y="60" width="1230" height="62" rx="0" fill="#FFFFFF" stroke="#DBE2F0" stroke-width="1"/>
+<rect x="46" y="74" width="34" height="34" rx="8" fill="#0052CC" stroke="none"/>
+<text x="63" y="95" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="11.5" font-weight="700" fill="#FFFFFF" text-anchor="middle">NX</text>
+<text x="90" y="88" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="13" font-weight="700" fill="#102548" text-anchor="start">NEXUS VN</text>
+<text x="90" y="103" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="9.2" font-weight="700" fill="#5B6B86" text-anchor="start">NEXUS LOGISTICS CONTROL TOWER</text>
+<rect x="386" y="75" width="420" height="34" rx="17" fill="#F6F8FC" stroke="#DBE2F0" stroke-width="1.2"/>
+<text x="406" y="96" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="11" font-weight="500" fill="#5B6B86" text-anchor="start">🔍  Tra cứu mã vận đơn toàn mạng lưới...</text>
+<rect x="742" y="79" width="58" height="26" rx="13.0" fill="#0052CC" stroke="none"/><text x="771.0" y="95.675" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="10.5" font-weight="700" fill="#FFFFFF" text-anchor="middle">Tìm</text>
+<rect x="960" y="75" width="190" height="34" rx="17" fill="#F6F8FC" stroke="#DBE2F0" stroke-width="1"/>
+<text x="1055" y="96" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="10.5" font-weight="700" fill="#102548" text-anchor="middle">20000002 · Điều Hành Hub</text>
+<rect x="1162" y="75" width="76" height="34" rx="17" fill="#FFFFFF" stroke="#DBE2F0" stroke-width="1"/>
+<text x="1200" y="96" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="10.5" font-weight="700" fill="#102548" text-anchor="middle">Đăng xuất</text>
+<rect x="46" y="138" width="1188" height="148" rx="16" fill="url(#brandGrad)" stroke="none"/>
+<text x="640.0" y="186" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="26" font-weight="700" fill="#FFFFFF" text-anchor="middle">NEXUS EXPRESS SYSTEM</text>
+<text x="640.0" y="214" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="12.5" font-weight="700" fill="#DBEAFE" text-anchor="middle">DIGITIZATION  •  AUTOMATION  •  INTELLIGENCE</text>
+<text x="640.0" y="238" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="11.5" font-weight="500" fill="#BFDBFE" text-anchor="middle">Vận hành tập trung Hub 4 cấp, theo dõi chuỗi vết quét thời gian thực và đối soát đa kênh.</text>
+<rect x="68" y="224" width="152" height="46" rx="10" fill="#1E5AC8" stroke="#60A5FA" stroke-width="1"/>
+<text x="82" y="242" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="9.5" font-weight="500" fill="#BFDBFE" text-anchor="start">Hub đang theo dõi</text>
+<text x="82" y="260" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="11.5" font-weight="700" fill="#FFFFFF" text-anchor="start">002C001 · Mega HCM</text>
+<rect x="46" y="304" width="830" height="352" rx="14" fill="#FFFFFF" stroke="#DBE2F0" stroke-width="1.2"/>
+<text x="68" y="336" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="15" font-weight="700" fill="#102548" text-anchor="start">Menu chính — 5 Nhóm Chức năng Khai thác Bưu cục</text>
+<rect x="68" y="354" width="250" height="280" rx="14" fill="#E7EFFF" stroke="#BFDBFE" stroke-width="1.4"/>
+<rect x="165" y="436" width="56" height="56" rx="14" fill="#FFFFFF" stroke="#93C5FD" stroke-width="1.2"/>
+<text x="193" y="471" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="24" font-weight="700" fill="#0052CC" text-anchor="middle">⌘</text>
+<text x="193" y="520" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="14.5" font-weight="700" fill="#102548" text-anchor="middle">Nền tảng điều hành</text>
+<text x="193" y="542" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="10" font-weight="500" fill="#5B6B86" text-anchor="middle">Dashboard · Dispatch · Chat Ops</text>
+<rect x="336" y="354" width="256" height="132" rx="14" fill="#FAFBFD" stroke="#DBE2F0" stroke-width="1.2"/>
+<rect x="442" y="372" width="44" height="44" rx="12" fill="#E7EFFF" stroke="none"/>
+<text x="464" y="401" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="18" font-weight="700" fill="#0052CC" text-anchor="middle">📍</text>
+<text x="464" y="438" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="13" font-weight="700" fill="#102548" text-anchor="middle">Kinh doanh bưu cục</text>
+<text x="464" y="458" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="9.2" font-weight="500" fill="#5B6B86" text-anchor="middle">Tạo đơn tại quầy · Yêu cầu lấy · Đối soát COD</text>
+<rect x="608" y="354" width="256" height="132" rx="14" fill="#FAFBFD" stroke="#DBE2F0" stroke-width="1.2"/>
+<rect x="714" y="372" width="44" height="44" rx="12" fill="#E7EFFF" stroke="none"/>
+<text x="736" y="401" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="18" font-weight="700" fill="#0052CC" text-anchor="middle">🚚</text>
+<text x="736" y="438" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="13" font-weight="700" fill="#102548" text-anchor="middle">Vận chuyển tuyến</text>
+<text x="736" y="458" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="9.2" font-weight="500" fill="#5B6B86" text-anchor="middle">Đóng bao MB · Seal · Quét xe đi/đến Hub</text>
+<rect x="336" y="502" width="256" height="132" rx="14" fill="#FAFBFD" stroke="#DBE2F0" stroke-width="1.2"/>
+<rect x="442" y="520" width="44" height="44" rx="12" fill="#E7EFFF" stroke="none"/>
+<text x="464" y="549" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="18" font-weight="700" fill="#0052CC" text-anchor="middle">📊</text>
+<text x="464" y="586" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="13" font-weight="700" fill="#102548" text-anchor="middle">Chỉ số vận hành</text>
+<text x="464" y="606" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="9.2" font-weight="500" fill="#5B6B86" text-anchor="middle">KPI sản lượng · Tỷ lệ SLA · Tồn kho quá hạn</text>
+<rect x="608" y="502" width="256" height="132" rx="14" fill="#FAFBFD" stroke="#DBE2F0" stroke-width="1.2"/>
+<rect x="714" y="520" width="44" height="44" rx="12" fill="#E7EFFF" stroke="none"/>
+<text x="736" y="549" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="18" font-weight="700" fill="#0052CC" text-anchor="middle">🛡</text>
+<text x="736" y="586" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="13" font-weight="700" fill="#102548" text-anchor="middle">Chất lượng dịch vụ</text>
+<text x="736" y="606" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="9.2" font-weight="500" fill="#5B6B86" text-anchor="middle">Xử lý NDR · Hoàn hàng · Giám định đơn lạc</text>
+<rect x="894" y="304" width="340" height="352" rx="14" fill="#FFFFFF" stroke="#DBE2F0" stroke-width="1.2"/>
+<text x="912" y="336" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="15" font-weight="700" fill="#102548" text-anchor="start">Thông báo vận hành</text>
+<rect x="912" y="356" width="114" height="21" rx="10.5" fill="#E7EFFF" stroke="none"/><text x="969.0" y="369.72" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="9.2" font-weight="700" fill="#0052CC" text-anchor="middle">Ghim · Quan trọng</text>
+<text x="912" y="394" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="10.3" font-weight="700" fill="#102548" text-anchor="start">Hoàn tất đồng bộ Zone mới trước 18:00</text>
+<text x="912" y="410" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="9.6" font-weight="500" fill="#5B6B86" text-anchor="start">tránh lệch phân tuyến tại khung giờ cao điểm.</text>
+<rect x="912" y="428" width="114" height="21" rx="10.5" fill="#E0F2FE" stroke="none"/><text x="969.0" y="441.72" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="9.2" font-weight="700" fill="#0369A1" text-anchor="middle">Mới</text>
+<text x="912" y="466" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="10.3" font-weight="700" fill="#102548" text-anchor="start">Nhóm Hub HCM01–HCM03 đã kích hoạt</text>
+<text x="912" y="482" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="9.6" font-weight="500" fill="#5B6B86" text-anchor="start">quy trình quét Inbound/Outbound có khóa lũy đẳng.</text>
+<rect x="912" y="500" width="114" height="21" rx="10.5" fill="#FEF3C7" stroke="none"/><text x="969.0" y="513.72" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="9.2" font-weight="700" fill="#C26D0A" text-anchor="middle">Cần xử lý</text>
+<text x="912" y="538" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="10.3" font-weight="700" fill="#102548" text-anchor="start">Cảnh báo 3 kiện lưu kho &gt; 48h cần đối chiếu</text>
+<text x="912" y="554" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="9.6" font-weight="500" fill="#5B6B86" text-anchor="start">camera CCTV trong cửa sổ điều trần 24 giờ.</text>
+<rect x="912" y="572" width="114" height="21" rx="10.5" fill="#DCFCE7" stroke="none"/><text x="969.0" y="585.72" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="9.2" font-weight="700" fill="#137F5D" text-anchor="middle">Tài chính COD</text>
+<text x="912" y="610" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="10.3" font-weight="700" fill="#102548" text-anchor="start">Phiên đối soát SePay/VietQR hoàn tất</text>
+<text x="912" y="626" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="9.6" font-weight="500" fill="#5B6B86" text-anchor="start">tự động gạch nợ công nợ ca cho 18 bưu tá.</text>
+<circle cx="1212" cy="634" r="22" fill="#0052CC" filter="url(#cardShadow)"/>
+<text x="1212" y="640" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="12" font-weight="700" fill="#FFFFFF" text-anchor="middle">AI</text>
+<rect x="24" y="692" width="1232" height="52" rx="10" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="1.2"/>
+<circle cx="53.0" cy="718" r="11" fill="#0052CC"/>
+<text x="53.0" y="722" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="10.5" font-weight="700" fill="#FFFFFF" text-anchor="middle">1</text>
+<text x="72.0" y="714" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="10.8" font-weight="700" fill="#102548" text-anchor="start">Topbar Control Tower</text>
+<text x="72.0" y="730" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="9.6" font-weight="500" fill="#5B6B86" text-anchor="start">Tra cứu vận đơn nhanh + nhận diện ca trực Hub</text>
+<circle cx="453.0" cy="718" r="11" fill="#0052CC"/>
+<text x="453.0" y="722" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="10.5" font-weight="700" fill="#FFFFFF" text-anchor="middle">2</text>
+<text x="472.0" y="714" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="10.8" font-weight="700" fill="#102548" text-anchor="start">Banner định danh thương hiệu</text>
+<text x="472.0" y="730" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="9.6" font-weight="500" fill="#5B6B86" text-anchor="start">Hiển thị mã Hub đang vận hành (4 cấp)</text>
+<circle cx="853.0" cy="718" r="11" fill="#0052CC"/>
+<text x="853.0" y="722" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="10.5" font-weight="700" fill="#FFFFFF" text-anchor="middle">3</text>
+<text x="872.0" y="714" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="10.8" font-weight="700" fill="#102548" text-anchor="start">5 Nhóm nghiệp vụ &amp; Thông báo</text>
+<text x="872.0" y="730" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="9.6" font-weight="500" fill="#5B6B86" text-anchor="start">Phân luồng tác nghiệp kho, tuyến, KPI và QA/CSKH</text>
+</svg>

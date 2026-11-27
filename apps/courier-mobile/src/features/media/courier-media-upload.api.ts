@@ -198,7 +198,8 @@ export function normalizeUploadTargetUrl(rawUrl: string): string {
       gatewayUrl.includes('localhost') ||
       gatewayUrl.includes('127.0.0.1') ||
       gatewayUrl.includes('10.0.2.2') ||
-      gatewayUrl.includes('192.168.');
+      gatewayUrl.includes('192.168.') ||
+      /^https?:\/\/(10\.|172\.(1[6-9]|2[0-9]|3[0-1])\.)/i.test(gatewayUrl);
 
     if (isLocalDev) {
       if (parsedTarget.hostname === 'minio' || parsedTarget.hostname === 'localhost' || parsedTarget.hostname === '127.0.0.1') {

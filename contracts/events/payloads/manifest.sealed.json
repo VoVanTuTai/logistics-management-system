@@ -1,0 +1,39 @@
+{
+  "schema_version": "1.0",
+  "event_type": "manifest.sealed",
+  "producer": "manifest-service",
+  "lifecycle_status": "ACTIVE",
+  "exchange": "domain.events",
+  "required_envelope": [
+    "event_id",
+    "event_type",
+    "occurred_at",
+    "shipment_code",
+    "actor",
+    "location",
+    "data"
+  ],
+  "data_properties": {
+    "manifestId": "string",
+    "manifestCode": "string",
+    "originHubCode": "string",
+    "destinationHubCode": "string",
+    "sealedBy": "string"
+  },
+  "example": {
+    "schema_version": "1.0",
+    "event_id": "550e8400-e29b-41d4-a716-446655440000",
+    "event_type": "manifest.sealed",
+    "occurred_at": "2026-05-18T08:00:00.000Z",
+    "shipment_code": "SHP-202605-0018",
+    "actor": "20000101",
+    "location": "003P001",
+    "data": {
+      "manifestId": "man_01",
+      "manifestCode": "MB003-2605-01",
+      "originHubCode": "003P001",
+      "destinationHubCode": "001N001",
+      "sealedBy": "20000101"
+    }
+  }
+}

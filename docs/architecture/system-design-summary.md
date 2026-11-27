@@ -37,8 +37,7 @@ Tài liệu này tóm tắt các nguyên tắc thiết kế kiến trúc phân t
 | `auth-service` | 3010 | `auth_db` | Quản lý phiên đăng nhập, tài khoản và phân quyền người dùng |
 | `payment-service` | 3011 | `payment_db` | Đối soát tiền thu hộ COD, cổng SePay, QR thanh toán |
 | `pricing-service` | 3012 | in-memory rules | Chiết tính cước bưu chính và phụ phí chuẩn IATA $V/6000$ |
-| `chatbot-service` | 3013 | vector-store | Trợ lý AI hỏi đáp tri thức RAG & 5 dynamic tools qua SSE streaming |
-| `linehaul-service` | 3014 | in-transit | Quản lý các chuyến xe tải trung chuyển đường dài giữa các Hub, cấp tem xe XT |
+| `chatbot-service` | 3013 | vector-store | Trợ lý AI hỏi đáp tri thức RAG & dynamic tools qua SSE streaming |
 
 ---
 

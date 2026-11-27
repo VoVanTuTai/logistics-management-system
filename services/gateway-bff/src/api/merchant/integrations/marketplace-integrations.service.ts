@@ -85,15 +85,43 @@ interface NormalizedCreateOrderInput {
 interface HubRecord {
   code: string;
   name: string;
+  level?: number;
+  district?: string | null;
+  ward?: string | null;
   zoneCode?: string | null;
   address?: string | null;
   isActive?: boolean;
+}
+
+interface HubAddressPayload {
+  province: string;
+  district: string;
+  ward: string;
+  type: string;
+  serviceAreas: string[];
+  coverageProvinceNames: string[];
 }
 
 interface ResolvedHubRoute {
   senderHub: HubRecord;
   receiverHub: HubRecord;
 }
+
+const HUB_CODE_ALIASES: Record<string, string> = {
+  'HCM-001': '003079B001',
+  'HUB_HCM': '003079B001',
+  'HUB-HCM-001': '003079B001',
+  'HN-001': '001001B001',
+  'HUB_HN': '001001B001',
+  'HUB-HN-001': '001001B001',
+  'HUB_HANOI': '001001B001',
+  'DN-001': '002048B001',
+  'HUB_DN': '002048B001',
+  'HUB-DN-001': '002048B001',
+  'HUB_DANANG': '002048B001',
+  'CB-001': '001004B001',
+  'HUB_CAOBANG': '001004B001',
+};
 
 const SERVICE_TYPES = new Set(['STANDARD', 'EXPRESS', 'SAME_DAY']);
 const PICKUP_TYPES = new Set(['PICKUP', 'DROP_OFF']);
@@ -199,6 +227,7 @@ export class MarketplaceIntegrationsService {
   ): Promise<JsonObject> {
     const idempotencyKey = this.buildIdempotencyKey(platform, shopId, externalOrderId);
     const shipment = await this.getShipmentByCodeOrLegacy(idempotencyKey);
+    const receiverPhone = this.resolveTrackingPhone(shipment);
 
     return {
       success: true,
@@ -208,7 +237,7 @@ export class MarketplaceIntegrationsService {
         platform,
         shopId,
         currentStatus: shipment.currentStatus,
-        trackingUrl: this.buildTrackingUrl(shipment.code),
+        trackingUrl: this.buildTrackingUrl(shipment.code, receiverPhone),
         updatedAt: shipment.updatedAt,
       },
     };
@@ -251,6 +280,7 @@ export class MarketplaceIntegrationsService {
   async getTracking(shipmentCode: string): Promise<JsonObject> {
     const normalizedShipmentCode = this.normalizeShipmentCode(shipmentCode);
     const shipment = await this.getShipmentByCode(normalizedShipmentCode);
+    const receiverPhone = this.resolveTrackingPhone(shipment);
     const current = await this.tryUpstreamRequest<JsonObject>(
       'tracking',
       `/tracking/${encodeURIComponent(normalizedShipmentCode)}/current`,
@@ -267,7 +297,7 @@ export class MarketplaceIntegrationsService {
       data: {
         shipmentCode: shipment.code,
         currentStatus: shipment.currentStatus,
-        trackingUrl: this.buildTrackingUrl(shipment.code),
+        trackingUrl: this.buildTrackingUrl(shipment.code, receiverPhone),
         current,
         timeline: timeline ?? [],
         updatedAt: shipment.updatedAt,
@@ -278,6 +308,7 @@ export class MarketplaceIntegrationsService {
   async getLabel(shipmentCode: string, format = 'A6'): Promise<JsonObject> {
     const normalizedShipmentCode = this.normalizeShipmentCode(shipmentCode);
     const shipment = await this.getShipmentByCode(normalizedShipmentCode);
+    const receiverPhone = this.resolveTrackingPhone(shipment);
     const metadata = this.asObject(shipment.metadata);
 
     return {
@@ -286,7 +317,7 @@ export class MarketplaceIntegrationsService {
         shipmentCode: shipment.code,
         format: format.trim().toUpperCase() || 'A6',
         labelUrl: this.buildLabelUrl(shipment.code, format),
-        trackingUrl: this.buildTrackingUrl(shipment.code),
+        trackingUrl: this.buildTrackingUrl(shipment.code, receiverPhone),
         sender: metadata?.sender ?? null,
         receiver: metadata?.receiver ?? null,
         parcel: metadata?.parcel ?? metadata?.package ?? null,
@@ -456,7 +487,8 @@ export class MarketplaceIntegrationsService {
   }
 
   private isDtCommercePlatform(platform: string): boolean {
-    return platform.trim().toUpperCase() === 'DT_COMMERCE';
+    const normalized = platform.trim().toUpperCase().replace(/[-_\s]/g, '');
+    return normalized === 'DTCOMMERCE' || normalized === 'DTCOMERGE' || normalized === 'DTCOMERCE';
   }
 
   private loadShopMappings(): ShopMapping[] {
@@ -519,6 +551,18 @@ export class MarketplaceIntegrationsService {
     },
     side: 'sender' | 'receiver',
   ): HubRecord {
+    // 0. Ưu tiên mã bưu cục rõ ràng nếu đối tác truyền lên (hỗ trợ cả alias mã cũ)
+    const rawExplicitHubCode = addressInput.hubCode?.trim().toUpperCase();
+    if (rawExplicitHubCode) {
+      const canonicalCode = HUB_CODE_ALIASES[rawExplicitHubCode] ?? rawExplicitHubCode;
+      const explicitHub = hubs.find(
+        (h) => h.code.trim().toUpperCase() === canonicalCode || h.code.trim().toUpperCase() === rawExplicitHubCode,
+      );
+      if (explicitHub) {
+        return explicitHub;
+      }
+    }
+
     const addressText = [
       addressInput.address,
       addressInput.ward,
@@ -527,34 +571,146 @@ export class MarketplaceIntegrationsService {
     ]
       .filter((value): value is string => Boolean(value?.trim()))
       .join(', ');
-    const matchedHubs = hubs
-      .map((hub) => ({
-        hub,
-        address: this.parseHubAddress(hub.address),
-      }))
-      .filter((item) => item.address.type === 'BRANCH');
+
     const explicitProvinceKey = this.normalizeProvinceKey(addressInput.province);
     const addressKey = this.normalizeProvinceKey(addressText);
-    const matchingProvinceHub = matchedHubs.find(({ address }) => {
-      const hubProvinceKey = this.normalizeProvinceKey(address.province);
-      return (
-        Boolean(hubProvinceKey) &&
+    const wardKey = this.normalizeLocationKey(addressInput.ward);
+    const districtKey = this.normalizeLocationKey(addressInput.district);
+
+    // 1. Lọc tất cả các Hubs hoạt động thuộc tỉnh/thành phố tương ứng
+    const provinceHubs = hubs.filter((hub) => {
+      const parsed = this.parseHubAddress(hub.address);
+      const hubProvinceKey = this.normalizeProvinceKey(parsed.province);
+      const hubNameKey = this.normalizeProvinceKey(hub.name);
+      const rawAddressKey = this.normalizeProvinceKey(hub.address ?? '');
+
+      if (
+        hubProvinceKey &&
         (hubProvinceKey === explicitProvinceKey ||
-          (Boolean(addressKey) && addressKey.includes(hubProvinceKey)))
+          (Boolean(addressKey) && addressKey.includes(hubProvinceKey)) ||
+          (Boolean(explicitProvinceKey) && hubProvinceKey.includes(explicitProvinceKey)))
+      ) {
+        return true;
+      }
+
+      if (
+        parsed.coverageProvinceNames.some((cov) => {
+          const covKey = this.normalizeProvinceKey(cov);
+          return (
+            Boolean(covKey) &&
+            (covKey === explicitProvinceKey ||
+              (Boolean(addressKey) && addressKey.includes(covKey)))
+          );
+        })
+      ) {
+        return true;
+      }
+
+      return (
+        Boolean(explicitProvinceKey) &&
+        (rawAddressKey.includes(explicitProvinceKey) || hubNameKey.includes(explicitProvinceKey))
       );
     });
 
-    if (matchingProvinceHub) {
-      return matchingProvinceHub.hub;
-    }
+    if (provinceHubs.length > 0) {
+      // 2. Nếu có Phường/Xã (ward): Ưu tiên khớp chính xác bưu cục phụ trách phường đó
+      if (wardKey) {
+        const coreWard = wardKey.replace(/^(PHUONG|XA|THITRAN)\s*/, '');
+        const exactWardMatch = provinceHubs.find((hub) => {
+          const parsed = this.parseHubAddress(hub.address);
+          const hubWardKey = this.normalizeLocationKey(hub.ward ?? parsed.ward ?? '');
+          const hubNameKey = this.normalizeLocationKey(hub.name ?? '');
 
-    const explicitHubCode = addressInput.hubCode?.trim().toUpperCase();
-    const explicitHub = explicitHubCode
-      ? matchedHubs.find((item) => item.hub.code.toUpperCase() === explicitHubCode)?.hub
-      : null;
+          if (hubWardKey && (hubWardKey === wardKey || hubWardKey.includes(wardKey) || wardKey.includes(hubWardKey))) {
+            return true;
+          }
+          if (coreWard && (hubWardKey.includes(coreWard) || hubNameKey.includes(coreWard))) {
+            return true;
+          }
+          return parsed.serviceAreas.some((area) => {
+            const areaKey = this.normalizeLocationKey(area);
+            return areaKey === wardKey || (coreWard && areaKey.includes(coreWard));
+          });
+        });
 
-    if (explicitHub) {
-      return explicitHub;
+        if (exactWardMatch) {
+          return exactWardMatch;
+        }
+      }
+
+      // 3. Nếu có Quận/Huyện rõ ràng: Khớp bưu cục theo quận/huyện
+      if (districtKey) {
+        const inputCoreDistrict = districtKey.replace(/^(QUAN|HUYEN|THIXA|THANHPHO|TP|Q|H)\s*/, '');
+        const districtMatch = provinceHubs.find((hub) => {
+          const parsed = this.parseHubAddress(hub.address);
+          const hubDistrictKey = this.normalizeLocationKey(hub.district ?? parsed.district ?? '');
+          if (!hubDistrictKey) return false;
+
+          const hubCoreDistrict = hubDistrictKey.replace(/^(QUAN|HUYEN|THIXA|THANHPHO|TP|Q|H)\s*/, '');
+          return (
+            hubDistrictKey === districtKey ||
+            (inputCoreDistrict.length > 0 && hubCoreDistrict === inputCoreDistrict)
+          );
+        });
+
+        if (districtMatch) {
+          return districtMatch;
+        }
+      }
+
+      // Nếu địa chỉ chi tiết có chứa rõ ràng tên quận/huyện (ví dụ "QUAN 12", "QUAN 1", "HUYEN ...")
+      if (addressText) {
+        const normalizedAddress = ` ${this.normalizeLocationKey(addressText)} `;
+        const districtMatch = provinceHubs.find((hub) => {
+          const parsed = this.parseHubAddress(hub.address);
+          const hubDistrictKey = this.normalizeLocationKey(hub.district ?? parsed.district ?? '');
+          if (!hubDistrictKey) return false;
+
+          const hubCoreDistrict = hubDistrictKey.replace(/^(QUAN|HUYEN|THIXA|THANHPHO|TP|Q|H)\s*/, '');
+          const patterns = [
+            ` ${hubDistrictKey} `,
+            ` QUAN ${hubCoreDistrict} `,
+            ` Q ${hubCoreDistrict} `,
+            ` HUYEN ${hubCoreDistrict} `,
+            ` THI XA ${hubCoreDistrict} `,
+          ];
+
+          return patterns.some((pat) => normalizedAddress.includes(pat));
+        });
+
+        if (districtMatch) {
+          return districtMatch;
+        }
+      }
+
+      // 4. BẮT BUỘC: Nếu không khớp bưu cục riêng cho phường/xã, ưu tiên Hub cấp Tỉnh/Thành phố (Level 2 / B001 / Trung tâm)
+      const provincialHub = provinceHubs.find((hub) => {
+        const code = hub.code.trim().toUpperCase();
+        const name = this.normalizeLocationKey(hub.name ?? '');
+        return (
+          hub.level === 2 ||
+          code.endsWith('B001') ||
+          name.startsWith('HUB TP') ||
+          name.startsWith('HUB TINH') ||
+          name.includes('TRUNG TAM PHAN LOAI') ||
+          name.includes('TRUNG TAM KHAI THAC')
+        );
+      });
+
+      if (provincialHub) {
+        return provincialHub;
+      }
+
+      // 5. Nếu không có Hub cấp tỉnh rõ ràng, ưu tiên hub cấp cao hơn (level 2 > level 3)
+      const sorted = [...provinceHubs].sort((a, b) => {
+        const levelA = a.level ?? 3;
+        const levelB = b.level ?? 3;
+        if (levelA === 2 && levelB !== 2) return -1;
+        if (levelB === 2 && levelA !== 2) return 1;
+        return 0;
+      });
+
+      return sorted[0];
     }
 
     this.fail(
@@ -570,14 +726,15 @@ export class MarketplaceIntegrationsService {
     );
   }
 
-  private parseHubAddress(address: string | null | undefined): {
-    province: string;
-    type: string;
-  } {
+  private parseHubAddress(address: string | null | undefined): HubAddressPayload {
     if (!address?.trim()) {
       return {
         province: '',
+        district: '',
+        ward: '',
         type: '',
+        serviceAreas: [],
+        coverageProvinceNames: [],
       };
     }
 
@@ -586,17 +743,42 @@ export class MarketplaceIntegrationsService {
       const objectPayload = this.asObject(payload);
 
       return {
-        province: typeof objectPayload?.province === 'string' ? objectPayload.province : '',
-        type: typeof objectPayload?.type === 'string' ? objectPayload.type : '',
+        province: typeof objectPayload?.province === 'string' ? objectPayload.province.trim() : '',
+        district: typeof objectPayload?.district === 'string' ? objectPayload.district.trim() : '',
+        ward: typeof objectPayload?.ward === 'string' ? objectPayload.ward.trim() : '',
+        type: typeof objectPayload?.type === 'string' ? objectPayload.type.trim().toUpperCase() : '',
+        serviceAreas: Array.isArray(objectPayload?.serviceAreas)
+          ? (objectPayload.serviceAreas as unknown[]).filter((x): x is string => typeof x === 'string')
+          : [],
+        coverageProvinceNames: Array.isArray(objectPayload?.coverageProvinceNames)
+          ? (objectPayload.coverageProvinceNames as unknown[]).filter((x): x is string => typeof x === 'string')
+          : [],
       };
     } catch {
       const parts = address.split(',').map((part) => part.trim()).filter(Boolean);
 
       return {
         province: parts[parts.length - 1] ?? '',
+        district: parts.length > 1 ? parts[parts.length - 2] ?? '' : '',
+        ward: parts.length > 2 ? parts[parts.length - 3] ?? '' : '',
         type: '',
+        serviceAreas: [],
+        coverageProvinceNames: [],
       };
     }
+  }
+
+  private normalizeLocationKey(value: string | undefined): string {
+    if (!value?.trim()) {
+      return '';
+    }
+
+    return value
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toUpperCase()
+      .replace(/[^A-Z0-9]+/gi, ' ')
+      .trim();
   }
 
   private normalizeProvinceKey(value: string | undefined): string {
@@ -622,10 +804,33 @@ export class MarketplaceIntegrationsService {
     idempotencyKey: string,
     route: ResolvedHubRoute,
   ): JsonObject {
+    const fullSenderAddress = [
+      input.sender.address,
+      input.sender.ward,
+      input.sender.district,
+      input.sender.province,
+    ]
+      .filter((value): value is string => Boolean(value?.trim()))
+      .join(', ');
+
+    const fullReceiverAddress = [
+      input.receiver.address,
+      input.receiver.ward,
+      input.receiver.district,
+      input.receiver.province,
+    ]
+      .filter((value): value is string => Boolean(value?.trim()))
+      .join(', ');
+
     return {
       source: 'marketplace-integration',
+      platform: input.external.platform,
+      channel: input.external.platform,
+      salesChannel: input.external.platform,
+      marketplace: input.external.platform,
       integration: {
         partnerCode,
+        platform: input.external.platform,
         idempotencyKey,
         receivedAt: new Date().toISOString(),
       },
@@ -633,14 +838,31 @@ export class MarketplaceIntegrationsService {
       merchant: input.merchant,
       sender: {
         ...input.sender,
+        address: fullSenderAddress || input.sender.address,
+        rawAddress: input.sender.address,
         hubCode: route.senderHub.code,
         resolvedHubName: route.senderHub.name,
       },
       receiver: {
         ...input.receiver,
+        address: fullReceiverAddress || input.receiver.address,
+        rawAddress: input.receiver.address,
         hubCode: route.receiverHub.code,
         resolvedHubName: route.receiverHub.name,
       },
+      senderAddress: fullSenderAddress || input.sender.address,
+      senderWard: input.sender.ward,
+      senderDistrict: input.sender.district,
+      senderProvince: input.sender.province,
+      receiverAddress: fullReceiverAddress || input.receiver.address,
+      receiverWard: input.receiver.ward,
+      receiverDistrict: input.receiver.district,
+      receiverProvince: input.receiver.province,
+      receiverRegion: input.receiver.province,
+      senderHubCode: route.senderHub.code,
+      receiverHubCode: route.receiverHub.code,
+      originHubCode: route.senderHub.code,
+      destinationHubCode: route.receiverHub.code,
       parcel: input.parcel,
       service: input.service,
       payment: input.payment,
@@ -650,10 +872,6 @@ export class MarketplaceIntegrationsService {
         destinationHubCode: route.receiverHub.code,
         resolvedBy: 'address',
       },
-      senderHubCode: route.senderHub.code,
-      receiverHubCode: route.receiverHub.code,
-      originHubCode: route.senderHub.code,
-      destinationHubCode: route.receiverHub.code,
       codAmount: input.payment.codAmount,
       estimatedFee: input.payment.shippingFee,
     };
@@ -665,13 +883,14 @@ export class MarketplaceIntegrationsService {
     pickup: PickupResponse | null,
     idempotent: boolean,
   ): JsonObject {
+    const receiverPhone = this.resolveTrackingPhone(shipment, input);
     return {
       shipmentCode: shipment.code,
       externalOrderId: input.external.externalOrderId,
       platform: input.external.platform,
       shopId: input.external.shopId,
       status: shipment.currentStatus,
-      trackingUrl: this.buildTrackingUrl(shipment.code),
+      trackingUrl: this.buildTrackingUrl(shipment.code, receiverPhone),
       pickup: pickup
         ? {
             pickupCode: pickup.pickupCode,
@@ -905,9 +1124,122 @@ export class MarketplaceIntegrationsService {
     return numericValue.toString().padStart(size, '0');
   }
 
-  private buildTrackingUrl(shipmentCode: string): string {
+  private buildTrackingUrl(shipmentCode: string, receiverPhone?: string | null): string {
     const baseUrl = process.env.PUBLIC_TRACKING_PUBLIC_URL ?? 'https://tracking.nexus-ex.site';
-    return `${baseUrl.replace(/\/$/, '')}/${encodeURIComponent(shipmentCode)}`;
+    const cleanBaseUrl = baseUrl.replace(/\/$/, '');
+    const cleanCode = encodeURIComponent(shipmentCode.trim());
+
+    if (receiverPhone && receiverPhone.trim()) {
+      return `${cleanBaseUrl}/track/${cleanCode}?phone=${encodeURIComponent(receiverPhone.trim())}`;
+    }
+
+    return `${cleanBaseUrl}/track/${cleanCode}`;
+  }
+
+  private resolveTrackingPhone(
+    shipment: ShipmentResponse,
+    input?: NormalizedCreateOrderInput,
+  ): string | null {
+    const metadata = this.asObject(shipment.metadata);
+    const external = this.asObject(metadata?.external);
+    const sender = this.asObject(metadata?.sender);
+    const receiver = this.asObject(metadata?.receiver);
+    const merchant = this.asObject(metadata?.merchant);
+
+    const isReturn = this.isReturnOrder(shipment, input, metadata, external);
+
+    if (isReturn) {
+      // Đơn hoàn: người nhận là shop nên lấy SĐT của shop
+      // 1. Nếu là đơn chuyển sang hoàn (RETURN_STARTED, RETURN_COMPLETED, RETURNING...):
+      //    Shop là bên gửi ban đầu (sender.phone / merchant.phone)
+      if (
+        shipment.currentStatus === 'RETURN_STARTED' ||
+        shipment.currentStatus === 'RETURN_COMPLETED' ||
+        shipment.currentStatus === 'RETURNING'
+      ) {
+        return (
+          this.readString(sender?.phone) ??
+          this.readString(input?.sender?.phone) ??
+          this.readString(merchant?.phone) ??
+          this.readString(receiver?.phone) ??
+          this.readString(input?.receiver?.phone) ??
+          null
+        );
+      }
+
+      // 2. Nếu là đơn hoàn do partner tạo (người nhận là shop):
+      //    Lấy receiver.phone (người nhận là shop) hoặc fallback sang sender.phone / merchant.phone
+      return (
+        this.readString(receiver?.phone) ??
+        this.readString(input?.receiver?.phone) ??
+        this.readString(sender?.phone) ??
+        this.readString(input?.sender?.phone) ??
+        this.readString(merchant?.phone) ??
+        null
+      );
+    }
+
+    // Đơn giao: người nhận là khách hàng (receiver.phone)
+    return (
+      this.readString(receiver?.phone) ??
+      this.readString(input?.receiver?.phone) ??
+      this.readString(sender?.phone) ??
+      null
+    );
+  }
+
+  private isReturnOrder(
+    shipment: ShipmentResponse,
+    input?: NormalizedCreateOrderInput,
+    metadata?: JsonObject | null,
+    external?: JsonObject | null,
+  ): boolean {
+    if (
+      shipment.currentStatus === 'RETURN_STARTED' ||
+      shipment.currentStatus === 'RETURN_COMPLETED' ||
+      shipment.currentStatus === 'RETURNING'
+    ) {
+      return true;
+    }
+
+    if (metadata?.isReturn === true || external?.isReturn === true) {
+      return true;
+    }
+
+    const extOrderType = String(external?.orderType ?? external?.type ?? '').toUpperCase();
+    if (extOrderType === 'RETURN' || extOrderType === 'RETURN_ORDER') {
+      return true;
+    }
+
+    const extOrderStatus = String(external?.orderStatus ?? '').toUpperCase();
+    if (extOrderStatus.includes('RETURN')) {
+      return true;
+    }
+
+    if (input) {
+      const anyInput = input as any;
+      if (anyInput.isReturn === true || anyInput.options?.isReturn === true || anyInput.external?.isReturn === true) {
+        return true;
+      }
+      const inputOrderType = String(anyInput.orderType ?? anyInput.external?.orderType ?? anyInput.external?.type ?? '').toUpperCase();
+      if (inputOrderType === 'RETURN' || inputOrderType === 'RETURN_ORDER') {
+        return true;
+      }
+      const inputOrderStatus = String(input.external?.orderStatus ?? '').toUpperCase();
+      if (inputOrderStatus.includes('RETURN')) {
+        return true;
+      }
+      const serviceType = String(input.service?.serviceType ?? '').toUpperCase();
+      if (serviceType.includes('RETURN')) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  private readString(value: unknown): string | null {
+    return typeof value === 'string' && value.trim() ? value.trim() : null;
   }
 
   private buildLabelUrl(shipmentCode: string, format?: string): string {

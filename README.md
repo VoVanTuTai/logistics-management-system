@@ -105,10 +105,9 @@ graph TD
             SVC_SHIPMENT["shipment-service (:3002)<br/>Quản trị vòng đời đơn & State Machine"]
             SVC_PICKUP["pickup-service (:3003)<br/>Tiếp nhận & duyệt yêu cầu lấy hàng"]
             SVC_DISPATCH["dispatch-service (:3004)<br/>Điều phối & phân công Shipper"]
-            SVC_MANIFEST["manifest-service (:3005)<br/>Đóng túi bưu gửi & kẹp chì Seal"]
+            SVC_MANIFEST["manifest-service (:3005)<br/>Đóng túi bưu gửi, kẹp chì Seal & chuyến trung chuyển"]
             SVC_SCAN["scan-service (:3006)<br/>Quét mã Inbound/Outbound & Vị trí"]
             SVC_DELIVERY["delivery-service (:3007)<br/>Phát hàng, ảnh POD, thu COD, NDR & Hoàn"]
-            SVC_LINEHAUL["linehaul-service (:3014)<br/>Chuyến xe trung chuyển & Tem xe XT"]
         end
 
         subgraph DATA_FINANCE ["Nhóm Định Danh, Danh Mục & Tài Chính"]
@@ -232,15 +231,14 @@ graph TD
 | **4** | `shipment-service` | `3002` | `shipment_db` | **Nguồn chân lý (Source of Truth)** trạng thái bưu gửi; vận hành máy trạng thái (State Machine); lưu snapshot cước bất biến. |
 | **5** | `pickup-service` | `3003` | `pickup_db` | Quản lý vòng đời yêu cầu lấy hàng tận nơi từ chủ shop (tạo, duyệt, phân bổ, hủy). |
 | **6** | `dispatch-service` | `3004` | `dispatch_db` | Điều phối nhiệm vụ tài xế: gán việc lấy/giao theo khu vực, điều chuyển khi quá tải. |
-| **7** | `manifest-service` | `3005` | `manifest_db` | Quản lý bảng kê và túi bưu gửi: gom vận đơn vào bao hàng (mã `MB`), niêm phong kẹp chì seal an ninh. |
+| **7** | `manifest-service` | `3005` | `manifest_db` | Quản lý bảng kê, túi bưu gửi (mã `MB`), niêm phong kẹp chì seal và bàn giao chuyến xe trung chuyển đường trục. |
 | **8** | `scan-service` | `3006` | `scan_db` | **Nguồn chân lý vị trí vật lý:** ghi nhận các mốc quét barcode (Lấy, Nhập kho, Xuất kho) với cơ chế Idempotency chống trùng. |
 | **9** | `delivery-service` | `3007` | `delivery_db` | Quản lý phát hàng chặng cuối: chụp ảnh POD bằng chứng giao hàng, thu COD, biên bản giao thất bại NDR và điều phối chuyển hoàn. |
 | **10** | `payment-service` | `3011` | `payment_db` | **Nguồn chân lý tài chính COD:** quản lý tiền thu hộ, gom phiên đối soát tự động (Batch Settlement), tích hợp SePay/VietQR webhook. |
 | **11** | `pricing-service` | `3012` | *(In-Memory Rules)* | Động cơ định giá chuẩn hóa duy nhất: tính cước theo nấc vượt cân, phụ phí 3 vùng và công thức quy đổi IATA $V/6000$. |
-| **12** | `chatbot-service` | `3013` | Vector Store | Phân hệ trợ lý trí tuệ nhân tạo độc lập: Hybrid RAG, 5 dynamic tools, Google Gemini 3 Flash / OpenAI GPT-4o-mini fallback, SSE streaming. |
-| **13** | `linehaul-service` | `3014` | *(In-Transit)* | Quản lý các chuyến xe tải trung chuyển đường dài giữa các Hub trung tâm, điều phối xe, tài xế và cấp tem xe `XT`. |
-| **14** | `tracking-service` | `3008` | `tracking_db` | **Read Model phi tập trung:** tiêu thụ sự kiện từ RabbitMQ để dựng timeline chi tiết hành trình bưu gửi với tốc độ tra cứu dưới 10ms. |
-| **15** | `reporting-service` | `3009` | `reporting_db` | **Read Model phân tích:** tổng hợp báo cáo chỉ số KPI, sản lượng bưu cục, tỷ lệ giao đúng hạn SLA và hiệu suất làm việc. |
+| **12** | `chatbot-service` | `3013` | Vector Store | Phân hệ trợ lý trí tuệ nhân tạo độc lập: Hybrid RAG, 5 dynamic tools, Google Gemini / Groq fallback, SSE streaming. |
+| **13** | `tracking-service` | `3008` | `tracking_db` | **Read Model phi tập trung:** tiêu thụ sự kiện từ RabbitMQ để dựng timeline chi tiết hành trình bưu gửi với tốc độ tra cứu dưới 10ms. |
+| **14** | `reporting-service` | `3009` | `reporting_db` | **Read Model phân tích:** tổng hợp báo cáo chỉ số KPI, sản lượng bưu cục, tỷ lệ giao đúng hạn SLA và hiệu suất làm việc. |
 
 ---
 
@@ -601,7 +599,6 @@ sequenceDiagram
     autonumber
     actor HubStaff as Ops Bưu Cục Phát
     participant ManifestSvc as manifest-service (:3005)
-    participant Linehaul as linehaul-service (:3014)
     actor OriginHub as Ops Hub Gốc (Gần Shop)
     actor ReturnCourier as Bưu Tá Trả Hàng Hoàn
     actor Merchant as Chủ Shop (Merchant)
@@ -609,9 +606,8 @@ sequenceDiagram
 
     Note over HubStaff,OriginHub: GIAI ĐOẠN 1: ĐÓNG BAO HOÀN & TRUNG CHUYỂN NGƯỢC CHIỀU
     HubStaff->>ManifestSvc: Gom các đơn hoàn vào Bao Chuyên Dụng (Mã bao MB-RET-xxx)
-    HubStaff->>ManifestSvc: Bấm kẹp chì Seal an ninh túi hoàn
-    HubStaff->>Linehaul: Xếp bao lên Chuyến xe Linehaul chiều về (Reverse Truck)
-    Linehaul->>OriginHub: Xe về tới Hub Gốc -> Cắt chì, quét Inbound kiểm đếm
+    HubStaff->>ManifestSvc: Bấm kẹp chì Seal an ninh túi hoàn & xếp xe đường trục chiều về
+    ManifestSvc->>OriginHub: Xe về tới Hub Gốc -> Cắt chì, quét Inbound kiểm đếm
     OriginHub->>ReturnCourier: Phân công tuyến bưu tá mang hàng trả lại tận kho Shop
 
     Note over ReturnCourier,PaySvc: GIAI ĐOẠN 2: THU HỒI CƯỚC HOÀN THEO 3 PHÂN TẦNG KHÁCH HÀNG

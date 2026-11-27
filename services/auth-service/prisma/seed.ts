@@ -76,6 +76,14 @@ async function seedUsers() {
       phone: '0902000000',
       hubCodes: allSystemHubCodes,
     },
+    {
+      id: '30000000',
+      username: '30000000',
+      roles: ['COURIER'],
+      displayName: 'Bưu tá Tổng Toàn quốc',
+      phone: '0903000000',
+      hubCodes: allSystemHubCodes,
+    },
   ];
 
   // =========================================================================

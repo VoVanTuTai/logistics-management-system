@@ -31,3 +31,7 @@ brain/
 # Graduation Thesis & Diagrams
 docs/graduation-thesis/
 ~$*
+
+*.bak*
+build-apks/
+*.apk

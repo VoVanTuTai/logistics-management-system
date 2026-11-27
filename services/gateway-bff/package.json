@@ -6,7 +6,8 @@
     "build": "tsc -p tsconfig.json",
     "start": "node dist/main.js",
     "start:dev": "ts-node src/main.ts",
-    "test:chat": "node --test -r ts-node/register src/api/chat/chat.service.spec.ts"
+    "test:chat": "node --test -r ts-node/register src/api/chat/chat.service.spec.ts",
+    "test:integrations": "node --test -r ts-node/register src/api/merchant/integrations/marketplace-integrations.service.spec.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.712.0",

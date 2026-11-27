@@ -1,0 +1,315 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 820" width="1280" height="820">
+  <defs>
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&amp;family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap');
+      * { box-sizing: border-box; }
+      text { font-family: 'Plus Jakarta Sans', -apple-system, sans-serif; font-size: 12.5px; fill: #D4D4D8; }
+      .mono { font-family: 'JetBrains Mono', monospace; font-size: 12px; }
+      .app-title { font-size: 12.5px; fill: #94A3B8; font-weight: 500; }
+      .menu-item { font-size: 12px; fill: #CBD5E1; }
+      .nav-header { font-size: 11.5px; font-weight: 700; fill: #94A3B8; text-transform: uppercase; letter-spacing: 0.5px; }
+      .server-name { font-weight: 700; fill: #F8FAFC; font-size: 12.5px; }
+      .db-item { font-family: 'JetBrains Mono', monospace; font-size: 12px; fill: #E2E8F0; }
+      .db-size { font-family: 'JetBrains Mono', monospace; font-size: 11px; fill: #38BDF8; font-weight: 600; }
+      .sql-kw { font-family: 'JetBrains Mono', monospace; fill: #F472B6; font-weight: 700; }
+      .sql-fn { font-family: 'JetBrains Mono', monospace; fill: #38BDF8; font-weight: 600; }
+      .sql-str { font-family: 'JetBrains Mono', monospace; fill: #A3E635; }
+      .sql-col { font-family: 'JetBrains Mono', monospace; fill: #F8FAFC; }
+      .grid-th { font-size: 11.5px; font-weight: 700; fill: #94A3B8; }
+      .grid-td { font-family: 'JetBrains Mono', monospace; font-size: 11.5px; fill: #F1F5F9; }
+      .grid-num { font-family: 'JetBrains Mono', monospace; font-size: 11.5px; fill: #64748B; text-anchor: center; }
+    </style>
+    <filter id="shadow" x="-5%" y="-5%" width="110%" height="110%">
+      <feDropShadow dx="0" dy="16" stdDeviation="24" flood-color="#000000" flood-opacity="0.45"/>
+    </filter>
+  </defs>
+
+  <rect width="1280" height="820" fill="#0B0F19"/>
+
+  <g transform="translate(40, 24)" filter="url(#shadow)">
+    <!-- Main Window Background -->
+    <rect width="1200" height="770" rx="11" fill="#181824" stroke="#2D2D3D" stroke-width="1.2"/>
+
+    <!-- Window Titlebar -->
+    <path d="M 0 11 C 0 4.93 4.93 0 11 0 L 1189 0 C 1195.07 0 1200 4.93 1200 11 L 1200 40 L 0 40 Z" fill="#20202E"/>
+    <line x1="0" y1="40" x2="1200" y2="40" stroke="#2D2D3D" stroke-width="1"/>
+
+    <circle cx="22" cy="20" r="6.2" fill="#FF5F56" stroke="#E0443E" stroke-width="0.8"/>
+    <circle cx="43" cy="20" r="6.2" fill="#FFBD2E" stroke="#DEA123" stroke-width="0.8"/>
+    <circle cx="64" cy="20" r="6.2" fill="#27C93F" stroke="#1AAB29" stroke-width="0.8"/>
+
+    <text x="600" y="25" text-anchor="middle" class="app-title">DBeaver Universal Database Tool — PostgreSQL 16 - Nexus Production [localhost:15432]</text>
+
+    <!-- App Menu Bar -->
+    <g transform="translate(18, 54)">
+      <text x="0" y="0" class="menu-item">
+        <tspan font-weight="600" fill="#FFFFFF">File</tspan>    Edit    Navigate    SQL Editor    Database    Window    Help
+      </text>
+    </g>
+
+    <!-- Toolbar Icons Strip -->
+    <g transform="translate(0, 68)">
+      <rect width="1200" height="34" fill="#141420" stroke="#2D2D3D" stroke-width="0.8"/>
+      <g transform="translate(20, 22)">
+        <text x="0" y="0" font-size="12px" fill="#38BDF8">🔌 Connect</text>
+        <text x="80" y="0" font-size="12px" fill="#10B981">▶ Execute SQL (F5)</text>
+        <text x="210" y="0" font-size="12px" fill="#F59E0B">↻ Refresh (F5)</text>
+        <text x="310" y="0" font-size="12px" fill="#CBD5E1">Commit (Auto)</text>
+        <text x="410" y="0" font-size="12px" fill="#A855F7">Active DB: <tspan font-weight="700">postgres:15432</tspan></text>
+      </g>
+    </g>
+
+    <!-- Main Workspace Split: Left Sidebar (Navigator) + Right Pane (SQL & Grid) -->
+    <g transform="translate(0, 102)">
+      <!-- Left Sidebar: Database Navigator -->
+      <g transform="translate(0, 0)">
+        <rect width="360" height="668" fill="#13131C" stroke="#2D2D3D" stroke-width="0.8"/>
+
+        <!-- Navigator Header -->
+        <g transform="translate(16, 26)">
+          <text x="0" y="0" class="nav-header">Database Navigator</text>
+        </g>
+
+        <!-- Root Server Node -->
+        <g transform="translate(16, 56)">
+          <rect width="328" height="28" fill="#1E293B" rx="4"/>
+          <text x="10" y="19" font-size="13px">🐘 </text>
+          <text x="30" y="19" class="server-name">PostgreSQL 16 - Nexus Cluster</text>
+          <text x="280" y="19" font-size="10.5px" fill="#10B981" font-weight="700">● 15432</text>
+        </g>
+
+        <!-- Tree Branch: Databases (12) -->
+        <g transform="translate(28, 104)">
+          <text x="0" y="0" font-weight="600" fill="#94A3B8">▼ 📁 Databases (12 Services)</text>
+        </g>
+
+        <!-- 12 Real Database Items in Tree -->
+        <g transform="translate(42, 126)">
+
+          <g transform="translate(0, 0)">
+            <text x="0" y="0" font-size="12px">▸ 🗄 </text>
+            <text x="22" y="0" class="db-item">auth_db</text>
+            <text x="220" y="0" class="db-size">3.8 MB</text>
+          </g>
+
+          <g transform="translate(0, 24)">
+            <text x="0" y="0" font-size="12px">▸ 🗄 </text>
+            <text x="22" y="0" class="db-item">chat_db</text>
+            <text x="220" y="0" class="db-size">2.4 MB</text>
+          </g>
+
+          <g transform="translate(0, 48)">
+            <text x="0" y="0" font-size="12px">▸ 🗄 </text>
+            <text x="22" y="0" class="db-item">delivery_db</text>
+            <text x="220" y="0" class="db-size">4.1 MB</text>
+          </g>
+
+          <g transform="translate(0, 72)">
+            <text x="0" y="0" font-size="12px">▸ 🗄 </text>
+            <text x="22" y="0" class="db-item">dispatch_db</text>
+            <text x="220" y="0" class="db-size">3.2 MB</text>
+          </g>
+
+          <g transform="translate(0, 96)">
+            <text x="0" y="0" font-size="12px">▸ 🗄 </text>
+            <text x="22" y="0" class="db-item">manifest_db</text>
+            <text x="220" y="0" class="db-size">3.6 MB</text>
+          </g>
+
+          <g transform="translate(0, 120)">
+            <text x="0" y="0" font-size="12px">▸ 🗄 </text>
+            <text x="22" y="0" class="db-item">masterdata_db</text>
+            <text x="220" y="0" class="db-size">5.9 MB</text>
+          </g>
+
+          <g transform="translate(0, 144)">
+            <text x="0" y="0" font-size="12px">▸ 🗄 </text>
+            <text x="22" y="0" class="db-item">payment_db</text>
+            <text x="220" y="0" class="db-size">3.4 MB</text>
+          </g>
+
+          <g transform="translate(0, 168)">
+            <text x="0" y="0" font-size="12px">▸ 🗄 </text>
+            <text x="22" y="0" class="db-item">pickup_db</text>
+            <text x="220" y="0" class="db-size">2.9 MB</text>
+          </g>
+
+          <g transform="translate(0, 192)">
+            <text x="0" y="0" font-size="12px">▸ 🗄 </text>
+            <text x="22" y="0" class="db-item">reporting_db</text>
+            <text x="220" y="0" class="db-size">2.8 MB</text>
+          </g>
+
+          <g transform="translate(0, 216)">
+            <text x="0" y="0" font-size="12px">▸ 🗄 </text>
+            <text x="22" y="0" class="db-item">scan_db</text>
+            <text x="220" y="0" class="db-size">6.2 MB</text>
+          </g>
+
+          <g transform="translate(0, 240)">
+            <text x="0" y="0" font-size="12px">▸ 🗄 </text>
+            <text x="22" y="0" class="db-item">shipment_db</text>
+            <text x="220" y="0" class="db-size">8.5 MB</text>
+          </g>
+
+          <g transform="translate(0, 264)">
+            <text x="0" y="0" font-size="12px">▸ 🗄 </text>
+            <text x="22" y="0" class="db-item">tracking_db</text>
+            <text x="220" y="0" class="db-size">4.7 MB</text>
+          </g>
+
+        </g>
+      </g>
+
+      <!-- Right Pane: SQL Editor & Data Grid -->
+      <g transform="translate(360, 0)">
+        <!-- Tab Bar -->
+        <rect width="840" height="34" fill="#141420" stroke="#2D2D3D" stroke-width="0.8"/>
+        <g transform="translate(16, 22)">
+          <rect x="-8" y="-16" width="160" height="28" fill="#1E293B" rx="4"/>
+          <text x="0" y="3" font-size="12px" fill="#F8FAFC" font-weight="600">📜 Script-1.sql</text>
+          <text x="135" y="3" font-size="11px" fill="#94A3B8">✕</text>
+        </g>
+
+        <!-- SQL Editor Area -->
+        <g transform="translate(20, 56)">
+          <rect width="800" height="96" fill="#0F172A" stroke="#1E293B" rx="5"/>
+          <g transform="translate(16, 26)">
+            <text x="0" y="0">
+              <tspan class="sql-kw">SELECT </tspan>
+              <tspan class="sql-col">datname </tspan><tspan class="sql-kw">AS </tspan><tspan class="sql-col">service_database, </tspan>
+              <tspan class="sql-fn">pg_size_pretty</tspan><tspan fill="#94A3B8">(</tspan><tspan class="sql-fn">pg_database_size</tspan><tspan fill="#94A3B8">(datname)) </tspan><tspan class="sql-kw">AS </tspan><tspan class="sql-col">size, </tspan>
+            </text>
+            <text x="0" y="24">
+              <tspan class="sql-col">       pg_encoding_to_char(encoding) </tspan><tspan class="sql-kw">AS </tspan><tspan class="sql-col">encoding, datcollate </tspan><tspan class="sql-kw">AS </tspan><tspan class="sql-col">collation</tspan>
+            </text>
+            <text x="0" y="48">
+              <tspan class="sql-kw">FROM </tspan><tspan class="sql-col">pg_database </tspan>
+              <tspan class="sql-kw">WHERE </tspan><tspan class="sql-col">datname </tspan><tspan class="sql-kw">LIKE </tspan><tspan class="sql-str">'%_db' </tspan>
+              <tspan class="sql-kw">ORDER BY </tspan><tspan class="sql-col">datname;</tspan>
+            </text>
+          </g>
+        </g>
+
+        <!-- Query Result Header -->
+        <g transform="translate(20, 168)">
+          <rect width="800" height="26" fill="#1E293B" rx="3"/>
+          <text x="12" y="18" class="grid-th">#</text>
+          <text x="45" y="18" class="grid-th">service_database</text>
+          <text x="260" y="18" class="grid-th">size</text>
+          <text x="360" y="18" class="grid-th">encoding</text>
+          <text x="460" y="18" class="grid-th">collation</text>
+          <text x="580" y="18" class="grid-th">microservice_owner</text>
+        </g>
+
+        <!-- Data Grid Rows (12 databases query result) -->
+        <g transform="translate(20, 196)">
+
+          <rect x="0" y="3" width="800" height="23" fill="#111827"/>
+          <text x="12" y="19" class="grid-num">1</text>
+          <text x="45" y="19" class="grid-td" font-weight="600">auth_db</text>
+          <text x="260" y="19" class="grid-td" fill="#38BDF8">3840 kB</text>
+          <text x="360" y="19" class="grid-td" fill="#94A3B8">UTF8</text>
+          <text x="460" y="19" class="grid-td" fill="#94A3B8">en_US.utf8</text>
+          <text x="580" y="19" class="grid-td" fill="#10B981">auth-service (:3010)</text>
+
+          <rect x="0" y="26" width="800" height="23" fill="#0F172A"/>
+          <text x="12" y="42" class="grid-num">2</text>
+          <text x="45" y="42" class="grid-td" font-weight="600">chat_db</text>
+          <text x="260" y="42" class="grid-td" fill="#38BDF8">2456 kB</text>
+          <text x="360" y="42" class="grid-td" fill="#94A3B8">UTF8</text>
+          <text x="460" y="42" class="grid-td" fill="#94A3B8">en_US.utf8</text>
+          <text x="580" y="42" class="grid-td" fill="#10B981">gateway-bff / AI (:3000)</text>
+
+          <rect x="0" y="49" width="800" height="23" fill="#111827"/>
+          <text x="12" y="65" class="grid-num">3</text>
+          <text x="45" y="65" class="grid-td" font-weight="600">delivery_db</text>
+          <text x="260" y="65" class="grid-td" fill="#38BDF8">4192 kB</text>
+          <text x="360" y="65" class="grid-td" fill="#94A3B8">UTF8</text>
+          <text x="460" y="65" class="grid-td" fill="#94A3B8">en_US.utf8</text>
+          <text x="580" y="65" class="grid-td" fill="#10B981">delivery-service (:3007)</text>
+
+          <rect x="0" y="72" width="800" height="23" fill="#0F172A"/>
+          <text x="12" y="88" class="grid-num">4</text>
+          <text x="45" y="88" class="grid-td" font-weight="600">dispatch_db</text>
+          <text x="260" y="88" class="grid-td" fill="#38BDF8">3264 kB</text>
+          <text x="360" y="88" class="grid-td" fill="#94A3B8">UTF8</text>
+          <text x="460" y="88" class="grid-td" fill="#94A3B8">en_US.utf8</text>
+          <text x="580" y="88" class="grid-td" fill="#10B981">dispatch-service (:3004)</text>
+
+          <rect x="0" y="95" width="800" height="23" fill="#111827"/>
+          <text x="12" y="111" class="grid-num">5</text>
+          <text x="45" y="111" class="grid-td" font-weight="600">manifest_db</text>
+          <text x="260" y="111" class="grid-td" fill="#38BDF8">3680 kB</text>
+          <text x="360" y="111" class="grid-td" fill="#94A3B8">UTF8</text>
+          <text x="460" y="111" class="grid-td" fill="#94A3B8">en_US.utf8</text>
+          <text x="580" y="111" class="grid-td" fill="#10B981">manifest-service (:3005)</text>
+
+          <rect x="0" y="118" width="800" height="23" fill="#0F172A"/>
+          <text x="12" y="134" class="grid-num">6</text>
+          <text x="45" y="134" class="grid-td" font-weight="600">masterdata_db</text>
+          <text x="260" y="134" class="grid-td" fill="#38BDF8">5920 kB</text>
+          <text x="360" y="134" class="grid-td" fill="#94A3B8">UTF8</text>
+          <text x="460" y="134" class="grid-td" fill="#94A3B8">en_US.utf8</text>
+          <text x="580" y="134" class="grid-td" fill="#10B981">masterdata-service (:3001)</text>
+
+          <rect x="0" y="141" width="800" height="23" fill="#111827"/>
+          <text x="12" y="157" class="grid-num">7</text>
+          <text x="45" y="157" class="grid-td" font-weight="600">payment_db</text>
+          <text x="260" y="157" class="grid-td" fill="#38BDF8">3456 kB</text>
+          <text x="360" y="157" class="grid-td" fill="#94A3B8">UTF8</text>
+          <text x="460" y="157" class="grid-td" fill="#94A3B8">en_US.utf8</text>
+          <text x="580" y="157" class="grid-td" fill="#10B981">payment-service (:3011)</text>
+
+          <rect x="0" y="164" width="800" height="23" fill="#0F172A"/>
+          <text x="12" y="180" class="grid-num">8</text>
+          <text x="45" y="180" class="grid-td" font-weight="600">pickup_db</text>
+          <text x="260" y="180" class="grid-td" fill="#38BDF8">2944 kB</text>
+          <text x="360" y="180" class="grid-td" fill="#94A3B8">UTF8</text>
+          <text x="460" y="180" class="grid-td" fill="#94A3B8">en_US.utf8</text>
+          <text x="580" y="180" class="grid-td" fill="#10B981">pickup-service (:3003)</text>
+
+          <rect x="0" y="187" width="800" height="23" fill="#111827"/>
+          <text x="12" y="203" class="grid-num">9</text>
+          <text x="45" y="203" class="grid-td" font-weight="600">reporting_db</text>
+          <text x="260" y="203" class="grid-td" fill="#38BDF8">2816 kB</text>
+          <text x="360" y="203" class="grid-td" fill="#94A3B8">UTF8</text>
+          <text x="460" y="203" class="grid-td" fill="#94A3B8">en_US.utf8</text>
+          <text x="580" y="203" class="grid-td" fill="#10B981">reporting-service (:3009)</text>
+
+          <rect x="0" y="210" width="800" height="23" fill="#0F172A"/>
+          <text x="12" y="226" class="grid-num">10</text>
+          <text x="45" y="226" class="grid-td" font-weight="600">scan_db</text>
+          <text x="260" y="226" class="grid-td" fill="#38BDF8">6240 kB</text>
+          <text x="360" y="226" class="grid-td" fill="#94A3B8">UTF8</text>
+          <text x="460" y="226" class="grid-td" fill="#94A3B8">en_US.utf8</text>
+          <text x="580" y="226" class="grid-td" fill="#10B981">scan-service (:3006)</text>
+
+          <rect x="0" y="233" width="800" height="23" fill="#111827"/>
+          <text x="12" y="249" class="grid-num">11</text>
+          <text x="45" y="249" class="grid-td" font-weight="600">shipment_db</text>
+          <text x="260" y="249" class="grid-td" fill="#38BDF8">8704 kB</text>
+          <text x="360" y="249" class="grid-td" fill="#94A3B8">UTF8</text>
+          <text x="460" y="249" class="grid-td" fill="#94A3B8">en_US.utf8</text>
+          <text x="580" y="249" class="grid-td" fill="#10B981">shipment-service (:3002)</text>
+
+          <rect x="0" y="256" width="800" height="23" fill="#0F172A"/>
+          <text x="12" y="272" class="grid-num">12</text>
+          <text x="45" y="272" class="grid-td" font-weight="600">tracking_db</text>
+          <text x="260" y="272" class="grid-td" fill="#38BDF8">4816 kB</text>
+          <text x="360" y="272" class="grid-td" fill="#94A3B8">UTF8</text>
+          <text x="460" y="272" class="grid-td" fill="#94A3B8">en_US.utf8</text>
+          <text x="580" y="272" class="grid-td" fill="#10B981">tracking-service (:3008)</text>
+
+        </g>
+
+        <!-- Status Bar -->
+        <g transform="translate(20, 495)">
+          <rect width="800" height="30" fill="#1E293B" rx="3"/>
+          <text x="16" y="20" font-size="11.5px" fill="#10B981" font-weight="600">✓ Query completed: 12 rows fetched in 14 ms</text>
+          <text x="480" y="20" font-size="11.5px" fill="#94A3B8">PostgreSQL 16.3 on aarch64-apple-darwin</text>
+        </g>
+      </g>
+    </g>
+  </g>
+</svg>

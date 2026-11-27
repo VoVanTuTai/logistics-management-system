@@ -55,6 +55,7 @@ import {
   ArrowUpRight,
   ArrowDownLeft,
   Image as ImageIcon,
+  Camera,
   Lock,
   Bell,
   UserPlus,
@@ -94,6 +95,8 @@ import {
   normalizeMediaPublicUrl,
   cleanCustomerNote,
   formatCustomerTimelineEvent,
+  isPickupTimelineEvent,
+  isDeliveryTimelineEvent,
   formatVnd,
 } from './utils/trackingUtils';
 import {
@@ -273,7 +276,26 @@ function TrackingPage() {
   // Search state
   const [trackingCode, setTrackingCode] = useState('');
   const [receiverPhone, setReceiverPhone] = useState('');
-  const [selectedPodImage, setSelectedPodImage] = useState<string | null>(null);
+  const [selectedProofModal, setSelectedProofModal] = useState<{
+    url: string;
+    title: string;
+    subtitle?: string;
+    tag?: string;
+    occurredAt?: string | null;
+    location?: string | null;
+  } | null>(null);
+  const setSelectedPodImage = (url: string | null) => {
+    if (!url) {
+      setSelectedProofModal(null);
+    } else {
+      setSelectedProofModal({
+        url,
+        title: 'Ảnh Minh Chứng Giao Hàng (Proof of Delivery - POD)',
+        subtitle: 'Ảnh chữ ký hoặc hình chụp bưu kiện đã được bàn giao tận tay người nhận.',
+        tag: 'KÝ NHẬN POD',
+      });
+    }
+  };
   const [isSearching, setIsSearching] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
   const [searchResult, setSearchResult] = useState<UnifiedTrackingResponse | null>(null);
@@ -762,32 +784,69 @@ function TrackingPage() {
                                 </p>
                               )}
 
-                              {/* Proof Image (POD) */}
-                              {ev.proofImageUrl && (
-                                <div className="mt-2.5 pt-2 border-t border-slate-200">
-                                  <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase text-slate-600 mb-1.5">
-                                    <ImageIcon className="h-3.5 w-3.5 text-blue-600" />
-                                    <span>Bằng chứng giao hàng (POD):</span>
-                                  </div>
-                                  <button
-                                    type="button"
-                                    onClick={() => setSelectedPodImage(ev.proofImageUrl || null)}
-                                    className="group relative inline-block cursor-pointer overflow-hidden border border-slate-200 bg-slate-100 rounded-lg shadow-xs hover:shadow-md transition text-left"
-                                    title="Bấm để xem ảnh phóng to"
-                                  >
-                                    <img
-                                      src={ev.proofImageUrl}
-                                      alt="Minh chứng giao hàng POD"
-                                      className="h-20 w-32 object-cover transition duration-300 group-hover:scale-105"
-                                      loading="lazy"
-                                    />
-                                    <div className="absolute inset-0 bg-slate-900/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1 text-white text-[11px] font-bold">
-                                      <Eye className="h-3.5 w-3.5" />
-                                      <span>Xem ảnh</span>
+                              {/* Proof Image (Pickup, Delivery POD, or Inspection) */}
+                              {ev.proofImageUrl && (() => {
+                                const isPickup = isPickupTimelineEvent(ev);
+                                const isDelivery = isDeliveryTimelineEvent(ev);
+                                const proofLabel = isPickup
+                                  ? 'Ảnh minh chứng khi lấy hàng:'
+                                  : isDelivery
+                                  ? 'Ảnh minh chứng khi giao hàng (POD):'
+                                  : 'Ảnh minh chứng kiểm soát vận hành:';
+                                const modalTitle = isPickup
+                                  ? 'Ảnh Minh Chứng Khi Lấy Hàng (Proof of Pickup)'
+                                  : isDelivery
+                                  ? 'Ảnh Minh Chứng Khi Giao Hàng (Proof of Delivery - POD)'
+                                  : 'Ảnh Minh Chứng Kiểm Soát Vận Hành';
+                                const modalTag = isPickup ? 'LẤY HÀNG' : isDelivery ? 'GIAO HÀNG (POD)' : 'VẬN HÀNH';
+
+                                return (
+                                  <div className="mt-2.5 pt-2 border-t border-slate-200">
+                                    <div className="flex items-center justify-between gap-2 mb-1.5 flex-wrap">
+                                      <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase text-slate-600">
+                                        <Camera className="h-3.5 w-3.5 text-blue-600 shrink-0" />
+                                        <span>{proofLabel}</span>
+                                      </div>
+                                      <a
+                                        href={ev.proofImageUrl}
+                                        target="_blank"
+                                        rel="noreferrer"
+                                        className="inline-flex items-center gap-1 text-[11px] font-bold text-blue-600 hover:text-blue-800 hover:underline bg-blue-50 hover:bg-blue-100 px-2.5 py-1 rounded-md border border-blue-200 transition"
+                                        title="Mở link xem hình ảnh đầy đủ trong tab mới"
+                                      >
+                                        <span>Link xem hình</span>
+                                        <ExternalLink className="h-3.5 w-3.5" />
+                                      </a>
                                     </div>
-                                  </button>
-                                </div>
-                              )}
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        setSelectedProofModal({
+                                          url: ev.proofImageUrl!,
+                                          title: modalTitle,
+                                          subtitle: `Ảnh chụp tại mốc "${formatted.title}" - ${ev.locationText || ev.locationCode || 'Trạm bưu chính'}`,
+                                          tag: modalTag,
+                                          occurredAt: ev.occurredAt,
+                                          location: ev.locationText || ev.locationCode,
+                                        })
+                                      }
+                                      className="group relative inline-block cursor-pointer overflow-hidden border border-slate-200 bg-slate-100 rounded-lg shadow-xs hover:shadow-md transition text-left"
+                                      title="Bấm để xem ảnh phóng to"
+                                    >
+                                      <img
+                                        src={ev.proofImageUrl}
+                                        alt={modalTitle}
+                                        className="h-20 w-32 object-cover transition duration-300 group-hover:scale-105"
+                                        loading="lazy"
+                                      />
+                                      <div className="absolute inset-0 bg-slate-900/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1 text-white text-[11px] font-bold">
+                                        <Eye className="h-3.5 w-3.5" />
+                                        <span>Xem ảnh</span>
+                                      </div>
+                                    </button>
+                                  </div>
+                                );
+                              })()}
                             </div>
                           </div>
 
@@ -843,6 +902,171 @@ function TrackingPage() {
                     <p className="text-slate-600 text-[11px] mt-0.5">
                       {searchResult.order?.receiver?.address || searchResult.order?.receiver?.province || 'Bưu cục phát Hà Nội'}
                     </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Dedicated Pickup & Delivery Proof Photos Card */}
+              <div className="border border-slate-200 p-4 bg-white rounded-xl space-y-3.5 shadow-xs">
+                <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
+                  <span className="text-xs font-bold uppercase tracking-wider text-slate-900 flex items-center gap-1.5">
+                    <Camera className="w-3.5 h-3.5 text-blue-600" />
+                    Minh Chứng Hình Ảnh Khi Lấy & Giao Hàng
+                  </span>
+                  <span className="text-[10px] font-mono font-bold px-2 py-0.5 bg-blue-50 text-blue-700 border border-blue-200 rounded-full">
+                    CHỨNG THỰC BƯU CHÍNH
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                  {/* Proof 1: Khi lấy hàng (Pickup Proof) */}
+                  <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg flex flex-col justify-between space-y-2.5">
+                    <div>
+                      <div className="flex items-center justify-between mb-1.5">
+                        <span className="text-[10px] font-mono font-bold text-slate-500 uppercase">
+                          1. Khi Lấy Hàng (Pickup)
+                        </span>
+                        {searchResult.proofPhotos?.pickupPhotoUrl ? (
+                          <span className="text-[9px] font-bold text-emerald-800 bg-emerald-100 px-1.5 py-0.5 rounded-full flex items-center gap-0.5">
+                            <Check className="w-2.5 h-2.5 text-emerald-600" /> ĐÃ CHỤP
+                          </span>
+                        ) : (
+                          <span className="text-[9px] font-medium text-slate-400 bg-slate-200/60 px-1.5 py-0.5 rounded-full">
+                            CHƯA CÓ
+                          </span>
+                        )}
+                      </div>
+
+                      {searchResult.proofPhotos?.pickupPhotoUrl ? (
+                        <div className="space-y-1.5">
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setSelectedProofModal({
+                                url: searchResult.proofPhotos!.pickupPhotoUrl!,
+                                title: 'Ảnh Minh Chứng Khi Lấy Hàng (Proof of Pickup)',
+                                subtitle: 'Ảnh bưu gửi được bưu tá tiếp nhận chụp thực tế khi lấy hàng từ người gửi.',
+                                tag: 'TIẾP NHẬN BƯU GỬI',
+                                occurredAt: searchResult.proofPhotos?.pickupOccurredAt,
+                                location: searchResult.proofPhotos?.pickupLocation || originHubCode,
+                              })
+                            }
+                            className="group relative w-full h-28 cursor-pointer overflow-hidden border border-slate-200 bg-slate-100 rounded-lg shadow-2xs hover:shadow-md transition text-left block"
+                            title="Bấm để xem ảnh phóng to"
+                          >
+                            <img
+                              src={searchResult.proofPhotos.pickupPhotoUrl}
+                              alt="Minh chứng khi lấy hàng"
+                              className="w-full h-full object-cover transition duration-300 group-hover:scale-105"
+                              loading="lazy"
+                            />
+                            <div className="absolute inset-0 bg-slate-900/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1 text-white text-[11px] font-bold">
+                              <Eye className="h-3.5 w-3.5" />
+                              <span>Xem ảnh phóng to</span>
+                            </div>
+                          </button>
+                          {searchResult.proofPhotos.pickupOccurredAt && (
+                            <p className="text-[10px] text-slate-500 font-mono">
+                              Thời điểm: {new Date(searchResult.proofPhotos.pickupOccurredAt).toLocaleString('vi-VN')}
+                            </p>
+                          )}
+                        </div>
+                      ) : (
+                        <div className="h-28 border border-dashed border-slate-300 bg-white/70 rounded-lg flex flex-col items-center justify-center text-center p-3 text-slate-400">
+                          <ImageIcon className="w-6 h-6 text-slate-300 mb-1" />
+                          <span className="text-[11px]">Chưa có ảnh lấy hàng</span>
+                          <span className="text-[9px] text-slate-400 mt-0.5">Sẽ cập nhật khi bưu tá quét nhận</span>
+                        </div>
+                      )}
+                    </div>
+
+                    {searchResult.proofPhotos?.pickupPhotoUrl ? (
+                      <a
+                        href={searchResult.proofPhotos.pickupPhotoUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="w-full py-1.5 px-2 bg-blue-50 hover:bg-blue-100 text-blue-700 hover:text-blue-900 border border-blue-200 rounded-md text-[11px] font-bold flex items-center justify-center gap-1 transition"
+                        title="Mở ảnh gốc trong tab mới"
+                      >
+                        <span>Link xem hình lấy hàng</span>
+                        <ExternalLink className="h-3 w-3" />
+                      </a>
+                    ) : null}
+                  </div>
+
+                  {/* Proof 2: Khi giao hàng (Delivery POD Proof) */}
+                  <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg flex flex-col justify-between space-y-2.5">
+                    <div>
+                      <div className="flex items-center justify-between mb-1.5">
+                        <span className="text-[10px] font-mono font-bold text-slate-500 uppercase">
+                          2. Khi Giao Hàng (POD)
+                        </span>
+                        {searchResult.proofPhotos?.deliveryPhotoUrl ? (
+                          <span className="text-[9px] font-bold text-emerald-800 bg-emerald-100 px-1.5 py-0.5 rounded-full flex items-center gap-0.5">
+                            <Check className="w-2.5 h-2.5 text-emerald-600" /> ĐÃ KÝ NHẬN
+                          </span>
+                        ) : (
+                          <span className="text-[9px] font-medium text-slate-400 bg-slate-200/60 px-1.5 py-0.5 rounded-full">
+                            CHƯA CÓ
+                          </span>
+                        )}
+                      </div>
+
+                      {searchResult.proofPhotos?.deliveryPhotoUrl ? (
+                        <div className="space-y-1.5">
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setSelectedProofModal({
+                                url: searchResult.proofPhotos!.deliveryPhotoUrl!,
+                                title: 'Ảnh Minh Chứng Giao Hàng (Proof of Delivery - POD)',
+                                subtitle: 'Ảnh chữ ký hoặc hình chụp bưu kiện đã được bàn giao tận tay người nhận.',
+                                tag: 'KÝ NHẬN POD',
+                                occurredAt: searchResult.proofPhotos?.deliveryOccurredAt,
+                                location: searchResult.proofPhotos?.deliveryLocation || destHubCode,
+                              })
+                            }
+                            className="group relative w-full h-28 cursor-pointer overflow-hidden border border-slate-200 bg-slate-100 rounded-lg shadow-2xs hover:shadow-md transition text-left block"
+                            title="Bấm để xem ảnh phóng to"
+                          >
+                            <img
+                              src={searchResult.proofPhotos.deliveryPhotoUrl}
+                              alt="Minh chứng giao hàng POD"
+                              className="w-full h-full object-cover transition duration-300 group-hover:scale-105"
+                              loading="lazy"
+                            />
+                            <div className="absolute inset-0 bg-slate-900/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1 text-white text-[11px] font-bold">
+                              <Eye className="h-3.5 w-3.5" />
+                              <span>Xem ảnh phóng to</span>
+                            </div>
+                          </button>
+                          {searchResult.proofPhotos.deliveryOccurredAt && (
+                            <p className="text-[10px] text-slate-500 font-mono">
+                              Thời điểm: {new Date(searchResult.proofPhotos.deliveryOccurredAt).toLocaleString('vi-VN')}
+                            </p>
+                          )}
+                        </div>
+                      ) : (
+                        <div className="h-28 border border-dashed border-slate-300 bg-white/70 rounded-lg flex flex-col items-center justify-center text-center p-3 text-slate-400">
+                          <ImageIcon className="w-6 h-6 text-slate-300 mb-1" />
+                          <span className="text-[11px]">Chưa có ảnh giao hàng</span>
+                          <span className="text-[9px] text-slate-400 mt-0.5">Sẽ hiển thị khi giao thành công</span>
+                        </div>
+                      )}
+                    </div>
+
+                    {searchResult.proofPhotos?.deliveryPhotoUrl ? (
+                      <a
+                        href={searchResult.proofPhotos.deliveryPhotoUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="w-full py-1.5 px-2 bg-blue-50 hover:bg-blue-100 text-blue-700 hover:text-blue-900 border border-blue-200 rounded-md text-[11px] font-bold flex items-center justify-center gap-1 transition"
+                        title="Mở ảnh gốc trong tab mới"
+                      >
+                        <span>Link xem hình giao hàng</span>
+                        <ExternalLink className="h-3 w-3" />
+                      </a>
+                    ) : null}
                   </div>
                 </div>
               </div>
@@ -1345,47 +1569,76 @@ function TrackingPage() {
         </div>
       )}
 
-      {/* Lightbox / POD Proof Image Preview Modal */}
-      {selectedPodImage && (
+      {/* Lightbox / Proof Image Preview Modal */}
+      {selectedProofModal && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-sm"
           role="dialog"
           aria-modal="true"
         >
-          <div className="relative max-w-2xl w-full bg-white p-4 md:p-6 shadow-2xl border-2 border-slate-900 space-y-3">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+          <div className="relative max-w-2xl w-full bg-white p-4 md:p-6 shadow-2xl border-2 border-slate-900 rounded-xl space-y-3">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3 gap-2">
               <div className="flex items-center gap-2">
-                <ImageIcon className="h-5 w-5 text-blue-600" />
-                <h3 className="text-sm font-black text-slate-900">Ảnh Minh Chứng Giao Hàng (POD)</h3>
+                <Camera className="h-5 w-5 text-blue-600 shrink-0" />
+                <div>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h3 className="text-sm font-black text-slate-900">{selectedProofModal.title}</h3>
+                    {selectedProofModal.tag && (
+                      <span className="text-[10px] font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-full border border-blue-200">
+                        {selectedProofModal.tag}
+                      </span>
+                    )}
+                  </div>
+                  {selectedProofModal.subtitle && (
+                    <p className="text-[11px] text-slate-500 mt-0.5">{selectedProofModal.subtitle}</p>
+                  )}
+                </div>
               </div>
               <button
                 type="button"
-                onClick={() => setSelectedPodImage(null)}
-                className="p-1 text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition"
+                onClick={() => setSelectedProofModal(null)}
+                className="p-1 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition cursor-pointer shrink-0"
                 aria-label="Đóng xem ảnh"
               >
                 <X className="h-5 w-5" />
               </button>
             </div>
-            <div className="max-h-[68vh] overflow-hidden bg-slate-950 flex items-center justify-center p-2 border border-slate-800">
+
+            <div className="max-h-[68vh] overflow-hidden bg-slate-950 flex items-center justify-center p-2 border border-slate-800 rounded-lg">
               <img
-                src={selectedPodImage}
-                alt="Minh chứng POD phóng to"
+                src={selectedProofModal.url}
+                alt={selectedProofModal.title}
                 className="max-h-[64vh] w-auto max-w-full object-contain"
               />
             </div>
-            <div className="flex items-center justify-between pt-1 text-xs">
+
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-1 text-xs">
               <span className="text-[11px] text-slate-500 font-medium">
-                Ảnh ký nhận POD được đồng bộ từ thiết bị bưu tá Nexus Delivery (MinIO).
+                Ảnh minh chứng được bảo chứng và lưu trữ toàn vẹn trên hệ thống Nexus Object Storage (MinIO).
               </span>
-              <a
-                href={selectedPodImage}
-                target="_blank"
-                rel="noreferrer"
-                className="text-blue-600 hover:underline font-bold text-xs flex items-center gap-1"
-              >
-                Mở trong tab mới <ExternalLink className="h-3.5 w-3.5" />
-              </a>
+              <div className="flex items-center gap-2 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => {
+                    void navigator.clipboard.writeText(selectedProofModal.url);
+                    alert('Đã sao chép link ảnh thành công!');
+                  }}
+                  className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-md transition flex items-center gap-1 cursor-pointer"
+                  title="Sao chép link hình ảnh"
+                >
+                  <Copy className="h-3.5 w-3.5" />
+                  <span>Sao chép link</span>
+                </button>
+                <a
+                  href={selectedProofModal.url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="px-2.5 py-1 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-md transition flex items-center gap-1"
+                >
+                  <span>Mở link xem hình trực tiếp</span>
+                  <ExternalLink className="h-3.5 w-3.5" />
+                </a>
+              </div>
             </div>
           </div>
         </div>

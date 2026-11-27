@@ -142,7 +142,21 @@ function resolveSenderAddress(metadata: Record<string, unknown> | null): string 
   }
 
   const sender = asRecord(metadata.sender);
-  return asString(sender?.address) ?? asString(metadata.senderAddress);
+  const address = asString(sender?.address) ?? asString(metadata.senderAddress);
+  const ward = asString(sender?.ward) ?? asString(metadata.senderWard);
+  const district = asString(sender?.district) ?? asString(metadata.senderDistrict);
+  const province = asString(sender?.province) ?? asString(metadata.senderProvince);
+
+  if (address && (ward || district || province)) {
+    const normAddr = address.toLowerCase();
+    const hasWard = ward ? normAddr.includes(ward.toLowerCase()) : false;
+    const hasProvince = province ? normAddr.includes(province.toLowerCase()) : false;
+    if (!hasWard && !hasProvince) {
+      return [address, ward, district, province].filter(Boolean).join(', ');
+    }
+  }
+
+  return address;
 }
 
 function resolveSenderWard(metadata: Record<string, unknown> | null): string | null {
@@ -246,7 +260,21 @@ function resolveReceiverAddress(metadata: Record<string, unknown> | null): strin
   }
 
   const receiver = asRecord(metadata.receiver);
-  return asString(receiver?.address) ?? asString(metadata.receiverAddress);
+  const address = asString(receiver?.address) ?? asString(metadata.receiverAddress);
+  const ward = asString(receiver?.ward) ?? asString(metadata.receiverWard);
+  const district = asString(receiver?.district) ?? asString(metadata.receiverDistrict);
+  const province = asString(receiver?.province) ?? asString(metadata.receiverProvince) ?? asString(receiver?.region);
+
+  if (address && (ward || district || province)) {
+    const normAddr = address.toLowerCase();
+    const hasWard = ward ? normAddr.includes(ward.toLowerCase()) : false;
+    const hasProvince = province ? normAddr.includes(province.toLowerCase()) : false;
+    if (!hasWard && !hasProvince) {
+      return [address, ward, district, province].filter(Boolean).join(', ');
+    }
+  }
+
+  return address;
 }
 
 function resolvePlatform(metadata: Record<string, unknown> | null): string | null {
@@ -255,9 +283,11 @@ function resolvePlatform(metadata: Record<string, unknown> | null): string | nul
   }
 
   const integration = asRecord(metadata.integration);
+  const external = asRecord(metadata.external);
 
   return (
     asString(metadata.platform) ??
+    asString(external?.platform) ??
     asString(metadata.salesChannel) ??
     asString(metadata.channel) ??
     asString(metadata.sourcePlatform) ??

@@ -1,0 +1,146 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="760" viewBox="0 0 1280 760">
+  <defs>
+    <linearGradient id="brandGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#003D9B"/>
+      <stop offset="55%" stop-color="#0052CC"/>
+      <stop offset="100%" stop-color="#1D64E8"/>
+    </linearGradient>
+    <linearGradient id="navyGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0B1F44"/>
+      <stop offset="100%" stop-color="#1A3A75"/>
+    </linearGradient>
+    <filter id="cardShadow" x="-4%" y="-6%" width="108%" height="116%">
+      <feDropShadow dx="0" dy="3" stdDeviation="5" flood-color="#0F172A" flood-opacity="0.06"/>
+    </filter>
+  </defs>
+  <rect width="1280" height="760" fill="#FFFFFF"/>
+  <g filter="url(#cardShadow)"><rect x="24" y="18" width="1232" height="658" rx="14" fill="#F6F8FC" stroke="#CBD5E1" stroke-width="1.5"/></g>
+<path d="M24 32 Q24 18 38 18 H1242 Q1256 18 1256 32 V60 H24 Z" fill="#EEF2F7" stroke="#CBD5E1" stroke-width="1"/>
+<circle cx="46" cy="39" r="5" fill="#EF4444"/>
+<circle cx="62" cy="39" r="5" fill="#F59E0B"/>
+<circle cx="78" cy="39" r="5" fill="#22C55E"/>
+<rect x="100" y="26" width="236" height="26" rx="7" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1"/>
+<rect x="110" y="32" width="14" height="14" rx="3" fill="#0052CC" stroke="none"/>
+<text x="117" y="43" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="9.5" font-weight="700" fill="#FFFFFF" text-anchor="middle">N</text>
+<text x="132" y="43" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="10.5" font-weight="700" fill="#102548" text-anchor="start">NEXUS Ops — Đóng bao &amp; Đối soát COD</text>
+<rect x="348" y="27" width="874" height="24" rx="12" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1"/>
+<text x="364" y="43" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="10.5" font-weight="500" fill="#5B6B86" text-anchor="start">🔒  https://ops.nexus-ex.site/app/transit/manifests</text>
+<rect x="25" y="60" width="1230" height="52" rx="0" fill="#FFFFFF" stroke="#DBE2F0" stroke-width="1"/>
+<rect x="46" y="72" width="28" height="28" rx="6" fill="#0052CC" stroke="none"/>
+<text x="60" y="91" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="10.5" font-weight="700" fill="#FFFFFF" text-anchor="middle">NX</text>
+<text x="84" y="90" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="14.5" font-weight="700" fill="#102548" text-anchor="start">Vận chuyển tuyến &amp; Đối soát COD Bưu cục</text>
+<rect x="420" y="74" width="152" height="26" rx="13.0" fill="#0052CC" stroke="none"/><text x="496.0" y="90.5" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="10" font-weight="700" fill="#FFFFFF" text-anchor="middle">Đóng bao &amp; Niêm phong</text>
+<rect x="582" y="74" width="134" height="26" rx="13.0" fill="#F6F8FC" stroke="none"/><text x="649.0" y="90.5" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="10" font-weight="700" fill="#5B6B86" text-anchor="middle">Quét xe đi / xe đến</text>
+<rect x="726" y="74" width="150" height="26" rx="13.0" fill="#F6F8FC" stroke="none"/><text x="801.0" y="90.5" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="10" font-weight="700" fill="#5B6B86" text-anchor="middle">Quyết toán COD Ca</text>
+<rect x="1064" y="74" width="170" height="26" rx="13.0" fill="#E7EFFF" stroke="none"/><text x="1149.0" y="90.43" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="9.8" font-weight="700" fill="#0052CC" text-anchor="middle">Hub: 002C001 (Mega HCM)</text>
+<rect x="46" y="128" width="694" height="530" rx="14" fill="#FFFFFF" stroke="#DBE2F0" stroke-width="1.2"/>
+<text x="66" y="156" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="14" font-weight="700" fill="#102548" text-anchor="start">1. Phiên Đóng bao trung chuyển &amp; Kẹp chì niêm phong (Manifest)</text>
+<text x="66" y="175" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="10" font-weight="500" fill="#5B6B86" text-anchor="start">Tích hợp manifest-service (:3005) &amp; scan-service (:3006) — Kiểm tra khóa lũy đẳng Idempotency Key</text>
+<rect x="66" y="190" width="654" height="78" rx="10" fill="#F8FAFF" stroke="#BFDBFE" stroke-width="1.2"/>
+<text x="80" y="214" font-family="'SF Mono','Menlo','Consolas',monospace" font-size="13" font-weight="700" fill="#0052CC" text-anchor="start">MÃ TEM BAO: MB-202605-09</text>
+<rect x="312" y="198" width="128" height="22" rx="11.0" fill="#DCFCE7" stroke="none"/><text x="376.0" y="212.22" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="9.2" font-weight="700" fill="#137F5D" text-anchor="middle">ĐÃ KẸP CHÌ SEAL</text>
+<text x="80" y="236" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="10.5" font-weight="700" fill="#102548" text-anchor="start">Tuyến: Mega Hub TP.HCM (002C001)  →  Mega Hub Hà Nội (001C001)</text>
+<text x="80" y="255" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="9.8" font-weight="500" fill="#5B6B86" text-anchor="start">Mã chì Seal: SL-88421-HCM  ·  Chuyến xe: TRIP-HN08 (51C-892.14)  ·  24 kiện / 48,6 kg</text>
+<rect x="66" y="282" width="498" height="38" rx="8" fill="#F6F8FC" stroke="#93C5FD" stroke-width="1.2"/>
+<text x="80" y="305" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="10.5" font-weight="500" fill="#5B6B86" text-anchor="start">Bắn máy quét mã vận đơn (SHP-*) hoặc mã Seal vào bao MB-202605-09...</text>
+<rect x="574" y="282" width="146" height="38" rx="8" fill="#0052CC" stroke="none"/>
+<text x="647" y="305" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="10.8" font-weight="700" fill="#FFFFFF" text-anchor="middle">Xác nhận đóng bao</text>
+<rect x="66" y="334" width="654" height="28" rx="0" fill="#F8FAFF" stroke="#CBD5E1" stroke-width="1"/>
+<text x="78" y="352" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="9.2" font-weight="700" fill="#1F2B6F" text-anchor="start">MÃ VẬN ĐƠN</text>
+<text x="242" y="352" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="9.2" font-weight="700" fill="#1F2B6F" text-anchor="start">KHỐI LƯỢNG</text>
+<text x="338" y="352" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="9.2" font-weight="700" fill="#1F2B6F" text-anchor="start">NHÓM HÀNG</text>
+<text x="468" y="352" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="9.2" font-weight="700" fill="#1F2B6F" text-anchor="start">THỜI ĐIỂM QUÉT</text>
+<text x="612" y="352" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="9.2" font-weight="700" fill="#1F2B6F" text-anchor="start">ĐỐI SOÁT</text>
+<line x1="66" y1="398" x2="720" y2="398" stroke="#E2E8F0" stroke-width="1"/>
+<text x="78" y="384" font-family="'SF Mono','Menlo','Consolas',monospace" font-size="10.3" font-weight="700" fill="#0052CC" text-anchor="start">SHP-202605-0017</text>
+<text x="242" y="384" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="10.2" font-weight="500" fill="#102548" text-anchor="start">1,8 kg</text>
+<text x="338" y="384" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="10.2" font-weight="500" fill="#5B6B86" text-anchor="start">Hàng dễ vỡ</text>
+<text x="468" y="384" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="9.8" font-weight="500" fill="#5B6B86" text-anchor="start">14:22:08 (Idemp OK)</text>
+<rect x="608" y="369" width="86" height="21" rx="10.5" fill="#DCFCE7" stroke="none"/><text x="651.0" y="382.58" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="8.8" font-weight="700" fill="#137F5D" text-anchor="middle">Khớp tuyến</text>
+<line x1="66" y1="434" x2="720" y2="434" stroke="#E2E8F0" stroke-width="1"/>
+<text x="78" y="420" font-family="'SF Mono','Menlo','Consolas',monospace" font-size="10.3" font-weight="700" fill="#0052CC" text-anchor="start">SHP-202605-0014</text>
+<text x="242" y="420" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="10.2" font-weight="500" fill="#102548" text-anchor="start">4,2 kg</text>
+<text x="338" y="420" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="10.2" font-weight="500" fill="#5B6B86" text-anchor="start">Điện tử</text>
+<text x="468" y="420" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="9.8" font-weight="500" fill="#5B6B86" text-anchor="start">14:22:11 (Idemp OK)</text>
+<rect x="608" y="405" width="86" height="21" rx="10.5" fill="#DCFCE7" stroke="none"/><text x="651.0" y="418.58" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="8.8" font-weight="700" fill="#137F5D" text-anchor="middle">Khớp tuyến</text>
+<line x1="66" y1="470" x2="720" y2="470" stroke="#E2E8F0" stroke-width="1"/>
+<text x="78" y="456" font-family="'SF Mono','Menlo','Consolas',monospace" font-size="10.3" font-weight="700" fill="#0052CC" text-anchor="start">SHP-202605-0012</text>
+<text x="242" y="456" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="10.2" font-weight="500" fill="#102548" text-anchor="start">0,4 kg</text>
+<text x="338" y="456" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="10.2" font-weight="500" fill="#5B6B86" text-anchor="start">Tài liệu</text>
+<text x="468" y="456" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="9.8" font-weight="500" fill="#5B6B86" text-anchor="start">14:22:15 (Idemp OK)</text>
+<rect x="608" y="441" width="86" height="21" rx="10.5" fill="#DCFCE7" stroke="none"/><text x="651.0" y="454.58" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="8.8" font-weight="700" fill="#137F5D" text-anchor="middle">Khớp tuyến</text>
+<line x1="66" y1="506" x2="720" y2="506" stroke="#E2E8F0" stroke-width="1"/>
+<text x="78" y="492" font-family="'SF Mono','Menlo','Consolas',monospace" font-size="10.3" font-weight="700" fill="#0052CC" text-anchor="start">SHP-202605-0009</text>
+<text x="242" y="492" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="10.2" font-weight="500" fill="#102548" text-anchor="start">8,5 kg</text>
+<text x="338" y="492" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="10.2" font-weight="500" fill="#5B6B86" text-anchor="start">Cồng kềnh</text>
+<text x="468" y="492" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="9.8" font-weight="500" fill="#5B6B86" text-anchor="start">14:22:19 (Idemp OK)</text>
+<rect x="608" y="477" width="86" height="21" rx="10.5" fill="#DCFCE7" stroke="none"/><text x="651.0" y="490.58" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="8.8" font-weight="700" fill="#137F5D" text-anchor="middle">Khớp tuyến</text>
+<line x1="66" y1="542" x2="720" y2="542" stroke="#E2E8F0" stroke-width="1"/>
+<text x="78" y="528" font-family="'SF Mono','Menlo','Consolas',monospace" font-size="10.3" font-weight="700" fill="#0052CC" text-anchor="start">SHP-202605-0006</text>
+<text x="242" y="528" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="10.2" font-weight="500" fill="#102548" text-anchor="start">2,1 kg</text>
+<text x="338" y="528" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="10.2" font-weight="500" fill="#5B6B86" text-anchor="start">Thông thường</text>
+<text x="468" y="528" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="9.8" font-weight="500" fill="#5B6B86" text-anchor="start">14:22:24 (Idemp OK)</text>
+<rect x="608" y="513" width="86" height="21" rx="10.5" fill="#DCFCE7" stroke="none"/><text x="651.0" y="526.58" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="8.8" font-weight="700" fill="#137F5D" text-anchor="middle">Khớp tuyến</text>
+<rect x="66" y="560" width="654" height="80" rx="10" fill="#ECFDF5" stroke="#6EE7B7" stroke-width="1"/>
+<text x="80" y="584" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="11" font-weight="700" fill="#137F5D" text-anchor="start">Chuỗi nghiệm thu niêm phong (SealRecord → ReceiveRecord)</text>
+<text x="80" y="604" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="9.6" font-weight="500" fill="#065F46" text-anchor="start">• Xuất bến Hub gửi: Chụp ảnh cửa thùng xe + quét Seal SL-88421 → phát sự kiện manifest.dispatched.</text>
+<text x="80" y="622" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="9.6" font-weight="500" fill="#065F46" text-anchor="start">• Cập bến Hub đích: So khớp Seal 100% trước khi mở bao; sai/đứt seal tự đẩy sang Giám định QA.</text>
+<rect x="758" y="128" width="476" height="530" rx="14" fill="#FFFFFF" stroke="#DBE2F0" stroke-width="1.2"/>
+<text x="778" y="156" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="13.5" font-weight="700" fill="#102548" text-anchor="start">2. Quyết toán công nợ COD Bưu tá (SePay/VietQR)</text>
+<text x="778" y="175" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="9.8" font-weight="500" fill="#5B6B86" text-anchor="start">Tự động gạch nợ công nợ ca qua Webhook HMAC · Trần tiền mặt 15 triệu</text>
+<rect x="778" y="192" width="212.0" height="68" rx="10" fill="#E7EFFF" stroke="#93C5FD" stroke-width="1"/>
+<text x="790" y="214" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="9" font-weight="700" fill="#0052CC" text-anchor="start">TỔNG COD PHẢI THU CA</text>
+<text x="790" y="242" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="16.5" font-weight="700" fill="#0052CC" text-anchor="start">18.650.000 đ</text>
+<rect x="1002.0" y="192" width="212.0" height="68" rx="10" fill="#DCFCE7" stroke="#6EE7B7" stroke-width="1"/>
+<text x="1014.0" y="214" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="9" font-weight="700" fill="#137F5D" text-anchor="start">ĐÃ ĐỐI SOÁT VIETQR</text>
+<text x="1014.0" y="242" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="16.5" font-weight="700" fill="#137F5D" text-anchor="start">15.200.000 đ</text>
+<rect x="778" y="276" width="436" height="38" rx="8" fill="#FAFBFD" stroke="#DBE2F0" stroke-width="1"/>
+<text x="790" y="299" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="10.3" font-weight="700" fill="#102548" text-anchor="start">Nguyễn Văn A (NV01)</text>
+<text x="1100" y="299" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="10.5" font-weight="700" fill="#0052CC" text-anchor="end">3.450.000 đ</text>
+<rect x="1112" y="284" width="92" height="22" rx="11.0" fill="#FEF3C7" stroke="none"/><text x="1158.0" y="298.08" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="8.8" font-weight="700" fill="#C26D0A" text-anchor="middle">Chờ nộp</text>
+<rect x="778" y="320" width="436" height="38" rx="8" fill="#FAFBFD" stroke="#DBE2F0" stroke-width="1"/>
+<text x="790" y="343" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="10.3" font-weight="700" fill="#102548" text-anchor="start">Trần Thanh B (NV02)</text>
+<text x="1100" y="343" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="10.5" font-weight="700" fill="#0052CC" text-anchor="end">6.800.000 đ</text>
+<rect x="1112" y="328" width="92" height="22" rx="11.0" fill="#DCFCE7" stroke="none"/><text x="1158.0" y="342.08" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="8.8" font-weight="700" fill="#137F5D" text-anchor="middle">Đã gạch nợ</text>
+<rect x="778" y="364" width="436" height="38" rx="8" fill="#FAFBFD" stroke="#DBE2F0" stroke-width="1"/>
+<text x="790" y="387" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="10.3" font-weight="700" fill="#102548" text-anchor="start">Lê Minh C (NV03)</text>
+<text x="1100" y="387" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="10.5" font-weight="700" fill="#0052CC" text-anchor="end">8.400.000 đ</text>
+<rect x="1112" y="372" width="92" height="22" rx="11.0" fill="#DCFCE7" stroke="none"/><text x="1158.0" y="386.08" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="8.8" font-weight="700" fill="#137F5D" text-anchor="middle">Đã gạch nợ</text>
+<rect x="778" y="408" width="436" height="38" rx="8" fill="#FAFBFD" stroke="#DBE2F0" stroke-width="1"/>
+<text x="790" y="431" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="10.3" font-weight="700" fill="#102548" text-anchor="start">Phạm Quốc D (NV04)</text>
+<text x="1100" y="431" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="10.5" font-weight="700" fill="#0052CC" text-anchor="end">0 đ</text>
+<rect x="1112" y="416" width="92" height="22" rx="11.0" fill="#F6F8FC" stroke="none"/><text x="1158.0" y="430.08" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="8.8" font-weight="700" fill="#5B6B86" text-anchor="middle">Không phát sinh</text>
+<rect x="778" y="460" width="436" height="180" rx="12" fill="#F8FAFF" stroke="#93C5FD" stroke-width="1.2"/>
+<rect x="794" y="480" width="128" height="128" rx="8" fill="#FFFFFF" stroke="#102548" stroke-width="1.5"/>
+<rect x="806" y="492" width="16" height="16" rx="2" fill="#102548" stroke="none"/>
+<rect x="848" y="492" width="16" height="16" rx="2" fill="#102548" stroke="none"/>
+<rect x="890" y="492" width="16" height="16" rx="2" fill="#102548" stroke="none"/>
+<rect x="827" y="513" width="16" height="16" rx="2" fill="#102548" stroke="none"/>
+<rect x="869" y="513" width="16" height="16" rx="2" fill="#102548" stroke="none"/>
+<rect x="806" y="534" width="16" height="16" rx="2" fill="#102548" stroke="none"/>
+<rect x="848" y="534" width="16" height="16" rx="2" fill="#102548" stroke="none"/>
+<rect x="890" y="534" width="16" height="16" rx="2" fill="#102548" stroke="none"/>
+<rect x="827" y="555" width="16" height="16" rx="2" fill="#102548" stroke="none"/>
+<rect x="869" y="555" width="16" height="16" rx="2" fill="#102548" stroke="none"/>
+<rect x="806" y="576" width="16" height="16" rx="2" fill="#102548" stroke="none"/>
+<rect x="848" y="576" width="16" height="16" rx="2" fill="#102548" stroke="none"/>
+<rect x="890" y="576" width="16" height="16" rx="2" fill="#102548" stroke="none"/>
+<text x="938" y="498" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="12" font-weight="700" fill="#0052CC" text-anchor="start">Mã VietQR Quyết toán Lô</text>
+<text x="938" y="520" font-family="'SF Mono','Menlo','Consolas',monospace" font-size="10.3" font-weight="700" fill="#102548" text-anchor="start">Mã lô: SETTLEMENT-0518</text>
+<text x="938" y="540" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="11" font-weight="700" fill="#B91C1C" text-anchor="start">Số tiền: 3.450.000 VNĐ</text>
+<text x="938" y="560" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="9.6" font-weight="500" fill="#5B6B86" text-anchor="start">Cú pháp: COD SETTLEMENT-0518</text>
+<rect x="938" y="578" width="176" height="26" rx="13.0" fill="#DCFCE7" stroke="none"/><text x="1026.0" y="594.15" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="9" font-weight="700" fill="#137F5D" text-anchor="middle">SePay Webhook: Tự gạch nợ 30s</text>
+<rect x="24" y="692" width="1232" height="52" rx="10" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="1.2"/>
+<circle cx="53.0" cy="718" r="11" fill="#0052CC"/>
+<text x="53.0" y="722" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="10.5" font-weight="700" fill="#FFFFFF" text-anchor="middle">1</text>
+<text x="72.0" y="714" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="10.8" font-weight="700" fill="#102548" text-anchor="start">Đóng bao &amp; Kẹp chì Seal</text>
+<text x="72.0" y="730" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="9.6" font-weight="500" fill="#5B6B86" text-anchor="start">Gom đơn vào bao MB, khóa SealRecord chống tráo/thất lạc</text>
+<circle cx="453.0" cy="718" r="11" fill="#0052CC"/>
+<text x="453.0" y="722" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="10.5" font-weight="700" fill="#FFFFFF" text-anchor="middle">2</text>
+<text x="472.0" y="714" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="10.8" font-weight="700" fill="#102548" text-anchor="start">Quét mã chống trùng (Idempotency)</text>
+<text x="472.0" y="730" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="9.6" font-weight="500" fill="#5B6B86" text-anchor="start">Đồng bộ sự kiện lên RabbitMQ cập nhật toàn bộ đơn trong bao</text>
+<circle cx="853.0" cy="718" r="11" fill="#0052CC"/>
+<text x="853.0" y="722" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="10.5" font-weight="700" fill="#FFFFFF" text-anchor="middle">3</text>
+<text x="872.0" y="714" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="10.8" font-weight="700" fill="#102548" text-anchor="start">Đối soát COD tự động VietQR</text>
+<text x="872.0" y="730" font-family="'Manrope','Inter','Helvetica Neue',Arial,sans-serif" font-size="9.6" font-weight="500" fill="#5B6B86" text-anchor="start">Kiểm soát trần tiền mặt 15 triệu &amp; gạch nợ qua SePay Webhook</text>
+</svg>

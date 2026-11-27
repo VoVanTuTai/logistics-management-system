@@ -1,9 +1,10 @@
-import { Body, Controller, Get, Headers, Param, Post, Query, Req } from '@nestjs/common';
+import { Body, Controller, Get, Header, Headers, Param, Post, Query, Req } from '@nestjs/common';
 
 import { CodService } from '../../application/services/cod.service';
 import type {
   CodDailySettlementQuery,
   CodDailySettlementSummary,
+  CodErpExportQuery,
   CodRecord,
   CodSettlementPaymentEvent,
   CodSettlementPaymentEventQuery,
@@ -79,6 +80,15 @@ export class CodController {
     @Query() query: CodDailySettlementQuery,
   ): Promise<CodDailySettlementSummary> {
     return this.codService.getDailySettlement(query);
+  }
+
+  @Get('settlements/export/erp-csv')
+  @Header('Content-Type', 'text/csv; charset=utf-8')
+  async exportSettlementsErpCsv(
+    @Query() query: CodErpExportQuery,
+  ): Promise<string> {
+    const exported = await this.codService.exportSettlementsErpCsv(query);
+    return exported.csv;
   }
 
   @Post('settlements')

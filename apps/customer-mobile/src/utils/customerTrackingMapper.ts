@@ -435,5 +435,7 @@ export function mapTrackingToCustomerOrderModel(
         isCurrent: true,
       },
     ],
+    courierId: meta.assignedCourier || meta.assignedCourierId || meta.courierId || meta.courier?.id || undefined,
+    metadata: meta,
   };
 }
