@@ -50,6 +50,18 @@ export interface ChatSessionContext {
   pendingIntent?: PendingIntentType;
   pendingData?: ChatPendingData;
   pendingOrderData?: OrderDataDto;
+  lastPricingParams?: {
+    fromCity?: string;
+    toCity?: string;
+    weight?: number;
+    dimensions?: { length: number; width: number; height: number };
+  };
+  /**
+   * Tier 3 Recursive Conversation Summary Memory (MemGPT-style Episodic Memory).
+   * Keeps an ongoing executive summary of older conversation turns beyond the short-term window.
+   */
+  conversationSummary?: string;
+  summaryTurnCount?: number;
   lastUpdated: number;
 }
 
@@ -127,6 +139,16 @@ export interface OrchestrationResult {
   actionChips?: ActionChipDto[];
   orderFormRequested?: boolean;
   orderConfirmation?: OrderDataDto;
+  claimFormRequested?: boolean;
+  claimFormData?: {
+    trackingCode?: string;
+    category?: string;
+    customerName?: string;
+    customerPhone?: string;
+    assignedHubCode?: string;
+    assignedHubName?: string;
+    defaultDescription?: string;
+  };
   sessionPatch: Partial<ChatSessionContext>;
   skipRag?: boolean;
   /** Used when intent is purely informational and RAG should run in parallel/sequence */

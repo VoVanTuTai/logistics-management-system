@@ -55,6 +55,8 @@ interface ChatMessage {
   actionChips?: ActionChip[];
   orderFormRequested?: boolean;
   orderConfirmation?: any;
+  claimFormRequested?: boolean;
+  claimFormData?: any;
 }
 
 const QUICK_SUGGESTIONS = [
@@ -115,7 +117,7 @@ const RenderFormattedMessage: React.FC<FormattedMessageProps> = ({ text, isUser 
     return <Text style={[styles.messageText, styles.messageTextUser]}>{text}</Text>;
   }
 
-  // 1. Tiền xử lý: chuẩn hóa công thức toán LaTeX sang văn bản thuần túy, dọn sạch backticks và dấu sao thô
+  // 1. Tiền xử lý: chuẩn hóa công thức toán LaTeX sang văn bản thuần túy, dọn sạch backticks, dấu sao thô, bảng và phân cách
   const cleanText = text
     .replace(/\\frac\{([^}]+)\}\{([^}]+)\}/g, '($1) / $2')
     .replace(/\\(?:text|mathrm|mathbf|textit)\{([^}]*)\}/g, '$1')
@@ -135,6 +137,13 @@ const RenderFormattedMessage: React.FC<FormattedMessageProps> = ({ text, isUser 
     .replace(/`([^`]+)`/g, '$1')
     .replace(/`/g, '')
     .replace(/\*{3,}/g, '**')
+    // Sửa lỗi lệch sao (*tiêu đề** -> **tiêu đề**, **tiêu đề* -> **tiêu đề**)
+    .replace(/(^|[^\*])\*([^*\n]+)\*\*/g, '$1**$2**')
+    .replace(/\*\*([^*\n]+)\*([^\*]|$)/g, '**$1**$2')
+    // Chuẩn hóa đường kẻ ngang (-- hoặc ---)
+    .replace(/^\s*--+\s*$/gm, '---')
+    // Loại bỏ dòng trống xen giữa các hàng của bảng markdown
+    .replace(/(\|.*?\|)\s*\n\s*\n\s*(\|)/g, '$1\n$2')
     .replace(/(^|\n)\s*([•\-\*])\s*\n+(\s*)/g, '$1• ');
 
   const rawLines = cleanText.split('\n');
@@ -165,43 +174,129 @@ const RenderFormattedMessage: React.FC<FormattedMessageProps> = ({ text, isUser 
     });
   };
 
+  // Gom các dòng bảng markdown (| cột 1 | cột 2 |) thành khối bảng
+  type MobileRenderBlock =
+    | { type: 'table'; headers: string[]; rows: string[][] }
+    | { type: 'line'; line: string };
+
+  const blocks: MobileRenderBlock[] = [];
+  let currentTableLines: string[] = [];
+
+  const flushTable = () => {
+    if (currentTableLines.length >= 2) {
+      const parsedRows = currentTableLines.map((l) =>
+        l
+          .replace(/^\|/, '')
+          .replace(/\|$/, '')
+          .split('|')
+          .map((c) => c.trim())
+      );
+      const headers = parsedRows[0];
+      const dataRows = parsedRows.slice(1).filter((row) => !row.every((c) => /^[-:\s]+$/.test(c)));
+      blocks.push({ type: 'table', headers, rows: dataRows });
+    } else {
+      currentTableLines.forEach((l) => blocks.push({ type: 'line', line: l }));
+    }
+    currentTableLines = [];
+  };
+
+  for (let i = 0; i < lines.length; i++) {
+    const trimmed = lines[i].trim();
+    if (trimmed.startsWith('|') && trimmed.endsWith('|') && trimmed.length > 2) {
+      currentTableLines.push(trimmed);
+    } else {
+      if (currentTableLines.length > 0) {
+        flushTable();
+      }
+      blocks.push({ type: 'line', line: lines[i] });
+    }
+  }
+  if (currentTableLines.length > 0) {
+    flushTable();
+  }
+
   return (
     <View style={styles.formattedContainer}>
-      {lines.map((line, idx) => {
-        const trimmed = line.trim();
-        if (!trimmed) {
-          return <View key={idx} style={styles.emptyLineSpacer} />;
+      {blocks.map((block, bIdx) => {
+        if (block.type === 'table') {
+          return (
+            <View key={`table-${bIdx}`} style={styles.tableContainer}>
+              <View style={styles.tableHeaderRow}>
+                {block.headers.map((h, hIdx) => (
+                  <Text key={hIdx} style={styles.tableHeaderCell}>
+                    {renderInlineBold(h, `th-${bIdx}-${hIdx}`)}
+                  </Text>
+                ))}
+              </View>
+              {block.rows.map((row, rIdx) => (
+                <View key={rIdx} style={styles.tableDataRow}>
+                  {row.map((cell, cIdx) => (
+                    <Text key={cIdx} style={styles.tableCell}>
+                      {renderInlineBold(cell, `td-${bIdx}-${rIdx}-${cIdx}`)}
+                    </Text>
+                  ))}
+                </View>
+              ))}
+            </View>
+          );
         }
 
-        // 1. Dòng gạch đầu dòng (• hoặc - hoặc *)
-        if (trimmed.startsWith('•') || trimmed.startsWith('-') || trimmed.startsWith('*')) {
-          const itemContent = trimmed.replace(/^[•\-\*]\s*/, '');
+        const trimmed = block.line.trim();
+        if (!trimmed) {
+          return <View key={`sp-${bIdx}`} style={styles.emptyLineSpacer} />;
+        }
+
+        // Đường kẻ ngang (--- hoặc --)
+        if (trimmed === '---' || /^[-*_]{2,}$/.test(trimmed)) {
+          return <View key={`hr-${bIdx}`} style={styles.horizontalDivider} />;
+        }
+
+        // Tiêu đề Section (# hoặc **Tiêu đề** hoặc ngắn kết thúc bằng ':')
+        const isMarkdownHeader = /^#{1,4}\s+/.test(trimmed);
+        const isBoldOnlyHeader = /^\*\*[^*]+\*\*:?$/.test(trimmed);
+        const isShortColonHeader = trimmed.length < 80 && trimmed.endsWith(':') && !trimmed.startsWith('•') && !trimmed.startsWith('-');
+        if (isMarkdownHeader || isBoldOnlyHeader || isShortColonHeader) {
+          const cleanHdr = trimmed.replace(/^#+\s*/, '');
           return (
-            <View key={idx} style={styles.bulletRow}>
+            <View key={`hdr-${bIdx}`} style={styles.sectionHeaderRow}>
+              <Text style={styles.sectionHeaderText}>
+                {renderInlineBold(cleanHdr, `hdr-${bIdx}`)}
+              </Text>
+            </View>
+          );
+        }
+
+        // Dòng danh sách có đánh số (1. hoặc 2. ...)
+        const numMatch = trimmed.match(/^(\d+)\.\s+(.*)/);
+        if (numMatch) {
+          return (
+            <View key={`num-${bIdx}`} style={styles.numberedRow}>
+              <Text style={styles.numberedPrefix}>{numMatch[1]}.</Text>
+              <Text style={styles.bulletTextWrapper}>
+                {renderInlineBold(numMatch[2], `num-${bIdx}`)}
+              </Text>
+            </View>
+          );
+        }
+
+        // Dòng gạch đầu dòng (• hoặc - hoặc * nhưng KHÔNG PHẢI **)
+        const isBullet = /^(?:[•\-]|(?:\*(?!\*)))\s+/.test(trimmed);
+        if (isBullet) {
+          const itemContent = trimmed.replace(/^(?:[•\-]|(?:\*(?!\*)))\s+/, '');
+          return (
+            <View key={`bullet-${bIdx}`} style={styles.bulletRow}>
               <View style={styles.bulletDot} />
               <Text style={styles.bulletTextWrapper}>
-                {renderInlineBold(itemContent, `bullet-${idx}`)}
+                {renderInlineBold(itemContent, `bullet-${bIdx}`)}
               </Text>
             </View>
           );
         }
 
-        // 2. Dòng tiêu đề mục / Section có emoji hoặc viết hoa ngắn
-        const isHeader = /^[📦📍🏷️👤💰🏢⏰🚚📋💡✅❌⚠️]/.test(trimmed) && trimmed.length < 80;
-        if (isHeader) {
-          return (
-            <View key={idx} style={styles.sectionHeaderRow}>
-              <Text style={styles.sectionHeaderText}>
-                {renderInlineBold(trimmed, `hdr-${idx}`)}
-              </Text>
-            </View>
-          );
-        }
-
-        // 3. Dòng thông thường
+        // Dòng thông thường
         return (
-          <Text key={idx} style={[styles.messageText, styles.messageTextBot, styles.paragraphText]}>
-            {renderInlineBold(trimmed, `p-${idx}`)}
+          <Text key={`p-${bIdx}`} style={[styles.messageText, styles.messageTextBot, styles.paragraphText]}>
+            {renderInlineBold(trimmed, `p-${bIdx}`)}
           </Text>
         );
       })}
@@ -1596,6 +1691,8 @@ export function FloatingAiChatModal({ visible, onClose }: FloatingAiChatModalPro
           actionChips: answerData.actionChips,
           orderFormRequested: answerData.orderFormRequested,
           orderConfirmation: answerData.orderConfirmation,
+          claimFormRequested: answerData.claimFormRequested,
+          claimFormData: answerData.claimFormData,
         };
         setMessages((prev) => [...prev, botMsg]);
       } else {
@@ -1922,6 +2019,10 @@ export function FloatingAiChatModal({ visible, onClose }: FloatingAiChatModalPro
                                 handleSendMessage('Tạo đơn ngay', { action: 'OPEN_ORDER_FORM' });
                               } else if (chip.label === 'Hủy tạo đơn' || chip.query === 'Hủy tạo đơn') {
                                 handleSendMessage('Hủy tạo đơn', { action: 'CANCEL_ORDER' });
+                              } else if (chip.label === 'Tạo phiếu khiếu nại' || chip.query === 'Mở form khiếu nại') {
+                                handleSendMessage('Mở biểu mẫu khiếu nại bưu kiện 09412832109', { action: 'OPEN_CLAIM_FORM' });
+                              } else if (chip.label === 'Khiếu nại của tôi' || chip.query === 'Kiểm tra phiếu khiếu nại của tôi') {
+                                handleSendMessage('Kiểm tra danh sách phiếu khiếu nại của tôi');
                               } else {
                                 handleSendMessage(chip.query);
                               }
@@ -2234,6 +2335,60 @@ const styles = StyleSheet.create({
   },
   emptyLineSpacer: {
     height: 4,
+  },
+  horizontalDivider: {
+    height: 1,
+    backgroundColor: '#E2E8F0',
+    marginVertical: 6,
+  },
+  numberedRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 6,
+    paddingLeft: 2,
+    marginVertical: 1.5,
+  },
+  numberedPrefix: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#1D4ED8',
+    minWidth: 16,
+    marginTop: 1,
+  },
+  tableContainer: {
+    marginVertical: 6,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    borderRadius: 8,
+    overflow: 'hidden',
+    backgroundColor: '#FFFFFF',
+  },
+  tableHeaderRow: {
+    flexDirection: 'row',
+    backgroundColor: '#F8FAFC',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E2E8F0',
+    paddingVertical: 6,
+    paddingHorizontal: 8,
+  },
+  tableDataRow: {
+    flexDirection: 'row',
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1F5F9',
+    paddingVertical: 6,
+    paddingHorizontal: 8,
+  },
+  tableCell: {
+    flex: 1,
+    fontSize: 12,
+    lineHeight: 17,
+    color: '#334155',
+  },
+  tableHeaderCell: {
+    flex: 1,
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#0F172A',
   },
   bulletRow: {
     flexDirection: 'row',

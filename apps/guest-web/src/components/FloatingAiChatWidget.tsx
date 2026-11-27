@@ -14,6 +14,17 @@ import {
   Bot,
   Sparkles,
   Truck,
+  Camera,
+  Upload,
+  ShieldAlert,
+  CheckCircle2,
+  Building2,
+  AlertTriangle,
+  FileText,
+  RefreshCw,
+  Clock,
+  Send,
+  Eye,
 } from 'lucide-react';
 import { useAuthStore } from '../store/useAuthStore';
 import { ZaloIcon } from './ZaloIcon';
@@ -144,6 +155,16 @@ interface ChatMessage {
   actionChips?: ActionChip[];
   orderFormRequested?: boolean;
   orderConfirmation?: any;
+  claimFormRequested?: boolean;
+  claimFormData?: {
+    trackingCode?: string;
+    category?: string;
+    customerName?: string;
+    customerPhone?: string;
+    assignedHubCode?: string;
+    assignedHubName?: string;
+    defaultDescription?: string;
+  };
 }
 
 const QUICK_SUGGESTIONS = [
@@ -159,7 +180,7 @@ const FormattedChatMessage: React.FC<{ text: string; isUser: boolean }> = ({ tex
     return <div className="whitespace-pre-wrap">{text}</div>;
   }
 
-  // Pre-process: sanitize LaTeX math formulas to plain text, remove raw backticks, excessive asterisks, and generic emojis
+  // Pre-process: sanitize LaTeX math formulas to plain text, remove raw backticks, normalize asterisks, separators, and tables
   const cleanText = text
     .replace(/\\frac\{([^}]+)\}\{([^}]+)\}/g, '($1) / $2')
     .replace(/\\(?:text|mathrm|mathbf|textit)\{([^}]*)\}/g, '$1')
@@ -179,6 +200,13 @@ const FormattedChatMessage: React.FC<{ text: string; isUser: boolean }> = ({ tex
     .replace(/`([^`]+)`/g, '$1')
     .replace(/`/g, '')
     .replace(/\*{3,}/g, '**')
+    // Fix accidental mismatched asterisks (*heading** -> **heading**, **heading* -> **heading**)
+    .replace(/(^|[^\*])\*([^*\n]+)\*\*/g, '$1**$2**')
+    .replace(/\*\*([^*\n]+)\*([^\*]|$)/g, '**$1**$2')
+    // Clean raw dashes/separators (-- or ---)
+    .replace(/^\s*--+\s*$/gm, '---')
+    // Clean empty lines between markdown table rows
+    .replace(/(\|.*?\|)\s*\n\s*\n\s*(\|)/g, '$1\n$2')
     .replace(/[\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{1F100}-\u{1F1FF}\u{1F200}-\u{1F2FF}\u{1F680}-\u{1F6FF}\u{1F600}-\u{1F64F}\u{1FA00}-\u{1FAFF}\u{200D}\u{FE0F}]/gu, '')
     .replace(/[📦📍🏷️👤💰🏢⏰🚚📋💡✅❌⚠️👋🚨💬💳🎁✈️⚖️📐🔄✏️🔑📱🔍🎉👉📌ℹ️📖]/g, '')
     .replace(/(^|\n)\s*([•\-\*])\s*\n+(\s*)/g, '$1• ');
@@ -236,36 +264,129 @@ const FormattedChatMessage: React.FC<{ text: string; isUser: boolean }> = ({ tex
     return elements.length > 0 ? elements : content;
   };
 
+  // Group contiguous markdown table lines (| col | col |) into structured table blocks
+  type RenderBlock =
+    | { type: 'table'; headers: string[]; rows: string[][] }
+    | { type: 'line'; line: string };
+
+  const blocks: RenderBlock[] = [];
+  let currentTableLines: string[] = [];
+
+  const flushTable = () => {
+    if (currentTableLines.length >= 2) {
+      const parsedRows = currentTableLines.map((l) =>
+        l
+          .replace(/^\|/, '')
+          .replace(/\|$/, '')
+          .split('|')
+          .map((c) => c.trim())
+      );
+      const headers = parsedRows[0];
+      // Filter out divider row (e.g., |---|---|)
+      const dataRows = parsedRows.slice(1).filter((row) => !row.every((c) => /^[-:\s]+$/.test(c)));
+      blocks.push({ type: 'table', headers, rows: dataRows });
+    } else {
+      currentTableLines.forEach((l) => blocks.push({ type: 'line', line: l }));
+    }
+    currentTableLines = [];
+  };
+
+  for (let i = 0; i < lines.length; i++) {
+    const trimmed = lines[i].trim();
+    if (trimmed.startsWith('|') && trimmed.endsWith('|') && trimmed.length > 2) {
+      currentTableLines.push(trimmed);
+    } else {
+      if (currentTableLines.length > 0) {
+        flushTable();
+      }
+      blocks.push({ type: 'line', line: lines[i] });
+    }
+  }
+  if (currentTableLines.length > 0) {
+    flushTable();
+  }
+
   return (
     <div className="space-y-1.5 text-zinc-800 leading-relaxed font-sans text-[13px]">
-      {lines.map((line, idx) => {
-        const trimmed = line.trim();
-        if (!trimmed) {
-          return <div key={idx} className="h-1" />;
+      {blocks.map((block, bIdx) => {
+        if (block.type === 'table') {
+          return (
+            <div key={`table-${bIdx}`} className="my-2 overflow-x-auto rounded-lg border border-slate-200 bg-white shadow-xs">
+              <table className="w-full text-left text-[12px] border-collapse">
+                <thead>
+                  <tr className="bg-slate-50 border-b border-slate-200 font-semibold text-slate-800">
+                    {block.headers.map((h, hIdx) => (
+                      <th key={hIdx} className="py-1.5 px-2.5 text-xs">
+                        {renderInlineFormatted(h)}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {block.rows.map((row, rIdx) => (
+                    <tr key={rIdx} className="hover:bg-slate-50/60 transition-colors">
+                      {row.map((cell, cIdx) => (
+                        <td key={cIdx} className="py-1.5 px-2.5 text-slate-700 align-top">
+                          {renderInlineFormatted(cell)}
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          );
         }
 
-        // Bullet list item
-        if (trimmed.startsWith('•') || trimmed.startsWith('-') || trimmed.startsWith('*')) {
-          const itemContent = trimmed.replace(/^[•\-\*]\s*/, '');
+        const trimmed = block.line.trim();
+        if (!trimmed) {
+          return <div key={`sp-${bIdx}`} className="h-1" />;
+        }
+
+        // Horizontal rule (--- or --)
+        if (trimmed === '---' || /^[-*_]{2,}$/.test(trimmed)) {
+          return <hr key={`hr-${bIdx}`} className="my-2 border-slate-200" />;
+        }
+
+        // Section header (# Header or ### Header or **1. Title** / **Title:**)
+        const isMarkdownHeader = /^#{1,4}\s+/.test(trimmed);
+        const isBoldOnlyHeader = /^\*\*[^*]+\*\*:?$/.test(trimmed);
+        const isShortColonHeader = trimmed.length < 80 && trimmed.endsWith(':') && !trimmed.startsWith('•') && !trimmed.startsWith('-');
+        if (isMarkdownHeader || isBoldOnlyHeader || isShortColonHeader) {
+          const headerClean = trimmed.replace(/^#+\s*/, '');
           return (
-            <div key={idx} className="flex items-start gap-2 pl-0.5 py-0.5">
+            <div key={`hdr-${bIdx}`} className="font-semibold text-zinc-950 pt-1 text-[13px]">
+              {renderInlineFormatted(headerClean)}
+            </div>
+          );
+        }
+
+        // Numbered list item (e.g. "1. Tách kiện" or "1. **Tách kiện**")
+        const numberedMatch = trimmed.match(/^(\d+)\.\s+(.*)/);
+        if (numberedMatch) {
+          return (
+            <div key={`num-${bIdx}`} className="flex items-start gap-2 pl-0.5 py-0.5">
+              <span className="font-bold text-blue-600 text-[12px] min-w-[16px] shrink-0 mt-0.5">
+                {numberedMatch[1]}.
+              </span>
+              <div className="flex-1">{renderInlineFormatted(numberedMatch[2])}</div>
+            </div>
+          );
+        }
+
+        // Bullet list item (• or - or * but NEVER **)
+        const isBullet = /^(?:[•\-]|(?:\*(?!\*)))\s+/.test(trimmed);
+        if (isBullet) {
+          const itemContent = trimmed.replace(/^(?:[•\-]|(?:\*(?!\*)))\s+/, '');
+          return (
+            <div key={`bullet-${bIdx}`} className="flex items-start gap-2 pl-0.5 py-0.5">
               <span className="h-1.5 w-1.5 rounded-full bg-zinc-400 mt-2 shrink-0" />
               <div className="flex-1">{renderInlineFormatted(itemContent)}</div>
             </div>
           );
         }
 
-        // Section header
-        const isHeader = trimmed.length < 60 && (trimmed.endsWith(':') || trimmed.startsWith('#'));
-        if (isHeader) {
-          return (
-            <div key={idx} className="font-semibold text-zinc-950 pt-1 text-[13px]">
-              {renderInlineFormatted(trimmed.replace(/^#+\s*/, ''))}
-            </div>
-          );
-        }
-
-        return <p key={idx}>{renderInlineFormatted(trimmed)}</p>;
+        return <p key={`p-${bIdx}`}>{renderInlineFormatted(trimmed)}</p>;
       })}
     </div>
   );
@@ -807,6 +928,475 @@ const OrderCreationForm: React.FC<{
   );
 };
 
+export interface ClaimFormData {
+  shipmentCode: string;
+  customerName: string;
+  customerPhone: string;
+  category: string;
+  title: string;
+  description: string;
+  assignedHubCode: string;
+  assignedHubName: string;
+  images: Array<{ fileName: string; url: string; fileSizeBytes?: number; type?: string }>;
+}
+
+const ClaimTicketFormCard: React.FC<{
+  defaultTrackingCode?: string;
+  defaultCustomerName?: string;
+  defaultCustomerPhone?: string;
+  suggestedCategory?: string;
+  assignedHubCode?: string;
+  assignedHubName?: string;
+  defaultDescription?: string;
+  onSubmit: (data: ClaimFormData) => void;
+  onCancel: () => void;
+  disabled?: boolean;
+}> = ({
+  defaultTrackingCode = '',
+  defaultCustomerName = '',
+  defaultCustomerPhone = '',
+  suggestedCategory = 'DAMAGE_COMPLAINT',
+  assignedHubCode = 'HUB_TAN_BINH',
+  assignedHubName = 'Hub Tân Bình (TP.HCM)',
+  defaultDescription = '',
+  onSubmit,
+  onCancel,
+  disabled = false,
+}) => {
+  const [shipmentCode, setShipmentCode] = useState(defaultTrackingCode || '09412832109');
+  const [customerName, setCustomerName] = useState(defaultCustomerName || 'Tài Trần');
+  const [customerPhone, setCustomerPhone] = useState(defaultCustomerPhone || '0941283210');
+  const [category, setCategory] = useState(suggestedCategory || 'DAMAGE_COMPLAINT');
+  const [description, setDescription] = useState(
+    defaultDescription || 'Tôi mở hộp đồng kiểm trước mặt bưu tá phát hiện ấm trà bị vỡ quai và rạn nắp. Đề nghị bồi thường theo gói bảo hiểm toàn diện 100%.'
+  );
+  const [images, setImages] = useState<Array<{ fileName: string; url: string; fileSizeBytes?: number; type?: string }>>([
+    {
+      fileName: 'anh_hien_truong_vo_am_chen.jpg',
+      url: 'https://images.unsplash.com/photo-1544816155-12df9643f363?w=800&auto=format&fit=crop&q=80',
+      fileSizeBytes: 420000,
+      type: 'IMAGE',
+    },
+  ]);
+  const [errorMsg, setErrorMsg] = useState('');
+  const [submitted, setSubmitted] = useState(false);
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+    const file = files[0];
+    const reader = new FileReader();
+    reader.onload = () => {
+      const base64Url = reader.result as string;
+      setImages((prev) => [
+        ...prev,
+        {
+          fileName: file.name,
+          url: base64Url,
+          fileSizeBytes: file.size,
+          type: 'IMAGE',
+        },
+      ]);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleRemoveImage = (index: number) => {
+    setImages((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const handleFormSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!shipmentCode.trim()) {
+      setErrorMsg('Vui lòng nhập mã vận đơn cần khiếu nại.');
+      return;
+    }
+    if (!description.trim()) {
+      setErrorMsg('Vui lòng mô tả chi tiết sự cố hàng hóa.');
+      return;
+    }
+    setSubmitted(true);
+    onSubmit({
+      shipmentCode: shipmentCode.trim().toUpperCase(),
+      customerName: customerName.trim(),
+      customerPhone: customerPhone.trim(),
+      category,
+      title: `Khiếu nại ${category === 'DAMAGE_COMPLAINT' ? 'bể vỡ' : 'sự cố'} bưu kiện ${shipmentCode}`,
+      description: description.trim(),
+      assignedHubCode,
+      assignedHubName,
+      images,
+    });
+  };
+
+  if (submitted) {
+    return (
+      <div className="mt-2.5 p-3 rounded-xl border border-emerald-200 bg-emerald-50/90 text-xs text-emerald-800 shadow-2xs">
+        <div className="flex items-center gap-2 font-bold text-emerald-700">
+          <CheckCircle2 className="h-4 w-4" />
+          Đã gửi phiếu khiếu nại thành công đến {assignedHubName}!
+        </div>
+        <p className="mt-1 text-[11px] text-emerald-600">
+          Mã vận đơn: <strong>{shipmentCode}</strong>. Bưu cục đang kiểm tra camera bàn dỡ & biên bản hiện trường.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <form
+      onSubmit={handleFormSubmit}
+      className="mt-3 p-3.5 rounded-2xl border border-rose-200/90 bg-gradient-to-b from-rose-50/50 to-white shadow-sm text-xs font-sans text-slate-700"
+    >
+      <div className="flex items-center justify-between pb-2 border-b border-rose-100">
+        <div className="flex items-center gap-1.5 font-bold text-rose-800 text-xs">
+          <ShieldAlert className="h-4 w-4 text-rose-600" />
+          Phiếu khiếu nại bưu cục & Yêu cầu bồi thường
+        </div>
+        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 text-rose-700">
+          P1 Khẩn cấp
+        </span>
+      </div>
+
+      <div className="mt-2.5 p-2 rounded-lg bg-blue-50/90 border border-blue-200 flex items-center justify-between">
+        <div className="flex items-center gap-1.5 text-blue-900 font-semibold text-[11px]">
+          <Building2 className="h-3.5 w-3.5 text-blue-600 shrink-0" />
+          <span>Bưu cục tiếp nhận:</span>
+          <strong className="text-blue-700">{assignedHubName}</strong>
+        </div>
+        <span className="text-[10px] text-blue-600 bg-blue-100/80 px-1.5 py-0.5 rounded font-mono">
+          {assignedHubCode}
+        </span>
+      </div>
+
+      {errorMsg && (
+        <div className="mt-2 p-2 rounded-lg bg-red-50 text-red-700 border border-red-200 text-[11px] flex items-center gap-1.5">
+          <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+          {errorMsg}
+        </div>
+      )}
+
+      <div className="mt-2.5 space-y-2">
+        <div className="grid grid-cols-2 gap-2">
+          <div>
+            <label className="block text-[10.5px] font-bold text-slate-600 mb-0.5">
+              Mã vận đơn (*)
+            </label>
+            <input
+              type="text"
+              className="w-full h-8 px-2.5 text-xs font-mono font-bold text-blue-700 rounded-lg border border-slate-300 focus:border-rose-500 focus:ring-1 focus:ring-rose-500 uppercase bg-slate-50"
+              value={shipmentCode}
+              onChange={(e) => setShipmentCode(e.target.value)}
+              placeholder="VD: 09412832109"
+              required
+            />
+          </div>
+          <div>
+            <label className="block text-[10.5px] font-bold text-slate-600 mb-0.5">
+              Loại khiếu nại
+            </label>
+            <select
+              className="w-full h-8 px-2 text-xs rounded-lg border border-slate-300 focus:border-rose-500 focus:ring-1 focus:ring-rose-500 bg-white"
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+            >
+              <option value="DAMAGE_COMPLAINT">Hàng bể vỡ / Hư hỏng</option>
+              <option value="LOST_IN_TRANSIT">Hàng thất lạc / Mất mát</option>
+              <option value="COURIER_ATTITUDE">Phản ánh bưu tá / Thái độ</option>
+              <option value="COD_DISCREPANCY">Sai tiền thu hộ COD</option>
+              <option value="GENERAL_INQUIRY">Hỗ trợ khẩn cấp khác</option>
+            </select>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-2">
+          <div>
+            <label className="block text-[10.5px] font-medium text-slate-600 mb-0.5">
+              Họ tên người gửi/nhận
+            </label>
+            <input
+              type="text"
+              className="w-full h-8 px-2.5 text-xs rounded-lg border border-slate-300 focus:border-rose-500 focus:ring-1 focus:ring-rose-500"
+              value={customerName}
+              onChange={(e) => setCustomerName(e.target.value)}
+              placeholder="VD: Tài Trần"
+            />
+          </div>
+          <div>
+            <label className="block text-[10.5px] font-medium text-slate-600 mb-0.5">
+              Số điện thoại liên hệ
+            </label>
+            <input
+              type="text"
+              className="w-full h-8 px-2.5 text-xs rounded-lg border border-slate-300 focus:border-rose-500 focus:ring-1 focus:ring-rose-500"
+              value={customerPhone}
+              onChange={(e) => setCustomerPhone(e.target.value)}
+              placeholder="VD: 0941283210"
+            />
+          </div>
+        </div>
+
+        <div>
+          <label className="block text-[10.5px] font-bold text-slate-600 mb-0.5">
+            Mô tả chi tiết sự cố hàng hóa (*)
+          </label>
+          <textarea
+            rows={2}
+            className="w-full p-2 text-xs rounded-lg border border-slate-300 focus:border-rose-500 focus:ring-1 focus:ring-rose-500 resize-none leading-relaxed"
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            placeholder="Mô tả tình trạng ngoại quan hộp carton, chi tiết bể vỡ và yêu cầu đền bù..."
+            required
+          />
+        </div>
+
+        <div>
+          <label className="block text-[10.5px] font-bold text-slate-600 mb-1 flex items-center justify-between">
+            <span className="flex items-center gap-1">
+              <Camera className="h-3 w-3 text-slate-500" />
+              Hình ảnh / Video bằng chứng hiện trường
+            </span>
+            <span className="text-[10px] text-slate-400 font-normal">
+              {images.length} tệp đã chọn
+            </span>
+          </label>
+
+          <div className="flex flex-wrap gap-2 items-center">
+            {images.map((img, idx) => (
+              <div
+                key={idx}
+                className="relative group w-14 h-14 rounded-lg overflow-hidden border border-slate-200 bg-slate-100 shadow-2xs"
+              >
+                <img src={img.url} alt={img.fileName} className="w-full h-full object-cover" />
+                <button
+                  type="button"
+                  onClick={() => handleRemoveImage(idx)}
+                  className="absolute top-0.5 right-0.5 w-4 h-4 bg-black/70 hover:bg-red-600 text-white rounded-full flex items-center justify-center text-[10px]"
+                  title="Xóa ảnh"
+                >
+                  <X className="h-2.5 w-2.5" />
+                </button>
+              </div>
+            ))}
+
+            <label className="w-14 h-14 rounded-lg border-2 border-dashed border-slate-300 hover:border-rose-400 bg-slate-50 hover:bg-rose-50/50 flex flex-col items-center justify-center cursor-pointer transition-colors text-slate-400 hover:text-rose-600">
+              <Upload className="h-4 w-4" />
+              <span className="text-[9px] font-medium mt-0.5">Tải ảnh</span>
+              <input type="file" accept="image/*" className="hidden" onChange={handleFileUpload} />
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <div className="mt-3 pt-2.5 border-t border-rose-100 flex items-center justify-end gap-2">
+        <button
+          type="button"
+          onClick={onCancel}
+          disabled={disabled}
+          className="px-3 py-1.5 rounded-lg text-slate-600 hover:bg-slate-100 text-xs font-medium cursor-pointer"
+        >
+          Hủy bỏ
+        </button>
+        <button
+          type="submit"
+          disabled={disabled}
+          className="px-4 py-1.5 rounded-lg bg-gradient-to-r from-rose-600 to-red-600 hover:from-rose-700 hover:to-red-700 active:scale-95 text-white font-bold text-xs shadow-sm flex items-center gap-1.5 cursor-pointer"
+        >
+          <Send className="h-3 w-3" />
+          Gửi khiếu nại đến bưu cục
+        </button>
+      </div>
+    </form>
+  );
+};
+
+const CustomerTicketsView: React.FC<{
+  tickets: any[];
+  isLoading: boolean;
+  onRefresh: () => void;
+  onBackToChat: () => void;
+  onCreateNewClaim: () => void;
+}> = ({ tickets, isLoading, onRefresh, onBackToChat, onCreateNewClaim }) => {
+  const [previewImg, setPreviewImg] = useState<string | null>(null);
+
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case 'RESOLVED':
+        return <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">Đã giải quyết</span>;
+      case 'CLOSED':
+        return <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-700 border border-slate-200">Đã đóng</span>;
+      case 'IN_PROGRESS':
+        return <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-200">Đang xử lý</span>;
+      case 'WAITING_CUSTOMER':
+        return <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-100 text-purple-800 border border-purple-200">Chờ khách</span>;
+      case 'ESCALATED_CLAIMS':
+        return <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 text-rose-800 border border-rose-200">Bồi thường CLM</span>;
+      default:
+        return <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-sky-100 text-sky-800 border border-sky-200">Mới tiếp nhận</span>;
+    }
+  };
+
+  return (
+    <div className="flex-1 flex flex-col min-h-0 bg-slate-50/70 overflow-hidden font-sans">
+      {/* Subheader */}
+      <div className="p-3 bg-white border-b border-slate-200/80 flex items-center justify-between shrink-0 shadow-2xs">
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={onBackToChat}
+            className="p-1 text-slate-500 hover:text-slate-800 rounded-lg hover:bg-slate-100 transition cursor-pointer"
+            title="Quay lại khung chat"
+          >
+            <ArrowRight className="h-4 w-4 rotate-180" />
+          </button>
+          <span className="font-bold text-xs text-slate-800 flex items-center gap-1.5">
+            <ShieldAlert className="h-4 w-4 text-rose-600" />
+            Phiếu khiếu nại của tôi ({tickets.length})
+          </span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <button
+            type="button"
+            onClick={onRefresh}
+            disabled={isLoading}
+            className="p-1 text-slate-500 hover:text-blue-600 rounded-lg hover:bg-slate-100 transition cursor-pointer"
+            title="Làm mới danh sách"
+          >
+            <RefreshCw className={`h-3.5 w-3.5 ${isLoading ? 'animate-spin' : ''}`} />
+          </button>
+          <button
+            type="button"
+            onClick={onCreateNewClaim}
+            className="px-2.5 py-1 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-[11px] font-bold flex items-center gap-1 shadow-2xs cursor-pointer"
+          >
+            + Tạo khiếu nại
+          </button>
+        </div>
+      </div>
+
+      {/* Ticket List Stream */}
+      <div className="flex-1 min-h-0 p-3.5 overflow-y-auto space-y-3">
+        {tickets.length === 0 ? (
+          <div className="py-12 flex flex-col items-center justify-center text-center px-4">
+            <div className="w-12 h-12 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center mb-2.5">
+              <FileText className="h-6 w-6" />
+            </div>
+            <p className="text-xs font-semibold text-slate-700">Chưa có phiếu khiếu nại nào</p>
+            <p className="text-[11px] text-slate-400 mt-1 max-w-[240px]">
+              Khi bạn tạo khiếu nại bể vỡ hoặc sự cố bưu gửi, phiếu hỗ trợ sẽ được hiển thị và cập nhật phản hồi tại đây.
+            </p>
+            <button
+              type="button"
+              onClick={onCreateNewClaim}
+              className="mt-3.5 px-3 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs shadow-sm cursor-pointer"
+            >
+              Tạo khiếu nại ngay
+            </button>
+          </div>
+        ) : (
+          tickets.map((t) => (
+            <div
+              key={t.id || t.ticketCode}
+              className="p-3.5 rounded-2xl bg-white border border-slate-200/90 shadow-sm space-y-2 hover:border-blue-300 transition-colors"
+            >
+              <div className="flex items-center justify-between pb-1.5 border-b border-slate-100">
+                <div className="flex items-center gap-1.5">
+                  <span className="font-mono font-bold text-xs text-blue-700">{t.ticketCode || t.code}</span>
+                  <span className="text-[11px] text-slate-400">·</span>
+                  <span className="font-mono text-[11px] font-semibold text-slate-700">
+                    {t.shipmentCode}
+                  </span>
+                </div>
+                {getStatusBadge(t.status)}
+              </div>
+
+              <div>
+                <h4 className="font-bold text-xs text-slate-800 leading-snug">{t.title}</h4>
+                <p className="text-[11.5px] text-slate-600 mt-1 leading-relaxed">{t.description}</p>
+              </div>
+
+              <div className="flex items-center justify-between text-[10.5px] text-slate-500 bg-slate-50 p-2 rounded-lg">
+                <span className="flex items-center gap-1">
+                  <Building2 className="h-3 w-3 text-slate-400" />
+                  {t.assignedHubName || 'Hub Tân Bình (TP.HCM)'}
+                </span>
+                <span>{new Date(t.createdAt).toLocaleDateString('vi-VN')}</span>
+              </div>
+
+              {/* Attachments preview */}
+              {t.attachments && t.attachments.length > 0 && (
+                <div className="pt-1">
+                  <span className="text-[10px] font-semibold text-slate-400 block mb-1">
+                    Bằng chứng đính kèm ({t.attachments.length}):
+                  </span>
+                  <div className="flex flex-wrap gap-1.5">
+                    {t.attachments.map((att: any, idx: number) => (
+                      <div
+                        key={att.id || idx}
+                        onClick={() => setPreviewImg(att.url || att.thumbnailUrl)}
+                        className="w-12 h-12 rounded-lg overflow-hidden border border-slate-200 bg-slate-100 cursor-pointer hover:opacity-80 transition"
+                        title={att.fileName}
+                      >
+                        <img
+                          src={att.thumbnailUrl || att.url || 'https://images.unsplash.com/photo-1578749556568-bc2c40e68b61?auto=format&fit=crop&w=400&q=80'}
+                          alt={att.fileName}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* OPS Resolution Summary */}
+              {t.resolutionSummary ? (
+                <div className="mt-2 p-2.5 rounded-xl bg-emerald-50/90 border border-emerald-200 text-emerald-950">
+                  <div className="flex items-center gap-1.5 font-bold text-[11px] text-emerald-800">
+                    <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
+                    Phản hồi giải quyết từ Bưu cục:
+                  </div>
+                  <p className="mt-1 text-xs text-emerald-900 font-medium leading-relaxed">
+                    "{t.resolutionSummary}"
+                  </p>
+                  {t.resolvedAt && (
+                    <div className="mt-1 text-[10px] text-emerald-700">
+                      Thời gian: {new Date(t.resolvedAt).toLocaleString('vi-VN')}
+                    </div>
+                  )}
+                </div>
+              ) : t.status === 'NEW' ? (
+                <div className="mt-1.5 p-2 rounded-lg bg-sky-50 border border-sky-100 text-sky-800 text-[11px] flex items-center gap-1.5">
+                  <Clock className="h-3.5 w-3.5 text-sky-600 shrink-0" />
+                  <span>Đã chuyển tuyến bưu cục. Bưu cục đang kiểm tra camera & xử lý (SLA &lt; 4h).</span>
+                </div>
+              ) : null}
+            </div>
+          ))
+        )}
+      </div>
+
+      {/* Lightbox for customer image */}
+      {previewImg && (
+        <div
+          className="fixed inset-0 z-[10000] bg-black/80 flex items-center justify-center p-4"
+          onClick={() => setPreviewImg(null)}
+        >
+          <div className="relative max-w-sm max-h-[80vh]" onClick={(e) => e.stopPropagation()}>
+            <img src={previewImg} alt="Preview" className="rounded-xl max-h-[70vh] object-contain" />
+            <button
+              type="button"
+              onClick={() => setPreviewImg(null)}
+              className="absolute -top-3 -right-3 w-7 h-7 bg-white text-slate-800 rounded-full flex items-center justify-center shadow-lg font-bold cursor-pointer"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
 export const FloatingAiChatWidget: React.FC = () => {
   const { phone, user } = useAuthStore();
   const currentUserId = user?.id || phone || null;
@@ -816,6 +1406,46 @@ export const FloatingAiChatWidget: React.FC = () => {
   const [showCallout, setShowCallout] = useState(true);
   const [inputMessage, setInputMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState<'chat' | 'tickets'>('chat');
+  const [customerTickets, setCustomerTickets] = useState<any[]>([]);
+  const [isLoadingTickets, setIsLoadingTickets] = useState(false);
+
+  const loadCustomerTickets = async () => {
+    setIsLoadingTickets(true);
+    try {
+      const lastShipmentCode = getLastTrackedShipmentCode() || '09412832109';
+      const userPhone = user?.phone || phone || '0941283210';
+      const candidateUrls = [
+        `http://localhost:3013/api/v1/chat/tickets?phone=${encodeURIComponent(userPhone)}&shipmentCode=${encodeURIComponent(lastShipmentCode)}`,
+        `http://localhost:3002/cskh/tickets?customerPhone=${encodeURIComponent(userPhone)}&shipmentCode=${encodeURIComponent(lastShipmentCode)}`,
+        `http://localhost:3002/cskh/tickets`,
+      ];
+      let foundTickets: any[] = [];
+      for (const url of candidateUrls) {
+        try {
+          const res = await fetch(url, { signal: AbortSignal.timeout(3000) });
+          if (res.ok) {
+            const data = await res.json();
+            if (Array.isArray(data) && data.length > 0) {
+              foundTickets = data;
+              break;
+            }
+          }
+        } catch {}
+      }
+      setCustomerTickets(foundTickets);
+    } catch (err) {
+      console.warn('Failed to load customer tickets:', err);
+    } finally {
+      setIsLoadingTickets(false);
+    }
+  };
+
+  useEffect(() => {
+    if (isOpen) {
+      loadCustomerTickets();
+    }
+  }, [isOpen]);
 
   const getStorageKey = (uid: string | null) => `nexus_guest_ai_chat_${uid || 'anonymous'}`;
   const getConvKey = (uid: string | null) => `nexus_guest_ai_conv_${uid || 'anonymous'}`;
@@ -945,8 +1575,15 @@ export const FloatingAiChatWidget: React.FC = () => {
   const handleSendMessage = async (
     textToSend?: string,
     options?: {
-      action?: 'OPEN_ORDER_FORM' | 'SUBMIT_ORDER_FORM' | 'CONFIRM_ORDER' | 'CANCEL_ORDER';
+      action?:
+        | 'OPEN_ORDER_FORM'
+        | 'SUBMIT_ORDER_FORM'
+        | 'CONFIRM_ORDER'
+        | 'CANCEL_ORDER'
+        | 'OPEN_CLAIM_FORM'
+        | 'SUBMIT_CLAIM_TICKET';
       orderData?: OrderFormData;
+      claimData?: ClaimFormData;
     }
   ) => {
     const query = (textToSend || inputMessage).trim();
@@ -980,6 +1617,7 @@ export const FloatingAiChatWidget: React.FC = () => {
         history: recentHistory,
         action: options?.action,
         orderData: options?.orderData,
+        claimData: options?.claimData,
         userId: currentUserId || undefined,
         userPhone: user?.phone || phone || undefined,
         userName: userDisplayName || undefined,
@@ -1046,8 +1684,13 @@ export const FloatingAiChatWidget: React.FC = () => {
         actionChips: responseData.actionChips,
         orderFormRequested: responseData.orderFormRequested,
         orderConfirmation: responseData.orderConfirmation,
+        claimFormRequested: responseData.claimFormRequested,
+        claimFormData: responseData.claimFormData,
       };
       setMessages((prev) => [...prev, botMsg]);
+      if (responseData.claimFormRequested || options?.action === 'SUBMIT_CLAIM_TICKET') {
+        loadCustomerTickets();
+      }
     } catch {
       const isZaloQuery = /zalo|tác giả|xin việc|tuyển dụng|liên hệ|developer|contact|cv/i.test(query);
       const isClaimQuery = /CLM|khiếu nại|bồi thường|đền bù/i.test(query);
@@ -1192,6 +1835,28 @@ export const FloatingAiChatWidget: React.FC = () => {
             </div>
 
             <div className="flex items-center gap-1 relative z-10">
+              <button
+                type="button"
+                onClick={() => {
+                  const nextTab = activeTab === 'chat' ? 'tickets' : 'chat';
+                  setActiveTab(nextTab);
+                  if (nextTab === 'tickets') loadCustomerTickets();
+                }}
+                className={`px-2 py-1 text-[11px] font-semibold text-white rounded-lg transition flex items-center gap-1 border cursor-pointer ${
+                  activeTab === 'tickets'
+                    ? 'bg-rose-500 border-rose-300 shadow-xs'
+                    : 'bg-white/15 hover:bg-white/25 border-white/20'
+                }`}
+                title="Xem danh sách phiếu khiếu nại của tôi"
+              >
+                <ShieldAlert className="h-3.5 w-3.5" />
+                <span>Khiếu nại</span>
+                {customerTickets.length > 0 && (
+                  <span className="w-4 h-4 rounded-full bg-rose-600 text-[9.5px] font-bold flex items-center justify-center text-white">
+                    {customerTickets.length}
+                  </span>
+                )}
+              </button>
               <a
                 href="https://zalo.me/0869500573"
                 target="_blank"
@@ -1220,7 +1885,22 @@ export const FloatingAiChatWidget: React.FC = () => {
             </div>
           </header>
 
-          {/* Quick Suggestions (Modern Pills) */}
+          {activeTab === 'tickets' ? (
+            <CustomerTicketsView
+              tickets={customerTickets}
+              isLoading={isLoadingTickets}
+              onRefresh={loadCustomerTickets}
+              onBackToChat={() => setActiveTab('chat')}
+              onCreateNewClaim={() => {
+                setActiveTab('chat');
+                handleSendMessage('Mở biểu mẫu khiếu nại bưu kiện 09412832109', {
+                  action: 'OPEN_CLAIM_FORM',
+                });
+              }}
+            />
+          ) : (
+            <>
+              {/* Quick Suggestions (Modern Pills) */}
           <div
             className="px-3.5 py-2.5 bg-white border-b border-slate-100 flex items-center gap-1.5 overflow-x-auto shrink-0 shadow-2xs"
             style={{ scrollbarWidth: 'none' }}
@@ -1362,6 +2042,32 @@ export const FloatingAiChatWidget: React.FC = () => {
                         </div>
                       )}
 
+                      {/* Interactive Claim Ticket Form */}
+                      {msg.claimFormRequested && (
+                        <ClaimTicketFormCard
+                          defaultTrackingCode={msg.claimFormData?.trackingCode || '09412832109'}
+                          defaultCustomerName={userDisplayName || msg.claimFormData?.customerName || ''}
+                          defaultCustomerPhone={phone || msg.claimFormData?.customerPhone || ''}
+                          suggestedCategory={msg.claimFormData?.category || 'DAMAGE_COMPLAINT'}
+                          assignedHubCode={msg.claimFormData?.assignedHubCode || 'HUB_TAN_BINH'}
+                          assignedHubName={msg.claimFormData?.assignedHubName || 'Hub Tân Bình (TP.HCM)'}
+                          defaultDescription={msg.claimFormData?.defaultDescription || ''}
+                          onSubmit={(claimData) => {
+                            handleSendMessage(
+                              `Gửi khiếu nại đơn hàng ${claimData.shipmentCode}: ${claimData.title}`,
+                              {
+                                action: 'SUBMIT_CLAIM_TICKET',
+                                claimData,
+                              }
+                            );
+                            loadCustomerTickets();
+                          }}
+                          onCancel={() => {
+                            handleSendMessage('Hủy tạo phiếu khiếu nại', { action: 'CANCEL_ORDER' });
+                          }}
+                        />
+                      )}
+
                       {/* Interactive Shipment Cards */}
                       {msg.shipmentCards && msg.shipmentCards.length > 0 && (
                         <InteractiveShipmentCards
@@ -1390,6 +2096,11 @@ export const FloatingAiChatWidget: React.FC = () => {
                                   handleSendMessage('Tạo đơn ngay', { action: 'OPEN_ORDER_FORM' });
                                 } else if (chip.label === 'Hủy tạo đơn' || chip.query === 'Hủy tạo đơn') {
                                   handleSendMessage('Hủy tạo đơn', { action: 'CANCEL_ORDER' });
+                                } else if (chip.label === 'Tạo phiếu khiếu nại' || chip.query === 'Mở form khiếu nại') {
+                                  handleSendMessage('Mở biểu mẫu khiếu nại bưu kiện 09412832109', { action: 'OPEN_CLAIM_FORM' });
+                                } else if (chip.label === 'Khiếu nại của tôi' || chip.query === 'Kiểm tra phiếu khiếu nại của tôi') {
+                                  setActiveTab('tickets');
+                                  loadCustomerTickets();
                                 } else {
                                   handleSendMessage(chip.query);
                                 }
@@ -1399,6 +2110,10 @@ export const FloatingAiChatWidget: React.FC = () => {
                                   ? 'bg-emerald-600 hover:bg-emerald-700 text-white'
                                   : chip.label === 'Tạo đơn ngay'
                                   ? 'bg-blue-600 hover:bg-blue-700 text-white'
+                                  : chip.label === 'Tạo phiếu khiếu nại'
+                                  ? 'bg-rose-600 hover:bg-rose-700 text-white'
+                                  : chip.label === 'Khiếu nại của tôi'
+                                  ? 'bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200'
                                   : chip.label === 'Hủy tạo đơn'
                                   ? 'bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200'
                                   : 'bg-blue-50/70 hover:bg-blue-100/90 text-blue-700 border border-blue-200/80'
@@ -1477,6 +2192,8 @@ export const FloatingAiChatWidget: React.FC = () => {
               </span>
             </div>
           </footer>
+            </>
+          )}
         </div>
       )}
     </>

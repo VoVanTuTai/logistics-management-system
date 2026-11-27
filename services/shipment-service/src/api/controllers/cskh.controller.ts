@@ -51,9 +51,23 @@ export class CskhController {
   @Patch(':id/status')
   updateStatus(
     @Param('id') id: string,
-    @Body() body: { status: string; resolutionSummary?: string },
+    @Body()
+    body: {
+      status: string;
+      resolutionSummary?: string;
+      resolutionNote?: string;
+      author?: string;
+      authorRole?: string;
+    },
   ): Promise<CskhTicket> {
-    return this.cskhService.updateStatus(id, body.status, body.resolutionSummary);
+    const summary = body.resolutionSummary || body.resolutionNote;
+    return this.cskhService.updateStatus(
+      id,
+      body.status,
+      summary,
+      body.author,
+      body.authorRole,
+    );
   }
 
   @Post(':id/notes')

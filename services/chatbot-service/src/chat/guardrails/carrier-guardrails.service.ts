@@ -236,7 +236,8 @@ export class CarrierGuardrailsService {
 
         toolContext = `\n[CHẶN VƯỢT TRẦN MẠNG LƯỚI BƯU CỤC - TẦNG 3 OVER-LIMIT BLOCK]:\n` +
           `- Vi phạm giới hạn vật lý: ${reasonParts.join('; ')} (trần mạng lưới bưu cục: <= 70kg, cạnh <= 150cm, tổng D+R+C <= 300cm).\n` +
-          `- Kết luận: Không báo giá bưu phẩm tiêu chuẩn hay mở form; từ chối lịch sự và gợi ý anh/chị tách kiện hoặc chuyển sang dịch vụ xe tải nguyên chuyến (FTL).\n`;
+          `- Kết luận: Không báo giá bưu phẩm tiêu chuẩn hay mở form; từ chối lịch sự và gợi ý anh/chị tách kiện hoặc chuyển sang dịch vụ xe tải nguyên chuyến (FTL).\n` +
+          `- CHỈ DẪN AI: Trả lời dứt khoát, súc tích và hoàn chỉnh câu. Giải thích rõ vì sao bị chặn (${reasonParts.join('; ')}) và hướng dẫn 2 giải pháp (tách kiện hoặc xe tải FTL). Tuyệt đối KHÔNG tính toán cước thể tích IATA hay viết công thức dở dang vì kiện hàng đã bị chặn tiếp nhận tiêu chuẩn; kết thúc câu trả lời trọn vẹn, không bỏ lửng.\n`;
       } else {
         toolsUsed.push('physicalCeilingController(TIER_2_MAX_CEILING_OK: 70kg/150cm)');
         actionChips = [

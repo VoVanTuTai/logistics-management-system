@@ -5,6 +5,7 @@ import { ChatRequestDto } from './dto/chat-request.dto';
 import { CarrierGuardrailsService } from './guardrails/carrier-guardrails.service';
 import { LlmClientService } from './llm/llm-client.service';
 import { ChatSessionService } from './session/chat-session.store';
+import { LogisticsToolsService } from '../tools/logistics-tools.service';
 
 @Injectable()
 export class ChatService {
@@ -13,6 +14,7 @@ export class ChatService {
     private readonly guardrails: CarrierGuardrailsService,
     private readonly llmClient: LlmClientService,
     private readonly hmasGraph: HmasGraphOrchestrator,
+    private readonly toolsService: LogisticsToolsService,
   ) {}
 
   async handleMessage(dto: ChatRequestDto): Promise<ChatResponseDto> {
@@ -41,13 +43,34 @@ export class ChatService {
     // 2. Execute Heterogeneous Multi-Agent StateGraph (Supervisor, Operation, Knowledge, Validation)
     const graphOut = await this.hmasGraph.run(dto, conversationId, session);
 
-    // 3. Commit User + Assistant turn & state updates to Persistent Session Store
+    // 3. Tier 3 Recursive Conversation Summary Memory (MemGPT-style Episodic Memory)
+    let updatedSummary = session.conversationSummary;
+    const historyLength = (session.history || []).length;
+    if (historyLength >= 4) {
+      try {
+        updatedSummary = await this.llmClient.generateConversationSummary(
+          session.conversationSummary,
+          [
+            ...(session.history || []).slice(-6),
+            { role: 'user', content: question },
+            { role: 'assistant', content: graphOut.response.answer },
+          ],
+        );
+      } catch {
+        // preserve current summary
+      }
+    }
+
+    // 4. Commit User + Assistant turn & state updates to Persistent Session Store
     await this.sessionStore.commitTurn(
       conversationId,
       session,
       question,
       graphOut.response.answer,
-      graphOut.sessionPatch,
+      {
+        ...graphOut.sessionPatch,
+        conversationSummary: updatedSummary,
+      },
     );
 
     return graphOut.response;
@@ -66,6 +89,8 @@ export class ChatService {
         actionChips: result.actionChips,
         orderFormRequested: result.orderFormRequested,
         orderConfirmation: result.orderConfirmation,
+        claimFormRequested: result.claimFormRequested,
+        claimFormData: result.claimFormData,
       },
     };
 
@@ -82,6 +107,10 @@ export class ChatService {
       event: 'done',
       data: { latencyMs: result.latencyMs },
     };
+  }
+
+  async listTickets(phone?: string, shipmentCode?: string) {
+    return this.toolsService.listUserTickets(phone, shipmentCode);
   }
 
   async callValidationAgent(userPrompt: string, actionType: string, targetCode?: string) {

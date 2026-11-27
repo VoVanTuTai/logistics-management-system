@@ -104,6 +104,7 @@ export class KnowledgeAgent {
       userPrompt: state.question,
       rawUserQuestion: state.question,
       history: state.session.history,
+      conversationSummary: state.session.conversationSummary,
       hasOperationalTools: false,
       hasKnowledgeRag: true,
     });

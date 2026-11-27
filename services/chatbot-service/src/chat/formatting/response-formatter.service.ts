@@ -34,9 +34,20 @@ export class ResponseFormatterService {
     cleaned = cleaned.replace(/`([^`]+)`/g, '$1').replace(/`/g, '');
     cleaned = cleaned.replace(/\*{3,}/g, '**');
 
+    // Fix mismatched bold asterisks (*text** -> **text**, **text* -> **text**)
+    cleaned = cleaned.replace(/(^|[^\*])\*([^*\n]+)\*\*/g, '$1**$2**');
+    cleaned = cleaned.replace(/\*\*([^*\n]+)\*([^\*]|$)/g, '**$1**$2');
+
     // 3. Fix orphan bullets & normalize list markers to '• '
     cleaned = cleaned.replace(/(^|\n)\s*([•\-\*])\s*\n+(\s*)/g, '$1• ');
     cleaned = cleaned.replace(/^(\s*)[\*\-]\s+/gm, '$1• ');
+
+    // Normalize raw dashes / separators (-- or ---) into standard clean markdown divider
+    cleaned = cleaned.replace(/^\s*--+\s*$/gm, '---');
+
+    // Eliminate empty lines between markdown table rows (e.g. | col |\n\n| row |)
+    cleaned = cleaned.replace(/(\|.*?\|)\s*\n\s*\n\s*(\|)/g, '$1\n$2');
+
     cleaned = cleaned.replace(/\n{3,}/g, '\n\n');
 
     // 4. Enforce consistent CSKH tone & strip accidental prompt markers
@@ -52,7 +63,52 @@ export class ResponseFormatterService {
       .replace(/- CHỈ DẪN AI:[\s\S]*?\n/g, '')
       .replace(/- HƯỚNG DẪN AI:[\s\S]*?\n/g, '');
 
+    // 5. Sanitize truncated endings / unfinished trailing math clauses
+    cleaned = this.sanitizeTruncatedEnding(cleaned);
+
     return cleaned.trim();
+  }
+
+  /**
+   * Guards against LLM token cutoffs / truncated trailing sentences.
+   * If the text terminates abruptly mid-sentence (e.g., ends with '=', ':', 'theo', or incomplete clause),
+   * strips the dangling fragment cleanly back to the last complete sentence/line so the bot never trails off.
+   */
+  sanitizeTruncatedEnding(text: string): string {
+    let trimmed = text.trim();
+    if (!trimmed) return trimmed;
+
+    const lines = trimmed.split('\n');
+    while (lines.length > 0) {
+      const lastLine = lines[lines.length - 1].trim();
+      if (!lastLine) {
+        lines.pop();
+        continue;
+      }
+
+      // Check if the last line is a dangling incomplete fragment:
+      // e.g. ends with '=', ':', '+', '-', 'theo', 'với', 'là', 'của', 'ở', 'và', 'hoặc', 'tại', 'thì'
+      // or ends abruptly like "Với L = 180 cm, W = 20 cm, H ="
+      const isDanglingEnding =
+        /(?:=|\:|\+|\-|\*|\/|,|\b(?:theo|la|là|voi|với|cua|của|o|ở|va|và|hoac|hoặc|tai|tại|thi|thì|khi|neu|nếu))\s*$/i.test(lastLine) ||
+        /^[•\-\*\d\.\s]*(?:Với|Cong thuc|Công thức|Lưu ý)\s*.*=$/i.test(lastLine);
+
+      if (isDanglingEnding) {
+        lines.pop(); // remove the incomplete dangling line
+        continue;
+      }
+      break;
+    }
+
+    trimmed = lines.join('\n').trim();
+
+    // Balance any unclosed bold markers (odd count of **)
+    const boldCount = (trimmed.match(/\*\*/g) || []).length;
+    if (boldCount % 2 !== 0) {
+      trimmed += '**';
+    }
+
+    return trimmed;
   }
 
   generateOfflineDemoAnswer(question: string, context: string, citations: Citation[]): string {
@@ -207,6 +263,12 @@ export class ResponseFormatterService {
       const cod = this.extractLineValue(section, 'Tiền thu hộ COD');
       const weight = this.extractLineValue(section, 'Khối lượng');
       const cleanQ = question.toLowerCase();
+      if ((cleanQ.includes('cod') || cleanQ.includes('thu ho')) && (cleanQ.includes('o dau') || cleanQ.includes('o cho nao') || cleanQ.includes('vi tri') || cleanQ.includes('den dau'))) {
+        return `Dạ đơn hàng **${code}** hiện đang ở **${loc}** (trạng thái: ${status}) và có tiền thu hộ COD là **${cod || '0 VNĐ'}** ạ.`;
+      }
+      if (cleanQ.includes('o dau') || cleanQ.includes('o cho nao') || cleanQ.includes('vi tri') || cleanQ.includes('den dau')) {
+        return `Dạ đơn hàng **${code}** hiện đang ở **${loc}** (trạng thái: ${status}) ạ.`;
+      }
       if (cleanQ.includes('nang') || cleanQ.includes('kg') || cleanQ.includes('khoi luong')) {
         return `Dạ đơn hàng **${code}** có khối lượng **${weight || 'đang cập nhật'}** ạ. Trạng thái hiện tại: ${status}, vị trí: ${loc}.`;
       }

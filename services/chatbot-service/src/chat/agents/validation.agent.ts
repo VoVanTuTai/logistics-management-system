@@ -13,7 +13,7 @@ export class ValidationAgent {
 
   constructor(private readonly guardrails: CarrierGuardrailsService) {}
 
-  async execute(state: HmasAgentState): Promise<Partial<HmasAgentState>> {
+  async execute(state: HmasAgentState | any): Promise<Partial<HmasAgentState>> {
     const issues: string[] = [];
     const draft = (state.draftAnswer || '').trim();
     const combinedContext = `${state.operationContext}\n${state.knowledgeContext}`;

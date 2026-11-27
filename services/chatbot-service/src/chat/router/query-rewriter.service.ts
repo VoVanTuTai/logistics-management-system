@@ -100,6 +100,7 @@ export class QueryRewriterService {
       `- Giải nghĩa các đại từ ("nó", "đơn đó", "nếu vỡ", "bao giờ giao", "mất phí không") dựa vào lịch sử chat.\n` +
       `- Giữ nguyên mã vận đơn, loại hàng hóa, mức COD nếu có liên quan.\n` +
       `- Chỉ trả về DUY NHẤT câu hỏi đã viết lại, không giải thích thêm.` +
+      (session.conversationSummary ? `\nBộ nhớ tóm tắt hội thoại tích lũy: ${session.conversationSummary}` : '') +
       (shipmentHint ? `\nNgữ cảnh đơn hàng: ${shipmentHint}` : '');
 
     const userPrompt = `Câu hỏi hiện tại cần viết lại: "${question}"`;

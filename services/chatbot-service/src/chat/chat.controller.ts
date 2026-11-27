@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Header, HttpCode, HttpStatus, Post, Res } from '@nestjs/common';
+import { Body, Controller, Get, Header, HttpCode, HttpStatus, Post, Query, Res } from '@nestjs/common';
 import type { Response } from 'express';
 import { ChatService } from './chat.service';
 import { KnowledgeService } from '../rag/knowledge.service';
@@ -10,6 +10,18 @@ export class ChatController {
     private readonly chatService: ChatService,
     private readonly knowledgeService: KnowledgeService
   ) {}
+
+  /**
+   * Endpoint tra cứu danh sách phiếu khiếu nại của khách hàng / theo vận đơn
+   */
+  @Get('tickets')
+  @HttpCode(HttpStatus.OK)
+  async listTickets(
+    @Query('phone') phone?: string,
+    @Query('shipmentCode') shipmentCode?: string,
+  ) {
+    return this.chatService.listTickets(phone, shipmentCode);
+  }
 
   /**
    * Endpoint kiểm tra trạng thái sức khỏe của 4 AI Agents (Big Four Multi-Agent Matrix)

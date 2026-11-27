@@ -16,12 +16,19 @@ export interface CreateCskhTicketInput {
   assignedHubCode?: string;
   assignedHubName?: string;
   assignedAgent?: string;
+  images?: Array<{
+    fileName?: string;
+    url?: string;
+    fileSizeBytes?: number;
+    type?: string;
+  }>;
   notes?: Array<{
     id: string;
     author: string;
     authorRole: string;
     content: string;
     createdAt: string;
+    attachments?: any[];
   }>;
 }
 
@@ -216,18 +223,65 @@ export class CskhService {
       ];
     }
 
-    return this.prisma.cskhTicket.findMany({
+    const tickets = await this.prisma.cskhTicket.findMany({
       where,
       orderBy: { createdAt: 'desc' },
     });
+    return tickets.map((t) => this.mapTicketAttachments(t));
+  }
+
+  private mapTicketAttachments(ticket: CskhTicket): any {
+    const rawNotes = Array.isArray(ticket.notes) ? (ticket.notes as any[]) : [];
+    const extractedAttachments: any[] = [];
+    for (const n of rawNotes) {
+      if (Array.isArray(n.attachments)) {
+        extractedAttachments.push(...n.attachments);
+      }
+    }
+    // Include default mock attachments if seeded demo ticket
+    if (extractedAttachments.length === 0 && ticket.ticketCode === 'TCK-202609-001') {
+      extractedAttachments.push({
+        id: 'att_004',
+        type: 'IMAGE',
+        url: 'https://images.unsplash.com/photo-1544816155-12df9643f363?w=800&auto=format&fit=crop&q=80',
+        thumbnailUrl: 'https://images.unsplash.com/photo-1544816155-12df9643f363?w=300&auto=format&fit=crop&q=80',
+        fileName: 've_may_bay_chuyen_13h_nguyen_van_hung.jpg',
+        fileSizeBytes: 1120000,
+        uploadedAt: ticket.createdAt.toISOString(),
+        uploadedBy: 'Nguyễn Văn Hùng (AI Chatbot)',
+        minioBucket: 'cskh-evidence',
+      });
+    } else if (extractedAttachments.length === 0 && ticket.ticketCode === 'TCK-202609-002') {
+      extractedAttachments.push({
+        id: 'att_002',
+        type: 'IMAGE',
+        url: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=800&auto=format&fit=crop&q=80',
+        thumbnailUrl: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=300&auto=format&fit=crop&q=80',
+        fileName: 'mat_kinh_seiko_vo_ran.jpg',
+        fileSizeBytes: 890000,
+        uploadedAt: ticket.createdAt.toISOString(),
+        uploadedBy: 'Trần Đình Trọng (Mobile)',
+        minioBucket: 'cskh-evidence',
+      });
+    }
+    return {
+      ...ticket,
+      attachments: extractedAttachments,
+    };
   }
 
   async getById(id: string): Promise<CskhTicket> {
     await this.ensureSeedData();
 
+    const normalizedCode = id.toUpperCase().replace(/^TCK_0*/, 'TCK-202609-0');
     const found = await this.prisma.cskhTicket.findFirst({
       where: {
-        OR: [{ id }, { ticketCode: id }],
+        OR: [
+          { id },
+          { ticketCode: id },
+          { ticketCode: { equals: id, mode: 'insensitive' } },
+          { ticketCode: { equals: normalizedCode, mode: 'insensitive' } },
+        ],
       },
     });
 
@@ -235,7 +289,7 @@ export class CskhService {
       throw new NotFoundException(`CSKH Ticket ${id} not found.`);
     }
 
-    return found;
+    return this.mapTicketAttachments(found);
   }
 
   async create(input: CreateCskhTicketInput): Promise<CskhTicket> {
@@ -256,33 +310,60 @@ export class CskhService {
     const limitHours = priority === 'P1_CRITICAL' ? 4 : priority === 'P2_HIGH' ? 12 : 24;
     const deadline = new Date(Date.now() + limitHours * 3600 * 1000);
 
-    return this.prisma.cskhTicket.create({
+    const ticketNotes: any[] = input.notes ? [...input.notes] : [];
+    if (input.images && input.images.length > 0) {
+      const attList = input.images.map((img, idx) => ({
+        id: `att_${Date.now()}_${idx}`,
+        type: img.type || 'IMAGE',
+        url: img.url,
+        thumbnailUrl: img.url,
+        fileName: img.fileName || `anh_bang_chung_${idx + 1}.jpg`,
+        fileSizeBytes: img.fileSizeBytes || 350000,
+        uploadedAt: new Date().toISOString(),
+        uploadedBy: input.customerName || 'Khách hàng',
+        minioBucket: 'cskh-evidence',
+      }));
+      ticketNotes.push({
+        id: `n_att_${Date.now()}`,
+        author: input.customerName || 'Khách hàng',
+        authorRole: 'Customer Attachment',
+        content: `Đã đính kèm ${attList.length} hình ảnh bằng chứng khiếu nại hiện trường.`,
+        createdAt: new Date().toISOString(),
+        attachments: attList,
+      });
+    }
+
+    const created = await this.prisma.cskhTicket.create({
       data: {
         ticketCode,
         shipmentCode: input.shipmentCode,
         customerName: input.customerName,
         customerPhone: input.customerPhone,
         customerEmail: input.customerEmail,
-        source: input.source || 'HOTLINE_1900',
+        source: input.source || 'AI_CHATBOT',
         category: input.category || 'GENERAL_INQUIRY',
         priority,
         status: 'NEW',
         title: input.title,
         description: input.description,
-        assignedHubCode: input.assignedHubCode,
-        assignedHubName: input.assignedHubName,
+        assignedHubCode: input.assignedHubCode || 'HUB_TAN_BINH',
+        assignedHubName: input.assignedHubName || 'Hub Tân Bình (TP.HCM)',
         assignedAgent: input.assignedAgent,
         slaLimitHours: limitHours,
         slaDeadline: deadline,
-        notes: input.notes || [],
+        notes: ticketNotes,
       },
     });
+
+    return this.mapTicketAttachments(created);
   }
 
   async updateStatus(
     id: string,
     status: string,
     resolutionSummary?: string,
+    author = 'CSKH Operator',
+    authorRole = 'CSKH Specialist',
   ): Promise<CskhTicket> {
     const item = await this.getById(id);
 
@@ -296,10 +377,23 @@ export class CskhService {
       data.closedAt = new Date();
     }
 
-    return this.prisma.cskhTicket.update({
+    const existingNotes = Array.isArray(item.notes) ? (item.notes as any[]) : [];
+    if (resolutionSummary) {
+      const statusNote = {
+        id: `n_${Date.now()}`,
+        author,
+        authorRole,
+        content: `[${status}] ${resolutionSummary}`,
+        createdAt: new Date().toISOString(),
+      };
+      data.notes = [...existingNotes, statusNote];
+    }
+
+    const updated = await this.prisma.cskhTicket.update({
       where: { id: item.id },
       data,
     });
+    return this.mapTicketAttachments(updated);
   }
 
   async addNote(id: string, noteInput: AddCskhNoteInput): Promise<CskhTicket> {

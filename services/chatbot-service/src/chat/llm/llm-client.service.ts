@@ -123,7 +123,7 @@ export class LlmClientService {
       model,
       messages,
       temperature: options?.temperature ?? this.openaiTemperature,
-      max_tokens: options?.maxTokens ?? 1024,
+      max_tokens: options?.maxTokens ?? 3072,
     };
 
     if (options?.jsonMode) {
@@ -161,7 +161,7 @@ export class LlmClientService {
     systemPrompt: string,
     userPrompt: string,
     history: ChatHistoryMessage[] = [],
-    timeoutMs = 8000,
+    timeoutMs = 12000,
     options?: MultiTurnLlmOptions,
   ): Promise<string> {
     const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${this.geminiApiKey}`;
@@ -181,7 +181,7 @@ export class LlmClientService {
 
     const generationConfig: Record<string, any> = {
       temperature: options?.temperature ?? this.openaiTemperature,
-      maxOutputTokens: options?.maxTokens ?? 1024,
+      maxOutputTokens: options?.maxTokens ?? 3072,
     };
     if (options?.jsonMode) {
       generationConfig.responseMimeType = 'application/json';
@@ -206,7 +206,12 @@ export class LlmClientService {
     }
 
     const data: any = await resp.json();
-    const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+    const candidate = data?.candidates?.[0];
+    const finishReason = candidate?.finishReason;
+    if (finishReason && finishReason !== 'STOP') {
+      this.logger.warn(`Gemini [${model}] finished with non-STOP reason: ${finishReason}`);
+    }
+    const text = candidate?.content?.parts?.[0]?.text;
     if (!text) {
       throw new Error(`Gemini [${model}] returned empty candidates.`);
     }
@@ -345,18 +350,28 @@ export class LlmClientService {
 
   /**
    * Multi-Agent Synthesis Pipeline: selects optimal agent for the intent (Operation vs Knowledge vs Supervisor)
-   * and ALWAYS injects prior multi-turn conversation history.
+   * and ALWAYS injects prior multi-turn conversation history and long-term episodic memory.
    */
   async synthesizeAnswer(params: {
     systemPrompt: string;
     userPrompt: string;
     rawUserQuestion: string;
     history: ChatHistoryMessage[];
+    conversationSummary?: string;
     hasOperationalTools: boolean;
     hasKnowledgeRag: boolean;
   }): Promise<{ answer: string; agentModelUsed: string; llmStatusNote: string }> {
     const cleanHistory = this.sanitizeHistory(params.history, params.rawUserQuestion, 14);
     const hasHistory = cleanHistory.length > 0;
+
+    let effectiveSystemPrompt = params.systemPrompt;
+    if (params.conversationSummary && params.conversationSummary.trim().length > 0) {
+      effectiveSystemPrompt =
+        `=== BỘ NHỚ TIẾN TRÌNH HỘI THOẠI DÀI HẠN (LONG-TERM EPISODIC MEMORY) ===\n` +
+        `${params.conversationSummary.trim()}\n` +
+        `========================================================================\n\n` +
+        params.systemPrompt;
+    }
 
     if (hasHistory) {
       this.logger.log(`Injecting ${cleanHistory.length} prior history message(s) into LLM synthesis prompt.`);
@@ -369,7 +384,7 @@ export class LlmClientService {
           'https://api.groq.com/openai/v1/chat/completions',
           this.groqApiKey,
           this.groqOperationModel,
-          params.systemPrompt,
+          effectiveSystemPrompt,
           params.userPrompt,
           cleanHistory,
         );
@@ -384,7 +399,7 @@ export class LlmClientService {
           'https://api.groq.com/openai/v1/chat/completions',
           this.groqApiKey,
           this.groqKnowledgeModel,
-          params.systemPrompt,
+          effectiveSystemPrompt,
           params.userPrompt,
           cleanHistory,
         );
@@ -399,7 +414,7 @@ export class LlmClientService {
         this.logger.log(`Dispatching Supervisor Agent: [${this.geminiModel}] via Google AI Studio`);
         const answer = await this.callGemini(
           this.geminiModel,
-          params.systemPrompt,
+          effectiveSystemPrompt,
           params.userPrompt,
           cleanHistory,
         );
@@ -415,7 +430,7 @@ export class LlmClientService {
           'https://api.openai.com/v1/chat/completions',
           this.openaiApiKey,
           this.openaiModel,
-          params.systemPrompt,
+          effectiveSystemPrompt,
           params.userPrompt,
           cleanHistory,
         );
@@ -428,8 +443,104 @@ export class LlmClientService {
     return {
       answer: '',
       agentModelUsed: 'Offline Demo Generator',
-      llmStatusNote: this.hasAnyLlmKey() ? 'All LLM providers failed or timed out' : 'No API Keys configured',
+      llmStatusNote: 'No LLM Key',
     };
+  }
+
+  /**
+   * Tier 3 Recursive Conversation Summary Memory (MemGPT / Packer et al., 2023).
+   * Generates or updates an ongoing cumulative summary of older conversation turns.
+   */
+  async generateConversationSummary(
+    existingSummary: string | undefined,
+    messagesToCompact: ChatHistoryMessage[],
+  ): Promise<string> {
+    if (!messagesToCompact || messagesToCompact.length === 0) {
+      return existingSummary || '';
+    }
+
+    const conversationTranscript = messagesToCompact
+      .filter((m) => m && m.content)
+      .map((m) => `${m.role === 'user' ? 'Khách' : 'Bot'}: ${m.content}`)
+      .join('\n');
+
+    const prompt =
+      `Nhiệm vụ: Cập nhật bản tóm tắt tích lũy ngắn gọn về tiến trình hội thoại CSKH logistics.\n` +
+      (existingSummary ? `Bản tóm tắt trước đó:\n"${existingSummary}"\n\n` : '') +
+      `Các lượt trao đổi mới cần nén:\n${conversationTranscript}\n\n` +
+      `Yêu cầu:\n` +
+      `- Tóm tắt cô đọng 2-4 câu bằng tiếng Việt.\n` +
+      `- Ghi nhận chính xác: Mã đơn (nếu có), SĐT (nếu có), tuyến đường, cước phí đã báo, thỏa thuận hẹn giao/đổi địa chỉ, các câu hỏi chưa giải quyết.\n` +
+      `- Không văn hoa, không chào hỏi. Chỉ xuất ra nội dung tóm tắt thuần túy.`;
+
+    if (this.groqApiKey) {
+      try {
+        const res = await this.callOpenAiCompatible(
+          'https://api.groq.com/openai/v1/chat/completions',
+          this.groqApiKey,
+          this.groqOperationModel,
+          'Bạn là công cụ tóm tắt ngữ cảnh hội thoại chuyên nghiệp.',
+          prompt,
+          [],
+          3500,
+          { temperature: 0.1, maxTokens: 250 },
+        );
+        if (res && res.trim().length > 10) return res.trim();
+      } catch (err: any) {
+        this.logger.warn(`Summary generation via Groq failed: ${err?.message}`);
+      }
+    }
+
+    if (this.geminiApiKey) {
+      try {
+        const res = await this.callGemini(
+          this.geminiModel,
+          'Bạn là công cụ tóm tắt ngữ cảnh hội thoại chuyên nghiệp.',
+          prompt,
+          [],
+          3500,
+          { temperature: 0.1, maxTokens: 250 },
+        );
+        if (res && res.trim().length > 10) return res.trim();
+      } catch (err: any) {
+        this.logger.warn(`Summary generation via Gemini failed: ${err?.message}`);
+      }
+    }
+
+    // High-fidelity heuristic extractive summarization fallback
+    return this.heuristicSummarize(existingSummary, messagesToCompact);
+  }
+
+  private heuristicSummarize(
+    existingSummary: string | undefined,
+    messages: ChatHistoryMessage[],
+  ): string {
+    const keyFacts: string[] = [];
+    if (existingSummary && existingSummary.trim()) {
+      keyFacts.push(existingSummary.trim());
+    }
+
+    for (const msg of messages) {
+      if (msg.role === 'user') {
+        const text = msg.content;
+        const codeMatch = text.match(/\b(?:NX-?\d+|333\d+|101\d+|SPX\d+)\b/i);
+        if (codeMatch && !keyFacts.some((f) => f.includes(codeMatch[0]))) {
+          keyFacts.push(`Mã đơn: ${codeMatch[0]}`);
+        }
+        const phoneMatch = text.match(/\b(?:0\d{9}|\+84\d{9})\b/);
+        if (phoneMatch && !keyFacts.some((f) => f.includes(phoneMatch[0]))) {
+          keyFacts.push(`SĐT: ${phoneMatch[0]}`);
+        }
+        if (/\b(?:hen|ngay mai|sang mai|chieu mai|doi dia chi|doi nguoi nhan)\b/i.test(text)) {
+          keyFacts.push(`Yêu cầu: ${text.slice(0, 60)}`);
+        }
+        if (/\b(?:tinh cuoc|bao gia|gia cuoc|phi)\b/i.test(text)) {
+          keyFacts.push(`Hỏi cước: ${text.slice(0, 60)}`);
+        }
+      }
+    }
+
+    return Array.from(new Set(keyFacts)).join('. ');
   }
 
   /**

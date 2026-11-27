@@ -374,15 +374,19 @@ export async function updateCskhTicketStatusApi(
   try {
     const updated = await opsApiClient.request<CskhTicket>(opsEndpoints.cskh.updateStatus(ticketId), {
       method: 'PATCH',
-      body: { status: newStatus, resolutionNote },
+      body: { status: newStatus, resolutionSummary: resolutionNote, resolutionNote },
     });
-    if (updated && updated.id) {
+    if (updated && (updated.id || updated.ticketCode)) {
       const current = readCskhTickets();
-      const idx = current.findIndex((t) => t.id === ticketId);
+      const idx = current.findIndex(
+        (t) => t.id === ticketId || t.ticketCode === ticketId || t.id === updated.id || t.ticketCode === updated.ticketCode
+      );
       if (idx !== -1) {
         current[idx] = updated;
-        saveCskhTickets(current);
+      } else {
+        current.unshift(updated);
       }
+      saveCskhTickets(current);
       return updated;
     }
   } catch (err) {

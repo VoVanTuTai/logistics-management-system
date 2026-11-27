@@ -32,6 +32,24 @@ export class ChatHistoryTurnDto {
   timestamp?: number;
 }
 
+export class ClaimDataDto {
+  shipmentCode!: string;
+  customerName?: string;
+  customerPhone?: string;
+  category?: string;
+  priority?: string;
+  title?: string;
+  description!: string;
+  assignedHubCode?: string;
+  assignedHubName?: string;
+  images?: Array<{
+    fileName?: string;
+    url?: string;
+    fileSizeBytes?: number;
+    type?: string;
+  }>;
+}
+
 export class ChatRequestDto {
   message!: string;
   conversationId?: string;
@@ -41,8 +59,15 @@ export class ChatRequestDto {
   senderRole?: 'CUSTOMER' | 'MERCHANT' | 'GUEST';
   userId?: string;
   userName?: string;
-  action?: 'OPEN_ORDER_FORM' | 'SUBMIT_ORDER_FORM' | 'CONFIRM_ORDER' | 'CANCEL_ORDER';
+  action?:
+    | 'OPEN_ORDER_FORM'
+    | 'SUBMIT_ORDER_FORM'
+    | 'CONFIRM_ORDER'
+    | 'CANCEL_ORDER'
+    | 'OPEN_CLAIM_FORM'
+    | 'SUBMIT_CLAIM_TICKET';
   orderData?: OrderDataDto;
+  claimData?: ClaimDataDto;
   /** Optional fallback history from UI client if server session restarted */
   history?: ChatHistoryTurnDto[];
 }

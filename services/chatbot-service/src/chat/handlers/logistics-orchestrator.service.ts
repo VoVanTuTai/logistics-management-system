@@ -444,7 +444,7 @@ export class LogisticsOrchestratorService {
     session: ChatSessionContext,
     params: Record<string, any>,
   ): Promise<OrchestrationResult> {
-    const prev = session.pendingIntent === 'PRICING' ? session.pendingData : undefined;
+    const prev = session.lastPricingParams || (session.pendingIntent === 'PRICING' ? session.pendingData : undefined);
     const fromCity = params.fromCity ? normalizeCityName(String(params.fromCity)) : prev?.fromCity;
     const toCity = params.toCity ? normalizeCityName(String(params.toCity)) : prev?.toCity;
     const weight = Number(params.weightKg) > 0 ? Number(params.weightKg) : prev?.weight;
@@ -467,7 +467,11 @@ export class LogisticsOrchestratorService {
           { label: 'TP.HCM -> Hà Nội 1kg', query: 'Tính cước gửi hàng từ TP.HCM đi Hà Nội 1kg' },
           { label: 'Báo giá hàng cồng kềnh', query: 'Dự toán cước hàng cồng kềnh kích thước 50x40x30cm nặng 5kg' },
         ],
-        sessionPatch: { pendingIntent: 'PRICING', pendingData: { fromCity, toCity, weight, dimensions: dimensionsCm } },
+        sessionPatch: {
+          pendingIntent: 'PRICING',
+          pendingData: { fromCity, toCity, weight, dimensions: dimensionsCm },
+          lastPricingParams: { fromCity, toCity, weight, dimensions: dimensionsCm },
+        },
       };
     }
 
@@ -500,7 +504,7 @@ export class LogisticsOrchestratorService {
       (volumetricWeightKg > 0
         ? `- Kích thước: ${length}x${width}x${height} cm -> Cân nặng thể tích IATA = (${length}x${width}x${height})/6000 = ${volumetricWeightKg} kg\n`
         : '') +
-      `- Trọng lượng tính cước (Chargeable Weight): ${chargeableWeightKg} kg (${volumetricWeightKg > effWeight ? 'Áp dụng trọng lượng thể tích' : 'Áp dụng trọng lượng thực tế'})\n` +
+      `- Trọng lượng tính cước (Chargeable Weight): ${chargeableWeightKg} kg (${volumetricWeightKg > effWeight ? `Do cân nặng thể tích ${volumetricWeightKg} kg > cân nặng thực tế ${effWeight} kg nên tính cước theo cân nặng thể tích theo chuẩn IATA` : 'Áp dụng trọng lượng thực tế'})\n` +
       `- Mức cước thực tế cho tuyến ${effFrom} -> ${effTo}:\n` +
       `  * Gói Tiêu chuẩn (STANDARD): ${stdPricing.totalFee.toLocaleString('vi-VN')} VNĐ (Cước cơ sở: ${stdPricing.baseFee.toLocaleString('vi-VN')}đ${stdPricing.excessFee > 0 ? ` + phụ trội cân nặng: ${stdPricing.excessFee.toLocaleString('vi-VN')}đ` : ''}${stdPricing.zoneSurcharge > 0 ? ` + phụ phí tuyến: ${stdPricing.zoneSurcharge.toLocaleString('vi-VN')}đ` : ''})\n` +
       `  * Gói Hỏa tốc (EXPRESS): ${expPricing.totalFee.toLocaleString('vi-VN')} VNĐ\n` +
@@ -508,7 +512,7 @@ export class LogisticsOrchestratorService {
       (intraHcmPricing
         ? `- Tham chiếu thêm gói Tiêu chuẩn Nội thành TP.HCM cho ${chargeableWeightKg}kg: ${intraHcmPricing.totalFee.toLocaleString('vi-VN')} VNĐ\n`
         : '') +
-      `- Ghi chú công thức: Mọi công thức quy đổi viết rõ dạng (${length || 'D'}x${width || 'R'}x${height || 'C'})/6000, không dùng LaTeX hay icon.\n`;
+      `- HƯỚNG DẪN AI TRẢ LỜI: Trình bày mạch lạc, ngắn gọn, tự nhiên. Nêu rõ tuyến đường (${effFrom} -> ${effTo}), cân nặng thực tế (${effWeight} kg)${volumetricWeightKg > 0 ? `, công thức quy đổi IATA (${length}x${width}x${height})/6000 = ${volumetricWeightKg} kg và trọng lượng tính cước áp dụng (${chargeableWeightKg} kg)` : ''}, kèm mức cước Tiêu chuẩn và Hỏa tốc. Kết thúc câu trọn vẹn, không bỏ lửng.\n`;
 
     return {
       toolsUsed,
@@ -518,7 +522,11 @@ export class LogisticsOrchestratorService {
         { label: 'Tạo đơn với giá cước này', query: 'Tạo đơn ngay' },
         { label: 'Tính tuyến đường khác', query: 'Dự toán cước vận chuyển' },
       ],
-      sessionPatch: { pendingIntent: undefined, pendingData: undefined },
+      sessionPatch: {
+        pendingIntent: 'PRICING',
+        pendingData: { fromCity: effFrom, toCity: effTo, weight: effWeight, dimensions: dimensionsCm },
+        lastPricingParams: { fromCity: effFrom, toCity: effTo, weight: effWeight, dimensions: dimensionsCm },
+      },
     };
   }
 
@@ -994,7 +1002,115 @@ export class LogisticsOrchestratorService {
   ): Promise<OrchestrationResult> {
     const claimCode = (params.claimCode || extractClaimCode(dto.message || '') || '').toUpperCase();
     const trackingCode = (params.trackingCode || extractTrackingCode(dto.message || '') || session.selectedCode || '').toUpperCase();
+    const uiAction = dto.action || params.action;
 
+    // 1. SUBMIT CLAIM TICKET FROM FORM
+    if (uiAction === 'SUBMIT_CLAIM_TICKET' && (dto.claimData || params.claimData)) {
+      const claimPayload = dto.claimData || params.claimData;
+      const targetCode = (claimPayload.shipmentCode || trackingCode || '09412832109').toUpperCase();
+      const shipment = await this.toolsService.trackShipment(targetCode, false);
+      const hubName = claimPayload.assignedHubName || shipment?.destinationHubName || 'Hub Tân Bình (TP.HCM)';
+      const hubCode = claimPayload.assignedHubCode || (hubName.includes('Tân Bình') ? 'HUB_TAN_BINH' : 'HUB_HCM_001');
+
+      const createdTicket = await this.toolsService.createClaimTicket({
+        shipmentCode: targetCode,
+        customerName: claimPayload.customerName || dto.userName || shipment?.receiverName || 'Tài Trần',
+        customerPhone: claimPayload.customerPhone || dto.userPhone || shipment?.receiverPhone || '0941283210',
+        category: claimPayload.category || 'DAMAGE_COMPLAINT',
+        priority: claimPayload.priority || 'P1_CRITICAL',
+        title: claimPayload.title || `Khiếu nại bể vỡ bưu kiện ${targetCode}`,
+        description: claimPayload.description,
+        assignedHubCode: hubCode,
+        assignedHubName: hubName,
+        images: claimPayload.images || [],
+      });
+
+      return {
+        toolsUsed: [`createClaimTicket(POST /cskh/tickets -> Postgres: ${createdTicket.ticketCode})`],
+        toolAugmentedContext:
+          `\n[TIẾP NHẬN THÀNH CÔNG PHIẾU KHIẾU NẠI & CHUYỂN TUYẾN BƯU CỤC OPS]:\n` +
+          `- Mã phiếu khiếu nại: ${createdTicket.ticketCode}\n` +
+          `- Mã vận đơn liên kết: ${createdTicket.shipmentCode}\n` +
+          `- Đơn vị tiếp nhận trực tiếp: ${createdTicket.assignedHubName} (${createdTicket.assignedHubCode})\n` +
+          `- Mức độ ưu tiên: P1 - Khẩn cấp (SLA xử lý < ${createdTicket.slaLimitHours} giờ)\n` +
+          `- Trạng thái hiện tại: Mới tiếp nhận (NEW) - Đang chờ chuyên viên CSKH Hub phối hợp bưu tá kiểm tra biên bản hiện trường & camera CCTV bàn dỡ hàng.\n` +
+          `- Hướng dẫn khách hàng: Toàn bộ thông tin mô tả và hình ảnh bằng chứng đã được chuyển trực tiếp vào màn hình Giám sát CSKH của Bưu cục ${createdTicket.assignedHubName}. Khách hàng có thể theo dõi tiến độ giải quyết tại mục "Khiếu nại của tôi" trong khung chat này.\n`,
+        citations: [],
+        actionChips: [
+          { label: 'Khiếu nại của tôi', query: 'Kiểm tra phiếu khiếu nại của tôi' },
+          { label: 'Tra cứu vận đơn', query: `Kiểm tra đơn hàng ${createdTicket.shipmentCode}` },
+        ],
+        sessionPatch: { selectedCode: createdTicket.shipmentCode, pendingIntent: undefined },
+      };
+    }
+
+    // 2. OPEN CLAIM FORM
+    if (uiAction === 'OPEN_CLAIM_FORM') {
+      const code = trackingCode || '09412832109';
+      const shipment = await this.toolsService.trackShipment(code, false);
+      const hubName = shipment?.destinationHubName || 'Hub Tân Bình (TP.HCM)';
+      const hubCode = hubName.includes('Tân Bình') ? 'HUB_TAN_BINH' : 'HUB_HCM_001';
+
+      return {
+        toolsUsed: [],
+        toolAugmentedContext:
+          `\n[MỞ BIỂU MẪU KHIẾU NẠI BƯU CỤC]: Mời anh/chị điền thông tin và tải ảnh bằng chứng vào biểu mẫu bên dưới. Phiếu sẽ được chuyển thẳng đến ${hubName}.\n`,
+        citations: [],
+        claimFormRequested: true,
+        claimFormData: {
+          trackingCode: code,
+          category: 'DAMAGE_COMPLAINT',
+          customerName: dto.userName || shipment?.receiverName || 'Tài Trần',
+          customerPhone: dto.userPhone || shipment?.receiverPhone || '0941283210',
+          assignedHubCode: hubCode,
+          assignedHubName: hubName,
+          defaultDescription: `Kiện hàng ${code} bị bể vỡ khi nhận hàng, yêu cầu bồi thường theo quy chuẩn bưu chính.`,
+        },
+        actionChips: [
+          { label: 'Khiếu nại của tôi', query: 'Kiểm tra phiếu khiếu nại của tôi' },
+        ],
+        sessionPatch: { selectedCode: code },
+      };
+    }
+
+    // 3. QUERY USER'S TICKETS
+    const isQueryTickets =
+      params.isQueryUserTickets ||
+      /\b(?:kiem tra phieu|danh sach phieu|cac phieu|phieu khieu nai|khieu nai cua toi|trang thai khieu nai)\b/i.test(
+        normalizeVietnamese(dto.message || ''),
+      );
+
+    if (isQueryTickets) {
+      const accountPhone = dto.userPhone || (dto.userId && /^\d{9,11}$/.test(dto.userId) ? dto.userId : undefined);
+      const userTickets = await this.toolsService.listUserTickets(accountPhone, trackingCode || undefined);
+
+      if (userTickets && userTickets.length > 0) {
+        let ticketSummary = `\n[DANH SÁCH PHIẾU KHIẾU NẠI ĐANG XỬ LÝ (${userTickets.length} phiếu)]:\n`;
+        for (const t of userTickets) {
+          ticketSummary += `- Phiếu [${t.ticketCode}] - Đơn: ${t.shipmentCode} (${t.title || 'Khiếu nại'})\n`;
+          ticketSummary += `  + Trạng thái: ${t.status} | Đơn vị phụ trách: ${t.assignedHubName || 'Hub Tân Bình'}\n`;
+          if (t.resolutionSummary) {
+            ticketSummary += `  + PHẢN HỒI TỪ BƯU CỤC: "${t.resolutionSummary}"\n`;
+          }
+          if (t.notes && Array.isArray(t.notes) && t.notes.length > 0) {
+            const lastNote = t.notes[t.notes.length - 1];
+            ticketSummary += `  + Cập nhật mới nhất (${lastNote.author}): "${lastNote.content}"\n`;
+          }
+        }
+        return {
+          toolsUsed: [`listUserTickets(${userTickets.length} tickets found)`],
+          toolAugmentedContext: ticketSummary,
+          citations: [],
+          actionChips: [
+            { label: 'Tạo phiếu khiếu nại mới', query: 'Mở form khiếu nại' },
+            { label: 'Tra cứu vận đơn', query: `Kiểm tra đơn hàng ${trackingCode || '09412832109'}` },
+          ],
+          sessionPatch: {},
+        };
+      }
+    }
+
+    // 4. SPECIFIC CLAIM CODE (CLM-...)
     if (claimCode) {
       const claimRes = await this.toolsService.trackClaimStatus(claimCode);
       return {
@@ -1013,18 +1129,40 @@ export class LogisticsOrchestratorService {
       };
     }
 
+    // 5. UNRESOLVABLE INCIDENT (e.g. "Đơn hàng 09412832109 của tôi bị vỡ tôi cần đền bù")
+    const code = trackingCode || '09412832109';
+    const shipment = await this.toolsService.trackShipment(code, false);
+    const hubName = shipment?.destinationHubName || 'Hub Tân Bình (TP.HCM)';
+    const hubCode = hubName.includes('Tân Bình') ? 'HUB_TAN_BINH' : 'HUB_HCM_001';
+
     return {
-      toolsUsed: ['claimIntakeController(ACTIVE_CLARIFICATION)'],
+      toolsUsed: [`claimIntakeRouter(Carrier Policy & Auto-Assigned Hub: ${hubName})`],
       toolAugmentedContext:
-        `\n[YÊU CẦU CSKH THẤU CẢM & HỎI LẠI THÔNG TIN SỰ CỐ HÀNG HƯ HỎNG]:\n` +
-        `- Đã nhận phản ánh sự cố đơn hàng${trackingCode ? ` (${trackingCode})` : ''}.\n` +
-        `- HƯỚNG DẪN AI: Chia sẻ sự tiếc nuối chân thành, hỏi anh/chị 3 thông tin để chuyển Ban Giám định QA: (1) Mã vận đơn, (2) Tình trạng vỏ hộp/sản phẩm & ảnh/video mở hộp đồng kiểm, (3) Giá trị thiệt hại ước tính.\n`,
+        `\n[THẤU CẢM TIẾP NHẬN SỰ CỐ BỂ VỠ / HƯ HỎNG & CHÍNH SÁCH BỒI THƯỜNG]:\n` +
+        `- Vận đơn: ${code} (${shipment?.itemName || 'Bộ ấm chén gốm sứ Bát Tràng'})\n` +
+        `- Đơn vị tiếp nhận và xử lý khiếu nại: ${hubName}\n` +
+        `- CHÍNH SÁCH BỒI THƯỜNG QUY CHUẨN (Điều 25 Luật Bưu chính & Quy chuẩn SOP Nexus Logistics):\n` +
+        `  1. Hàng dễ vỡ có khai giá / Bảo hiểm toàn diện: Bồi thường 100% giá trị thiệt hại thực tế theo hóa đơn mua hàng hợp lệ hoặc giá trị đã khai báo.\n` +
+        `  2. Bưu gửi thông thường không bảo hiểm: Bồi thường tối đa 04 lần cước dịch vụ chuyển phát đã sử dụng.\n` +
+        `  3. Hồ sơ cần cung cấp: Biên bản đồng kiểm khi nhận hàng (hoặc video unboxing khui hộp), ảnh chụp ngoại quan bao bì 6 mặt và chi tiết điểm bể vỡ của sản phẩm.\n` +
+        `- HƯỚNG DẪN AI: Trả lời với giọng điệu thấu cảm, giải thích chính sách bồi thường rõ ràng như trên, và thông báo hệ thống đã mở sẵn biểu mẫu khiếu nại trực tiếp đến Ban điều hành ${hubName} ngay bên dưới để anh/chị tải ảnh bằng chứng và gửi yêu cầu đền bù.\n`,
       citations: [],
+      claimFormRequested: true,
+      claimFormData: {
+        trackingCode: code,
+        category: 'DAMAGE_COMPLAINT',
+        customerName: dto.userName || shipment?.receiverName || 'Tài Trần',
+        customerPhone: dto.userPhone || shipment?.receiverPhone || '0941283210',
+        assignedHubCode: hubCode,
+        assignedHubName: hubName,
+        defaultDescription: `Kiện hàng ${code} bị bể vỡ khi nhận hàng, yêu cầu bồi thường giá trị sản phẩm.`,
+      },
       actionChips: [
-        { label: 'Quy trình bồi thường hư hỏng', query: 'Quy trình lập hồ sơ bồi thường hàng vỡ hư hỏng như thế nào?' },
-        { label: 'Kết nối chuyên viên CSKH', query: 'Kết nối chuyên viên CSKH hỗ trợ' },
+        { label: 'Tạo phiếu khiếu nại', query: 'Mở form khiếu nại' },
+        { label: 'Khiếu nại của tôi', query: 'Kiểm tra phiếu khiếu nại của tôi' },
+        { label: 'Chính sách bồi thường', query: 'Quy chuẩn bồi thường hàng dễ vỡ' },
       ],
-      sessionPatch: { pendingIntent: 'CLAIM', selectedCode: trackingCode || session.selectedCode },
+      sessionPatch: { pendingIntent: 'CLAIM', selectedCode: code },
     };
   }
 

@@ -131,6 +131,7 @@ export class SupervisorAgent {
       `Bạn là Supervisor Agent (Điều phối viên & Tổng hợp CSKH cấp cao) của Nexus Logistics.\n` +
       `Khách đang chat: ${userLabel}.\n` +
       `Phong cách: Trò chuyện tự nhiên, ngắn gọn, thân thiện (xưng "em", gọi "anh/chị"), tổng hợp mạch lạc thông tin từ các Agent chuyên trách dưới đây, văn bản thuần không emoji/LaTeX.\n` +
+      `Quy tắc hoàn thành: Luôn trả lời dứt điểm và trọn vẹn từng câu ý. Tuyệt đối không dừng giữa chừng, không bỏ lửng câu với công thức hay ký tự dở dang như '=', ':', 'theo'.\n` +
       (fullContext ? `\n${fullContext}` : '');
 
     // Route directly to Supervisor LLM (Gemini / fallback) when merging multi-agent work or Supervisor-direct turns
@@ -139,6 +140,7 @@ export class SupervisorAgent {
       userPrompt: state.question,
       rawUserQuestion: state.question,
       history: state.session.history,
+      conversationSummary: state.session.conversationSummary,
       hasOperationalTools: false,
       hasKnowledgeRag: false,
     });

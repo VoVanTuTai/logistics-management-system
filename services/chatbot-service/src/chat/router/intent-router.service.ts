@@ -330,6 +330,19 @@ export class IntentRouterService {
       };
     }
 
+    if (dto.action === 'OPEN_CLAIM_FORM' || dto.action === 'SUBMIT_CLAIM_TICKET') {
+      return {
+        intent: 'TRACK_CLAIM',
+        confidence: 1.0,
+        params: {
+          action: dto.action,
+          claimData: dto.claimData,
+          trackingCode: dto.claimData?.shipmentCode || dto.selectedShipmentCode || session.selectedCode,
+        },
+        source: 'explicit-action',
+      };
+    }
+
     const question = (dto.message || '').trim();
     const extractedCode = extractTrackingCode(question);
     const extractedPhone = dto.receiverPhone || extractPhone(question);
@@ -505,13 +518,25 @@ export class IntentRouterService {
       return wrap('SCHEDULE_REDELIVERY', { trackingCode: trackingCode || session.selectedCode });
     }
 
-    if (claimCode || /\b(?:ho so boi thuong|tien do boi thuong|clm-|vo nat|be vo|mop meo|hu hong|thieu hang|mat hang|lap ho so boi thuong)\b/i.test(nq)) {
+    if (/\b(?:phieu khieu nai|khieu nai cua toi|kiem tra phieu|cac phieu da tao|trang thai phieu|danh sach khieu nai)\b/i.test(nq)) {
+      return wrap('TRACK_CLAIM', { isQueryUserTickets: true, trackingCode: trackingCode || session.selectedCode });
+    }
+
+    if (
+      claimCode ||
+      /\b(?:ho so boi thuong|tien do boi thuong|clm-|vo nat|be vo|mop meo|hu hong|thieu hang|mat hang|lap ho so boi thuong|bi vo|bi be|bi hong|bi mop|nut vo|den bu|boi thuong|khieu nai|khieu nai buu cuc|hang bi vo|don bi vo|toan bo bi vo|can den bu|muon den bu|yeu cau den bu)\b/i.test(
+        nq,
+      )
+    ) {
       const isPolicyOrHypothetical =
         /\b(?:chinh sach|quy dinh|quy trinh|ty le boi thuong|bao nhieu|nhu the nao|neu|the neu|thi sao)\b/i.test(nq) &&
         !claimCode &&
         !nq.includes('da bi') &&
         !nq.includes('vua mo') &&
-        !nq.includes('gui anh');
+        !nq.includes('gui anh') &&
+        !nq.includes('can den bu') &&
+        !nq.includes('toi can') &&
+        !nq.includes('cua toi');
       if (!isPolicyOrHypothetical) {
         return wrap('TRACK_CLAIM', { claimCode, trackingCode: trackingCode || session.selectedCode, isDamageReport: !claimCode });
       }
@@ -560,20 +585,30 @@ export class IntentRouterService {
       (/\b(?:kg|kilogram|gram|g|x)\b/i.test(nq) && /\b(?:ha noi|hcm|sai gon|da nang|tu|den|di)\b/i.test(nq));
     const isSopPolicyQuestion = /\b(?:chinh sach|quy dinh|luat buu chinh|dieu 25|ty le boi thuong|co mat phi|mien phi|gia co so|nac co so)\b/i.test(nq);
 
-    if ((hasPricingKeywords && !isSopPolicyQuestion) || session.pendingIntent === 'PRICING') {
-      return wrap('CALCULATE_PRICING', this.extractPricingParamsFallback(q, nq));
+    const hasPriorPricing = session.pendingIntent === 'PRICING' || Boolean(session.lastPricingParams);
+    const isPricingFollowUp =
+      hasPriorPricing &&
+      (/\b(?:kich thuoc|thung|hop|dai|rong|cao|\d+\s*x\s*\d+\s*x\s*\d+|het bao nhieu|bao nhieu|gia sao|gia the nao|con|neu|gui di|di|ra|sang|den)\b/i.test(nq) ||
+        /\b(?:\d+(?:[.,]\d+)?\s*(?:kg|kí|ki|kilogram|g|cm))\b/i.test(nq));
+
+    if ((hasPricingKeywords && !isSopPolicyQuestion) || isPricingFollowUp) {
+      return wrap('CALCULATE_PRICING', this.extractPricingParamsFallback(q, nq, session));
     }
 
     return wrap('KNOWLEDGE_RAG');
   }
 
-  private extractPricingParamsFallback(q: string, nq: string): Record<string, any> {
+  private extractPricingParamsFallback(q: string, nq: string, session?: ChatSessionContext): Record<string, any> {
     const params: Record<string, any> = {};
+    const prev = session?.lastPricingParams || (session?.pendingIntent === 'PRICING' ? session?.pendingData : undefined);
+
     const weightMatch = q.match(/(\d+(?:[.,]\d+)?)\s*(kg|kí|ki|kilogram|g|gram)(?![a-zA-ZÀ-ỹ0-9_])/i);
     if (weightMatch) {
       let val = parseFloat(weightMatch[1].replace(',', '.'));
       if (weightMatch[2].toLowerCase().startsWith('g')) val /= 1000;
       params.weightKg = Math.max(0.1, val);
+    } else if (prev?.weight) {
+      params.weightKg = prev.weight;
     }
 
     const dimMatch = q.match(/(\d+(?:[.,]\d+)?)\s*(?:x|\*)\s*(\d+(?:[.,]\d+)?)\s*(?:x|\*)\s*(\d+(?:[.,]\d+)?)/i);
@@ -581,6 +616,10 @@ export class IntentRouterService {
       params.lengthCm = parseFloat(dimMatch[1].replace(',', '.'));
       params.widthCm = parseFloat(dimMatch[2].replace(',', '.'));
       params.heightCm = parseFloat(dimMatch[3].replace(',', '.'));
+    } else if (prev?.dimensions) {
+      params.lengthCm = prev.dimensions.length;
+      params.widthCm = prev.dimensions.width;
+      params.heightCm = prev.dimensions.height;
     }
 
     const routeMatch = q.match(/từ\s+([^,–\->\n]+?)\s+(?:ra|đến|đi|tới|sang|vào)\s+([^,–\->\n\?\.]+?)(?:\s+(?:cước|giá|phí|nặng|gửi|với|thế|bao nhiêu)|$)/i);
@@ -588,19 +627,51 @@ export class IntentRouterService {
       params.fromCity = normalizeCityName(routeMatch[1]);
       params.toCity = normalizeCityName(routeMatch[2]);
     } else {
-      const hasHcm = nq.includes('hcm') || nq.includes('sai gon') || nq.includes('ho chi minh');
-      const hasHn = nq.includes('ha noi');
-      if (hasHcm && hasHn) {
-        const hcmIdx = Math.max(nq.indexOf('hcm'), nq.indexOf('sai gon'), nq.indexOf('ho chi minh'));
-        const hnIdx = nq.indexOf('ha noi');
-        params.fromCity = hnIdx < hcmIdx ? 'HA NOI' : 'HO CHI MINH';
-        params.toCity = hnIdx < hcmIdx ? 'HO CHI MINH' : 'HA NOI';
-      } else if (hasHn) {
-        params.fromCity = 'HA NOI';
-      } else if (hasHcm) {
-        params.fromCity = 'HO CHI MINH';
-      } else if (nq.includes('da nang')) {
-        params.fromCity = 'DA NANG';
+      const destFollowUpMatch = q.match(/(?:gửi|gui|chuyển|chuyen|đi|di|ra|vào|vao|tới|toi|sang)\s+(?:đi\s+|ra\s+|vào\s+|sang\s+)?(hà nội|ha noi|hcm|tp\.?hcm|sài gòn|sai gon|đà nẵng|da nang|hải phòng|hai phong|cần thơ|can tho)/i);
+      if (destFollowUpMatch && prev?.fromCity) {
+        params.fromCity = prev.fromCity;
+        params.toCity = normalizeCityName(destFollowUpMatch[1]);
+      } else {
+        const hasHcm = nq.includes('hcm') || nq.includes('sai gon') || nq.includes('ho chi minh');
+        const hasHn = nq.includes('ha noi');
+        const hasDn = nq.includes('da nang');
+
+        if (hasHcm && hasHn) {
+          const hcmIdx = Math.max(nq.indexOf('hcm'), nq.indexOf('sai gon'), nq.indexOf('ho chi minh'));
+          const hnIdx = nq.indexOf('ha noi');
+          params.fromCity = hnIdx < hcmIdx ? 'HA NOI' : 'HO CHI MINH';
+          params.toCity = hnIdx < hcmIdx ? 'HO CHI MINH' : 'HA NOI';
+        } else if (hasHcm && hasDn) {
+          params.fromCity = 'HO CHI MINH';
+          params.toCity = 'DA NANG';
+        } else if (hasHn && hasDn) {
+          params.fromCity = 'HA NOI';
+          params.toCity = 'DA NANG';
+        } else if (hasHn) {
+          if (prev?.fromCity && prev.fromCity !== 'HA NOI') {
+            params.fromCity = prev.fromCity;
+            params.toCity = 'HA NOI';
+          } else {
+            params.fromCity = 'HA NOI';
+          }
+        } else if (hasHcm) {
+          if (prev?.fromCity && prev.fromCity !== 'HO CHI MINH') {
+            params.fromCity = prev.fromCity;
+            params.toCity = 'HO CHI MINH';
+          } else {
+            params.fromCity = 'HO CHI MINH';
+          }
+        } else if (hasDn) {
+          if (prev?.fromCity && prev.fromCity !== 'DA NANG') {
+            params.fromCity = prev.fromCity;
+            params.toCity = 'DA NANG';
+          } else {
+            params.fromCity = 'DA NANG';
+          }
+        } else if (prev?.fromCity && prev?.toCity) {
+          params.fromCity = prev.fromCity;
+          params.toCity = prev.toCity;
+        }
       }
     }
 
