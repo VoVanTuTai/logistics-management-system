@@ -4,6 +4,7 @@ node_modules
 dist
 web-build
 *.log
+*.apk
 .DS_Store
 android
 ios
