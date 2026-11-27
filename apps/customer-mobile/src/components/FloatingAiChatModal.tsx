@@ -1525,10 +1525,18 @@ export function FloatingAiChatModal({ visible, onClose }: FloatingAiChatModalPro
       // 1. Thử gọi trực tiếp Gateway BFF qua customerApiClient, nếu lỗi tự động gọi thẳng Chatbot Service (:3013)
       const currentUser = authStore.getUser();
       const lastShipmentCode = getLastTrackedShipmentCode();
+      const recentHistory = messages
+        .filter((m) => (m.sender === 'user' || m.sender === 'bot') && typeof m.text === 'string' && m.text.trim().length > 0)
+        .slice(-12)
+        .map((m) => ({
+          role: m.sender === 'user' ? ('user' as const) : ('assistant' as const),
+          content: m.text.trim(),
+        }));
       const requestPayload = {
         conversationId: conversationId || undefined,
         selectedShipmentCode: lastShipmentCode,
         message: query,
+        history: recentHistory,
         action: options?.action,
         orderData: options?.orderData,
         userId: currentUser?.id || currentUser?.phone || undefined,

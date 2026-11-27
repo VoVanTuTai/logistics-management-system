@@ -966,10 +966,18 @@ export const FloatingAiChatWidget: React.FC = () => {
 
     try {
       const lastShipmentCode = getLastTrackedShipmentCode();
+      const recentHistory = messages
+        .filter((m) => (m.sender === 'user' || m.sender === 'bot') && typeof m.text === 'string' && m.text.trim().length > 0)
+        .slice(-12)
+        .map((m) => ({
+          role: m.sender === 'user' ? ('user' as const) : ('assistant' as const),
+          content: m.text.trim(),
+        }));
       const requestPayload = {
         conversationId: conversationId || undefined,
         selectedShipmentCode: lastShipmentCode,
         message: query,
+        history: recentHistory,
         action: options?.action,
         orderData: options?.orderData,
         userId: currentUserId || undefined,

@@ -26,6 +26,12 @@ export class OrderDataDto {
   notes?: string;
 }
 
+export class ChatHistoryTurnDto {
+  role!: 'user' | 'assistant';
+  content!: string;
+  timestamp?: number;
+}
+
 export class ChatRequestDto {
   message!: string;
   conversationId?: string;
@@ -37,6 +43,8 @@ export class ChatRequestDto {
   userName?: string;
   action?: 'OPEN_ORDER_FORM' | 'SUBMIT_ORDER_FORM' | 'CONFIRM_ORDER' | 'CANCEL_ORDER';
   orderData?: OrderDataDto;
+  /** Optional fallback history from UI client if server session restarted */
+  history?: ChatHistoryTurnDto[];
 }
 
 export class IngestTriggerDto {
