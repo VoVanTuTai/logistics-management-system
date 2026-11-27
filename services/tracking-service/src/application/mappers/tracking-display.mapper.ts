@@ -15,6 +15,7 @@ export const TRACKING_BUSINESS_EVENTS = [
   'delivery.delivered',
   'delivery.failed',
   'ndr.created',
+  'ndr.rescheduled',
   'return.started',
   'return.completed',
 ] as const;
@@ -39,6 +40,7 @@ export const TRACKING_STATUS_BY_EVENT: Record<
   'delivery.delivered': 'DELIVERED',
   'delivery.failed': 'DELIVERY_FAILED',
   'ndr.created': 'DELIVERY_FAILED',
+  'ndr.rescheduled': 'NDR_CREATED',
   'return.started': 'RETURNING',
   'return.completed': 'RETURNED',
 };
@@ -93,6 +95,7 @@ const EVENT_LABELS_VI: Record<TrackingBusinessEventType, string> = {
   'delivery.delivered': 'Ký nhận',
   'delivery.failed': 'Ghi nhận vấn đề',
   'ndr.created': 'Ghi nhận vấn đề',
+  'ndr.rescheduled': 'Khách hẹn lại ngày giao',
   'return.started': 'Bắt đầu hoàn hàng',
   'return.completed': 'Hoàn hàng thành công',
 };
@@ -232,6 +235,22 @@ export function toTimelineTextVi(
     return `Đơn hàng đang gặp sự cố: ${issueName}. Đang chờ xử lý`;
   }
 
+  if (
+    event.event_type === 'ndr.rescheduled' ||
+    (event.event_type === 'ndr.created' &&
+      readNestedString(event.data, ['ndrCase', 'status']) === 'RESCHEDULED')
+  ) {
+    const rescheduleAt = readNestedString(event.data, ['ndrCase', 'rescheduleAt']);
+    if (rescheduleAt) {
+      const parsed = new Date(rescheduleAt);
+      const formatted = Number.isNaN(parsed.getTime())
+        ? rescheduleAt
+        : parsed.toLocaleString('vi-VN');
+      return `Khách hẹn giao lại vào ${formatted}`;
+    }
+    return 'Khách hẹn lại ngày giao';
+  }
+
   return EVENT_LABELS_VI[event.event_type];
 }
 
@@ -290,7 +309,7 @@ export function extractTimelineNote(event: TrackingEventEnvelope): string | null
     return deliveryNote;
   }
 
-  if (event.event_type === 'ndr.created') {
+  if (event.event_type === 'ndr.created' || event.event_type === 'ndr.rescheduled') {
     const note = readNestedString(event.data, ['ndrCase', 'note']);
     const attachmentUrls = extractAttachmentUrls(
       readNestedValue(event.data, ['ndrCase', 'attachments']),

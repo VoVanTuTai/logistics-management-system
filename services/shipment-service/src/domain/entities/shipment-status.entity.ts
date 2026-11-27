@@ -36,6 +36,7 @@ export const SHIPMENT_CONSUMED_EVENT_TYPES = [
   'delivery.delivered',
   'delivery.failed',
   'ndr.created',
+  'ndr.rescheduled',
   'return.started',
   'return.completed',
 ] as const;

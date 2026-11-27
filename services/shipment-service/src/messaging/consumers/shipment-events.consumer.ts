@@ -29,6 +29,7 @@ export class ShipmentEventsConsumer {
     'delivery.delivered',
     'delivery.failed',
     'ndr.created',
+    'ndr.rescheduled',
     'return.started',
     'return.completed',
   ];

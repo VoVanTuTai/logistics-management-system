@@ -17,6 +17,11 @@ export interface DeliveryFailedPayload {
   data?: Record<string, unknown>;
 }
 
+export interface NdrEventPayload {
+  shipment_code?: string | null;
+  data?: Record<string, unknown>;
+}
+
 export interface ReturnStartedPayload {
   shipment_code?: string | null;
   data?: Record<string, unknown>;
@@ -93,9 +98,48 @@ export class DispatchEventHandlersService {
   }
 
   async handleDeliveryFailed(payload: DeliveryFailedPayload): Promise<void> {
+    const attempt = this.readObject(payload.data?.deliveryAttempt) ?? this.readObject(payload.data?.delivery_attempt);
+    const shipmentCode =
+      payload.shipment_code ??
+      this.readString(attempt?.shipmentCode) ??
+      this.readString(attempt?.shipment_code) ??
+      null;
+
     await this.tasksService.handleDeliveryFailed({
-      shipment_code: payload.shipment_code ?? null,
-      note: this.readString(payload.data?.note),
+      shipment_code: shipmentCode,
+      note: this.readString(attempt?.note) ?? this.readString(payload.data?.note),
+    });
+  }
+
+  async handleNdrCreated(payload: NdrEventPayload): Promise<void> {
+    const ndrCase =
+      this.readObject(payload.data?.ndrCase) ??
+      this.readObject(payload.data?.ndr_case);
+    const shipmentCode =
+      payload.shipment_code ??
+      this.readString(ndrCase?.shipmentCode) ??
+      this.readString(ndrCase?.shipment_code) ??
+      null;
+
+    await this.tasksService.handleNdrCreated({
+      shipment_code: shipmentCode,
+      ndrCase,
+    });
+  }
+
+  async handleNdrRescheduled(payload: NdrEventPayload): Promise<void> {
+    const ndrCase =
+      this.readObject(payload.data?.ndrCase) ??
+      this.readObject(payload.data?.ndr_case);
+    const shipmentCode =
+      payload.shipment_code ??
+      this.readString(ndrCase?.shipmentCode) ??
+      this.readString(ndrCase?.shipment_code) ??
+      null;
+
+    await this.tasksService.handleNdrRescheduled({
+      shipment_code: shipmentCode,
+      ndrCase,
     });
   }
 
@@ -161,6 +205,13 @@ export class DispatchEventHandlersService {
       null;
 
     if (!shipmentCode || !locationCode) {
+      return;
+    }
+
+    const hasFutureReschedule = await this.tasksService.hasFutureRescheduledNdr(
+      shipmentCode,
+    );
+    if (hasFutureReschedule) {
       return;
     }
 

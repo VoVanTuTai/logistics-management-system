@@ -68,9 +68,16 @@ export const NDR_STATUS_MAP: Record<
 
 export const NDR_REASON_MAP: Record<string, string> = {
   CUSTOMER_UNREACHABLE: 'Khách không nghe máy / Thuê bao',
+  CANNOT_CONTACT: 'Không liên lạc được với khách hàng',
   CUSTOMER_RESCHEDULED: 'Khách hẹn lại ngày/giờ khác',
+  CUSTOMER_RESCHEDULE: 'Khách hẹn lại ngày giao',
   WRONG_ADDRESS: 'Sai địa chỉ / Không tìm thấy nhà',
+  ADDRESS_NOT_FOUND: 'Không tìm thấy địa chỉ giao',
   CUSTOMER_REJECTED: 'Khách từ chối nhận hàng',
+  CUSTOMER_REFUSED: 'Khách từ chối lấy hàng',
+  CUSTOMER_REFUSED_NOT_ORDERED: 'Khách báo không đặt hàng / Đặt nhầm',
+  CUSTOMER_REFUSED_WRONG_ITEM: 'Khách từ chối do sai hàng / thiếu hàng',
+  COD_REFUSED: 'Khách từ chối thanh toán COD / phí',
   REJECTED_DAMAGED: 'Khách từ chối do kiện hàng móp/rách',
   OUT_OF_DELIVERY_TIME: 'Hết giờ giao hàng trong ngày',
   WEATHER_FORCE_MAJEURE: 'Thời tiết xấu / Mưa ngập',
@@ -79,6 +86,8 @@ export const NDR_REASON_MAP: Record<string, string> = {
   DAMAGED: 'Hàng bể vỡ / Hư hỏng',
   TORN: 'Rách bao bì niêm phong',
   WET: 'Kiện hàng bị ướt nước',
+  WRONG_PHONE: 'Sai số điện thoại',
+  WRONG_HUB_ROUTE: 'Sai tuyến hub',
 };
 
 export type NdrColumnKey =

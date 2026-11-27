@@ -88,6 +88,8 @@ export interface MarkDeliveryFailInput {
   failReasonCode?: string | null;
   createNdr?: boolean;
   startReturn?: boolean;
+  rescheduleAt?: string | null;
+  nextDeliveryAt?: string | null;
 }
 
 export interface UpdateDeliveredAttemptInput {

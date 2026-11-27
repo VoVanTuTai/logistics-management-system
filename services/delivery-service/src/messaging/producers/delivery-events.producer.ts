@@ -1,4 +1,4 @@
-﻿import { randomUUID } from 'crypto';
+import { randomUUID } from 'crypto';
 
 import { Injectable } from '@nestjs/common';
 
@@ -71,6 +71,19 @@ export class DeliveryEventsProducer {
       ndrCase.reportedHubCode,
       { ndrCase },
       `ndr.created:${ndrCase.id}`,
+    );
+  }
+
+  buildNdrRescheduledEvent(ndrCase: NdrCase): QueueOutboxEventInput {
+    return this.buildEvent(
+      'ndr.rescheduled',
+      'ndr_case',
+      ndrCase.id,
+      ndrCase.shipmentCode,
+      ndrCase.reportedBy,
+      ndrCase.reportedHubCode,
+      { ndrCase },
+      `ndr.rescheduled:${ndrCase.id}:${ndrCase.updatedAt.toISOString()}`,
     );
   }
 

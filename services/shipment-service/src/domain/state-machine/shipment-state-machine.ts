@@ -20,6 +20,7 @@ const EVENT_TO_STATUS: Record<ShipmentConsumedEventType, ShipmentCurrentStatus> 
     'delivery.delivered': 'DELIVERED',
     'delivery.failed': 'DELIVERY_FAILED',
     'ndr.created': 'NDR_CREATED',
+    'ndr.rescheduled': 'NDR_CREATED',
     'return.started': 'RETURN_STARTED',
     'return.completed': 'RETURN_COMPLETED',
   };

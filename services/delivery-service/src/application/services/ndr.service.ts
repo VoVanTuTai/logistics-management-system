@@ -162,6 +162,8 @@ export class NdrService {
 
     const ndrCase = await this.ndrCaseRepository.reschedule(id, input);
 
+    await this.deliveryOutboxService.enqueueNdrRescheduled(ndrCase);
+
     await this.opsAuditService.record({
       context: auditContext,
       action: 'NDR_RESCHEDULED',

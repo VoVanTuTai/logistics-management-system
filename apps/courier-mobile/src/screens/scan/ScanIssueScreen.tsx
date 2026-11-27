@@ -25,7 +25,10 @@ import { Card } from '../../components/ui/Card';
 import { Screen } from '../../components/ui/Screen';
 import { reportShipmentException } from '../../features/delivery/shipment-exception.api';
 import type { IssueAttachmentPayload } from '../../features/delivery/delivery.types';
-import { SCAN_ISSUE_RETURN_REASONS } from '../../features/delivery/return-reasons';
+import {
+  DELIVERY_FAIL_RETURN_REASONS,
+  SCAN_ISSUE_RETURN_REASONS,
+} from '../../features/delivery/return-reasons';
 import { parsePickupScannedCode } from '../../features/scan/pickup.scanner.adapter';
 import { resolveShipmentScanCode } from '../../features/scan/shipment-code';
 import type { AppNavigatorParamList } from '../../navigation/types';
@@ -49,13 +52,31 @@ interface IssueOption {
   issueCategory: 'PHYSICAL' | 'INFORMATION' | 'SYSTEM';
 }
 
-const ISSUE_OPTIONS: IssueOption[] = SCAN_ISSUE_RETURN_REASONS.map((reason) => ({
+const CUSTOMER_REFUSAL_SCAN_OPTIONS: IssueOption[] = DELIVERY_FAIL_RETURN_REASONS.filter(
+  (reason) =>
+    reason.code === 'CUSTOMER_REFUSED' ||
+    reason.code === 'CUSTOMER_REFUSED_NOT_ORDERED' ||
+    reason.code === 'CUSTOMER_REFUSED_WRONG_ITEM' ||
+    reason.code === 'REJECTED_DAMAGED' ||
+    reason.code === 'COD_REFUSED',
+).map((reason) => ({
   id: reason.id,
   title: reason.label,
   description: reason.description,
   issueType: reason.code,
-  issueCategory: reason.issueCategory ?? 'INFORMATION',
+  issueCategory: 'INFORMATION',
 }));
+
+const ISSUE_OPTIONS: IssueOption[] = [
+  ...SCAN_ISSUE_RETURN_REASONS.map((reason) => ({
+    id: reason.id,
+    title: reason.label,
+    description: reason.description,
+    issueType: reason.code,
+    issueCategory: reason.issueCategory ?? 'INFORMATION',
+  })),
+  ...CUSTOMER_REFUSAL_SCAN_OPTIONS,
+];
 
 interface LocalAttachment {
   uri: string;

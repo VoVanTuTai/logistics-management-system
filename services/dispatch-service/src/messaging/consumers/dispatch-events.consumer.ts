@@ -5,6 +5,7 @@ import {
   DeliveryDeliveredPayload,
   DeliveryFailedPayload,
   DispatchEventHandlersService,
+  NdrEventPayload,
   PickupApprovedPayload,
   ReturnStartedPayload,
 } from '../../application/services/dispatch-event-handlers.service';
@@ -16,6 +17,8 @@ export interface DispatchConsumerEnvelope {
     | 'pickup.approved'
     | 'delivery.delivered'
     | 'delivery.failed'
+    | 'ndr.created'
+    | 'ndr.rescheduled'
     | 'return.started'
     | 'scan.inbound';
   shipment_code?: string | null;
@@ -31,6 +34,8 @@ export class DispatchEventsConsumer {
     'pickup.approved',
     'delivery.delivered',
     'delivery.failed',
+    'ndr.created',
+    'ndr.rescheduled',
     'return.started',
     'scan.inbound',
   ];
@@ -66,6 +71,20 @@ export class DispatchEventsConsumer {
     if (payload.event_type === 'delivery.failed') {
       await this.dispatchEventHandlersService.handleDeliveryFailed(
         payload as DeliveryFailedPayload,
+      );
+      return;
+    }
+
+    if (payload.event_type === 'ndr.created') {
+      await this.dispatchEventHandlersService.handleNdrCreated(
+        payload as NdrEventPayload,
+      );
+      return;
+    }
+
+    if (payload.event_type === 'ndr.rescheduled') {
+      await this.dispatchEventHandlersService.handleNdrRescheduled(
+        payload as NdrEventPayload,
       );
       return;
     }
