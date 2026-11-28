@@ -70,6 +70,7 @@ export const tasksApi = {
       accessToken,
       body: {
         courierId: payload.courierId,
+        ...(payload.hubCode ? { hubCode: payload.hubCode } : {}),
       },
     }),
   reassignTask: (
@@ -81,6 +82,7 @@ export const tasksApi = {
       accessToken,
       body: {
         courierId: payload.courierId,
+        ...(payload.hubCode ? { hubCode: payload.hubCode } : {}),
       },
     }),
     updateTaskStatus: (

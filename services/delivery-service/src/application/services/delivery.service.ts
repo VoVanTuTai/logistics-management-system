@@ -170,6 +170,12 @@ export class DeliveryService {
 
     await this.assertShipmentNotLocked(input.shipmentCode);
 
+    const rawRescheduleAt = input.rescheduleAt ?? input.nextDeliveryAt ?? null;
+    if (rawRescheduleAt && Number.isNaN(new Date(rawRescheduleAt).getTime())) {
+      throw new BadRequestException('rescheduleAt must be a valid ISO date.');
+    }
+    const parsedRescheduleAt = rawRescheduleAt ? this.parseDate(rawRescheduleAt) : null;
+
     const deliveryAttempt = await this.getOrCreateAttemptForFail(input);
 
     let ndrCase: NdrCase | null = null;
@@ -181,7 +187,11 @@ export class DeliveryService {
         shipmentCode: input.shipmentCode,
         deliveryAttemptId: deliveryAttempt.id,
         reasonCode: input.failReasonCode ?? null,
+        reportedBy: input.actor ?? null,
+        reportedHubCode: input.locationCode ?? null,
         note: input.note ?? null,
+        status: parsedRescheduleAt ? 'RESCHEDULED' : 'CREATED',
+        rescheduleAt: parsedRescheduleAt,
       });
     }
 

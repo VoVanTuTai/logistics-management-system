@@ -53,6 +53,7 @@ export interface CreateNdrCaseInput {
   reportedHubCode?: string | null;
   note?: string | null;
   status?: NdrCaseStatus;
+  rescheduleAt?: Date | string | null;
 }
 
 export interface ReportShipmentExceptionInput {

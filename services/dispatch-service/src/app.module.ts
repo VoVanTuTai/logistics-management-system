@@ -5,6 +5,7 @@ import { TasksController } from './api/controllers/tasks.controller';
 import { DispatchEventHandlersService } from './application/services/dispatch-event-handlers.service';
 import { DispatchRetentionCleanupService } from './application/services/dispatch-retention-cleanup.service';
 import { OpsAuditService } from './application/services/ops-audit.service';
+import { RedeliverySchedulerService } from './application/services/redelivery-scheduler.service';
 import { TasksService } from './application/services/tasks.service';
 import { OutboxEventRepository } from './domain/repositories/outbox-event.repository';
 import { TaskRepository } from './domain/repositories/task.repository';
@@ -25,6 +26,7 @@ import { TasksRealtimeGateway } from './realtime/tasks-realtime.gateway';
   providers: [
     PrismaService,
     TasksService,
+    RedeliverySchedulerService,
     DispatchRetentionCleanupService,
     OpsAuditService,
     DispatchEventHandlersService,

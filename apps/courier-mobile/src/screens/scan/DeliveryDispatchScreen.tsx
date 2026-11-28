@@ -10,6 +10,8 @@ import {
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   CameraView,
@@ -26,6 +28,7 @@ import { shipmentApi } from '../../features/shipment/shipment.api';
 import type { ShipmentDto, ShipmentMetadata } from '../../features/shipment/shipment.types';
 import { tasksApi } from '../../features/tasks/tasks.api';
 import type { TaskAssignmentDto, TaskDto } from '../../features/tasks/tasks.types';
+import type { AppNavigatorParamList } from '../../navigation/types';
 import { ApiClientError } from '../../services/api/client';
 import { useAppStore } from '../../store/appStore';
 import { theme } from '../../theme';
@@ -37,11 +40,23 @@ interface CourierOption {
   courierId: string;
   label: string;
   hubCodes: string[];
+  isSelf?: boolean;
+}
+
+interface DispatchScanItemPreview {
+  loading: boolean;
+  found: boolean;
+  statusLabel?: string;
+  receiverName?: string;
+  receiverAddress?: string;
+  codAmount?: number | null;
+  warning?: string | null;
 }
 
 interface DispatchScanItem {
   shipmentCode: string;
   scannedAt: string;
+  preview?: DispatchScanItemPreview;
 }
 
 interface DispatchFailurePreview {
@@ -52,25 +67,38 @@ interface DispatchFailurePreview {
 interface DispatchDraft {
   selectedCourier: CourierOption | null;
   courierSearch: string;
-  items: DispatchScanItem[];
+  items: Array<{ shipmentCode: string; scannedAt: string }>;
 }
 
 const DISPATCH_DRAFT_STORAGE_KEY = 'courier-mobile:delivery-dispatch-draft:v1';
 const TERMINAL_TASK_STATUSES = new Set(['COMPLETED', 'CANCELLED']);
-const DELIVERY_DISPATCH_STATUSES = new Set([
+const DELIVERY_DISPATCH_ALLOWED_STATUSES = new Set([
   'MANIFEST_UNSEALED',
   'MANIFEST_RECEIVED',
   'SCAN_INBOUND',
   'INVENTORY_CHECK',
-]);
-const DELIVERY_DISPATCH_BLOCKED_STATUSES = new Set([
-  'DELIVERED',
+  'PICKUP_COMPLETED',
+  'CREATED',
+  'UPDATED',
+  'IN_TRANSIT',
+  'SEND_GOODS',
   'DELIVERY_FAILED',
   'NDR_CREATED',
   'EXCEPTION',
+  'TASK_ASSIGNED',
+]);
+const DELIVERY_DISPATCH_BLOCKED_STATUSES = new Set([
+  'DELIVERED',
   'RETURN_STARTED',
   'RETURN_COMPLETED',
   'CANCELLED',
+]);
+const STATUS_NEEDS_FRESH_DELIVERY_TASK = new Set([
+  'DELIVERY_FAILED',
+  'NDR_CREATED',
+  'INVENTORY_CHECK',
+  'SCAN_INBOUND',
+  'EXCEPTION',
 ]);
 
 function normalizeCode(value: string | null | undefined): string {
@@ -86,39 +114,40 @@ function normalizeOptionalCode(value: string | null | undefined): string | null 
   return normalizedCode.length > 0 ? normalizedCode : null;
 }
 
-function readMetadataPath(
-  metadata: ShipmentMetadata | null,
-  path: string,
-): unknown {
-  if (!metadata) {
-    return null;
-  }
-
+function readMetadataPath(metadata: ShipmentMetadata | null, path: string): unknown {
+  if (!metadata) return null;
   const keys = path.split('.');
   let cursor: unknown = metadata;
-
   for (const key of keys) {
     if (!cursor || typeof cursor !== 'object' || !(key in cursor)) {
       return null;
     }
-
     cursor = (cursor as Record<string, unknown>)[key];
   }
-
   return cursor;
 }
 
-function readMetadataString(
-  metadata: ShipmentMetadata | null,
-  paths: string[],
-): string | null {
+function readMetadataString(metadata: ShipmentMetadata | null, paths: string[]): string | null {
   for (const path of paths) {
     const value = readMetadataPath(metadata, path);
     if (typeof value === 'string' && value.trim().length > 0) {
       return value.trim();
     }
   }
+  return null;
+}
 
+function readMetadataNumber(metadata: ShipmentMetadata | null, paths: string[]): number | null {
+  for (const path of paths) {
+    const value = readMetadataPath(metadata, path);
+    if (typeof value === 'number' && Number.isFinite(value)) {
+      return value;
+    }
+    if (typeof value === 'string' && value.trim().length > 0) {
+      const parsed = Number(value.trim());
+      if (Number.isFinite(parsed)) return parsed;
+    }
+  }
   return null;
 }
 
@@ -146,12 +175,31 @@ function collectShipmentHubCodes(
   ) as string[];
 }
 
+function hubsAreCompatible(shipmentHubCodes: string[], allowedHubCodes: string[]): boolean {
+  if (shipmentHubCodes.length === 0 || allowedHubCodes.length === 0) {
+    return true;
+  }
+
+  for (const sHub of shipmentHubCodes) {
+    for (const aHub of allowedHubCodes) {
+      if (sHub === aHub) return true;
+      // Support matching ward hub <-> provincial hub prefix (e.g. 07901W001 <-> 003079B001)
+      if (sHub.length >= 6 && aHub.length >= 6) {
+        const sProv = sHub.slice(0, 3);
+        const aProv = aHub.slice(0, 3);
+        if (sProv === aProv) return true;
+      }
+    }
+  }
+  return false;
+}
+
 function validateShipmentForDeliveryDispatch(
   shipment: ShipmentDto,
   input: {
     assignedHubCodes: string[];
+    courierHubCodes: string[];
     currentLocation: CurrentLocationDto | null;
-    hasOpenDeliveryTask: boolean;
   },
 ): string | null {
   const shipmentCode = normalizeCode(shipment.code);
@@ -161,27 +209,17 @@ function validateShipmentForDeliveryDispatch(
     return `Đơn ${shipmentCode} không thể phát hàng vì đang ở trạng thái ${shipment.currentStatus}.`;
   }
 
-  const statusAllowed =
-    DELIVERY_DISPATCH_STATUSES.has(status) ||
-    (status === 'TASK_ASSIGNED' && input.hasOpenDeliveryTask);
-  if (!statusAllowed) {
-    return `Đơn ${shipmentCode} chưa ở trạng thái được phép phát hàng (${shipment.currentStatus}).`;
+  if (!DELIVERY_DISPATCH_ALLOWED_STATUSES.has(status)) {
+    return `Đơn ${shipmentCode} chưa ở trạng thái cho phép phát hàng (${shipment.currentStatus}).`;
   }
 
-  if (input.assignedHubCodes.length === 0) {
-    return 'Tài khoản chưa được gán hub nên không thể bàn giao phát hàng.';
-  }
-
+  const combinedAllowedHubs = Array.from(
+    new Set([...input.assignedHubCodes, ...input.courierHubCodes].map(normalizeCode).filter(Boolean)),
+  );
   const shipmentHubCodes = collectShipmentHubCodes(shipment, input.currentLocation);
-  if (
-    shipmentHubCodes.length > 0 &&
-    !shipmentHubCodes.some((hubCode) => input.assignedHubCodes.includes(hubCode))
-  ) {
-    return `Đơn ${shipmentCode} đang thuộc hub ${shipmentHubCodes.join(', ')}, không thuộc hub của tài khoản này.`;
-  }
 
-  if (shipmentHubCodes.length === 0) {
-    return `Đơn ${shipmentCode} chưa có thông tin hub hiện tại để xác thực phát hàng.`;
+  if (combinedAllowedHubs.length > 0 && shipmentHubCodes.length > 0 && !hubsAreCompatible(shipmentHubCodes, combinedAllowedHubs)) {
+    return `Đơn ${shipmentCode} đang thuộc hub ${shipmentHubCodes.join(', ')}, khác phạm vi bưu cục (${combinedAllowedHubs.join(', ')}).`;
   }
 
   return null;
@@ -197,7 +235,6 @@ async function getCurrentLocationOrNull(
     if (error instanceof ApiClientError && error.status === 404) {
       return null;
     }
-
     throw error;
   }
 }
@@ -207,7 +244,6 @@ function formatScannedAt(isoTime: string): string {
   if (Number.isNaN(parsed.getTime())) {
     return isoTime;
   }
-
   return parsed.toLocaleTimeString('vi-VN', {
     hour: '2-digit',
     minute: '2-digit',
@@ -215,22 +251,21 @@ function formatScannedAt(isoTime: string): string {
   });
 }
 
+function formatCodAmount(amount: number | null | undefined): string {
+  if (typeof amount !== 'number' || amount <= 0) {
+    return '0đ (Không thu hộ)';
+  }
+  return `${amount.toLocaleString('vi-VN')}đ`;
+}
+
 function getActiveAssignment(task: TaskDto): TaskAssignmentDto | null {
-  return (
-    task.assignments.find((assignment) => assignment.unassignedAt === null) ??
-    null
-  );
+  return task.assignments.find((assignment) => assignment.unassignedAt === null) ?? null;
 }
 
 function pickOpenDeliveryTask(tasks: TaskDto[]): TaskDto | null {
   const openTasks = tasks
-    .filter(
-      (task) =>
-        task.taskType === 'DELIVERY' &&
-        !TERMINAL_TASK_STATUSES.has(task.status),
-    )
+    .filter((task) => task.taskType === 'DELIVERY' && !TERMINAL_TASK_STATUSES.has(task.status))
     .sort((left, right) => right.updatedAt.localeCompare(left.updatedAt));
-
   return openTasks[0] ?? null;
 }
 
@@ -239,7 +274,6 @@ function generateDeliveryTaskCode(shipmentCode: string): string {
   const normalizedShipmentCode = normalizeCode(shipmentCode)
     .replace(/[^A-Z0-9]/g, '')
     .slice(-6);
-
   return `DLV-${normalizedShipmentCode || 'SHIP'}-${timestamp}`;
 }
 
@@ -247,20 +281,14 @@ function toErrorMessage(error: unknown): string {
   return error instanceof Error ? error.message : 'Có lỗi xảy ra.';
 }
 
-function isDispatchScanItem(value: unknown): value is DispatchScanItem {
-  if (!value || typeof value !== 'object') {
-    return false;
-  }
-
+function isDispatchScanItem(value: unknown): value is { shipmentCode: string; scannedAt: string } {
+  if (!value || typeof value !== 'object') return false;
   const record = value as Record<string, unknown>;
   return typeof record.shipmentCode === 'string' && typeof record.scannedAt === 'string';
 }
 
 function isCourierOption(value: unknown): value is CourierOption {
-  if (!value || typeof value !== 'object') {
-    return false;
-  }
-
+  if (!value || typeof value !== 'object') return false;
   const record = value as Record<string, unknown>;
   return (
     typeof record.courierId === 'string' &&
@@ -272,9 +300,7 @@ function isCourierOption(value: unknown): value is CourierOption {
 
 async function loadDispatchDraft(): Promise<DispatchDraft | null> {
   const rawDraft = await AsyncStorage.getItem(DISPATCH_DRAFT_STORAGE_KEY);
-  if (!rawDraft) {
-    return null;
-  }
+  if (!rawDraft) return null;
 
   try {
     const parsedDraft = JSON.parse(rawDraft) as Record<string, unknown>;
@@ -288,12 +314,7 @@ async function loadDispatchDraft(): Promise<DispatchDraft | null> {
       typeof parsedDraft.courierSearch === 'string'
         ? parsedDraft.courierSearch
         : selectedCourier?.label ?? '';
-
-    return {
-      selectedCourier,
-      courierSearch,
-      items,
-    };
+    return { selectedCourier, courierSearch, items };
   } catch {
     await AsyncStorage.removeItem(DISPATCH_DRAFT_STORAGE_KEY);
     return null;
@@ -305,11 +326,11 @@ async function saveDispatchDraft(draft: DispatchDraft): Promise<void> {
     await AsyncStorage.removeItem(DISPATCH_DRAFT_STORAGE_KEY);
     return;
   }
-
   await AsyncStorage.setItem(DISPATCH_DRAFT_STORAGE_KEY, JSON.stringify(draft));
 }
 
 export function DeliveryDispatchScreen(): React.JSX.Element {
+  const navigation = useNavigation<NativeStackNavigationProp<AppNavigatorParamList>>();
   const session = useAppStore((state) => state.session);
   const setGlobalError = useAppStore((state) => state.setGlobalError);
   const queryClient = useQueryClient();
@@ -318,32 +339,36 @@ export function DeliveryDispatchScreen(): React.JSX.Element {
   const accessToken = session?.tokens.accessToken ?? null;
   const user = session?.user ?? null;
   const assignedHubCodes = React.useMemo(
-    () =>
-      (user?.hubCodes ?? [])
-        .map((hubCode) => normalizeCode(hubCode))
-        .filter(Boolean),
+    () => (user?.hubCodes ?? []).map((hubCode) => normalizeCode(hubCode)).filter(Boolean),
     [user?.hubCodes],
   );
-  const actorCode = resolveCourierId(appEnv.courierId, user?.username) || user?.id || 'N/A';
+  const actorCode = resolveCourierId(appEnv.courierId, user?.username) || user?.id || '';
   const actorName = resolveCourierDisplayName({
     displayName: user?.displayName,
     username: user?.username,
-    courierId: actorCode,
+    courierId: actorCode || 'N/A',
   });
   const actorHubCode = assignedHubCodes[0] ?? null;
 
+  const selfCourierOption = React.useMemo<CourierOption | null>(() => {
+    if (!actorCode) return null;
+    return {
+      courierId: actorCode,
+      label: `${actorName} (${actorCode})`,
+      hubCodes: assignedHubCodes,
+      isSelf: true,
+    };
+  }, [actorCode, actorName, assignedHubCodes]);
+
   const [courierSearch, setCourierSearch] = React.useState('');
-  const [selectedCourier, setSelectedCourier] = React.useState<CourierOption | null>(
-    null,
-  );
+  const [selectedCourier, setSelectedCourier] = React.useState<CourierOption | null>(null);
   const [manualShipmentCode, setManualShipmentCode] = React.useState('');
   const [items, setItems] = React.useState<DispatchScanItem[]>([]);
-  const [selectedCodes, setSelectedCodes] = React.useState<Set<string>>(
-    () => new Set(),
-  );
+  const [selectedCodes, setSelectedCodes] = React.useState<Set<string>>(() => new Set());
   const [message, setMessage] = React.useState<string | null>(null);
   const [errorMessage, setErrorMessage] = React.useState<string | null>(null);
   const [failurePreview, setFailurePreview] = React.useState<DispatchFailurePreview[]>([]);
+  const [dispatchedToSelf, setDispatchedToSelf] = React.useState(false);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [scanLocked, setScanLocked] = React.useState(false);
   const scanCooldownRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -352,27 +377,28 @@ export function DeliveryDispatchScreen(): React.JSX.Element {
   const courierOptionsQuery = useQuery({
     queryKey: ['auth', 'couriers-by-hub', assignedHubCodes],
     queryFn: async () => {
-      if (!accessToken) {
-        return [];
-      }
+      if (!accessToken) return [];
 
+      const hubList = assignedHubCodes.length > 0 ? assignedHubCodes : [undefined];
       const usersByHub = await Promise.all(
-        assignedHubCodes.map((hubCode) =>
+        hubList.map((hubCode) =>
           authApi.listUsers(accessToken, {
             roleGroup: 'SHIPPER',
             status: 'ACTIVE',
-            hubCode,
+            ...(hubCode ? { hubCode } : {}),
           }),
         ),
       );
 
       const merged = new Map<string, CourierOption>();
+      if (selfCourierOption) {
+        merged.set(selfCourierOption.courierId, selfCourierOption);
+      }
+
       for (const users of usersByHub) {
         for (const courier of users) {
           const courierId = courier.username.trim();
-          if (!courierId) {
-            continue;
-          }
+          if (!courierId) continue;
 
           const label = courier.displayName?.trim()
             ? `${courier.displayName.trim()} (${courierId})`
@@ -382,20 +408,23 @@ export function DeliveryDispatchScreen(): React.JSX.Element {
             courierId,
             label,
             hubCodes: courier.hubCodes,
+            isSelf: courierId === actorCode,
           });
         }
       }
 
-      return Array.from(merged.values()).sort((left, right) =>
-        left.courierId.localeCompare(right.courierId),
-      );
+      return Array.from(merged.values()).sort((left, right) => {
+        if (left.isSelf && !right.isSelf) return -1;
+        if (!left.isSelf && right.isSelf) return 1;
+        return left.courierId.localeCompare(right.courierId);
+      });
     },
-    enabled: Boolean(accessToken) && assignedHubCodes.length > 0,
+    enabled: Boolean(accessToken),
   });
 
   const filteredCouriers = React.useMemo(() => {
     const keyword = normalizeSearch(courierSearch);
-    const couriers = courierOptionsQuery.data ?? [];
+    const couriers = courierOptionsQuery.data ?? (selfCourierOption ? [selfCourierOption] : []);
 
     if (!keyword) {
       return couriers.slice(0, 8);
@@ -408,50 +437,111 @@ export function DeliveryDispatchScreen(): React.JSX.Element {
           normalizeSearch(courier.courierId).includes(keyword),
       )
       .slice(0, 8);
-  }, [courierOptionsQuery.data, courierSearch]);
+  }, [courierOptionsQuery.data, courierSearch, selfCourierOption]);
 
   const selectedCount = selectedCodes.size;
   const canScan = Boolean(selectedCourier) && !isSubmitting;
   const cameraIsReady = permission?.granted === true;
+
+  const hydrateItemPreview = React.useCallback(
+    async (shipmentCode: string, courierTarget: CourierOption | null) => {
+      if (!accessToken) return;
+      try {
+        const [shipment, currentLocation] = await Promise.all([
+          shipmentApi.getShipmentDetail(accessToken, shipmentCode),
+          getCurrentLocationOrNull(accessToken, shipmentCode),
+        ]);
+        const receiverName =
+          readMetadataString(shipment.metadata, ['receiver.name', 'recipient.name', 'receiverName']) ??
+          undefined;
+        const receiverAddress =
+          readMetadataString(shipment.metadata, [
+            'deliveryAddress',
+            'receiverAddress',
+            'receiver.address',
+            'recipient.address',
+          ]) ?? undefined;
+        const codAmount = readMetadataNumber(shipment.metadata, ['codAmount', 'cod.amount']);
+        const warning = validateShipmentForDeliveryDispatch(shipment, {
+          assignedHubCodes,
+          courierHubCodes: courierTarget?.hubCodes ?? [],
+          currentLocation,
+        });
+
+        setItems((current) =>
+          current.map((entry) =>
+            entry.shipmentCode === shipmentCode
+              ? {
+                  ...entry,
+                  preview: {
+                    loading: false,
+                    found: true,
+                    statusLabel: shipment.currentStatus,
+                    receiverName,
+                    receiverAddress,
+                    codAmount,
+                    warning,
+                  },
+                }
+              : entry,
+          ),
+        );
+      } catch (err) {
+        setItems((current) =>
+          current.map((entry) =>
+            entry.shipmentCode === shipmentCode
+              ? {
+                  ...entry,
+                  preview: {
+                    loading: false,
+                    found: false,
+                    warning: toErrorMessage(err),
+                  },
+                }
+              : entry,
+          ),
+        );
+      }
+    },
+    [accessToken, assignedHubCodes],
+  );
 
   React.useEffect(() => {
     void loadDispatchDraft().then((draft) => {
       if (draft) {
         setSelectedCourier(draft.selectedCourier);
         setCourierSearch(draft.courierSearch);
-        setItems(draft.items);
-        if (draft.items.length > 0) {
-          setMessage(`Đã khôi phục ${draft.items.length} vận đơn phát hàng chưa bàn giao.`);
+        const restoredItems: DispatchScanItem[] = draft.items.map((entry) => ({
+          ...entry,
+          preview: { loading: true, found: true },
+        }));
+        setItems(restoredItems);
+        if (restoredItems.length > 0) {
+          setMessage(`Đã khôi phục ${restoredItems.length} vận đơn đang quét dở.`);
+          restoredItems.forEach((entry) => {
+            void hydrateItemPreview(entry.shipmentCode, draft.selectedCourier);
+          });
         }
       }
-
       draftLoadedRef.current = true;
     });
 
     return () => {
-      if (scanCooldownRef.current) {
-        clearTimeout(scanCooldownRef.current);
-      }
+      if (scanCooldownRef.current) clearTimeout(scanCooldownRef.current);
     };
-  }, []);
+  }, [hydrateItemPreview]);
 
   React.useEffect(() => {
-    if (!draftLoadedRef.current) {
-      return;
-    }
-
+    if (!draftLoadedRef.current) return;
     void saveDispatchDraft({
       selectedCourier,
       courierSearch,
-      items,
+      items: items.map(({ shipmentCode, scannedAt }) => ({ shipmentCode, scannedAt })),
     });
   }, [courierSearch, items, selectedCourier]);
 
   React.useEffect(() => {
-    if (failurePreview.length === 0) {
-      return;
-    }
-
+    if (failurePreview.length === 0) return;
     const shipmentCodes = new Set(items.map((item) => item.shipmentCode));
     setFailurePreview((current) =>
       current.filter((failure) => shipmentCodes.has(failure.shipmentCode)),
@@ -460,20 +550,19 @@ export function DeliveryDispatchScreen(): React.JSX.Element {
 
   const lockScanner = React.useCallback(() => {
     setScanLocked(true);
-
-    if (scanCooldownRef.current) {
-      clearTimeout(scanCooldownRef.current);
-    }
-
-    scanCooldownRef.current = setTimeout(() => {
-      setScanLocked(false);
-    }, 850);
+    if (scanCooldownRef.current) clearTimeout(scanCooldownRef.current);
+    scanCooldownRef.current = setTimeout(() => setScanLocked(false), 850);
   }, []);
 
   const chooseCourier = (courier: CourierOption) => {
     setSelectedCourier(courier);
     setCourierSearch(courier.label);
-    setMessage(`Đã chọn courier ${courier.courierId}.`);
+    setDispatchedToSelf(false);
+    setMessage(
+      courier.isSelf
+        ? `Đã chọn tự nhận đơn về app của bạn (${courier.courierId}). Bắt đầu quét dồn mã vận đơn.`
+        : `Đã chọn nhân viên phát hàng: ${courier.label}. Quét dồn các mã đơn hàng vào danh sách.`,
+    );
     setErrorMessage(null);
     setFailurePreview([]);
   };
@@ -482,7 +571,7 @@ export function DeliveryDispatchScreen(): React.JSX.Element {
     (rawValue: string) => {
       if (!selectedCourier) {
         playScanWarningSound();
-        setErrorMessage('Vui lòng chọn courier trước khi quét vận đơn.');
+        setErrorMessage('Vui lòng chọn nhân viên nhận phát trước khi quét mã.');
         return;
       }
 
@@ -495,54 +584,48 @@ export function DeliveryDispatchScreen(): React.JSX.Element {
       }
 
       setItems((currentItems) => {
-        const duplicated = currentItems.some(
-          (item) => item.shipmentCode === shipmentCode,
-        );
+        const duplicated = currentItems.some((item) => item.shipmentCode === shipmentCode);
         if (duplicated) {
           playScanWarningSound();
-          setMessage(`${shipmentCode} đã có trong danh sách phát hàng.`);
+          setMessage(`${shipmentCode} đã có trong danh sách quét dồn.`);
           setErrorMessage(null);
           return currentItems;
         }
 
         setManualShipmentCode('');
+        setDispatchedToSelf(false);
         playScanSuccessSound();
-        setMessage(`Đã thêm vận đơn ${shipmentCode}.`);
+        setMessage(`Đã thêm ${shipmentCode} vào danh sách phát (${currentItems.length + 1} đơn).`);
         setErrorMessage(null);
         setFailurePreview((current) =>
           current.filter((failure) => failure.shipmentCode !== shipmentCode),
         );
 
+        void hydrateItemPreview(shipmentCode, selectedCourier);
+
         return [
           {
             shipmentCode,
             scannedAt: new Date().toISOString(),
+            preview: { loading: true, found: true },
           },
           ...currentItems,
         ];
       });
     },
-    [selectedCourier],
+    [hydrateItemPreview, selectedCourier],
   );
 
   const handleBarCodeScanned = (result: BarcodeScanningResult) => {
-    if (scanLocked || !canScan) {
-      return;
-    }
-
+    if (scanLocked || !canScan) return;
     lockScanner();
 
-    const parsed = parsePickupScannedCode({
-      data: result.data,
-      type: result.type,
-    });
-
+    const parsed = parsePickupScannedCode({ data: result.data, type: result.type });
     if (!parsed) {
       playScanWarningSound();
       setErrorMessage('Không đọc được mã vận đơn. Vui lòng thử lại.');
       return;
     }
-
     appendShipmentCode(parsed.value);
   };
 
@@ -553,24 +636,28 @@ export function DeliveryDispatchScreen(): React.JSX.Element {
   const toggleSelected = (shipmentCode: string) => {
     setSelectedCodes((current) => {
       const next = new Set(current);
-      if (next.has(shipmentCode)) {
-        next.delete(shipmentCode);
-      } else {
-        next.add(shipmentCode);
-      }
+      if (next.has(shipmentCode)) next.delete(shipmentCode);
+      else next.add(shipmentCode);
       return next;
     });
   };
 
-  const deleteSelectedItems = () => {
-    if (selectedCodes.size === 0) {
-      return;
-    }
+  const removeSingleItem = (shipmentCode: string) => {
+    setItems((current) => current.filter((item) => item.shipmentCode !== shipmentCode));
+    setSelectedCodes((current) => {
+      const next = new Set(current);
+      next.delete(shipmentCode);
+      return next;
+    });
+    setFailurePreview((current) => current.filter((f) => f.shipmentCode !== shipmentCode));
+  };
 
+  const deleteSelectedItems = () => {
+    if (selectedCodes.size === 0) return;
     setItems((currentItems) =>
       currentItems.filter((item) => !selectedCodes.has(item.shipmentCode)),
     );
-    setMessage(`Đã xoá ${selectedCodes.size} mã khỏi danh sách.`);
+    setMessage(`Đã xóa ${selectedCodes.size} mã khỏi danh sách.`);
     setFailurePreview((current) =>
       current.filter((failure) => !selectedCodes.has(failure.shipmentCode)),
     );
@@ -579,12 +666,12 @@ export function DeliveryDispatchScreen(): React.JSX.Element {
 
   const buildDispatchNote = (shipmentCode: string): string =>
     [
-      'Bàn giao phát từ courier mobile',
+      'Phát hàng từ app courier mobile',
       `Vận đơn: ${shipmentCode}`,
-      `Nhân viên: ${actorName}`,
-      `Mã NV: ${actorCode}`,
+      `Người thao tác: ${actorName}`,
+      `Mã NV: ${actorCode || 'N/A'}`,
       `Mã hub: ${actorHubCode ?? 'N/A'}`,
-      selectedCourier ? `Courier: ${selectedCourier.courierId}` : null,
+      selectedCourier ? `Courier nhận phát: ${selectedCourier.courierId}` : null,
     ]
       .filter(Boolean)
       .join(' | ');
@@ -594,19 +681,12 @@ export function DeliveryDispatchScreen(): React.JSX.Element {
       setGlobalError('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.');
       return;
     }
-
     if (!selectedCourier) {
-      setErrorMessage('Vui lòng chọn courier nhận đơn phát.');
+      setErrorMessage('Vui lòng chọn nhân viên cần phát.');
       return;
     }
-
-    if (assignedHubCodes.length === 0) {
-      setErrorMessage('Tài khoản chưa được gán hub nên không thể bàn giao phát hàng.');
-      return;
-    }
-
     if (items.length === 0) {
-      setErrorMessage('Vui lòng quét ít nhất một mã vận đơn.');
+      setErrorMessage('Vui lòng quét ít nhất một mã vận đơn vào danh sách.');
       return;
     }
 
@@ -614,6 +694,7 @@ export function DeliveryDispatchScreen(): React.JSX.Element {
     setMessage(null);
     setErrorMessage(null);
     setFailurePreview([]);
+    setDispatchedToSelf(false);
 
     const successCodes: string[] = [];
     const failedCodes: DispatchFailurePreview[] = [];
@@ -629,15 +710,29 @@ export function DeliveryDispatchScreen(): React.JSX.Element {
               shipmentCode: item.shipmentCode,
             }),
           ]);
-          let task = pickOpenDeliveryTask(existingTasks);
+
           const validationError = validateShipmentForDeliveryDispatch(shipment, {
             assignedHubCodes,
+            courierHubCodes: selectedCourier.hubCodes,
             currentLocation,
-            hasOpenDeliveryTask: Boolean(task),
           });
-
           if (validationError) {
             throw new Error(validationError);
+          }
+
+          let task = pickOpenDeliveryTask(existingTasks);
+          const shipmentStatus = normalizeCode(shipment.currentStatus);
+          const existingAssignment = task ? getActiveAssignment(task) : null;
+
+          // If shipment was previously returned to hub / failed / checked in while keeping an old task on the same courier,
+          // close the stale task and issue a fresh DELIVERY assignment so task.assigned updates status & pushes cleanly.
+          if (
+            task &&
+            existingAssignment?.courierId === selectedCourier.courierId &&
+            STATUS_NEEDS_FRESH_DELIVERY_TASK.has(shipmentStatus)
+          ) {
+            await tasksApi.updateTaskStatus(accessToken, task.id, 'CANCELLED');
+            task = null;
           }
 
           if (!task) {
@@ -654,11 +749,13 @@ export function DeliveryDispatchScreen(): React.JSX.Element {
             await tasksApi.assignTask(accessToken, {
               taskId: task.id,
               courierId: selectedCourier.courierId,
+              hubCode: actorHubCode,
             });
           } else if (activeAssignment.courierId !== selectedCourier.courierId) {
             await tasksApi.reassignTask(accessToken, {
               taskId: task.id,
               courierId: selectedCourier.courierId,
+              hubCode: actorHubCode,
             });
           }
 
@@ -671,12 +768,15 @@ export function DeliveryDispatchScreen(): React.JSX.Element {
         }
       }
 
-      await queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['tasks'] }),
+        queryClient.invalidateQueries({ queryKey: ['shipment'] }),
+      ]);
 
       if (failedCodes.length > 0) {
         setFailurePreview(failedCodes);
         setErrorMessage(
-          `Đã bàn giao ${successCodes.length} đơn, còn ${failedCodes.length} đơn cần kiểm tra.`,
+          `Đã đẩy ${successCodes.length} đơn vào app ${selectedCourier.courierId}, còn ${failedCodes.length} đơn chưa đạt điều kiện.`,
         );
         setItems((currentItems) =>
           currentItems.filter((item) =>
@@ -687,8 +787,12 @@ export function DeliveryDispatchScreen(): React.JSX.Element {
         return;
       }
 
+      const isSelf = selectedCourier.courierId === actorCode;
+      setDispatchedToSelf(isSelf);
       setMessage(
-        `Đã bàn giao ${successCodes.length} vận đơn cho courier ${selectedCourier.courierId}.`,
+        isSelf
+          ? `Đã nhận ${successCodes.length} đơn vào mục Nhiệm vụ phát của bạn.`
+          : `Đã đẩy ${successCodes.length} đơn vào app nhân viên ${selectedCourier.label} (mục Đợi phát).`,
       );
       setItems([]);
       setSelectedCodes(new Set());
@@ -751,14 +855,14 @@ export function DeliveryDispatchScreen(): React.JSX.Element {
           {!selectedCourier ? (
             <View style={styles.cameraOverlay}>
               <Ionicons name="person-add-outline" size={20} color="#FFFFFF" />
-              <Text style={styles.cameraOverlayText}>Chọn courier trước khi quét</Text>
+              <Text style={styles.cameraOverlayText}>Chọn nhân viên phát hàng trước khi quét</Text>
             </View>
           ) : null}
 
           {isSubmitting ? (
             <View style={styles.cameraOverlay}>
               <ActivityIndicator size="small" color="#FFFFFF" />
-              <Text style={styles.cameraOverlayText}>Đang bàn giao phát hàng...</Text>
+              <Text style={styles.cameraOverlayText}>Đang đẩy nhiệm vụ vào app nhân viên...</Text>
             </View>
           ) : null}
         </View>
@@ -771,7 +875,7 @@ export function DeliveryDispatchScreen(): React.JSX.Element {
       >
         <View style={styles.headerRow}>
           <View style={styles.titleBlock}>
-            <Text style={styles.screenTitle}>Phát hàng</Text>
+            <Text style={styles.screenTitle}>Phát hàng tại bưu cục</Text>
             <Text style={styles.screenSubtitle}>
               Hub: {assignedHubCodes.join(', ') || 'Chưa gán hub'}
             </Text>
@@ -792,7 +896,39 @@ export function DeliveryDispatchScreen(): React.JSX.Element {
         </View>
 
         <View style={styles.card}>
-          <Text style={styles.fieldLabel}>Courier nhận phát</Text>
+          <View style={styles.fieldLabelRow}>
+            <Text style={styles.fieldLabel}>1. Nhân viên cần phát</Text>
+            {selfCourierOption ? (
+              <Pressable
+                onPress={() => chooseCourier(selfCourierOption)}
+                style={[
+                  styles.selfPickButton,
+                  selectedCourier?.courierId === selfCourierOption.courierId &&
+                    styles.selfPickButtonActive,
+                ]}
+              >
+                <Ionicons
+                  name="person-circle-outline"
+                  size={15}
+                  color={
+                    selectedCourier?.courierId === selfCourierOption.courierId
+                      ? '#FFFFFF'
+                      : theme.colors.primary
+                  }
+                />
+                <Text
+                  style={[
+                    styles.selfPickText,
+                    selectedCourier?.courierId === selfCourierOption.courierId &&
+                      styles.selfPickTextActive,
+                  ]}
+                >
+                  Nhận về tôi
+                </Text>
+              </Pressable>
+            ) : null}
+          </View>
+
           <View style={styles.searchBox}>
             <Ionicons name="search-outline" size={18} color={theme.colors.textMuted} />
             <TextInput
@@ -803,23 +939,20 @@ export function DeliveryDispatchScreen(): React.JSX.Element {
                 setCourierSearch(value);
                 setSelectedCourier(null);
               }}
-              placeholder="Tìm theo tên hoặc mã courier"
+              placeholder="Tìm theo tên hoặc mã nhân viên"
               placeholderTextColor="#9CA3AF"
               style={styles.searchInput}
               autoCapitalize="none"
             />
           </View>
+
           {courierOptionsQuery.isLoading ? (
-            <Text style={styles.helperText}>Đang tải danh sách courier trong hub...</Text>
+            <Text style={styles.helperText}>Đang tải danh sách nhân viên trong bưu cục...</Text>
           ) : null}
           {courierOptionsQuery.isError ? (
             <Text style={styles.errorText}>{toErrorMessage(courierOptionsQuery.error)}</Text>
           ) : null}
-          {assignedHubCodes.length === 0 ? (
-            <Text style={styles.helperText}>
-              Tài khoản chưa được gán hub nên chưa thể tải courier và phát hàng.
-            </Text>
-          ) : null}
+
           {filteredCouriers.length > 0 ? (
             <View style={styles.suggestionList}>
               {filteredCouriers.map((courier) => {
@@ -843,9 +976,11 @@ export function DeliveryDispatchScreen(): React.JSX.Element {
                       />
                     </View>
                     <View style={styles.suggestionContent}>
-                      <Text style={styles.suggestionLabel}>{courier.label}</Text>
+                      <Text style={styles.suggestionLabel}>
+                        {courier.label}{courier.isSelf ? ' • Tôi' : ''}
+                      </Text>
                       <Text style={styles.suggestionMeta}>
-                        {courier.hubCodes.join(', ') || 'Không có hub'}
+                        {courier.hubCodes.join(', ') || 'Cùng bưu cục thao tác'}
                       </Text>
                     </View>
                     {selected ? (
@@ -856,23 +991,29 @@ export function DeliveryDispatchScreen(): React.JSX.Element {
               })}
             </View>
           ) : !courierOptionsQuery.isLoading ? (
-            <Text style={styles.helperText}>Không có courier phù hợp trong hub.</Text>
+            <Text style={styles.helperText}>Không tìm thấy nhân viên phù hợp.</Text>
           ) : null}
         </View>
 
         <View style={styles.card}>
-          <Text style={styles.fieldLabel}>Mã vận đơn</Text>
+          <Text style={styles.fieldLabel}>2. Quét dồn / nhập mã vận đơn</Text>
           <View style={styles.inputRow}>
             <TextInput
               testID="delivery-dispatch-shipment-code-input"
               accessibilityLabel="Mã vận đơn phát hàng"
               value={manualShipmentCode}
               onChangeText={setManualShipmentCode}
-              placeholder="Nhập hoặc quét mã vận đơn"
+              placeholder={
+                selectedCourier
+                  ? 'Quét camera hoặc nhập mã rồi bấm Thêm'
+                  : 'Chọn nhân viên trước để quét'
+              }
               placeholderTextColor="#9CA3AF"
               style={[styles.fieldInput, !selectedCourier && styles.fieldInputDisabled]}
               autoCapitalize="characters"
               editable={Boolean(selectedCourier)}
+              onSubmitEditing={addManualShipmentCode}
+              returnKeyType="done"
             />
             <Pressable
               testID="delivery-dispatch-add-shipment-button"
@@ -886,13 +1027,30 @@ export function DeliveryDispatchScreen(): React.JSX.Element {
           </View>
         </View>
 
-        {message ? <Text style={styles.infoText}>{message}</Text> : null}
+        {message ? (
+          <View style={styles.successBanner}>
+            <Text style={styles.infoText}>{message}</Text>
+            {dispatchedToSelf ? (
+              <Pressable
+                onPress={() =>
+                  navigation.navigate('TaskList', { initialTaskType: 'DELIVERY' })
+                }
+                style={styles.goToTasksButton}
+              >
+                <Text style={styles.goToTasksText}>Mở Nhiệm vụ phát</Text>
+                <Ionicons name="arrow-forward" size={14} color={theme.colors.primary} />
+              </Pressable>
+            ) : null}
+          </View>
+        ) : null}
+
         {errorMessage ? <Text style={styles.errorText}>{errorMessage}</Text> : null}
+
         {failurePreview.length > 0 ? (
           <View style={styles.failurePreviewCard}>
             <View style={styles.failurePreviewHeader}>
               <Ionicons name="warning-outline" size={18} color="#B91C1C" />
-              <Text style={styles.failurePreviewTitle}>Vận đơn chưa bàn giao được</Text>
+              <Text style={styles.failurePreviewTitle}>Vận đơn chưa đẩy được</Text>
             </View>
             {failurePreview.map((failure) => (
               <View key={failure.shipmentCode} style={styles.failurePreviewItem}>
@@ -904,36 +1062,72 @@ export function DeliveryDispatchScreen(): React.JSX.Element {
         ) : null}
 
         <View style={styles.listHeader}>
-          <Text style={styles.listTitle}>Danh sách phát</Text>
+          <Text style={styles.listTitle}>Danh sách quét dồn</Text>
           <Text style={styles.listCount}>{items.length} vận đơn</Text>
         </View>
 
         {items.length === 0 ? (
           <View style={styles.emptyState}>
             <Ionicons name="barcode-outline" size={28} color={theme.colors.textMuted} />
-            <Text style={styles.emptyText}>Chưa có mã vận đơn nào.</Text>
+            <Text style={styles.emptyText}>
+              Chưa có mã nào. Hãy chọn nhân viên và đưa camera vào mã vận đơn để quét liên tục.
+            </Text>
           </View>
         ) : (
           <View style={styles.itemList}>
             {items.map((item) => {
               const selected = selectedCodes.has(item.shipmentCode);
+              const warning = item.preview?.warning;
               return (
                 <Pressable
                   key={item.shipmentCode}
                   onPress={() => toggleSelected(item.shipmentCode)}
-                  style={[styles.dispatchItem, selected && styles.dispatchItemSelected]}
+                  style={[
+                    styles.dispatchItem,
+                    selected && styles.dispatchItemSelected,
+                    warning ? styles.dispatchItemWarning : null,
+                  ]}
                 >
                   <View style={[styles.checkbox, selected && styles.checkboxSelected]}>
-                    {selected ? (
-                      <Ionicons name="checkmark" size={14} color="#FFFFFF" />
-                    ) : null}
+                    {selected ? <Ionicons name="checkmark" size={14} color="#FFFFFF" /> : null}
                   </View>
                   <View style={styles.dispatchItemContent}>
-                    <Text style={styles.shipmentCode}>{item.shipmentCode}</Text>
-                    <Text style={styles.scannedAt}>
-                      Quét lúc {formatScannedAt(item.scannedAt)}
-                    </Text>
+                    <View style={styles.itemTopRow}>
+                      <Text style={styles.shipmentCode}>{item.shipmentCode}</Text>
+                      {item.preview?.statusLabel ? (
+                        <View style={styles.statusChip}>
+                          <Text style={styles.statusChipText}>{item.preview.statusLabel}</Text>
+                        </View>
+                      ) : null}
+                    </View>
+                    {item.preview?.loading ? (
+                      <Text style={styles.scannedAt}>Đang kiểm tra thông tin đơn...</Text>
+                    ) : item.preview?.found ? (
+                      <>
+                        <Text style={styles.previewMeta} numberOfLines={1}>
+                          {item.preview.receiverName || 'Người nhận'} · COD{' '}
+                          {formatCodAmount(item.preview.codAmount)}
+                        </Text>
+                        {item.preview.receiverAddress ? (
+                          <Text style={styles.scannedAt} numberOfLines={1}>
+                            {item.preview.receiverAddress}
+                          </Text>
+                        ) : null}
+                      </>
+                    ) : (
+                      <Text style={styles.scannedAt}>
+                        Quét lúc {formatScannedAt(item.scannedAt)}
+                      </Text>
+                    )}
+                    {warning ? <Text style={styles.itemWarningText}>{warning}</Text> : null}
                   </View>
+                  <Pressable
+                    hitSlop={8}
+                    onPress={() => removeSingleItem(item.shipmentCode)}
+                    style={styles.removeSingleButton}
+                  >
+                    <Ionicons name="close-circle-outline" size={20} color="#94A3B8" />
+                  </Pressable>
                 </Pressable>
               );
             })}
@@ -944,7 +1138,7 @@ export function DeliveryDispatchScreen(): React.JSX.Element {
       <View style={styles.footer}>
         <Pressable
           testID="delivery-dispatch-submit-button"
-          accessibilityLabel="Bàn giao đơn phát hàng"
+          accessibilityLabel="Xác nhận phát hàng"
           disabled={isSubmitting || !selectedCourier || items.length === 0}
           onPress={submitDispatch}
           style={[
@@ -956,10 +1150,10 @@ export function DeliveryDispatchScreen(): React.JSX.Element {
           {isSubmitting ? (
             <ActivityIndicator size="small" color="#FFFFFF" />
           ) : (
-            <Ionicons name="paper-plane-outline" size={18} color="#FFFFFF" />
+            <Ionicons name="checkmark-done-outline" size={18} color="#FFFFFF" />
           )}
           <Text style={styles.submitButtonText}>
-            Bàn giao {items.length > 0 ? `${items.length} ` : ''}đơn
+            Xác nhận phát hàng{items.length > 0 ? ` (${items.length} đơn)` : ''}
           </Text>
         </Pressable>
       </View>
@@ -971,24 +1165,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: theme.colors.background,
-  },
-  centerContainer: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: theme.spacing.xl,
-    backgroundColor: theme.colors.background,
-  },
-  centerTitle: {
-    ...theme.typography.subtitle.lg,
-    color: theme.colors.textPrimary,
-    marginTop: theme.spacing.sm,
-  },
-  centerText: {
-    ...theme.typography.body.md,
-    color: theme.colors.textMuted,
-    marginTop: theme.spacing.xs,
-    textAlign: 'center',
   },
   cameraSection: {
     paddingHorizontal: theme.spacing.lg,
@@ -1095,10 +1271,38 @@ const styles = StyleSheet.create({
     marginBottom: theme.spacing.md,
     ...theme.shadow.sm,
   },
+  fieldLabelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: theme.spacing.xs,
+  },
   fieldLabel: {
     ...theme.typography.subtitle.sm,
     color: theme.colors.textPrimary,
     marginBottom: theme.spacing.xs,
+  },
+  selfPickButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: theme.colors.primary,
+    backgroundColor: '#EFF6FF',
+  },
+  selfPickButtonActive: {
+    backgroundColor: theme.colors.primary,
+  },
+  selfPickText: {
+    ...theme.typography.caption.sm,
+    color: theme.colors.primary,
+    fontWeight: '600',
+  },
+  selfPickTextActive: {
+    color: '#FFFFFF',
   },
   searchBox: {
     minHeight: 44,
@@ -1197,10 +1401,30 @@ const styles = StyleSheet.create({
     color: theme.colors.textMuted,
     marginTop: theme.spacing.sm,
   },
+  successBanner: {
+    marginBottom: theme.spacing.sm,
+    gap: theme.spacing.xs,
+  },
   infoText: {
     ...theme.typography.caption.md,
     color: theme.colors.info,
-    marginBottom: theme.spacing.sm,
+  },
+  goToTasksButton: {
+    alignSelf: 'flex-start',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: theme.radius.sm,
+    backgroundColor: '#EFF6FF',
+    borderWidth: 1,
+    borderColor: '#BFDBFE',
+  },
+  goToTasksText: {
+    ...theme.typography.caption.md,
+    color: theme.colors.primary,
+    fontWeight: '600',
   },
   errorText: {
     ...theme.typography.caption.md,
@@ -1264,12 +1488,14 @@ const styles = StyleSheet.create({
     borderRadius: theme.radius.md,
     alignItems: 'center',
     justifyContent: 'center',
+    padding: theme.spacing.md,
     gap: theme.spacing.xs,
     backgroundColor: theme.colors.surface,
   },
   emptyText: {
     ...theme.typography.body.sm,
     color: theme.colors.textMuted,
+    textAlign: 'center',
   },
   itemList: {
     gap: theme.spacing.sm,
@@ -1289,6 +1515,10 @@ const styles = StyleSheet.create({
     borderColor: theme.colors.primary,
     backgroundColor: theme.colors.infoSurface,
   },
+  dispatchItemWarning: {
+    borderColor: '#FCA5A5',
+    backgroundColor: '#FFF5F5',
+  },
   checkbox: {
     width: 22,
     height: 22,
@@ -1306,14 +1536,44 @@ const styles = StyleSheet.create({
     flex: 1,
     minWidth: 0,
   },
+  itemTopRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 8,
+  },
   shipmentCode: {
     ...theme.typography.subtitle.sm,
     color: theme.colors.textPrimary,
+  },
+  statusChip: {
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
+    backgroundColor: '#E2E8F0',
+  },
+  statusChipText: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: '#334155',
+  },
+  previewMeta: {
+    ...theme.typography.caption.md,
+    color: theme.colors.textPrimary,
+    marginTop: 2,
   },
   scannedAt: {
     ...theme.typography.caption.sm,
     color: theme.colors.textMuted,
     marginTop: 2,
+  },
+  itemWarningText: {
+    ...theme.typography.caption.sm,
+    color: '#B91C1C',
+    marginTop: 4,
+  },
+  removeSingleButton: {
+    padding: 4,
   },
   footer: {
     borderTopWidth: 1,

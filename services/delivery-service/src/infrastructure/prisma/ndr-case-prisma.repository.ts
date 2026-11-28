@@ -88,6 +88,7 @@ export class NdrCasePrismaRepository extends NdrCaseRepository {
       reportedHubCode: input.reportedHubCode ?? null,
       note: input.note ?? null,
       status: input.status ?? 'CREATED',
+      rescheduleAt: input.rescheduleAt ? new Date(input.rescheduleAt) : null,
       deliveryAttempt: input.deliveryAttemptId
         ? {
             connect: {

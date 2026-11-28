@@ -459,8 +459,256 @@ export class TasksService {
     shipment_code?: string | null;
     note?: string | null;
   }): Promise<Task | null> {
-    void payload;
+    const shipmentCode = payload.shipment_code?.trim().toUpperCase() || null;
+    if (!shipmentCode) {
+      return null;
+    }
+
+    return this.cancelActiveDeliveryTasks(shipmentCode);
+  }
+
+  async handleNdrCreated(payload: {
+    shipment_code?: string | null;
+    ndrCase?: Record<string, unknown> | null;
+  }): Promise<Task | null> {
+    const shipmentCode =
+      payload.shipment_code?.trim().toUpperCase() ||
+      normalizeString(payload.ndrCase?.shipmentCode) ||
+      null;
+
+    if (shipmentCode) {
+      await this.cancelActiveDeliveryTasks(shipmentCode);
+    }
+
+    const ndrCase = payload.ndrCase ?? null;
+    if (
+      ndrCase &&
+      normalizeString(ndrCase.status) === 'RESCHEDULED' &&
+      this.isNdrRescheduleDue(ndrCase.rescheduleAt)
+    ) {
+      return this.tryAutoRedeliverFromNdr(ndrCase);
+    }
+
     return null;
+  }
+
+  async handleNdrRescheduled(payload: {
+    shipment_code?: string | null;
+    ndrCase?: Record<string, unknown> | null;
+  }): Promise<Task | null> {
+    const ndrCase = payload.ndrCase ?? null;
+    if (!ndrCase || !this.isNdrRescheduleDue(ndrCase.rescheduleAt)) {
+      return null;
+    }
+
+    return this.tryAutoRedeliverFromNdr(ndrCase);
+  }
+
+  async hasFutureRescheduledNdr(shipmentCode: string): Promise<boolean> {
+    const normalizedCode = shipmentCode.trim().toUpperCase();
+    if (!normalizedCode) {
+      return false;
+    }
+
+    const ndrList = await this.fetchServiceJson(
+      'DELIVERY_SERVICE_URL',
+      `ndr?shipmentCode=${encodeURIComponent(normalizedCode)}&status=RESCHEDULED`,
+    );
+    if (!Array.isArray(ndrList) || ndrList.length === 0) {
+      return false;
+    }
+
+    const nowMs = Date.now();
+    return ndrList.some((item) => {
+      const record = asRecord(item);
+      if (!record || !record.rescheduleAt) {
+        return false;
+      }
+      const dueMs = new Date(String(record.rescheduleAt)).getTime();
+      return Number.isFinite(dueMs) && dueMs > nowMs;
+    });
+  }
+
+  async processDueRescheduledRedeliveries(): Promise<number> {
+    const ndrList = await this.fetchServiceJson(
+      'DELIVERY_SERVICE_URL',
+      'ndr?status=RESCHEDULED',
+    );
+    if (!Array.isArray(ndrList) || ndrList.length === 0) {
+      return 0;
+    }
+
+    let dispatchedCount = 0;
+    for (const rawCase of ndrList) {
+      const ndrCase = asRecord(rawCase);
+      if (!ndrCase || !this.isNdrRescheduleDue(ndrCase.rescheduleAt)) {
+        continue;
+      }
+
+      const task = await this.tryAutoRedeliverFromNdr(ndrCase);
+      if (task) {
+        dispatchedCount += 1;
+      }
+    }
+
+    return dispatchedCount;
+  }
+
+  async tryAutoRedeliverFromNdr(
+    ndrCase: Record<string, unknown>,
+  ): Promise<Task | null> {
+    const shipmentCode = normalizeString(ndrCase.shipmentCode);
+    const ndrCaseId = normalizeNonEmptyString(ndrCase.id);
+    if (!shipmentCode || !ndrCaseId) {
+      return null;
+    }
+
+    const existingTasks = await this.taskRepository.list({
+      shipmentCode,
+      taskType: 'DELIVERY',
+    });
+
+    const hasOpenDeliveryTask = existingTasks.some(
+      (task) => task.status !== 'COMPLETED' && task.status !== 'CANCELLED',
+    );
+    if (hasOpenDeliveryTask) {
+      return null;
+    }
+
+    const ndrMarker = `[AUTO_REDELIVERY:${ndrCaseId}]`;
+    const ndrUpdatedMs = ndrCase.updatedAt
+      ? new Date(String(ndrCase.updatedAt)).getTime()
+      : NaN;
+    const alreadyDispatchedForNdr = existingTasks.some(
+      (task) =>
+        Boolean(task.note?.includes(ndrMarker)) ||
+        (Number.isFinite(ndrUpdatedMs) && task.createdAt.getTime() >= ndrUpdatedMs),
+    );
+    if (alreadyDispatchedForNdr) {
+      return null;
+    }
+
+    const shipment = await this.fetchServiceJson(
+      'SHIPMENT_SERVICE_URL',
+      `shipments/${encodeURIComponent(shipmentCode)}`,
+    );
+    const shipmentRecord = asRecord(shipment);
+    if (!shipmentRecord || shipmentRecord.isLocked === true) {
+      return null;
+    }
+
+    const currentStatus = normalizeString(shipmentRecord.currentStatus) ?? '';
+    if (
+      [
+        'DELIVERED',
+        'RETURN_STARTED',
+        'RETURN_COMPLETED',
+        'CANCELLED',
+        'EXCEPTION',
+      ].includes(currentStatus)
+    ) {
+      return null;
+    }
+
+    const hasInventoryCheck = await this.hasPriorInventoryCheck(
+      shipmentCode,
+      shipmentRecord,
+    );
+    if (!hasInventoryCheck) {
+      return null;
+    }
+
+    const currentLocation = asRecord(
+      await this.fetchServiceJson(
+        'SCAN_SERVICE_URL',
+        `locations/${encodeURIComponent(shipmentCode)}`,
+      ),
+    );
+    const metadata = asRecord(shipmentRecord.metadata);
+    const routing = asRecord(metadata?.routing);
+    const hubCode =
+      normalizeString(ndrCase.reportedHubCode) ??
+      normalizeString(currentLocation?.locationCode) ??
+      normalizeString(metadata?.currentHubCode) ??
+      normalizeString(routing?.destinationHubCode);
+
+    if (!hubCode) {
+      return null;
+    }
+
+    return this.autoAssignDeliveryTask(shipmentCode, hubCode, {
+      notePrefix: `${ndrMarker} [Tự động phát lại theo lịch hẹn từ hàng tồn kho]`,
+    });
+  }
+
+  private async cancelActiveDeliveryTasks(
+    shipmentCode: string,
+  ): Promise<Task | null> {
+    const activeDeliveryTasks = await this.taskRepository.list({
+      shipmentCode,
+      taskType: 'DELIVERY',
+    });
+
+    let lastCancelled: Task | null = null;
+    for (const deliveryTask of activeDeliveryTasks) {
+      if (
+        deliveryTask.status !== 'COMPLETED' &&
+        deliveryTask.status !== 'CANCELLED'
+      ) {
+        const updated = await this.taskRepository.updateStatus(deliveryTask.id, {
+          status: 'CANCELLED',
+        });
+        this.tasksRealtimeGateway.publishTaskChanged('status_updated', updated);
+        lastCancelled = updated;
+      }
+    }
+
+    return lastCancelled;
+  }
+
+  private isNdrRescheduleDue(rawRescheduleAt: unknown): boolean {
+    if (!rawRescheduleAt) {
+      return false;
+    }
+
+    const dueMs = new Date(String(rawRescheduleAt)).getTime();
+    return Number.isFinite(dueMs) && dueMs <= Date.now();
+  }
+
+  private async hasPriorInventoryCheck(
+    shipmentCode: string,
+    shipmentRecord: Record<string, unknown>,
+  ): Promise<boolean> {
+    if (normalizeString(shipmentRecord.currentStatus) === 'INVENTORY_CHECK') {
+      return true;
+    }
+
+    const timeline = await this.fetchServiceJson(
+      'TRACKING_SERVICE_URL',
+      `tracking/${encodeURIComponent(shipmentCode)}/timeline`,
+    );
+    if (Array.isArray(timeline)) {
+      const matched = timeline.some((rawEvent) => {
+        const event = asRecord(rawEvent);
+        if (!event) {
+          return false;
+        }
+        const statusCode = normalizeString(event.statusCode ?? event.status_code);
+        const note = normalizeNonEmptyString(event.note) ?? '';
+        const title = normalizeNonEmptyString(event.statusText ?? event.title) ?? '';
+        return (
+          statusCode === 'INVENTORY_CHECK' ||
+          note.startsWith('INVENTORY_CHECK') ||
+          note.startsWith('Kiểm tồn kho') ||
+          title.includes('Kiểm tra hàng tồn')
+        );
+      });
+      if (matched) {
+        return true;
+      }
+    }
+
+    return false;
   }
 
   async handleReturnStarted(payload: {
@@ -749,7 +997,10 @@ export class TasksService {
   async autoAssignDeliveryTask(
     shipmentCode: string,
     locationCode: string,
+    options?: { notePrefix?: string },
   ): Promise<Task | null> {
+    const withPrefix = (baseNote: string) =>
+      options?.notePrefix ? `${options.notePrefix} | ${baseNote}` : baseNote;
     const shipment = await this.fetchServiceJson(
       'SHIPMENT_SERVICE_URL',
       `shipments/${encodeURIComponent(shipmentCode)}`,
@@ -902,7 +1153,9 @@ export class TasksService {
               shipmentCode,
               courierId,
               assignedHub,
-              `[Tự động điều phối - Đúng tuyến giao hàng] Tọa độ (${deliveryLatitude.toFixed(5)}, ${deliveryLongitude.toFixed(5)}) khớp chính xác Tuyến [${zoneLabel}] của Shipper ${courierId} thuộc Hub ${assignedHub}`,
+              withPrefix(
+                `[Tự động điều phối - Đúng tuyến giao hàng] Tọa độ (${deliveryLatitude.toFixed(5)}, ${deliveryLongitude.toFixed(5)}) khớp chính xác Tuyến [${zoneLabel}] của Shipper ${courierId} thuộc Hub ${assignedHub}`,
+              ),
             );
           }
         }
@@ -940,7 +1193,9 @@ export class TasksService {
               shipmentCode,
               courierId,
               assignedHub,
-              `[Tự động điều phối - Đúng tuyến giao hàng liên Hub] Tọa độ (${deliveryLatitude.toFixed(5)}, ${deliveryLongitude.toFixed(5)}) khớp chính xác Tuyến [${zoneLabel}] của Shipper ${courierId} thuộc Hub ${assignedHub}`,
+              withPrefix(
+                `[Tự động điều phối - Đúng tuyến giao hàng liên Hub] Tọa độ (${deliveryLatitude.toFixed(5)}, ${deliveryLongitude.toFixed(5)}) khớp chính xác Tuyến [${zoneLabel}] của Shipper ${courierId} thuộc Hub ${assignedHub}`,
+              ),
             );
           }
         }
@@ -986,7 +1241,7 @@ export class TasksService {
         shipmentCode,
         courierId,
         assignedHub,
-        `[Tự động điều phối - Cùng Hub] ${matchNote}`,
+        withPrefix(`[Tự động điều phối - Cùng Hub] ${matchNote}`),
       );
     }
 
@@ -999,7 +1254,9 @@ export class TasksService {
       shipmentCode,
       globalCourierId,
       assignedHub,
-      `[Tự động điều phối - Bưu tá Tổng Toàn quốc] Hub ${assignedHub} không có Shipper phụ trách, điều phối dự phòng giao hàng cho Bưu tá Tổng Toàn quốc ${globalCourierId}`,
+      withPrefix(
+        `[Tự động điều phối - Bưu tá Tổng Toàn quốc] Hub ${assignedHub} không có Shipper phụ trách, điều phối dự phòng giao hàng cho Bưu tá Tổng Toàn quốc ${globalCourierId}`,
+      ),
     );
   }
 
@@ -1428,12 +1685,18 @@ export class TasksService {
       | 'SHIPMENT_SERVICE_URL'
       | 'PICKUP_SERVICE_URL'
       | 'AUTH_SERVICE_URL'
-      | 'MASTERDATA_SERVICE_URL',
+      | 'MASTERDATA_SERVICE_URL'
+      | 'DELIVERY_SERVICE_URL'
+      | 'SCAN_SERVICE_URL'
+      | 'TRACKING_SERVICE_URL',
     path: string,
   ): Promise<unknown> {
     const defaultUrls: Record<string, string> = {
       SHIPMENT_SERVICE_URL: 'http://localhost:3002',
       PICKUP_SERVICE_URL: 'http://localhost:3003',
+      SCAN_SERVICE_URL: 'http://localhost:3006',
+      DELIVERY_SERVICE_URL: 'http://localhost:3007',
+      TRACKING_SERVICE_URL: 'http://localhost:3008',
       AUTH_SERVICE_URL: 'http://localhost:3010',
       MASTERDATA_SERVICE_URL: 'http://localhost:3001',
     };

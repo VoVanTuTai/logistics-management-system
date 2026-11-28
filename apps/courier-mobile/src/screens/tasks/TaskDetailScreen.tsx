@@ -425,13 +425,17 @@ export function TaskDetailScreen({ navigation, route }: Props): React.JSX.Elemen
     navigationDestination?.address ?? (isPickupTask ? pickupAddress : deliveryAddress);
   const isReloadingStatus = taskQuery.isRefetching || shipmentQuery.isRefetching;
   const isReturnTask = task.taskType === 'RETURN';
-  const canRunPrimaryAction = isPickupTask
-    ? canAccessCourierFeature(session?.user, 'scan.pickup')
-    : isReturnTask
-      ? canAccessCourierFeature(session?.user, 'scan.return-sign')
-      : canAccessCourierFeature(session?.user, 'scan.delivery-sign') ||
-        canAccessCourierFeature(session?.user, 'scan.delivery');
-  const canReportIssue = canAccessCourierFeature(session?.user, 'scan.issue');
+  const isClosedTask = task.status === 'COMPLETED' || task.status === 'CANCELLED';
+  const canRunPrimaryAction =
+    !isClosedTask &&
+    (isPickupTask
+      ? canAccessCourierFeature(session?.user, 'scan.pickup')
+      : isReturnTask
+        ? canAccessCourierFeature(session?.user, 'scan.return-sign')
+        : canAccessCourierFeature(session?.user, 'scan.delivery-sign') ||
+          canAccessCourierFeature(session?.user, 'scan.delivery'));
+  const canReportIssue =
+    !isClosedTask && canAccessCourierFeature(session?.user, 'scan.issue');
 
   return (
     <Screen scroll={false}>

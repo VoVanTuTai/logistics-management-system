@@ -68,6 +68,16 @@ interface Props {
   };
 }
 
+const INACTIVE_DELIVERY_SHIPMENT_STATUSES = new Set([
+  'DELIVERED',
+  'DELIVERY_FAILED',
+  'NDR_CREATED',
+  'EXCEPTION',
+  'RETURN_STARTED',
+  'RETURN_COMPLETED',
+  'CANCELLED',
+]);
+
 function statusVariant(status: TaskStatus):
   | 'neutral'
   | 'success'
@@ -447,6 +457,16 @@ export function TaskListScreen({ route }: Props = {}): React.JSX.Element {
               }
             }
           }
+          if (
+            task.taskType === 'DELIVERY' &&
+            (task.status === 'CREATED' || task.status === 'ASSIGNED') &&
+            (statusFilter === 'CREATED' || statusFilter === 'ASSIGNED')
+          ) {
+            const shipment = task.shipmentCode ? shipmentByCode.get(task.shipmentCode) : null;
+            if (shipment && INACTIVE_DELIVERY_SHIPMENT_STATUSES.has(shipment.currentStatus)) {
+              return false;
+            }
+          }
           return true;
         })
         .map((task) =>
@@ -455,7 +475,7 @@ export function TaskListScreen({ route }: Props = {}): React.JSX.Element {
             task.shipmentCode ? shipmentByCode.get(task.shipmentCode) ?? null : null,
           ),
         ),
-    [filteredTasks, shipmentByCode],
+    [filteredTasks, shipmentByCode, statusFilter],
   );
 
   const sortedDisplayItems = useMemo(() => {

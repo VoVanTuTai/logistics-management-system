@@ -18,21 +18,34 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 
 import { Card } from '../../components/ui/Card';
 import { Screen } from '../../components/ui/Screen';
+import { submitDeliveryFailAction } from '../../features/delivery/delivery-fail.api';
+import { enqueueDeliveryFailOffline } from '../../features/delivery/delivery-fail.offline';
 import { reportShipmentException } from '../../features/delivery/shipment-exception.api';
-import type { IssueAttachmentPayload } from '../../features/delivery/delivery.types';
-import { SCAN_ISSUE_RETURN_REASONS } from '../../features/delivery/return-reasons';
+import type {
+  DeliveryFailPayload,
+  IssueAttachmentPayload,
+} from '../../features/delivery/delivery.types';
+import {
+  DELIVERY_FAIL_RETURN_REASONS,
+  SCAN_ISSUE_RETURN_REASONS,
+  type ReturnReasonSource,
+} from '../../features/delivery/return-reasons';
 import { useShipmentDetailQuery } from '../../features/shipment/shipment.queries';
 import type { ShipmentMetadata } from '../../features/shipment/shipment.types';
+import { tasksApi } from '../../features/tasks/tasks.api';
 import { useTaskDetailQuery } from '../../features/tasks/tasks.queries';
 import type { AppNavigatorParamList } from '../../navigation/types';
+import { shouldQueueOffline } from '../../services/api/client';
 import { useAppStore } from '../../store/appStore';
 import { theme } from '../../theme';
-import { appEnv } from '../../utils/env';
 import {
+  buildDeliveryFailAuditNote,
   buildShipmentIssueAuditNote,
   resolveCourierDisplayName,
   resolveCourierId,
 } from '../../utils/courier';
+import { appEnv } from '../../utils/env';
+import { createIdempotencyKey } from '../../utils/idempotency';
 
 type Props = NativeStackScreenProps<AppNavigatorParamList, 'TaskIssue'>;
 
@@ -41,21 +54,146 @@ interface IssueOption {
   title: string;
   description: string;
   issueType: string;
+  source: ReturnReasonSource;
   issueCategory: 'PHYSICAL' | 'INFORMATION' | 'SYSTEM';
 }
 
-const ISSUE_OPTIONS: IssueOption[] = SCAN_ISSUE_RETURN_REASONS.map((reason) => ({
-  id: reason.id,
-  title: reason.label,
-  description: reason.description,
-  issueType: reason.code,
-  issueCategory: reason.issueCategory ?? 'INFORMATION',
-}));
+const DELIVERY_ISSUE_OPTIONS: IssueOption[] = DELIVERY_FAIL_RETURN_REASONS.map(
+  (reason) => ({
+    id: reason.id,
+    title: reason.label,
+    description: reason.description,
+    issueType: reason.code,
+    source: 'DELIVERY_FAIL',
+    issueCategory: 'INFORMATION',
+  }),
+);
+
+const SCAN_ISSUE_OPTIONS: IssueOption[] = SCAN_ISSUE_RETURN_REASONS.map(
+  (reason) => ({
+    id: reason.id,
+    title: reason.label,
+    description: reason.description,
+    issueType: reason.code,
+    source: 'SCAN_ISSUE',
+    issueCategory: reason.issueCategory ?? 'INFORMATION',
+  }),
+);
+
+const ISSUE_OPTIONS: IssueOption[] = [
+  ...DELIVERY_ISSUE_OPTIONS,
+  ...SCAN_ISSUE_OPTIONS,
+];
+
+const QUICK_RESCHEDULE_DAYS = [
+  { offsetDays: 1, label: 'Ngày mai' },
+  { offsetDays: 2, label: 'Ngày kia' },
+  { offsetDays: 3, label: '+3 ngày' },
+  { offsetDays: 4, label: '+4 ngày' },
+  { offsetDays: 5, label: '+5 ngày' },
+] as const;
+
+const RESCHEDULE_TIME_SLOTS = [
+  { value: '09:00', label: 'Ca sáng (09:00)' },
+  { value: '14:00', label: 'Ca chiều (14:00)' },
+  { value: '18:30', label: 'Ca tối (18:30)' },
+] as const;
 
 interface LocalAttachment {
   uri: string;
   type: string;
   name: string;
+}
+
+function formatYmdLocal(date: Date): string {
+  const yyyy = date.getFullYear();
+  const mm = String(date.getMonth() + 1).padStart(2, '0');
+  const dd = String(date.getDate()).padStart(2, '0');
+  return `${yyyy}-${mm}-${dd}`;
+}
+
+function parseYmdLocal(ymd: string): Date | null {
+  const trimmed = ymd.trim();
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(trimmed);
+  if (!match) {
+    return null;
+  }
+
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  const day = Number(match[3]);
+  const parsed = new Date(year, month - 1, day, 0, 0, 0, 0);
+
+  if (
+    Number.isNaN(parsed.getTime()) ||
+    parsed.getFullYear() !== year ||
+    parsed.getMonth() !== month - 1 ||
+    parsed.getDate() !== day
+  ) {
+    return null;
+  }
+
+  return parsed;
+}
+
+function addDaysToYmd(ymd: string, deltaDays: number): string {
+  const base = parseYmdLocal(ymd) ?? new Date();
+  const next = new Date(
+    base.getFullYear(),
+    base.getMonth(),
+    base.getDate() + deltaDays,
+  );
+  return formatYmdLocal(next);
+}
+
+function getTodayYmd(): string {
+  return formatYmdLocal(new Date());
+}
+
+function formatDdMm(ymd: string): string {
+  const parsed = parseYmdLocal(ymd);
+  if (!parsed) {
+    return ymd;
+  }
+  const dd = String(parsed.getDate()).padStart(2, '0');
+  const mm = String(parsed.getMonth() + 1).padStart(2, '0');
+  return `${dd}/${mm}`;
+}
+
+function formatDdMmYyyy(ymd: string): string {
+  const parsed = parseYmdLocal(ymd);
+  if (!parsed) {
+    return ymd;
+  }
+  const dd = String(parsed.getDate()).padStart(2, '0');
+  const mm = String(parsed.getMonth() + 1).padStart(2, '0');
+  const yyyy = parsed.getFullYear();
+  return `${dd}/${mm}/${yyyy}`;
+}
+
+function buildRescheduleIso(ymd: string, timeSlot: string): string | null {
+  const datePart = parseYmdLocal(ymd);
+  if (!datePart) {
+    return null;
+  }
+
+  const [hhRaw, mmRaw] = timeSlot.split(':');
+  const hh = Number(hhRaw);
+  const mm = Number(mmRaw);
+  if (!Number.isFinite(hh) || !Number.isFinite(mm)) {
+    return null;
+  }
+
+  const combined = new Date(
+    datePart.getFullYear(),
+    datePart.getMonth(),
+    datePart.getDate(),
+    hh,
+    mm,
+    0,
+    0,
+  );
+  return Number.isNaN(combined.getTime()) ? null : combined.toISOString();
 }
 
 function readMetadataPath(
@@ -104,24 +242,36 @@ export function TaskIssueScreen({ navigation, route }: Props): React.JSX.Element
     accessToken: session?.tokens.accessToken ?? null,
     taskId: route.params.taskId ?? '',
   });
-  const resolvedShipmentCode = route.params.shipmentCode ?? taskQuery.data?.shipmentCode ?? null;
+  const resolvedShipmentCode =
+    route.params.shipmentCode ?? taskQuery.data?.shipmentCode ?? null;
   const shipmentQuery = useShipmentDetailQuery({
     accessToken: session?.tokens.accessToken ?? null,
     shipmentCode: resolvedShipmentCode,
   });
-  const [selectedIssueId, setSelectedIssueId] = React.useState(ISSUE_OPTIONS[0].id);
+  const [selectedIssueId, setSelectedIssueId] = React.useState(
+    ISSUE_OPTIONS[0].id,
+  );
+  const [rescheduleDate, setRescheduleDate] = React.useState(() =>
+    addDaysToYmd(getTodayYmd(), 1),
+  );
+  const [rescheduleSlot, setRescheduleSlot] = React.useState<string>(
+    RESCHEDULE_TIME_SLOTS[0].value,
+  );
   const [note, setNote] = React.useState('');
   const [attachments, setAttachments] = React.useState<LocalAttachment[]>([]);
   const [cameraVisible, setCameraVisible] = React.useState(false);
   const [capturing, setCapturing] = React.useState(false);
   const [submitMessage, setSubmitMessage] = React.useState<string | null>(null);
+  const [submitIsError, setSubmitIsError] = React.useState(false);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
 
   const selectedIssue =
-    ISSUE_OPTIONS.find((option) => option.id === selectedIssueId) ?? ISSUE_OPTIONS[0];
+    ISSUE_OPTIONS.find((option) => option.id === selectedIssueId) ??
+    ISSUE_OPTIONS[0];
   const shipmentMetadata = shipmentQuery.data?.metadata ?? null;
   const receiverName =
-    readMetadataString(shipmentMetadata, ['receiverName', 'receiver.name']) ?? 'N/A';
+    readMetadataString(shipmentMetadata, ['receiverName', 'receiver.name']) ??
+    'N/A';
   const receiverPhone =
     readMetadataString(shipmentMetadata, [
       'receiverPhone',
@@ -137,13 +287,21 @@ export function TaskIssueScreen({ navigation, route }: Props): React.JSX.Element
     username: session?.user.username,
     courierId,
   });
-  const isPhysicalIssue = selectedIssue.issueCategory === 'PHYSICAL';
+  const isDeliveryFailReason = selectedIssue.source === 'DELIVERY_FAIL';
+  const isCustomerReschedule = selectedIssue.issueType === 'CUSTOMER_RESCHEDULE';
+  const isPhysicalIssue =
+    selectedIssue.source === 'SCAN_ISSUE' &&
+    selectedIssue.issueCategory === 'PHYSICAL';
+  const todayYmd = getTodayYmd();
 
   const openCamera = React.useCallback(async () => {
     if (!permission?.granted) {
       const result = await requestPermission();
       if (!result.granted) {
-        Alert.alert('Cần quyền camera', 'Vui lòng cấp quyền camera để chụp minh chứng.');
+        Alert.alert(
+          'Cần quyền camera',
+          'Vui lòng cấp quyền camera để chụp minh chứng.',
+        );
         return;
       }
     }
@@ -181,8 +339,12 @@ export function TaskIssueScreen({ navigation, route }: Props): React.JSX.Element
       ]);
       setCameraVisible(false);
       setSubmitMessage(null);
+      setSubmitIsError(false);
     } catch (error) {
-      setSubmitMessage(error instanceof Error ? error.message : 'Không chụp được minh chứng.');
+      setSubmitIsError(true);
+      setSubmitMessage(
+        error instanceof Error ? error.message : 'Không chụp được minh chứng.',
+      );
     } finally {
       setCapturing(false);
     }
@@ -192,8 +354,43 @@ export function TaskIssueScreen({ navigation, route }: Props): React.JSX.Element
     setAttachments((current) => current.filter((item) => item.uri !== uri));
   };
 
+  const exitAfterSuccess = React.useCallback(() => {
+    setTimeout(() => {
+      const routes = navigation.getState().routes;
+      if (route.params.taskId && routes.length >= 3) {
+        navigation.pop(2);
+      } else if (routes.length >= 2) {
+        navigation.goBack();
+      } else {
+        navigation.navigate('MainTabs', { screen: 'Tasks' });
+      }
+    }, 350);
+  }, [navigation, route.params.taskId]);
+
+  const closeTaskAndInvalidate = React.useCallback(
+    async (token: string, shipmentCode: string) => {
+      if (route.params.taskId) {
+        await tasksApi
+          .updateTaskStatus(token, route.params.taskId, 'CANCELLED')
+          .catch(() => undefined);
+      }
+
+      await queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      if (route.params.taskId) {
+        await queryClient.invalidateQueries({
+          queryKey: ['tasks', 'detail', route.params.taskId],
+        });
+      }
+      await queryClient.invalidateQueries({
+        queryKey: ['shipment', 'detail', shipmentCode],
+      });
+    },
+    [queryClient, route.params.taskId],
+  );
+
   const handleSubmit = React.useCallback(async () => {
     if (!resolvedShipmentCode) {
+      setSubmitIsError(true);
       setSubmitMessage('Không có mã shipment cho nhiệm vụ này.');
       return;
     }
@@ -203,22 +400,132 @@ export function TaskIssueScreen({ navigation, route }: Props): React.JSX.Element
       return;
     }
 
-    if (!hubCode) {
-      setSubmitMessage('Tài khoản chưa có mã hub nên không thể ghi nhận vấn đề.');
+    if (!isDeliveryFailReason && !hubCode) {
+      setSubmitIsError(true);
+      setSubmitMessage(
+        'Tài khoản chưa có mã hub nên không thể ghi nhận vấn đề.',
+      );
       return;
     }
 
     if (isPhysicalIssue && attachments.length === 0) {
-      setSubmitMessage('Vấn đề ngoại quan bắt buộc có ít nhất một ảnh/video minh chứng.');
+      setSubmitIsError(true);
+      setSubmitMessage(
+        'Vấn đề ngoại quan bắt buộc có ít nhất một ảnh/video minh chứng.',
+      );
       return;
     }
 
-    if (!isPhysicalIssue && note.trim().length === 0) {
+    if (
+      !isDeliveryFailReason &&
+      !isPhysicalIssue &&
+      note.trim().length === 0
+    ) {
+      setSubmitIsError(true);
       setSubmitMessage('Vấn đề thông tin/hệ thống bắt buộc có ghi chú.');
       return;
     }
 
-    const rawNote = note.trim().length > 0 ? note.trim() : selectedIssue.description;
+    let rescheduleAtIso: string | null = null;
+    if (isCustomerReschedule) {
+      const parsedDate = parseYmdLocal(rescheduleDate);
+      if (!parsedDate) {
+        setSubmitIsError(true);
+        setSubmitMessage(
+          'Vui lòng nhập ngày hẹn giao hợp lệ theo định dạng YYYY-MM-DD.',
+        );
+        return;
+      }
+
+      const todayStart = parseYmdLocal(getTodayYmd());
+      if (todayStart && parsedDate.getTime() < todayStart.getTime()) {
+        setSubmitIsError(true);
+        setSubmitMessage('Ngày hẹn giao lại không được nhỏ hơn ngày hôm nay.');
+        return;
+      }
+
+      rescheduleAtIso = buildRescheduleIso(rescheduleDate, rescheduleSlot);
+      if (!rescheduleAtIso) {
+        setSubmitIsError(true);
+        setSubmitMessage('Không thể tạo thời gian hẹn giao lại.');
+        return;
+      }
+    }
+
+    setIsSubmitting(true);
+    setSubmitMessage(null);
+    setSubmitIsError(false);
+
+    if (isDeliveryFailReason) {
+      const rawNote =
+        note.trim().length > 0 ? note.trim() : selectedIssue.title;
+      const rescheduleLabel = isCustomerReschedule
+        ? ` | Hẹn giao lại: ${formatDdMmYyyy(rescheduleDate)} ${rescheduleSlot}`
+        : '';
+      const attachmentNote =
+        attachments.length > 0 ? ` | Minh chứng ảnh: ${attachments.length}` : '';
+
+      const payload: DeliveryFailPayload = {
+        shipmentCode: resolvedShipmentCode,
+        taskId: route.params.taskId ?? null,
+        courierId,
+        locationCode: hubCode || null,
+        actor: session?.user.username ?? null,
+        note:
+          buildDeliveryFailAuditNote({
+            displayName: session?.user.displayName,
+            username: session?.user.username,
+            courierId,
+            hubCode: hubCode || null,
+            reasonCode: selectedIssue.issueType,
+            note: `${selectedIssue.title} - ${rawNote}${rescheduleLabel}${attachmentNote}`,
+          }),
+        occurredAt: new Date().toISOString(),
+        idempotencyKey: createIdempotencyKey('delivery-fail'),
+        failReasonCode: selectedIssue.issueType,
+        createNdr: true,
+        startReturn: false,
+        rescheduleAt: rescheduleAtIso,
+        nextDeliveryAt: rescheduleAtIso,
+      };
+
+      try {
+        await submitDeliveryFailAction(accessToken, payload);
+        await closeTaskAndInvalidate(accessToken, resolvedShipmentCode);
+
+        setSubmitIsError(false);
+        setSubmitMessage(
+          isCustomerReschedule
+            ? `Đã ghi nhận hẹn giao lại ngày ${formatDdMmYyyy(rescheduleDate)} (${rescheduleSlot}). Hệ thống sẽ tự phát lại nếu đã có tồn kho.`
+            : `Đã ghi nhận "${selectedIssue.title}". Đơn đã được chuyển ra khỏi danh sách đợi phát.`,
+        );
+        exitAfterSuccess();
+      } catch (error) {
+        if (shouldQueueOffline(error)) {
+          await enqueueDeliveryFailOffline(payload);
+          await closeTaskAndInvalidate(accessToken, resolvedShipmentCode);
+          setSubmitIsError(false);
+          setSubmitMessage(
+            'Mất mạng: thao tác đã được lưu offline và đơn đã rời danh sách đợi phát.',
+          );
+          exitAfterSuccess();
+        } else {
+          const message =
+            error instanceof Error
+              ? error.message
+              : 'Cập nhật giao thất bại không thành công.';
+          setSubmitIsError(true);
+          setSubmitMessage(message);
+          setGlobalError(message);
+        }
+      } finally {
+        setIsSubmitting(false);
+      }
+      return;
+    }
+
+    const rawNote =
+      note.trim().length > 0 ? note.trim() : selectedIssue.description;
     const payload = {
       shipmentCode: resolvedShipmentCode,
       currentHubCode: hubCode,
@@ -242,33 +549,19 @@ export function TaskIssueScreen({ navigation, route }: Props): React.JSX.Element
       occurredAt: new Date().toISOString(),
     };
 
-    setIsSubmitting(true);
-    setSubmitMessage(null);
-
     try {
       const result = await reportShipmentException(accessToken, payload);
+      await closeTaskAndInvalidate(accessToken, resolvedShipmentCode);
+
+      setSubmitIsError(false);
       setSubmitMessage(
-        `Đã ghi nhận vấn đề ${result.id}. Đơn đã chuyển sang trạng thái kiện vấn đề và bị khóa luân chuyển.`,
+        `Đã ghi nhận vấn đề ${result.id}. Đơn đã rời danh sách đợi phát và bị khóa luân chuyển.`,
       );
-
-      await queryClient.invalidateQueries({ queryKey: ['tasks'] });
-      if (route.params.taskId) {
-        await queryClient.invalidateQueries({
-          queryKey: ['tasks', 'detail', route.params.taskId],
-        });
-      }
-      if (resolvedShipmentCode) {
-        await queryClient.invalidateQueries({
-          queryKey: ['shipment', 'detail', resolvedShipmentCode],
-        });
-      }
-
-      setTimeout(() => {
-        navigation.goBack();
-      }, 600);
+      exitAfterSuccess();
     } catch (error) {
       const message =
         error instanceof Error ? error.message : 'Cập nhật vấn đề thất bại.';
+      setSubmitIsError(true);
       setSubmitMessage(message);
       setGlobalError(message);
     } finally {
@@ -277,22 +570,58 @@ export function TaskIssueScreen({ navigation, route }: Props): React.JSX.Element
   }, [
     accessToken,
     attachments,
-    hubCode,
-    isPhysicalIssue,
+    closeTaskAndInvalidate,
     courierId,
     employeeName,
-    navigation,
+    exitAfterSuccess,
+    hubCode,
+    isCustomerReschedule,
+    isDeliveryFailReason,
+    isPhysicalIssue,
     note,
-    queryClient,
+    rescheduleDate,
+    rescheduleSlot,
     resolvedShipmentCode,
     route.params.taskId,
-    selectedIssue.title,
     selectedIssue.description,
     selectedIssue.issueCategory,
     selectedIssue.issueType,
+    selectedIssue.title,
+    session?.user.displayName,
     session?.user.username,
     setGlobalError,
   ]);
+
+  const handleSelectOption = (optionId: string) => {
+    setSelectedIssueId(optionId);
+    setSubmitMessage(null);
+    setSubmitIsError(false);
+  };
+
+  const renderIssueOption = (option: IssueOption) => {
+    const selected = option.id === selectedIssueId;
+    return (
+      <Pressable
+        key={option.id}
+        onPress={() => handleSelectOption(option.id)}
+        style={[styles.optionItem, selected && styles.optionItemSelected]}
+      >
+        <View style={styles.optionTitleRow}>
+          <Ionicons
+            name={selected ? 'radio-button-on' : 'radio-button-off'}
+            size={18}
+            color={selected ? theme.colors.primary : theme.colors.textMuted}
+          />
+          <Text
+            style={[styles.optionTitle, selected && styles.optionTitleSelected]}
+          >
+            {option.title}
+          </Text>
+        </View>
+        <Text style={styles.optionDescription}>{option.description}</Text>
+      </Pressable>
+    );
+  };
 
   return (
     <Screen scroll={false}>
@@ -304,7 +633,8 @@ export function TaskIssueScreen({ navigation, route }: Props): React.JSX.Element
           <Card>
             <Text style={styles.sectionTitle}>Xử lý vấn đề đơn hàng</Text>
             <Text style={styles.sectionHint}>
-              Hệ thống sẽ kiểm tra vị trí hiện tại khớp hub thao tác, tạo hồ sơ vấn đề và khóa bưu kiện.
+              Chọn lý do khách từ chối lấy hàng, hẹn ngày giao lại hoặc vấn đề
+              kiện hàng. Sau khi xác nhận, đơn sẽ rời khỏi mục Đợi phát.
             </Text>
             <View style={styles.infoRow}>
               <Text style={styles.infoLabel}>Task code</Text>
@@ -314,7 +644,9 @@ export function TaskIssueScreen({ navigation, route }: Props): React.JSX.Element
             </View>
             <View style={styles.infoRow}>
               <Text style={styles.infoLabel}>Shipment</Text>
-              <Text style={styles.infoValue}>{resolvedShipmentCode ?? 'N/A'}</Text>
+              <Text style={styles.infoValue}>
+                {resolvedShipmentCode ?? 'N/A'}
+              </Text>
             </View>
             <View style={styles.infoRow}>
               <Text style={styles.infoLabel}>Người nhận</Text>
@@ -331,45 +663,144 @@ export function TaskIssueScreen({ navigation, route }: Props): React.JSX.Element
             {shipmentQuery.isLoading ? (
               <View style={styles.inlineStateRow}>
                 <ActivityIndicator size="small" color={theme.colors.primary} />
-                <Text style={styles.inlineStateText}>Đang tải thông tin đơn hàng...</Text>
+                <Text style={styles.inlineStateText}>
+                  Đang tải thông tin đơn hàng...
+                </Text>
               </View>
             ) : null}
           </Card>
 
           <Card>
-            <Text style={styles.sectionTitle}>Lựa chọn vấn đề</Text>
+            <Text style={styles.sectionTitle}>
+              Khách từ chối lấy hàng / Giao thất bại
+            </Text>
             <View style={styles.optionList}>
-              {ISSUE_OPTIONS.map((option) => {
-                const selected = option.id === selectedIssueId;
-                return (
-                  <Pressable
-                    key={option.id}
-                    onPress={() => setSelectedIssueId(option.id)}
-                    style={[styles.optionItem, selected && styles.optionItemSelected]}
-                  >
-                    <View style={styles.optionTitleRow}>
-                      <Ionicons
-                        name={selected ? 'radio-button-on' : 'radio-button-off'}
-                        size={18}
-                        color={selected ? theme.colors.primary : theme.colors.textMuted}
-                      />
+              {DELIVERY_ISSUE_OPTIONS.map(renderIssueOption)}
+            </View>
+          </Card>
+
+          {isCustomerReschedule ? (
+            <Card style={styles.rescheduleCard}>
+              <Text style={styles.sectionTitle}>Chọn ngày hẹn giao lại</Text>
+              <Text style={styles.sectionHint}>
+                Nếu đơn hàng đã có tồn kho trước đó tại bưu cục, hệ thống sẽ tự
+                động phân bổ phát lại đúng ngày hẹn.
+              </Text>
+
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.quickDateRow}
+              >
+                {QUICK_RESCHEDULE_DAYS.map((preset) => {
+                  const targetYmd = addDaysToYmd(todayYmd, preset.offsetDays);
+                  const active = rescheduleDate === targetYmd;
+                  return (
+                    <Pressable
+                      key={preset.offsetDays}
+                      onPress={() => setRescheduleDate(targetYmd)}
+                      style={[
+                        styles.quickDateChip,
+                        active && styles.quickDateChipActive,
+                      ]}
+                    >
                       <Text
-                        style={[styles.optionTitle, selected && styles.optionTitleSelected]}
+                        style={[
+                          styles.quickDateLabel,
+                          active && styles.quickDateTextActive,
+                        ]}
                       >
-                        {option.title}
+                        {preset.label}
                       </Text>
-                    </View>
-                    <Text style={styles.optionDescription}>{option.description}</Text>
-                  </Pressable>
-                );
-              })}
+                      <Text
+                        style={[
+                          styles.quickDateSub,
+                          active && styles.quickDateTextActive,
+                        ]}
+                      >
+                        {formatDdMm(targetYmd)}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </ScrollView>
+
+              <View style={styles.dateStepperRow}>
+                <Pressable
+                  onPress={() => {
+                    const prev = addDaysToYmd(rescheduleDate, -1);
+                    if (prev >= todayYmd) {
+                      setRescheduleDate(prev);
+                    }
+                  }}
+                  style={styles.stepperButton}
+                >
+                  <Ionicons name="remove" size={16} color={theme.colors.primary} />
+                  <Text style={styles.stepperButtonText}>1 ngày</Text>
+                </Pressable>
+                <TextInput
+                  value={rescheduleDate}
+                  onChangeText={setRescheduleDate}
+                  placeholder="YYYY-MM-DD"
+                  placeholderTextColor="#94A3B8"
+                  style={styles.dateInput}
+                />
+                <Pressable
+                  onPress={() =>
+                    setRescheduleDate(addDaysToYmd(rescheduleDate, 1))
+                  }
+                  style={styles.stepperButton}
+                >
+                  <Ionicons name="add" size={16} color={theme.colors.primary} />
+                  <Text style={styles.stepperButtonText}>1 ngày</Text>
+                </Pressable>
+              </View>
+
+              <Text style={styles.slotLabel}>Khung giờ dự kiến phát lại</Text>
+              <View style={styles.slotRow}>
+                {RESCHEDULE_TIME_SLOTS.map((slot) => {
+                  const active = rescheduleSlot === slot.value;
+                  return (
+                    <Pressable
+                      key={slot.value}
+                      onPress={() => setRescheduleSlot(slot.value)}
+                      style={[
+                        styles.slotChip,
+                        active && styles.slotChipActive,
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          styles.slotChipText,
+                          active && styles.slotChipTextActive,
+                        ]}
+                      >
+                        {slot.label}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            </Card>
+          ) : null}
+
+          <Card>
+            <Text style={styles.sectionTitle}>
+              Vấn đề hàng hóa / Thông tin / Hệ thống
+            </Text>
+            <View style={styles.optionList}>
+              {SCAN_ISSUE_OPTIONS.map(renderIssueOption)}
             </View>
           </Card>
 
           <Card>
             <Text style={styles.sectionTitle}>Ghi chú bổ sung</Text>
             <Text style={styles.sectionHint}>
-              Vấn đề ngoại quan bắt buộc có minh chứng. Vấn đề thông tin/hệ thống bắt buộc có ghi chú.
+              {isPhysicalIssue
+                ? 'Vấn đề ngoại quan bắt buộc có minh chứng ảnh.'
+                : !isDeliveryFailReason
+                  ? 'Vấn đề thông tin/hệ thống bắt buộc có ghi chú.'
+                  : 'Nhập thêm ghi chú chi tiết nếu có (không bắt buộc).'}
             </Text>
             <TextInput
               placeholder="Nhập ghi chú nếu cần"
@@ -386,11 +817,18 @@ export function TaskIssueScreen({ navigation, route }: Props): React.JSX.Element
               <View>
                 <Text style={styles.sectionTitle}>Minh chứng</Text>
                 <Text style={styles.sectionHint}>
-                  Ảnh/video ngoại quan dùng để điều phối xử lý hồ sơ.
+                  Ảnh ngoại quan hoặc hiện trường giao hàng.
                 </Text>
               </View>
-              <Pressable onPress={() => void openCamera()} style={styles.secondaryButton}>
-                <Ionicons name="camera-outline" size={16} color={theme.colors.primary} />
+              <Pressable
+                onPress={() => void openCamera()}
+                style={styles.secondaryButton}
+              >
+                <Ionicons
+                  name="camera-outline"
+                  size={16}
+                  color={theme.colors.primary}
+                />
                 <Text style={styles.secondaryButtonText}>Chụp ảnh</Text>
               </Pressable>
             </View>
@@ -400,7 +838,10 @@ export function TaskIssueScreen({ navigation, route }: Props): React.JSX.Element
               <View style={styles.attachmentGrid}>
                 {attachments.map((attachment) => (
                   <View key={attachment.uri} style={styles.attachmentItem}>
-                    <Image source={{ uri: attachment.uri }} style={styles.attachmentImage} />
+                    <Image
+                      source={{ uri: attachment.uri }}
+                      style={styles.attachmentImage}
+                    />
                     <Pressable
                       onPress={() => removeAttachment(attachment.uri)}
                       style={styles.removeAttachmentButton}
@@ -414,8 +855,20 @@ export function TaskIssueScreen({ navigation, route }: Props): React.JSX.Element
           </Card>
 
           {submitMessage ? (
-            <Card style={styles.messageCard}>
-              <Text style={styles.messageText}>{submitMessage}</Text>
+            <Card
+              style={[
+                styles.messageCard,
+                submitIsError && styles.errorMessageCard,
+              ]}
+            >
+              <Text
+                style={[
+                  styles.messageText,
+                  submitIsError && styles.errorMessageText,
+                ]}
+              >
+                {submitMessage}
+              </Text>
             </Card>
           ) : null}
         </ScrollView>
@@ -426,7 +879,10 @@ export function TaskIssueScreen({ navigation, route }: Props): React.JSX.Element
               void handleSubmit();
             }}
             disabled={isSubmitting}
-            style={[styles.submitButton, isSubmitting && styles.submitButtonDisabled]}
+            style={[
+              styles.submitButton,
+              isSubmitting && styles.submitButtonDisabled,
+            ]}
           >
             {isSubmitting ? (
               <ActivityIndicator size="small" color="#FFFFFF" />
@@ -444,13 +900,20 @@ export function TaskIssueScreen({ navigation, route }: Props): React.JSX.Element
       >
         <View style={styles.cameraModal}>
           {permission?.granted ? (
-            <CameraView ref={cameraRef} style={styles.cameraPreview} facing="back" />
+            <CameraView
+              ref={cameraRef}
+              style={styles.cameraPreview}
+              facing="back"
+            />
           ) : (
             <View style={styles.cameraPermissionBlock}>
               <Text style={styles.cameraPermissionText}>
                 Chưa có quyền camera. Vui lòng cấp quyền để tiếp tục.
               </Text>
-              <Pressable onPress={requestPermission} style={styles.secondaryButton}>
+              <Pressable
+                onPress={requestPermission}
+                style={styles.secondaryButton}
+              >
                 <Text style={styles.secondaryButtonText}>Cấp quyền</Text>
               </Pressable>
             </View>
@@ -552,6 +1015,7 @@ const styles = StyleSheet.create({
     ...theme.typography.body.md,
     color: theme.colors.textPrimary,
     fontWeight: '600',
+    flex: 1,
   },
   optionTitleSelected: {
     color: '#1D4ED8',
@@ -559,6 +1023,107 @@ const styles = StyleSheet.create({
   optionDescription: {
     ...theme.typography.caption.md,
     color: theme.colors.textMuted,
+  },
+  rescheduleCard: {
+    borderColor: '#93C5FD',
+    backgroundColor: '#F8FAFF',
+  },
+  quickDateRow: {
+    gap: theme.spacing.xs,
+    paddingBottom: theme.spacing.sm,
+  },
+  quickDateChip: {
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    borderRadius: theme.radius.md,
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: theme.spacing.sm,
+    paddingVertical: theme.spacing.xs,
+    alignItems: 'center',
+    minWidth: 74,
+  },
+  quickDateChipActive: {
+    borderColor: theme.colors.primary,
+    backgroundColor: theme.colors.primary,
+  },
+  quickDateLabel: {
+    ...theme.typography.caption.md,
+    color: theme.colors.textPrimary,
+    fontWeight: '700',
+  },
+  quickDateSub: {
+    ...theme.typography.caption.sm,
+    color: theme.colors.textMuted,
+  },
+  quickDateTextActive: {
+    color: '#FFFFFF',
+  },
+  dateStepperRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: theme.spacing.xs,
+    marginBottom: theme.spacing.sm,
+  },
+  stepperButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2,
+    borderWidth: 1,
+    borderColor: '#BFDBFE',
+    backgroundColor: '#EFF6FF',
+    borderRadius: theme.radius.md,
+    paddingHorizontal: theme.spacing.sm,
+    minHeight: 42,
+  },
+  stepperButtonText: {
+    ...theme.typography.caption.md,
+    color: theme.colors.primary,
+    fontWeight: '700',
+  },
+  dateInput: {
+    flex: 1,
+    minHeight: 42,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    borderRadius: theme.radius.md,
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: theme.spacing.sm,
+    textAlign: 'center',
+    ...theme.typography.body.md,
+    color: theme.colors.textPrimary,
+    fontWeight: '700',
+  },
+  slotLabel: {
+    ...theme.typography.caption.md,
+    color: theme.colors.textSecondary,
+    fontWeight: '700',
+    marginBottom: theme.spacing.xs,
+  },
+  slotRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: theme.spacing.xs,
+  },
+  slotChip: {
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    borderRadius: theme.radius.pill,
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: theme.spacing.sm,
+    paddingVertical: 7,
+  },
+  slotChipActive: {
+    borderColor: theme.colors.primary,
+    backgroundColor: '#EFF6FF',
+  },
+  slotChipText: {
+    ...theme.typography.caption.md,
+    color: theme.colors.textSecondary,
+    fontWeight: '600',
+  },
+  slotChipTextActive: {
+    color: theme.colors.primary,
+    fontWeight: '700',
   },
   noteInput: {
     minHeight: 90,
@@ -630,9 +1195,16 @@ const styles = StyleSheet.create({
     borderColor: '#BBF7D0',
     backgroundColor: '#F0FDF4',
   },
+  errorMessageCard: {
+    borderColor: '#FECACA',
+    backgroundColor: '#FEF2F2',
+  },
   messageText: {
     ...theme.typography.body.md,
     color: '#166534',
+  },
+  errorMessageText: {
+    color: '#B91C1C',
   },
   footer: {
     position: 'absolute',

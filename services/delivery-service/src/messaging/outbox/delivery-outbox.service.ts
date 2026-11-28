@@ -1,4 +1,4 @@
-﻿import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 
 import type { DeliveryAttempt } from '../../domain/entities/delivery-attempt.entity';
 import type { NdrCase } from '../../domain/entities/ndr-case.entity';
@@ -39,6 +39,12 @@ export class DeliveryOutboxService {
   async enqueueNdrCreated(ndrCase: NdrCase): Promise<void> {
     await this.outboxEventRepository.create(
       this.deliveryEventsProducer.buildNdrCreatedEvent(ndrCase),
+    );
+  }
+
+  async enqueueNdrRescheduled(ndrCase: NdrCase): Promise<void> {
+    await this.outboxEventRepository.create(
+      this.deliveryEventsProducer.buildNdrRescheduledEvent(ndrCase),
     );
   }
 

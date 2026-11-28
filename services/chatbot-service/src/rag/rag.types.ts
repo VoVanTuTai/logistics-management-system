@@ -46,6 +46,16 @@ export interface ActionChipDto {
   query: string;
 }
 
+export interface ClaimFormDataDto {
+  trackingCode?: string;
+  category?: string;
+  customerName?: string;
+  customerPhone?: string;
+  assignedHubCode?: string;
+  assignedHubName?: string;
+  defaultDescription?: string;
+}
+
 export interface ChatResponseDto {
   conversationId: string;
   question: string;
@@ -69,4 +79,6 @@ export interface ChatResponseDto {
     payer?: 'SENDER' | 'RECEIVER';
     shippingFee?: number;
   };
+  claimFormRequested?: boolean;
+  claimFormData?: ClaimFormDataDto;
 }
